@@ -10,9 +10,10 @@
 
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { ProtectedRoute } from '../components/auth/ProtectedRoute'
+import { ComingSoonPage } from '../pages/coming-soon/ComingSoonPage'
 import { HomePage } from '../pages/home/HomePage'
-import { MetasPage } from '../pages/metas/MetasPage'
 import { LoginPage } from '../pages/login/LoginPage'
+import { MetasPage } from '../pages/metas/MetasPage'
 
 export function AppRouter() {
   return (
@@ -23,9 +24,17 @@ export function AppRouter() {
       {/* Rotas protegidas */}
       <Route path="/app" element={<ProtectedRoute />}>
         <Route index element={<Navigate to="home" replace />} />
-        <Route path="home" element={<HomePage />} />
-        <Route path="metas" element={<MetasPage />} />
-        {/* Futuras rotas: pipeline, clientes, relatorios */}
+        <Route path="home"     element={<HomePage />} />
+        <Route path="metas"    element={<MetasPage />} />
+        {/* Rotas em desenvolvimento — exibem ComingSoonPage */}
+        <Route path="kanban"   element={<ComingSoonPage />} />
+        <Route path="tarefas"  element={<ComingSoonPage />} />
+        <Route path="usuarios" element={<ComingSoonPage />} />
+        <Route path="fila"     element={<ComingSoonPage />} />
+        <Route path="config"   element={<ComingSoonPage />} />
+        <Route path="admin"    element={<ComingSoonPage />} />
+        <Route path="ajuda"    element={<ComingSoonPage />} />
+        <Route path="sara"     element={<ComingSoonPage />} />
       </Route>
 
       {/* Raiz → home */}
