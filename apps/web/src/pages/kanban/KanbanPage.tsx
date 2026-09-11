@@ -284,7 +284,7 @@ function KanbanColumn({ meta, cards }: KanbanColumnProps) {
         <span className={styles.columnCount} style={{ color: meta.countText }}>{cards.length}</span>
       </div>
 
-      <div className={styles.cardList}>
+      <div className={styles.cardList} data-scroll="column">
         <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
           {cards.map(card => (
             <SortableCard key={card.id} card={card} />
@@ -313,7 +313,7 @@ export function KanbanPage() {
     // O target é verificado para deixar o scroll vertical funcionar dentro das colunas.
     const onWheel = (e: WheelEvent) => {
       const target = e.target as HTMLElement
-      if (target.closest(`.${styles.cardList}`) !== null) return
+      if (target.closest('[data-scroll="column"]') !== null) return
       e.preventDefault()
       // `el` é garantidamente não-null neste ponto (guarda do if acima)
       ;(el as HTMLDivElement).scrollLeft += e.deltaY + e.deltaX
