@@ -12,6 +12,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { ProtectedRoute } from '../components/auth/ProtectedRoute'
 import { ComingSoonPage } from '../pages/coming-soon/ComingSoonPage'
 import { HomePage } from '../pages/home/HomePage'
+import { KanbanPage } from '../pages/kanban/KanbanPage'
 import { LoginPage } from '../pages/login/LoginPage'
 import { MetasPage } from '../pages/metas/MetasPage'
 
@@ -27,7 +28,7 @@ export function AppRouter() {
         <Route path="home"     element={<HomePage />} />
         <Route path="metas"    element={<MetasPage />} />
         {/* Rotas em desenvolvimento — exibem ComingSoonPage */}
-        <Route path="kanban"   element={<ComingSoonPage />} />
+        <Route path="kanban"   element={<KanbanPage />} />
         <Route path="tarefas"  element={<ComingSoonPage />} />
         <Route path="usuarios" element={<ComingSoonPage />} />
         <Route path="fila"     element={<ComingSoonPage />} />

@@ -1,0 +1,410 @@
+/* KanbanPage — funil de vendas em 6 colunas */
+
+/* ── Layout principal ────────────────────────────────────────────────────────── */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 74px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.6px;
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filterBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0 15px;
+  height: 36px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s;
+}
+
+.filterBtn:hover {
+  background: #f8fafc;
+}
+
+.newLeadBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(to right, #ffeab1, #ffa705);
+  border: none;
+  border-radius: 12px;
+  padding: 0 16px;
+  height: 36px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #020617;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.newLeadBtn:hover {
+  opacity: 0.9;
+}
+
+/* ── Metrics Strip ───────────────────────────────────────────────────────────── */
+
+.metricsStrip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 40px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+  flex-shrink: 0;
+}
+
+.metricsLeft {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.metric {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.metricIcon {
+  display: flex;
+  align-items: center;
+  color: #64748b;
+}
+
+.metricLabel {
+  font-size: 12px;
+  font-weight: 400;
+  color: #64748b;
+}
+
+.metricValue {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.metricDivider {
+  width: 1px;
+  height: 12px;
+  background: #e2e8f0;
+}
+
+.activeLeads {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.activeDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  flex-shrink: 0;
+}
+
+.activeLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #334155;
+}
+
+/* ── Board ───────────────────────────────────────────────────────────────────── */
+
+.board {
+  display: flex;
+  gap: 16px;
+  padding: 12px 24px 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex: 1;
+  min-height: 0;
+}
+
+.board::-webkit-scrollbar {
+  height: 6px;
+}
+
+.board::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.board::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 3px;
+}
+
+/* ── Column ──────────────────────────────────────────────────────────────────── */
+
+.column {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 280px;
+  background: rgba(248, 250, 252, 0.8);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 16px;
+  padding: 12px;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.columnHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 13px;
+  border-radius: 12px;
+  border: 1px solid;
+  flex-shrink: 0;
+}
+
+.columnName {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.columnCount {
+  background: #ffffff;
+  border-radius: 9999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.33;
+}
+
+.cardList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 2px;
+}
+
+.cardList::-webkit-scrollbar {
+  width: 4px;
+}
+
+.cardList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cardList::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 2px;
+}
+
+/* ── Card ────────────────────────────────────────────────────────────────────── */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(199, 199, 199, 0.6);
+  border-radius: 8px;
+  padding: 9px 11px 8px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.card:active {
+  cursor: grabbing;
+}
+
+/* Card fantasma no DragOverlay — sombra mais intensa para destaque */
+.cardDragging {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-color: rgba(148, 163, 184, 0.6);
+  cursor: grabbing;
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cardName {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.4;
+}
+
+.whatsappBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ecfdf5;
+  border: none;
+  cursor: pointer;
+  color: #16a34a;
+  flex-shrink: 0;
+  transition: background-color 0.15s;
+}
+
+.whatsappBtn:hover {
+  background: #d1fae5;
+}
+
+.cardPhone {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+}
+
+.cardPhoneIcon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.cardPhoneText {
+  font-size: 12px;
+  font-weight: 400;
+  color: #64748b;
+}
+
+.cardCota {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(199, 199, 199, 0.6);
+  border-radius: 8px;
+  padding: 7px 11px;
+}
+
+.cardCotaText {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  display: block;
+}
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0 5px;
+}
+
+.cardMetaIcon {
+  display: flex;
+  align-items: center;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.cardMetaDate {
+  font-size: 11px;
+  font-weight: 400;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.cardMetaDot {
+  font-size: 11px;
+  color: #94a3b8;
+  padding: 0 3px;
+}
+
+.cardMetaAgent {
+  font-size: 11px;
+  font-weight: 500;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.cardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* ── Tags ────────────────────────────────────────────────────────────────────── */
+
+.sourceTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.daysTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 500;
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+  white-space: nowrap;
+}
+
+.daysTagUrgent {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 500;
+  background: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #fecdd3;
+  white-space: nowrap;
+}
