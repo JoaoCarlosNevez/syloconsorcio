@@ -27,7 +27,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
 import styles from './KanbanPage.module.css'
 
@@ -300,6 +300,28 @@ function KanbanColumn({ meta, cards }: KanbanColumnProps) {
 export function KanbanPage() {
   const [board, setBoard] = useState<Record<string, CardData[]>>(INITIAL_BOARD)
   const [activeCard, setActiveCard] = useState<CardData | null>(null)
+  const boardRef = useRef<HTMLDivElement>(null)
+
+  // Converte scroll vertical do mouse em scroll horizontal no board.
+  // Usa addEventListener com passive:false para poder chamar preventDefault,
+  // o que não é possível com o onWheel sintético do React (passivo por padrão).
+  useEffect(() => {
+    const el = boardRef.current
+    if (!el) return
+
+    // Converte scroll vertical em horizontal no board.
+    // O target é verificado para deixar o scroll vertical funcionar dentro das colunas.
+    const onWheel = (e: WheelEvent) => {
+      const target = e.target as HTMLElement
+      if (target.closest(`.${styles.cardList}`) !== null) return
+      e.preventDefault()
+      // `el` é garantidamente não-null neste ponto (guarda do if acima)
+      ;(el as HTMLDivElement).scrollLeft += e.deltaY + e.deltaX
+    }
+
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => { el.removeEventListener('wheel', onWheel) }
+  }, [])
 
   // Sensores: PointerSensor com delay de 8px evita drag acidental ao clicar
   const sensors = useSensors(
@@ -408,10 +430,12 @@ export function KanbanPage() {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className={styles.board}>
-            {COLUMN_META.map(meta => (
-              <KanbanColumn key={meta.id} meta={meta} cards={board[meta.id] ?? []} />
-            ))}
+          <div className={styles.boardWrapper}>
+            <div ref={boardRef} className={styles.board}>
+              {COLUMN_META.map(meta => (
+                <KanbanColumn key={meta.id} meta={meta} cards={board[meta.id] ?? []} />
+              ))}
+            </div>
           </div>
 
           {/* Card fantasma renderizado fora do DOM do board — sem reflow */}
