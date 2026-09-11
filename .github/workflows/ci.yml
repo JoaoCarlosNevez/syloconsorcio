@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main]
+
+# Cancel in-progress runs on the same branch to save CI minutes
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+  NODE_ENV: test
+
+jobs:
+  ci:
+    name: Lint · Typecheck · Test · Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Biome check: lint + format violations fail the build
+      - name: Lint & format (Biome)
+        run: pnpm biome ci .
+
+      # TypeScript strict — no any, no implicit errors
+      - name: Typecheck
+        run: pnpm turbo typecheck
+
+      # Unit tests across all packages and apps
+      - name: Unit tests
+        run: pnpm turbo test:unit
+
+      # Architecture tests — verify layer boundaries are not violated
+      - name: Architecture tests
+        run: pnpm turbo test:arch
+
+      # Final build — confirms everything compiles and bundles correctly
+      - name: Build
+        run: pnpm turbo build
