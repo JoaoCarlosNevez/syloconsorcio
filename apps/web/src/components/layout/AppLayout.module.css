@@ -112,7 +112,7 @@
   gap: 10px;
   padding: 9px 12px;
   border-radius: var(--radius-lg);
-  font-size: var(--font-size-sm);
+  font-size: 14px;
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
   text-decoration: none;
@@ -165,7 +165,7 @@
 }
 
 .saraNavLabel {
-  font-size: var(--font-size-sm);
+  font-size: 14px;
   font-weight: var(--font-weight-medium);
   color: #334155;
   flex: 1;
