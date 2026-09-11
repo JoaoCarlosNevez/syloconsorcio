@@ -1,0 +1,325 @@
+/* AppLayout — sidebar branca + área de conteúdo */
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--color-bg-card);
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  padding: 20px 12px 14px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+/* Logo */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
+  margin-bottom: 18px;
+}
+
+.logoImg {
+  height: 26px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Company selector */
+.companySelector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 12px;
+  padding: 9px;
+  cursor: pointer;
+  margin-bottom: 18px;
+  transition: background-color var(--duration-normal);
+  width: 100%;
+}
+
+.companySelector:hover {
+  background: #f1f5f9;
+}
+
+.companySelectorLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.companyIconWrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #0075ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.companyIconWrap img {
+  width: 24px;
+  height: 15px;
+  object-fit: contain;
+  display: block;
+}
+
+.companyName {
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.companyCaret {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+/* Nav */
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--duration-normal), color var(--duration-normal);
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  line-height: 1;
+}
+
+.navItem:hover {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-primary);
+}
+
+.navItem.active {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Sara IA item */
+.saraNavItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 13px;
+  border-radius: 12px;
+  border: 1px solid rgba(226, 232, 240, 0.7);
+  background: rgba(248, 250, 252, 0.5);
+  cursor: pointer;
+  text-decoration: none;
+  margin-top: 4px;
+  transition: background-color var(--duration-normal);
+}
+
+.saraNavItem:hover {
+  background: rgba(241, 245, 249, 0.8);
+}
+
+.saraAvatarSmall {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center top;
+  flex-shrink: 0;
+}
+
+.saraNavLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: #334155;
+  flex: 1;
+}
+
+.betaBadge {
+  font-size: 10px;
+  font-weight: var(--font-weight-bold);
+  color: #042d78;
+  background: #d1e8fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+/* ── Rodapé da sidebar ───────────────────────────────────────────────────── */
+
+.sidebarBottom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 12px;
+  margin-top: 8px;
+}
+
+.vendedorOnline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.vendedorDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  flex-shrink: 0;
+}
+
+.vendedorSla {
+  color: #10b981;
+  font-weight: var(--font-weight-semibold);
+  margin-left: auto;
+}
+
+/* Theme toggle */
+.themeToggle {
+  display: flex;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: 3px;
+}
+
+.themeBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: all var(--duration-normal);
+  white-space: nowrap;
+}
+
+.themeBtn.active {
+  background: #ffffff;
+  color: var(--color-text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* User card */
+.userCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px;
+  border: 1px solid rgba(226, 232, 240, 0.7);
+  border-radius: 12px;
+  cursor: pointer;
+  background: #f8fafc;
+  transition: background-color var(--duration-normal);
+  width: 100%;
+}
+
+.userCard:hover {
+  background: #f1f5f9;
+}
+
+.userCardAvatarWrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.userCardAvatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+  border-radius: 50%;
+}
+
+.userCardInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.userCardName {
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.userCardTier {
+  font-size: 11px;
+  font-weight: var(--font-weight-normal);
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Conteúdo principal ──────────────────────────────────────────────────── */
+
+.main {
+  flex: 1;
+  min-width: 0;
+  background: var(--color-bg-subtle);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}

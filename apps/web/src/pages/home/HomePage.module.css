@@ -1,0 +1,627 @@
+/* HomePage — fiel ao Figma */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Hero de perfil ──────────────────────────────────────────────────────── */
+
+.profileHero {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 26px 28px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.profileAvatarWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.profileMicBadge {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profileMicBadge img {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+
+.profileInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.profileNameRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+}
+
+.profileName {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  letter-spacing: -0.4px;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.profileHandle {
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+}
+
+.profileMeta {
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.profileMetaDot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-border-input);
+  flex-shrink: 0;
+}
+
+.heroActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.notifBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid var(--color-border-input);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  transition: background-color var(--duration-normal);
+}
+
+.notifBtn:hover { background: var(--color-bg-subtle); }
+
+.chamaSaraBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(to right, rgba(255, 234, 177, 0.4), rgba(255, 167, 5, 0.4));
+  border: 1px solid #fcd34d;
+  border-radius: 12px;
+  padding: 9px 15px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: opacity var(--duration-normal);
+}
+
+.chamaSaraBtn:hover { opacity: 0.85; }
+
+.chamaSaraBtnAvatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center top;
+  flex-shrink: 0;
+}
+
+/* ── Área de conteúdo ────────────────────────────────────────────────────── */
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 28px;
+}
+
+/* ── Cards de meta (linha) ───────────────────────────────────────────────── */
+
+.metasRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.metaCard {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 21px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  gap: 0;
+}
+
+/* Background Sylo 3D logo */
+.metaCardBgLogo {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.metaCardBgLogo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.10;
+  border-radius: 16px;
+}
+
+.metaCardTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  position: relative;
+}
+
+.metaCardTitleWrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.metaCardIconWrap {
+  width: 37px;
+  height: 37px;
+  border-radius: 50%;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.metaCardTitle {
+  font-size: 16px;
+  font-weight: var(--font-weight-semibold);
+  color: #0f172a;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.metaCardSubtitle {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: 1px;
+}
+
+.metaPercent {
+  font-size: 20px;
+  font-weight: var(--font-weight-bold);
+  color: #334155;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.metaPercentBlue  { color: #334155; }
+.metaPercentGreen { color: #334155; }
+
+.metaPercentRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.metaDiasRestantes {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* Labels e valores */
+.metaValuesRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-top: 12px;
+  position: relative;
+}
+
+.metaValueGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metaLabel {
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.5;
+}
+
+.metaValue {
+  font-size: 24px;
+  font-weight: var(--font-weight-bold);
+  color: #0f172a;
+  line-height: 1.33;
+}
+
+.metaValueMuted {
+  font-size: 16px;
+  font-weight: var(--font-weight-semibold);
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+/* Barra de progresso */
+.metaProgressBar {
+  position: relative;
+  height: 12px;
+  border-radius: 99px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.metaProgressFill {
+  position: absolute;
+  top: 2px;
+  left: 1%;
+  bottom: 2px;
+  border-radius: 99px;
+  transition: width 0.6s ease;
+}
+
+.metaProgressFillBlue  { background: linear-gradient(to right, #1e3a8a, #2563eb, #60a5fa); }
+.metaProgressFillGreen { background: linear-gradient(to right, #065f46, #10b981, #34d399); }
+
+/* Footer da meta */
+.metaFooter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  color: #334155;
+  padding-top: 9px;
+  margin-top: 16px;
+  border-top: 1px solid #f1f5f9;
+  position: relative;
+}
+
+.metaFooterGreen {
+  color: #334155;
+}
+
+/* ── Seção de Tarefas ────────────────────────────────────────────────────── */
+
+.tarefasCard {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.tarefasHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  gap: 16px;
+}
+
+.tarefasTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.tarefasSubtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.filtrarBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-full);
+  padding: 8px 16px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background-color var(--duration-normal);
+}
+
+.filtrarBtn:hover { background: var(--color-bg-subtle); }
+
+/* Tabela de tarefas */
+.tarefasTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tarefasTable th {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-disabled);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  text-align: left;
+  padding: 10px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tarefasTable td {
+  padding: 18px 24px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.tarefasTable tr:last-child td { border-bottom: none; }
+
+.clienteNome {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+}
+
+.segmentoNome {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.segmentoGrupo {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.valorCell {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+/* Pill de tarefa */
+.tarefaPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-input);
+  white-space: nowrap;
+}
+
+/* Badges de status */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+  border: 1.5px solid transparent;
+}
+
+.statusAtendimento { color: #d97706; background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); }
+.statusSimulacao   { color: #2563eb; background: rgba(59,130,246,0.1);  border-color: rgba(59,130,246,0.3); }
+.statusProposta    { color: #059669; background: rgba(16,185,129,0.1);  border-color: rgba(16,185,129,0.3); }
+
+/* Botão WhatsApp */
+.whatsappBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(34,197,94,0.12);
+  border: 1.5px solid rgba(34,197,94,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #16a34a;
+  transition: background-color var(--duration-normal);
+}
+
+.whatsappBtn:hover { background: rgba(34,197,94,0.2); }
+
+/* Botão Ver tarefa */
+.viewBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(100,116,139,0.08);
+  border: 1.5px solid rgba(100,116,139,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #475569;
+  transition: background-color var(--duration-normal);
+}
+
+.viewBtn:hover { background: rgba(100,116,139,0.16); }
+
+/* ── KPIs inferiores ─────────────────────────────────────────────────────── */
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.kpiCard {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kpiTopRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.kpiLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-disabled);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  line-height: 1.3;
+  flex: 1;
+}
+
+.kpiIconSlot {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.kpiValue {
+  font-size: 32px;
+  font-weight: var(--font-weight-extrabold);
+  color: var(--color-text-primary);
+  letter-spacing: -1.5px;
+  line-height: 1;
+}
+
+.kpiDesc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.kpiAccent {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.kpiAccentGreen   { color: #10b981; }
+.kpiAccentPositive { color: var(--color-text-secondary); }
+
+/* ── Skeletons ───────────────────────────────────────────────────────────── */
+
+.skeletonHero {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 26px 28px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.skeletonMetasRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.skeletonMetaCard {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.skeletonKpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.skeletonKpiCard {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skeletonTarefasCard {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.skeletonTarefaRow {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1.5fr 1fr 1fr 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.skeletonTarefaRow:last-child { border-bottom: none; }

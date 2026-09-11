@@ -1,0 +1,55 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.1875rem 0.625rem; /* 3px 10px */
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.25rem;
+  border-radius: var(--radius-full); /* pill — confirmed in Figma */
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+/* ── Variants confirmed in Figma ── */
+
+.amber {
+  background-color: var(--color-amber-100);
+  color: var(--color-amber-700);
+}
+
+.blue {
+  background-color: var(--color-blue-100);
+  color: var(--color-blue-700);
+}
+
+.green {
+  background-color: var(--color-emerald-100);
+  color: var(--color-emerald-700);
+}
+
+/* ── Technical extensions (same token system) ── */
+
+.red {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: var(--color-error-text);
+}
+
+.slate {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+}
+
+.purple {
+  background-color: rgba(139, 92, 246, 0.12);
+  color: #6d28d9;
+}
+
+/* ── Dot indicator ── */
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background-color: currentColor;
+}

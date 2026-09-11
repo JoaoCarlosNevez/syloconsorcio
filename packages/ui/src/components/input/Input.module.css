@@ -1,0 +1,117 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+  width: 100%;
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  line-height: 1rem;
+}
+
+.inputWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.input {
+  display: block;
+  width: 100%;
+  padding: 0.875rem 1.0625rem;
+  padding-left: 2.8125rem; /* 45px — space for left icon */
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+  transition: border-color var(--duration-normal) var(--easing-default), box-shadow
+    var(--duration-normal) var(--easing-default);
+  appearance: none;
+  outline: none;
+}
+
+/* No left icon */
+.input.noLeftIcon {
+  padding-left: 1.0625rem;
+}
+
+/* Right icon space */
+.input.hasRightIcon {
+  padding-right: 2.8125rem;
+}
+
+.input::placeholder {
+  color: var(--color-text-disabled);
+}
+
+.input:focus {
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
+}
+
+.input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--color-bg-subtle);
+}
+
+/* ── Error state ── */
+.input.error {
+  border-color: var(--color-error);
+}
+
+.input.error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
+}
+
+/* ── Icon slots ── */
+.iconLeft,
+.iconRight {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  color: var(--color-text-disabled);
+}
+
+.iconLeft {
+  left: 0.875rem; /* 14px */
+}
+
+.iconRight {
+  right: 0.875rem;
+  pointer-events: auto;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-text-disabled);
+  transition: color var(--duration-normal) var(--easing-default);
+}
+
+.iconRight:hover {
+  color: var(--color-text-secondary);
+}
+
+/* ── Helper text / error message ── */
+.helperText {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1rem;
+}
+
+.errorMessage {
+  font-size: var(--font-size-sm);
+  color: var(--color-error-text);
+  line-height: 1rem;
+}

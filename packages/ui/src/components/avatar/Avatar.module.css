@@ -1,0 +1,104 @@
+.root {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+/* ── Size variants ── */
+.sm {
+  width: 2.25rem; /* 36px — sidebar size confirmed in Figma */
+  height: 2.25rem;
+}
+
+.md {
+  width: 3rem; /* 48px */
+  height: 3rem;
+}
+
+.lg {
+  width: 5.25rem; /* 84px — 64px × 1.3 */
+  height: 5.25rem;
+}
+
+.xl {
+  width: 7rem; /* 112px — hero size confirmed in Figma */
+  height: 7rem;
+}
+
+/* ── Image / fallback ── */
+.img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+.fallback {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: var(--color-bg-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  font-size: 0.875em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* ── Tier ring — gradient border via box-shadow ── */
+.tierRing {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.tierRing.turmalina {
+  background: linear-gradient(135deg, #9ef5ff, #00a6cc);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 2px));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 2px));
+}
+
+.tierRing.rubi {
+  background: linear-gradient(135deg, #ff6d70, #cc0003);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 2px));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 2px));
+}
+
+.tierRing.platina {
+  background: linear-gradient(135deg, #9ecbff, #005ecc);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 2px));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 2px));
+}
+
+.tierRing.diamante {
+  background: linear-gradient(135deg, #b69eff, #4b00cc);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 2px));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 2px));
+}
+
+/* ── Status dot ── */
+.statusDot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--color-emerald-500);
+  border: 2px solid var(--color-bg-card);
+}
+
+.sm .statusDot {
+  width: 8px;
+  height: 8px;
+}
+
+.xl .statusDot {
+  width: 14px;
+  height: 14px;
+}

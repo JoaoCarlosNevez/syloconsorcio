@@ -1,0 +1,8 @@
+{
+  "extends": "@sylocrm/config/tsconfig/react.json",
+  "compilerOptions": {
+    "rootDir": "src"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["dist", "node_modules"]
+}

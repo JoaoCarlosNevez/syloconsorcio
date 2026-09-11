@@ -1,0 +1,91 @@
+.wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  user-select: none;
+}
+
+.wrapper.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Hide native checkbox visually but keep it accessible */
+.nativeInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Custom checkbox box — 16×16px confirmed in Figma */
+.box {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  border: 1.5px solid var(--color-border-input);
+  border-radius: var(--radius-sm); /* 4px — Figma confirmed */
+  background-color: var(--color-bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--duration-normal) var(--easing-default), background-color
+    var(--duration-normal) var(--easing-default);
+}
+
+/* Checked state */
+.nativeInput:checked + .box {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/* Focus-visible ring */
+.nativeInput:focus-visible + .box {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Indeterminate state */
+.nativeInput:indeterminate + .box {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/* Checkmark icon */
+.checkmark {
+  display: none;
+  width: 10px;
+  height: 10px;
+  color: var(--color-text-on-accent);
+}
+
+.nativeInput:checked + .box .checkmark {
+  display: block;
+}
+
+/* Indeterminate dash */
+.dash {
+  display: none;
+  width: 8px;
+  height: 2px;
+  background-color: var(--color-text-on-accent);
+  border-radius: 1px;
+}
+
+.nativeInput:indeterminate + .box .dash {
+  display: block;
+}
+
+/* Label text */
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+}

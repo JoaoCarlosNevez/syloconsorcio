@@ -1,0 +1,33 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-12) var(--space-6);
+  gap: var(--space-3);
+}
+
+.icon {
+  color: var(--color-text-disabled);
+  margin-bottom: var(--space-1);
+}
+
+.title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.description {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  max-width: 28rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.action {
+  margin-top: var(--space-2);
+}

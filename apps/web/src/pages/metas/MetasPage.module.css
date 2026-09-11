@@ -1,0 +1,340 @@
+/* MetasPage — tela de metas e progressão de nível */
+
+.page {
+  padding: 32px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 1200px;
+  width: 100%;
+}
+
+/* ── Cabeçalho ───────────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+}
+
+/* ── Stepper de níveis ───────────────────────────────────────────────────── */
+
+.tierStepper {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 28px 32px;
+}
+
+.stepperTitle {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 24px;
+}
+
+.stepperTrack {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.stepperItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.stepperConnector {
+  flex: 1;
+  height: 3px;
+  border-radius: 99px;
+  margin-bottom: 32px; /* alinha com os círculos */
+}
+
+.stepperConnector.done {
+  background: var(--color-accent);
+}
+
+.stepperConnector.pending {
+  background: var(--color-border);
+}
+
+.stepperCircle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  border: 3px solid transparent;
+  flex-shrink: 0;
+  transition: transform var(--duration-normal) var(--easing-default);
+}
+
+.stepperCircle.done {
+  background: var(--color-bg-subtle);
+  border-color: var(--color-border-input);
+}
+
+.stepperCircle.current {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 5px rgba(0,0,0,0.06);
+}
+
+.stepperCircle.pending {
+  background: var(--color-bg-subtle);
+  border-color: var(--color-border);
+  opacity: 0.5;
+}
+
+/* Cores por tier */
+.stepperCircle.turmalina.current { background: rgba(236,72,153,0.12); border-color: #be185d; }
+.stepperCircle.rubi.current      { background: rgba(239,68,68,0.12);  border-color: #dc2626; }
+.stepperCircle.platina.current   { background: rgba(96,165,250,0.12); border-color: #2563eb; }
+.stepperCircle.diamante.current  { background: rgba(139,92,246,0.12); border-color: #7c3aed; }
+
+.stepperLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.stepperLabel.current {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.stepperLabel.pending {
+  opacity: 0.5;
+}
+
+.stepperBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-link);
+  letter-spacing: 0.02em;
+}
+
+/* ── Grid principal (metas + próximo nível) ──────────────────────────────── */
+
+.mainGrid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* ── Card genérico ───────────────────────────────────────────────────────── */
+
+.card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.cardTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.cardSubtitle {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: 3px;
+}
+
+/* ── Lista de metas ──────────────────────────────────────────────────────── */
+
+.metasList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.metaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.metaItem:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.metaItem:first-child {
+  padding-top: 0;
+}
+
+.metaItemHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.metaNome {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.metaValores {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-sm);
+}
+
+.metaAtual {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.metaDivisor {
+  color: var(--color-text-disabled);
+}
+
+.metaTotal {
+  color: var(--color-text-muted);
+}
+
+/* ── Próximo nível ───────────────────────────────────────────────────────── */
+
+.proximoCard {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.proximoHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.proximoIcone {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(96,165,250,0.1);
+  border: 2px solid #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.proximoNome {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.proximoDescricao {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.proximoBeneficios {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.beneficioItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.beneficioCheck {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(96,165,250,0.15);
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-size: 10px;
+}
+
+.proximoDivider {
+  height: 1px;
+  background: var(--color-border);
+}
+
+.proximoFaltam {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.proximoFaltamDestaque {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+/* ── Skeleton overrides ──────────────────────────────────────────────────── */
+
+.skeletonMetas {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.skeletonMetaItem {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skeletonMetaItem:last-child {
+  border-bottom: none;
+}

@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Turbo
+.turbo/
+
+# Environment — NEVER commit .env with real values
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Testing
+coverage/
+playwright-report/
+test-results/
+.playwright/
+
+# TypeScript
+*.tsbuildinfo
+
+# Drizzle
+drizzle/

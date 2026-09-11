@@ -1,0 +1,38 @@
+{
+  "name": "@sylocrm/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.47.10",
+    "@sylocrm/shared": "workspace:*",
+    "@sylocrm/ui": "workspace:*",
+    "@tanstack/react-query": "^5.64.1",
+    "@tanstack/react-query-devtools": "^5.64.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "@sylocrm/config": "workspace:*",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5",
+    "vitest": "^2.1.8"
+  }
+}

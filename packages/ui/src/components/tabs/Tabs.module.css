@@ -1,0 +1,67 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Tab list */
+.list {
+  display: flex;
+  border-bottom: 1px solid var(--color-border-default);
+  gap: 0;
+}
+
+.tab {
+  position: relative;
+  padding: var(--space-2-5) var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--duration-fast) var(--easing-default);
+  outline: none;
+}
+
+.tab::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background-color: transparent;
+  transition: background-color var(--duration-fast) var(--easing-default);
+}
+
+.tab:hover {
+  color: var(--color-text-primary);
+}
+
+.tab.active {
+  color: var(--color-accent);
+  font-weight: var(--font-weight-semibold);
+}
+
+.tab.active::after {
+  background-color: var(--color-accent);
+}
+
+.tab:focus-visible {
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+
+.tab:disabled,
+.tab.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Panel */
+.panel {
+  padding-top: var(--space-4);
+}

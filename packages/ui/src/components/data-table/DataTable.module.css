@@ -1,0 +1,81 @@
+.wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border-default);
+  background-color: var(--color-bg-card);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+/* ── Header ── */
+.th {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  text-align: left;
+  background-color: var(--color-bg-subtle);
+  border-bottom: 1px solid var(--color-border-default);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.th.sortable {
+  cursor: pointer;
+}
+
+.th.sortable:hover {
+  color: var(--color-text-primary);
+}
+
+.sortIcon {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--space-1);
+  color: var(--color-text-disabled);
+  vertical-align: middle;
+}
+
+.sortIcon.active {
+  color: var(--color-accent);
+}
+
+/* ── Body ── */
+.tr {
+  border-bottom: 1px solid var(--color-border-default);
+  transition: background-color var(--duration-fast) var(--easing-default);
+}
+
+.tr:last-child {
+  border-bottom: none;
+}
+
+.tr:hover {
+  background-color: var(--color-bg-subtle);
+}
+
+.tr.selected {
+  background-color: rgba(255, 167, 5, 0.06);
+}
+
+.td {
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text-primary);
+  vertical-align: middle;
+}
+
+/* ── States ── */
+.stateRow td {
+  padding: 0;
+}
+
+.stateCell {
+  padding: 0;
+}

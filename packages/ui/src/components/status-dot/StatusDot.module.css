@@ -1,0 +1,67 @@
+.wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-emerald-500);
+}
+
+/* Pulse ring — confirmed in Figma (online indicator animation) */
+.dot.pulse::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background-color: var(--color-emerald-500);
+  opacity: 0.3;
+  animation: pulse 2s var(--easing-default) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot.pulse::before {
+    animation: none;
+  }
+}
+
+/* Size variants */
+.sm .dot {
+  width: 6px;
+  height: 6px;
+}
+
+.lg .dot {
+  width: 12px;
+  height: 12px;
+}
+
+/* Color variants */
+.dot.online {
+  background-color: var(--color-emerald-500);
+}
+
+.dot.busy {
+  background-color: var(--color-amber-500);
+}
+
+.dot.offline {
+  background-color: var(--color-text-disabled);
+}
