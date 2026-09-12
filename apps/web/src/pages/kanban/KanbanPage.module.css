@@ -36,6 +36,51 @@
   gap: 8px;
 }
 
+.headerDivider {
+  display: inline-block;
+  width: 1px;
+  height: 20px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+/* ── View Toggle ──────────────────────────────────────────────────────────── */
+
+.viewToggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.viewToggleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  border: none;
+  background: none;
+  color: #64748b;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.viewToggleBtn:hover {
+  color: #334155;
+  background: #e2e8f0;
+}
+
+.viewToggleBtnActive {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
 .filterBtn {
   display: flex;
   align-items: center;
@@ -452,4 +497,238 @@
   color: #e11d48;
   border: 1px solid #fecdd3;
   white-space: nowrap;
+}
+
+/* ── List View ────────────────────────────────────────────────────────────── */
+
+.listView {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+  padding: 12px 24px 24px;
+}
+
+.listTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+/* Cabeçalho da tabela */
+.listHead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f8fafc;
+}
+
+.listHeadCell {
+  padding: 8px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+/* Grupo de etapa */
+.listGroupRow {
+  background: #f8fafc;
+}
+
+.listGroupCell {
+  padding: 0;
+}
+
+.listGroupBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 14px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #e2e8f0;
+  border-top: 1px solid #e2e8f0;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+.listGroupBtn:hover {
+  background: #f1f5f9;
+}
+
+.listGroupChevron {
+  display: flex;
+  align-items: center;
+  color: #94a3b8;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+
+.listGroupDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.listGroupName {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  flex: 1;
+}
+
+.listGroupCount {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 9999px;
+  border: 1px solid;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Linhas de dados */
+.listRow {
+  background: #ffffff;
+  cursor: pointer;
+  transition: background-color 0.12s;
+}
+
+.listRow:hover {
+  background: #f8fafc;
+}
+
+.listRowAlt {
+  background: rgba(248, 250, 252, 0.5);
+  cursor: pointer;
+  transition: background-color 0.12s;
+}
+
+.listRowAlt:hover {
+  background: #f1f5f9;
+}
+
+.listCell {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.listCellName {
+  min-width: 200px;
+  white-space: normal;
+}
+
+.listCellActions {
+  text-align: right;
+  width: 48px;
+}
+
+.listName {
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.4;
+}
+
+.listPhone {
+  color: #475569;
+}
+
+.listCota {
+  color: #334155;
+  max-width: 220px;
+  white-space: normal;
+  line-height: 1.4;
+  display: block;
+}
+
+.listSourceTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.listDays {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 500;
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+  white-space: nowrap;
+}
+
+.listDaysUrgent {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 500;
+  background: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #fecdd3;
+  white-space: nowrap;
+}
+
+.listAgent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.listAgentAvatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center top;
+  flex-shrink: 0;
+}
+
+.listAgentName {
+  color: #475569;
+  font-size: 13px;
+}
+
+.listDate {
+  color: #64748b;
+}
+
+.listWhatsappBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ecfdf5;
+  border: none;
+  cursor: pointer;
+  color: #16a34a;
+  transition: background-color 0.15s;
+  margin-left: auto;
+}
+
+.listWhatsappBtn:hover {
+  background: #d1fae5;
 }

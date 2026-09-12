@@ -27,10 +27,38 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { LeadModal } from './LeadModal'
 import styles from './KanbanPage.module.css'
+
+// ── Ícones de view toggle ──────────────────────────────────────────────────────
+
+function KanbanViewIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+      <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+    </svg>
+  )
+}
+
+function ListViewIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+      <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+    </svg>
+  )
+}
+
+function ChevronRightSmIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M9 18l6-6-6-6" />
+    </svg>
+  )
+}
 
 // ── Ícones ────────────────────────────────────────────────────────────────────
 
@@ -302,12 +330,130 @@ function KanbanColumn({ meta, cards, onCardClick }: KanbanColumnProps) {
   )
 }
 
+// ── ListView ──────────────────────────────────────────────────────────────────
+
+interface ListViewProps {
+  board: Record<string, CardData[]>
+  onCardClick: (card: CardData) => void
+}
+
+function ListView({ board, onCardClick }: ListViewProps) {
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+
+  const toggle = (colId: string) =>
+    setCollapsed(prev => ({ ...prev, [colId]: !prev[colId] }))
+
+  return (
+    <div className={styles.listView}>
+      <table className={styles.listTable}>
+        <thead>
+          <tr className={styles.listHead}>
+            <th className={styles.listHeadCell}>Lead</th>
+            <th className={styles.listHeadCell}>Telefone</th>
+            <th className={styles.listHeadCell}>Cota / Interesse</th>
+            <th className={styles.listHeadCell}>Origem</th>
+            <th className={styles.listHeadCell}>Dias no Funil</th>
+            <th className={styles.listHeadCell}>Responsável</th>
+            <th className={styles.listHeadCell}>Cadastro</th>
+            <th className={styles.listHeadCell} />
+          </tr>
+        </thead>
+        <tbody>
+          {COLUMN_META.map(meta => {
+            const cards = board[meta.id] ?? []
+            const isCollapsed = collapsed[meta.id] ?? false
+            return (
+              <Fragment key={meta.id}>
+                <tr className={styles.listGroupRow}>
+                  <td colSpan={8} className={styles.listGroupCell}>
+                    <button
+                      type="button"
+                      className={styles.listGroupBtn}
+                      onClick={() => toggle(meta.id)}
+                    >
+                      <span
+                        className={styles.listGroupChevron}
+                        style={{ transform: isCollapsed ? 'rotate(0deg)' : 'rotate(90deg)' }}
+                      >
+                        <ChevronRightSmIcon />
+                      </span>
+                      <span
+                        className={styles.listGroupDot}
+                        style={{ background: meta.headerBorder }}
+                      />
+                      <span className={styles.listGroupName}>{meta.name}</span>
+                      <span
+                        className={styles.listGroupCount}
+                        style={{ background: meta.headerBg, color: meta.countText, borderColor: meta.headerBorder }}
+                      >
+                        {cards.length}
+                      </span>
+                    </button>
+                  </td>
+                </tr>
+                {!isCollapsed && cards.map((card, i) => {
+                  const agent = getAgentProfile(card.agent)
+                  return (
+                    <tr
+                      key={card.id}
+                      className={i % 2 === 0 ? styles.listRow : styles.listRowAlt}
+                      onClick={() => onCardClick(card)}
+                    >
+                      <td className={`${styles.listCell} ${styles.listCellName}`}>
+                        <span className={styles.listName}>{card.name}</span>
+                      </td>
+                      <td className={styles.listCell}>
+                        <span className={styles.listPhone}>{card.phone}</span>
+                      </td>
+                      <td className={styles.listCell}>
+                        <span className={styles.listCota}>{card.cota}</span>
+                      </td>
+                      <td className={styles.listCell}>
+                        <span
+                          className={styles.listSourceTag}
+                          style={{ background: card.sourceBg, color: card.sourceText }}
+                        >
+                          {card.source}
+                        </span>
+                      </td>
+                      <td className={styles.listCell}>
+                        <span className={card.daysUrgent ? styles.listDaysUrgent : styles.listDays}>
+                          {card.days}
+                        </span>
+                      </td>
+                      <td className={styles.listCell}>
+                        <div className={styles.listAgent}>
+                          <img src={agent.photo} alt={agent.name} className={styles.listAgentAvatar} />
+                          <span className={styles.listAgentName}>{agent.name}</span>
+                        </div>
+                      </td>
+                      <td className={styles.listCell}>
+                        <span className={styles.listDate}>{card.date}</span>
+                      </td>
+                      <td className={`${styles.listCell} ${styles.listCellActions}`} onClick={e => e.stopPropagation()}>
+                        <button type="button" className={styles.listWhatsappBtn} aria-label={`WhatsApp ${card.name}`}>
+                          <WhatsAppIcon />
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </Fragment>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 // ── KanbanPage ────────────────────────────────────────────────────────────────
 
 export function KanbanPage() {
   const [board, setBoard] = useState<Record<string, CardData[]>>(INITIAL_BOARD)
   const [activeCard, setActiveCard] = useState<CardData | null>(null)
   const [selectedCard, setSelectedCard] = useState<CardData | null>(null)
+  const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban')
   const boardRef = useRef<HTMLDivElement>(null)
 
   // Converte scroll vertical do mouse em scroll horizontal no board.
@@ -395,6 +541,27 @@ export function KanbanPage() {
         <header className={styles.header}>
           <h1 className={styles.title}>Kanban</h1>
           <div className={styles.actions}>
+            <div className={styles.viewToggle}>
+              <button
+                type="button"
+                className={viewMode === 'kanban' ? `${styles.viewToggleBtn} ${styles.viewToggleBtnActive}` : styles.viewToggleBtn}
+                onClick={() => setViewMode('kanban')}
+                aria-label="Visualização Kanban"
+                title="Kanban"
+              >
+                <KanbanViewIcon />
+              </button>
+              <button
+                type="button"
+                className={viewMode === 'list' ? `${styles.viewToggleBtn} ${styles.viewToggleBtnActive}` : styles.viewToggleBtn}
+                onClick={() => setViewMode('list')}
+                aria-label="Visualização Lista"
+                title="Lista"
+              >
+                <ListViewIcon />
+              </button>
+            </div>
+            <span className={styles.headerDivider} />
             <button type="button" className={styles.filterBtn}>
               Em Aberto <ChevronDownIcon />
             </button>
@@ -431,8 +598,13 @@ export function KanbanPage() {
           </div>
         </div>
 
+        {/* ── Lista ────────────────────────────────────────────────────── */}
+        {viewMode === 'list' && (
+          <ListView board={board} onCardClick={setSelectedCard} />
+        )}
+
         {/* ── Board ────────────────────────────────────────────────────── */}
-        <DndContext
+        {viewMode === 'kanban' && <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}
@@ -451,7 +623,7 @@ export function KanbanPage() {
           <DragOverlay dropAnimation={{ duration: 180, easing: 'ease' }}>
             {activeCard ? <CardView card={activeCard} isDragging /> : null}
           </DragOverlay>
-        </DndContext>
+        </DndContext>}
       </div>
     </AppLayout>
   )
