@@ -1,7 +1,7 @@
 // LeadModal — ficha completa do lead, aberta ao clicar em um card do Kanban.
 // Design: Figma SYLOAPP node 276:590
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import type { CardData } from './KanbanPage'
 import styles from './LeadModal.module.css'
 
@@ -192,6 +192,26 @@ function FilterIcon() {
   )
 }
 
+function PdfIcon() {
+  return (
+    <svg width="10" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="12" y1="18" x2="12" y2="12" />
+      <line x1="9" y1="15" x2="15" y2="15" />
+    </svg>
+  )
+}
+
+function LinkIcon() {
+  return (
+    <svg width="13" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  )
+}
+
 // ── Usuário admin (placeholder até integração com API) ────────────────────────
 
 const ADMIN_USER = {
@@ -320,6 +340,7 @@ export function LeadModal({ card, onClose }: LeadModalProps) {
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  const [activeTab, setActiveTab] = useState<'qualificacao' | 'simulacoes' | 'anexos'>('qualificacao')
   const cota = parseCota(card.cota)
   const activeStage = 0 // Lead = índice 0
   const responsible = getAgentProfile(card.agent)
@@ -399,14 +420,175 @@ export function LeadModal({ card, onClose }: LeadModalProps) {
             <div className={styles.card}>
               <div className={styles.cardTabsRow}>
                 <div className={styles.tabs}>
-                  <button type="button" className={`${styles.tab} ${styles.tabActive}`}>Ficha de Qualificação</button>
-                  <button type="button" className={styles.tab}>Anexos</button>
+                  <button type="button" className={activeTab === 'qualificacao' ? `${styles.tab} ${styles.tabActive}` : styles.tab} onClick={() => setActiveTab('qualificacao')}>Ficha de Qualificação</button>
+                  <button type="button" className={activeTab === 'simulacoes' ? `${styles.tab} ${styles.tabActive}` : styles.tab} onClick={() => setActiveTab('simulacoes')}>Simulações</button>
+                  <button type="button" className={activeTab === 'anexos' ? `${styles.tab} ${styles.tabActive}` : styles.tab} onClick={() => setActiveTab('anexos')}>Anexos</button>
                 </div>
-                <button type="button" className={styles.editBtn}>
-                  <PencilIcon />
-                  Editar Atributos
-                </button>
+                {activeTab === 'qualificacao' && (
+                  <button type="button" className={styles.editBtn}>
+                    <PencilIcon />
+                    Editar Atributos
+                  </button>
+                )}
+                {activeTab === 'simulacoes' && (
+                  <button type="button" className={styles.novaSimBtn}>
+                    <LightningIcon />
+                    Nova Simulação
+                  </button>
+                )}
               </div>
+
+              {/* ── Aba: Simulações ─────────────────────────────────── */}
+              {activeTab === 'simulacoes' && (
+                <div className={styles.simList}>
+
+                  {/* Simulação Principal */}
+                  <div className={styles.simCardMain}>
+                    <div className={styles.simTopRow}>
+                      <span className={styles.propPrincipalBadge}>
+                        <span className={styles.propDot} />
+                        Proposta Principal
+                      </span>
+                      <div className={styles.simMeta}>
+                        <span>Grupo: <strong>7829</strong></span>
+                        <span className={styles.simMetaDot}>•</span>
+                        <span>Cota: <strong>104</strong></span>
+                        <span className={styles.simMetaDot}>•</span>
+                        <span>Porthis Consórcio</span>
+                      </div>
+                    </div>
+
+                    <div className={styles.simHeader}>
+                      <div>
+                        <h3 className={styles.simTitle}>Cota Imobiliária Porto Seguro</h3>
+                        <p className={styles.simValue}>R$ 350.000,00</p>
+                      </div>
+                      <div className={styles.simParcelGroup}>
+                        <span className={styles.simParcelLabel}>Parcela Reduzida (50% até contemplação)</span>
+                        <div className={styles.simParcelValue}>
+                          <span className={styles.simParcelAmount}>R$ 1.205,55</span>
+                          <span className={styles.simParcelPer}>/mês</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={styles.simMetrics}>
+                      <div className={styles.simMetricItem}>
+                        <span className={styles.simMetricLabel}>Crédito Contratado</span>
+                        <span className={styles.simMetricValue}>R$ 350.000,00</span>
+                        <span className={styles.simMetricSub}>Fundo Reserva: 2%</span>
+                      </div>
+                      <div className={`${styles.simMetricItem} ${styles.simMetricBorder}`}>
+                        <span className={styles.simMetricLabel}>Prazo Total</span>
+                        <span className={styles.simMetricValue}>180 meses</span>
+                        <span className={`${styles.simMetricSub} ${styles.simMetricSubGreen}`}>15 anos planejados</span>
+                      </div>
+                      <div className={`${styles.simMetricItem} ${styles.simMetricBorder}`}>
+                        <span className={styles.simMetricLabel}>Taxa Adm. Diluída</span>
+                        <span className={styles.simMetricValue}>15% total</span>
+                        <span className={styles.simMetricSub}>0,083% a.m. (sem juros)</span>
+                      </div>
+                      <div className={`${styles.simMetricItem} ${styles.simMetricBorder}`}>
+                        <span className={styles.simMetricLabel}>Assembleia Próxima</span>
+                        <span className={styles.simMetricValue}>18/06/2026</span>
+                        <span className={styles.simMetricSub}>Dia útil do sorteio</span>
+                      </div>
+                    </div>
+
+                    <div className={styles.simActions}>
+                      <button type="button" className={styles.pdfBtn}>
+                        <PdfIcon />
+                        Gerar PDF para WhatsApp
+                      </button>
+                      <div className={styles.simSecActions}>
+                        <button type="button" className={styles.simSecBtn}>
+                          <LinkIcon />
+                          Copiar Link
+                        </button>
+                        <button type="button" className={styles.simSecBtn}>
+                          <PencilIcon />
+                          Editar Parâmetros
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Simulação Secundária */}
+                  <div className={styles.simCardSec}>
+                    <div className={styles.simSecTopRow}>
+                      <div className={styles.simSecLeft}>
+                        <span className={styles.cenarioBadge}>Cenário Secundário</span>
+                        <h4 className={styles.simSecTitle}>Cota Imobiliária Caixa Consórcios — R$ 300.000,00</h4>
+                      </div>
+                      <div className={styles.simSecButtons}>
+                        <button type="button" className={styles.verDetalhesBtn}>Ver Detalhes</button>
+                        <button type="button" className={styles.descartarBtn}>Descartar</button>
+                      </div>
+                    </div>
+
+                    <div className={styles.simSecMetrics}>
+                      <div className={styles.simSecMetricItem}>
+                        <span className={styles.simMetricLabel}>Prazo Total</span>
+                        <span className={styles.simSecMetricValue}>200 meses</span>
+                      </div>
+                      <div className={styles.simSecMetricItem}>
+                        <span className={styles.simMetricLabel}>Parcela Mensal</span>
+                        <span className={styles.simSecMetricValue}>R$ 1.875,00 /mês</span>
+                      </div>
+                      <div className={styles.simSecMetricItem}>
+                        <span className={styles.simMetricLabel}>Lance Livre Recomendado</span>
+                        <span className={styles.simSecMetricValue}>35% (R$ 105.000)</span>
+                      </div>
+                      <div className={styles.simSecMetricItem}>
+                        <span className={styles.simMetricLabel}>Probabilidade Sara</span>
+                        <div className={styles.saraProb}>
+                          <SignalIcon />
+                          <span className={styles.simSecMetricValue}>62% (Média)</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Simular Novo Cenário */}
+                  <div className={styles.simNewBlock}>
+                    <div className={styles.simNewHeader}>
+                      <div className={styles.simNewIcon}>
+                        <LightningIcon />
+                      </div>
+                      <div>
+                        <h4 className={styles.simNewTitle}>Simular Novo Cenário</h4>
+                        <p className={styles.simNewSub}>Preencha os parâmetros para calcular lances médios contemplados dos últimos 6 meses.</p>
+                      </div>
+                    </div>
+                    <div className={styles.simForm}>
+                      <div className={styles.simFormField}>
+                        <label className={styles.simFormLabel}>Crédito Pretendido (R$)</label>
+                        <input type="text" className={styles.simInput} defaultValue="R$ 400.000,00" />
+                      </div>
+                      <div className={styles.simFormField}>
+                        <label className={styles.simFormLabel}>Tipo do Consórcio</label>
+                        <select className={styles.simSelect}>
+                          <option>Imóvel Residencial</option>
+                          <option>Automóvel</option>
+                          <option>Pesado / Caminhão</option>
+                        </select>
+                      </div>
+                      <div className={styles.simFormField}>
+                        <label className={styles.simFormLabel}>Prazo Desejado</label>
+                        <select className={styles.simSelect}>
+                          <option>180 meses (15 anos)</option>
+                          <option>120 meses (10 anos)</option>
+                          <option>200 meses</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {/* ── Aba: Qualificação ────────────────────────────────── */}
+              {activeTab === 'qualificacao' && <>
 
               {/* Grade de atributos */}
               <div className={styles.attrsGrid}>
@@ -485,6 +667,7 @@ export function LeadModal({ card, onClose }: LeadModalProps) {
                 <span className={styles.tag}>#Itapevi</span>
                 <button type="button" className={styles.addTagBtn}><PlusIcon />Adicionar Tag</button>
               </div>
+            </>}
             </div>
 
             {/* Card: Tarefas */}
