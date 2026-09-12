@@ -25,14 +25,14 @@ vi.mock('./hooks/useAuth', () => ({
 }))
 
 describe('App', () => {
-  it('renders without crashing', () => {
+  it('renders without crashing', async () => {
     render(<App />)
-    // App redirects unauthenticated users to /login which renders the login form
-    expect(screen.getByRole('heading', { name: /entrar/i })).toBeDefined()
+    // LoginPage is lazy-loaded — findBy* waits for Suspense to resolve
+    expect(await screen.findByRole('heading', { name: /entrar/i })).toBeDefined()
   })
 
-  it('renders the login form by default (unauthenticated)', () => {
+  it('renders the login form by default (unauthenticated)', async () => {
     render(<App />)
-    expect(screen.getByLabelText(/e-mail corporativo/i)).toBeDefined()
+    expect(await screen.findByLabelText(/e-mail corporativo/i)).toBeDefined()
   })
 })

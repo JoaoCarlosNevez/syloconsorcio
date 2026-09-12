@@ -144,7 +144,7 @@ describe('LoginPage — signIn interaction', () => {
     await user.click(screen.getByRole('button', { name: /acessar plataforma/i }))
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/app/dashboard', { replace: true })
+      expect(mockNavigate).toHaveBeenCalledWith('/app/home', { replace: true })
     })
   })
 
