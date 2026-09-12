@@ -139,7 +139,7 @@
 
 /* Barra lateral esquerda no item ativo */
 .navItem.active::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 50%;

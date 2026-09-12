@@ -14,12 +14,22 @@ import { Suspense, lazy } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { ProtectedRoute } from '../components/auth/ProtectedRoute'
 
-const LoginPage     = lazy(() => import('../pages/login/LoginPage').then(m => ({ default: m.LoginPage })))
-const HomePage      = lazy(() => import('../pages/home/HomePage').then(m => ({ default: m.HomePage })))
-const MetasPage     = lazy(() => import('../pages/metas/MetasPage').then(m => ({ default: m.MetasPage })))
-const KanbanPage    = lazy(() => import('../pages/kanban/KanbanPage').then(m => ({ default: m.KanbanPage })))
-const ComingSoonPage = lazy(() => import('../pages/coming-soon/ComingSoonPage').then(m => ({ default: m.ComingSoonPage })))
-const PerfilPage     = lazy(() => import('../pages/perfil/PerfilPage').then(m => ({ default: m.PerfilPage })))
+const LoginPage = lazy(() =>
+  import('../pages/login/LoginPage').then((m) => ({ default: m.LoginPage })),
+)
+const HomePage = lazy(() => import('../pages/home/HomePage').then((m) => ({ default: m.HomePage })))
+const MetasPage = lazy(() =>
+  import('../pages/metas/MetasPage').then((m) => ({ default: m.MetasPage })),
+)
+const KanbanPage = lazy(() =>
+  import('../pages/kanban/KanbanPage').then((m) => ({ default: m.KanbanPage })),
+)
+const ComingSoonPage = lazy(() =>
+  import('../pages/coming-soon/ComingSoonPage').then((m) => ({ default: m.ComingSoonPage })),
+)
+const PerfilPage = lazy(() =>
+  import('../pages/perfil/PerfilPage').then((m) => ({ default: m.PerfilPage })),
+)
 
 export function AppRouter() {
   return (
@@ -31,17 +41,17 @@ export function AppRouter() {
         {/* Rotas protegidas */}
         <Route path="/app" element={<ProtectedRoute />}>
           <Route index element={<Navigate to="home" replace />} />
-          <Route path="home"     element={<HomePage />} />
-          <Route path="metas"    element={<MetasPage />} />
-          <Route path="kanban"   element={<KanbanPage />} />
-          <Route path="tarefas"  element={<ComingSoonPage />} />
+          <Route path="home" element={<HomePage />} />
+          <Route path="metas" element={<MetasPage />} />
+          <Route path="kanban" element={<KanbanPage />} />
+          <Route path="tarefas" element={<ComingSoonPage />} />
           <Route path="usuarios" element={<ComingSoonPage />} />
-          <Route path="fila"     element={<ComingSoonPage />} />
-          <Route path="config"   element={<ComingSoonPage />} />
-          <Route path="admin"    element={<ComingSoonPage />} />
-          <Route path="ajuda"    element={<ComingSoonPage />} />
-          <Route path="sara"     element={<ComingSoonPage />} />
-          <Route path="perfil"   element={<PerfilPage />} />
+          <Route path="fila" element={<ComingSoonPage />} />
+          <Route path="config" element={<ComingSoonPage />} />
+          <Route path="admin" element={<ComingSoonPage />} />
+          <Route path="ajuda" element={<ComingSoonPage />} />
+          <Route path="sara" element={<ComingSoonPage />} />
+          <Route path="perfil" element={<PerfilPage />} />
         </Route>
 
         {/* Raiz → home */}

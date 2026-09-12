@@ -21,10 +21,20 @@ interface TierConfig {
 }
 
 const TIERS: TierConfig[] = [
-  { tier: 'turmalina', label: 'Turmalina', emoji: '💎', descricao: 'Nível inicial — bem-vindo ao time' },
-  { tier: 'rubi',      label: 'Rubi',      emoji: '🔴', descricao: 'Consultores com resultado consistente' },
-  { tier: 'platina',   label: 'Platina',   emoji: '🔵', descricao: 'Alta performance e volume' },
-  { tier: 'diamante',  label: 'Diamante',  emoji: '🟣', descricao: 'Elite — top consultores do time' },
+  {
+    tier: 'turmalina',
+    label: 'Turmalina',
+    emoji: '💎',
+    descricao: 'Nível inicial — bem-vindo ao time',
+  },
+  { tier: 'rubi', label: 'Rubi', emoji: '🔴', descricao: 'Consultores com resultado consistente' },
+  { tier: 'platina', label: 'Platina', emoji: '🔵', descricao: 'Alta performance e volume' },
+  {
+    tier: 'diamante',
+    label: 'Diamante',
+    emoji: '🟣',
+    descricao: 'Elite — top consultores do time',
+  },
 ]
 
 // ── Mock de metas ─────────────────────────────────────────────────────────────
@@ -41,10 +51,42 @@ interface Meta {
 }
 
 const MOCK_METAS: Meta[] = [
-  { id: '1', nome: 'Leads no pipeline',         atual: 47,     total: 60,      unidade: 'leads',   progresso: 78, variant: 'green' },
-  { id: '2', nome: 'Conversões do mês',          atual: 18,     total: 25,      unidade: 'conv.',   progresso: 72, variant: 'amber' },
-  { id: '3', nome: 'Receita gerada',             atual: 84200,  total: 100000,  unidade: '',        progresso: 84, variant: 'blue'  },
-  { id: '4', nome: 'Pontuação de atendimento',   atual: 82,     total: 100,     unidade: 'pts',     progresso: 82, variant: 'green' },
+  {
+    id: '1',
+    nome: 'Leads no pipeline',
+    atual: 47,
+    total: 60,
+    unidade: 'leads',
+    progresso: 78,
+    variant: 'green',
+  },
+  {
+    id: '2',
+    nome: 'Conversões do mês',
+    atual: 18,
+    total: 25,
+    unidade: 'conv.',
+    progresso: 72,
+    variant: 'amber',
+  },
+  {
+    id: '3',
+    nome: 'Receita gerada',
+    atual: 84200,
+    total: 100000,
+    unidade: '',
+    progresso: 84,
+    variant: 'blue',
+  },
+  {
+    id: '4',
+    nome: 'Pontuação de atendimento',
+    atual: 82,
+    total: 100,
+    unidade: 'pts',
+    progresso: 82,
+    variant: 'green',
+  },
 ]
 
 function formatMetaValor(meta: Meta): { atual: string; total: string } {
@@ -84,12 +126,12 @@ function TierStepper({ currentTier }: { currentTier: Tier }) {
 
       <div className={styles.stepperTrack}>
         {TIERS.map((config, index) => {
-          const isDone    = index < currentIndex
+          const isDone = index < currentIndex
           const isCurrent = index === currentIndex
           const isPending = index > currentIndex
 
           const circleState = isCurrent ? 'current' : isDone ? 'done' : 'pending'
-          const labelState  = isCurrent ? 'current' : isPending ? 'pending' : ''
+          const labelState = isCurrent ? 'current' : isPending ? 'pending' : ''
 
           return (
             <div key={config.tier} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
@@ -107,7 +149,11 @@ function TierStepper({ currentTier }: { currentTier: Tier }) {
                   {config.emoji}
                 </div>
                 <div>
-                  <p className={[styles.stepperLabel, labelState ? styles[labelState] : ''].filter(Boolean).join(' ')}>
+                  <p
+                    className={[styles.stepperLabel, labelState ? styles[labelState] : '']
+                      .filter(Boolean)
+                      .join(' ')}
+                  >
                     {config.label}
                   </p>
                   {isCurrent && <span className={styles.stepperBadge}>Atual</span>}
@@ -144,7 +190,6 @@ export function MetasPage() {
   return (
     <AppLayout>
       <div className={styles.page}>
-
         {/* ── Cabeçalho ────────────────────────────────────────────────── */}
         <header className={styles.header}>
           {isLoading ? (
@@ -169,11 +214,24 @@ export function MetasPage() {
             <div style={{ display: 'flex', gap: 0, alignItems: 'center' }}>
               {[0, 1, 2, 3].map((i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 10,
+                    }}
+                  >
                     <Skeleton variant="circle" width="48px" height="48px" />
                     <Skeleton variant="text" width="64px" height="13px" />
                   </div>
-                  {i < 3 && <Skeleton variant="rect" height="3px" style={{ flex: 1, margin: '0 8px', marginBottom: 32 }} />}
+                  {i < 3 && (
+                    <Skeleton
+                      variant="rect"
+                      height="3px"
+                      style={{ flex: 1, margin: '0 8px', marginBottom: 32 }}
+                    />
+                  )}
                 </div>
               ))}
             </div>
@@ -184,7 +242,6 @@ export function MetasPage() {
 
         {/* ── Metas + Próximo nível ─────────────────────────────────────── */}
         <div className={styles.mainGrid}>
-
           {/* Metas do nível atual */}
           <div className={styles.card}>
             <div className={styles.cardHeader}>
@@ -209,7 +266,12 @@ export function MetasPage() {
                       <Skeleton variant="text" width="45%" height="14px" />
                       <Skeleton variant="text" width="20%" height="14px" />
                     </div>
-                    <Skeleton variant="rect" width="100%" height="8px" style={{ borderRadius: 99 }} />
+                    <Skeleton
+                      variant="rect"
+                      width="100%"
+                      height="8px"
+                      style={{ borderRadius: 99 }}
+                    />
                   </div>
                 ))}
               </div>
@@ -250,7 +312,10 @@ export function MetasPage() {
                 </div>
               </div>
               {[0, 1, 2, 3].map((i) => (
-                <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center' }}>
+                <div
+                  key={i}
+                  style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center' }}
+                >
                   <Skeleton variant="circle" width="16px" height="16px" />
                   <Skeleton variant="text" width="80%" height="13px" />
                 </div>
@@ -285,14 +350,12 @@ export function MetasPage() {
               <div className={styles.proximoDivider} />
 
               <p className={styles.proximoFaltam}>
-                Faltam{' '}
-                <span className={styles.proximoFaltamDestaque}>2 metas</span>
-                {' '}para atingir <TierBadge tier={PROXIMO_TIER} />
+                Faltam <span className={styles.proximoFaltamDestaque}>2 metas</span> para atingir{' '}
+                <TierBadge tier={PROXIMO_TIER} />
               </p>
             </div>
           )}
         </div>
-
       </div>
     </AppLayout>
   )

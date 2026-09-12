@@ -45,25 +45,61 @@ import styles from './KanbanPage.module.css'
 
 function KanbanViewIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
-      <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="3" width="7" height="7" />
+      <rect x="14" y="3" width="7" height="7" />
+      <rect x="14" y="14" width="7" height="7" />
+      <rect x="3" y="14" width="7" height="7" />
     </svg>
   )
 }
 
 function ListViewIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
-      <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="8" y1="6" x2="21" y2="6" />
+      <line x1="8" y1="12" x2="21" y2="12" />
+      <line x1="8" y1="18" x2="21" y2="18" />
+      <line x1="3" y1="6" x2="3.01" y2="6" />
+      <line x1="3" y1="12" x2="3.01" y2="12" />
+      <line x1="3" y1="18" x2="3.01" y2="18" />
     </svg>
   )
 }
 
 function ChevronRightSmIcon() {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M9 18l6-6-6-6" />
     </svg>
   )
@@ -73,7 +109,17 @@ function ChevronRightSmIcon() {
 
 function PhoneIcon() {
   return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.37a16 16 0 0 0 7.72 7.72l.91-.91a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
     </svg>
   )
@@ -81,7 +127,17 @@ function PhoneIcon() {
 
 function CalendarIcon() {
   return (
-    <svg width="9" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="9"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
       <line x1="16" y1="2" x2="16" y2="6" />
       <line x1="8" y1="2" x2="8" y2="6" />
@@ -89,7 +145,6 @@ function CalendarIcon() {
     </svg>
   )
 }
-
 
 function WhatsAppIcon() {
   return (
@@ -101,7 +156,17 @@ function WhatsAppIcon() {
 
 function ChevronDownIcon() {
   return (
-    <svg width="8" height="5" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="8"
+      height="5"
+      viewBox="0 0 10 6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M1 1l4 4 4-4" />
     </svg>
   )
@@ -109,7 +174,17 @@ function ChevronDownIcon() {
 
 function TagIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
       <line x1="7" y1="7" x2="7.01" y2="7" />
     </svg>
@@ -118,7 +193,17 @@ function TagIcon() {
 
 function TransferIcon() {
   return (
-    <svg width="14" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="14"
+      height="11"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <polyline points="17 1 21 5 17 9" />
       <path d="M3 11V9a4 4 0 0 1 4-4h14" />
       <polyline points="7 23 3 19 7 15" />
@@ -129,7 +214,17 @@ function TransferIcon() {
 
 function PlusIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
@@ -138,7 +233,17 @@ function PlusIcon() {
 
 function VolumeIcon() {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <line x1="12" y1="20" x2="12" y2="10" />
       <line x1="18" y1="20" x2="18" y2="4" />
       <line x1="6" y1="20" x2="6" y2="16" />
@@ -148,7 +253,17 @@ function VolumeIcon() {
 
 function TicketIcon() {
   return (
-    <svg width="14" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="14"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v2z" />
     </svg>
   )
@@ -160,7 +275,7 @@ function TicketIcon() {
 
 function findColumnOfCard(board: Record<string, CardData[]>, cardId: string): string | null {
   for (const [colId, cards] of Object.entries(board)) {
-    if (cards.some(c => c.id === cardId)) return colId
+    if (cards.some((c) => c.id === cardId)) return colId
   }
   return null
 }
@@ -183,26 +298,31 @@ function CardView({ card, isDragging }: CardViewProps) {
         </button>
       </div>
       <div className={styles.cardPhone}>
-        <span className={styles.cardMetaIcon}><PhoneIcon /></span>
+        <span className={styles.cardMetaIcon}>
+          <PhoneIcon />
+        </span>
         <span className={styles.cardPhoneText}>{card.phone}</span>
       </div>
       <div className={styles.cardCota}>
         <span className={styles.cardCotaText}>{card.cota}</span>
       </div>
       <div className={styles.cardMeta}>
-        <span className={styles.cardMetaIcon}><CalendarIcon /></span>
+        <span className={styles.cardMetaIcon}>
+          <CalendarIcon />
+        </span>
         <span className={styles.cardMetaDate}>{card.date}</span>
         <span className={styles.cardMetaDot}>•</span>
         <img src={agent.photo} alt={agent.name} className={styles.cardAgentAvatar} />
         <span className={styles.cardMetaAgent}>{agent.name}</span>
       </div>
       <div className={styles.cardFooter}>
-        <span className={styles.sourceTag} style={{ background: card.sourceBg, color: card.sourceText }}>
+        <span
+          className={styles.sourceTag}
+          style={{ background: card.sourceBg, color: card.sourceText }}
+        >
           {card.source}
         </span>
-        <span className={card.daysUrgent ? styles.daysTagUrgent : styles.daysTag}>
-          {card.days}
-        </span>
+        <span className={card.daysUrgent ? styles.daysTagUrgent : styles.daysTag}>{card.days}</span>
       </div>
     </div>
   )
@@ -210,8 +330,13 @@ function CardView({ card, isDragging }: CardViewProps) {
 
 // ── SortableCard (adiciona handles do @dnd-kit ao CardView) ───────────────────
 
-function SortableCard({ card, onCardClick }: { card: CardData; onCardClick: (card: CardData) => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id })
+function SortableCard({
+  card,
+  onCardClick,
+}: { card: CardData; onCardClick: (card: CardData) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: card.id,
+  })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -222,7 +347,15 @@ function SortableCard({ card, onCardClick }: { card: CardData; onCardClick: (car
   }
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={() => { if (!isDragging) onCardClick(card) }}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      onClick={() => {
+        if (!isDragging) onCardClick(card)
+      }}
+    >
       <CardView card={card} />
     </div>
   )
@@ -237,7 +370,7 @@ interface KanbanColumnProps {
 }
 
 function KanbanColumn({ meta, cards, onCardClick }: KanbanColumnProps) {
-  const cardIds = useMemo(() => cards.map(c => c.id), [cards])
+  const cardIds = useMemo(() => cards.map((c) => c.id), [cards])
 
   return (
     <section className={styles.column}>
@@ -245,13 +378,17 @@ function KanbanColumn({ meta, cards, onCardClick }: KanbanColumnProps) {
         className={styles.columnHeader}
         style={{ background: meta.headerBg, borderColor: meta.headerBorder }}
       >
-        <span className={styles.columnName} style={{ color: meta.headerText }}>{meta.name}</span>
-        <span className={styles.columnCount} style={{ color: meta.countText }}>{cards.length}</span>
+        <span className={styles.columnName} style={{ color: meta.headerText }}>
+          {meta.name}
+        </span>
+        <span className={styles.columnCount} style={{ color: meta.countText }}>
+          {cards.length}
+        </span>
       </div>
 
       <div className={styles.cardList} data-scroll="column">
         <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
-          {cards.map(card => (
+          {cards.map((card) => (
             <SortableCard key={card.id} card={card} onCardClick={onCardClick} />
           ))}
         </SortableContext>
@@ -270,8 +407,7 @@ interface ListViewProps {
 function ListView({ board, onCardClick }: ListViewProps) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
-  const toggle = (colId: string) =>
-    setCollapsed(prev => ({ ...prev, [colId]: !prev[colId] }))
+  const toggle = (colId: string) => setCollapsed((prev) => ({ ...prev, [colId]: !prev[colId] }))
 
   return (
     <div className={styles.listView}>
@@ -289,7 +425,7 @@ function ListView({ board, onCardClick }: ListViewProps) {
           </tr>
         </thead>
         <tbody>
-          {COLUMN_META.map(meta => {
+          {COLUMN_META.map((meta) => {
             const cards = board[meta.id] ?? []
             const isCollapsed = collapsed[meta.id] ?? false
             return (
@@ -314,60 +450,78 @@ function ListView({ board, onCardClick }: ListViewProps) {
                       <span className={styles.listGroupName}>{meta.name}</span>
                       <span
                         className={styles.listGroupCount}
-                        style={{ background: meta.headerBg, color: meta.countText, borderColor: meta.headerBorder }}
+                        style={{
+                          background: meta.headerBg,
+                          color: meta.countText,
+                          borderColor: meta.headerBorder,
+                        }}
                       >
                         {cards.length}
                       </span>
                     </button>
                   </td>
                 </tr>
-                {!isCollapsed && cards.map((card, i) => {
-                  const agent = getAgentProfile(card.agent)
-                  return (
-                    <tr
-                      key={card.id}
-                      className={i % 2 === 0 ? styles.listRow : styles.listRowAlt}
-                      onClick={() => onCardClick(card)}
-                    >
-                      <td className={`${styles.listCell} ${styles.listCellName}`}>
-                        <span className={styles.listName}>{card.name}</span>
-                      </td>
-                      <td className={styles.listCell}>
-                        <span className={styles.listPhone}>{card.phone}</span>
-                      </td>
-                      <td className={styles.listCell}>
-                        <span className={styles.listCota}>{card.cota}</span>
-                      </td>
-                      <td className={styles.listCell}>
-                        <span
-                          className={styles.listSourceTag}
-                          style={{ background: card.sourceBg, color: card.sourceText }}
+                {!isCollapsed &&
+                  cards.map((card, i) => {
+                    const agent = getAgentProfile(card.agent)
+                    return (
+                      <tr
+                        key={card.id}
+                        className={i % 2 === 0 ? styles.listRow : styles.listRowAlt}
+                        onClick={() => onCardClick(card)}
+                      >
+                        <td className={`${styles.listCell} ${styles.listCellName}`}>
+                          <span className={styles.listName}>{card.name}</span>
+                        </td>
+                        <td className={styles.listCell}>
+                          <span className={styles.listPhone}>{card.phone}</span>
+                        </td>
+                        <td className={styles.listCell}>
+                          <span className={styles.listCota}>{card.cota}</span>
+                        </td>
+                        <td className={styles.listCell}>
+                          <span
+                            className={styles.listSourceTag}
+                            style={{ background: card.sourceBg, color: card.sourceText }}
+                          >
+                            {card.source}
+                          </span>
+                        </td>
+                        <td className={styles.listCell}>
+                          <span
+                            className={card.daysUrgent ? styles.listDaysUrgent : styles.listDays}
+                          >
+                            {card.days}
+                          </span>
+                        </td>
+                        <td className={styles.listCell}>
+                          <div className={styles.listAgent}>
+                            <img
+                              src={agent.photo}
+                              alt={agent.name}
+                              className={styles.listAgentAvatar}
+                            />
+                            <span className={styles.listAgentName}>{agent.name}</span>
+                          </div>
+                        </td>
+                        <td className={styles.listCell}>
+                          <span className={styles.listDate}>{card.date}</span>
+                        </td>
+                        <td
+                          className={`${styles.listCell} ${styles.listCellActions}`}
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          {card.source}
-                        </span>
-                      </td>
-                      <td className={styles.listCell}>
-                        <span className={card.daysUrgent ? styles.listDaysUrgent : styles.listDays}>
-                          {card.days}
-                        </span>
-                      </td>
-                      <td className={styles.listCell}>
-                        <div className={styles.listAgent}>
-                          <img src={agent.photo} alt={agent.name} className={styles.listAgentAvatar} />
-                          <span className={styles.listAgentName}>{agent.name}</span>
-                        </div>
-                      </td>
-                      <td className={styles.listCell}>
-                        <span className={styles.listDate}>{card.date}</span>
-                      </td>
-                      <td className={`${styles.listCell} ${styles.listCellActions}`} onClick={e => e.stopPropagation()}>
-                        <button type="button" className={styles.listWhatsappBtn} aria-label={`WhatsApp ${card.name}`}>
-                          <WhatsAppIcon />
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })}
+                          <button
+                            type="button"
+                            className={styles.listWhatsappBtn}
+                            aria-label={`WhatsApp ${card.name}`}
+                          >
+                            <WhatsAppIcon />
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
               </Fragment>
             )
           })}
@@ -410,7 +564,9 @@ export function KanbanPage() {
     }
 
     el.addEventListener('wheel', onWheel, { passive: false })
-    return () => { el.removeEventListener('wheel', onWheel) }
+    return () => {
+      el.removeEventListener('wheel', onWheel)
+    }
   }, [])
 
   // Sensores: PointerSensor com delay de 8px evita drag acidental ao clicar
@@ -419,55 +575,64 @@ export function KanbanPage() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
-  const handleDragStart = useCallback(({ active }: DragStartEvent) => {
-    const colId = findColumnOfCard(board, String(active.id))
-    if (!colId) return
-    const card = (board[colId] ?? []).find(c => c.id === active.id) ?? null
-    setActiveCard(card)
-  }, [board])
+  const handleDragStart = useCallback(
+    ({ active }: DragStartEvent) => {
+      const colId = findColumnOfCard(board, String(active.id))
+      if (!colId) return
+      const card = (board[colId] ?? []).find((c) => c.id === active.id) ?? null
+      setActiveCard(card)
+    },
+    [board],
+  )
 
-  const handleDragOver = useCallback(({ active, over }: DragOverEvent) => {
-    if (!over) return
+  const handleDragOver = useCallback(
+    ({ active, over }: DragOverEvent) => {
+      if (!over) return
 
-    const activeColId = findColumnOfCard(board, String(active.id))
-    const overColId =
-      findColumnOfCard(board, String(over.id)) ??
-      (COLUMN_META.some(m => m.id === over.id) ? String(over.id) : null)
+      const activeColId = findColumnOfCard(board, String(active.id))
+      const overColId =
+        findColumnOfCard(board, String(over.id)) ??
+        (COLUMN_META.some((m) => m.id === over.id) ? String(over.id) : null)
 
-    if (!activeColId || !overColId || activeColId === overColId) return
+      if (!activeColId || !overColId || activeColId === overColId) return
 
-    setBoard(prev => {
-      const sourceCards = [...(prev[activeColId] ?? [])]
-      const destCards   = [...(prev[overColId] ?? [])]
+      setBoard((prev) => {
+        const sourceCards = [...(prev[activeColId] ?? [])]
+        const destCards = [...(prev[overColId] ?? [])]
 
-      const activeIdx = sourceCards.findIndex(c => c.id === active.id)
-      const overIdx   = destCards.findIndex(c => c.id === over.id)
+        const activeIdx = sourceCards.findIndex((c) => c.id === active.id)
+        const overIdx = destCards.findIndex((c) => c.id === over.id)
 
-      if (activeIdx === -1) return prev
-      const moved = sourceCards.splice(activeIdx, 1)[0]
-      if (!moved) return prev
-      const insertAt = overIdx === -1 ? destCards.length : overIdx
-      destCards.splice(insertAt, 0, moved)
+        if (activeIdx === -1) return prev
+        const moved = sourceCards.splice(activeIdx, 1)[0]
+        if (!moved) return prev
+        const insertAt = overIdx === -1 ? destCards.length : overIdx
+        destCards.splice(insertAt, 0, moved)
 
-      return { ...prev, [activeColId]: sourceCards, [overColId]: destCards }
-    })
-  }, [board])
+        return { ...prev, [activeColId]: sourceCards, [overColId]: destCards }
+      })
+    },
+    [board],
+  )
 
-  const handleDragEnd = useCallback(({ active, over }: DragEndEvent) => {
-    setActiveCard(null)
-    if (!over || active.id === over.id) return
+  const handleDragEnd = useCallback(
+    ({ active, over }: DragEndEvent) => {
+      setActiveCard(null)
+      if (!over || active.id === over.id) return
 
-    const colId = findColumnOfCard(board, String(active.id))
-    if (!colId) return
+      const colId = findColumnOfCard(board, String(active.id))
+      if (!colId) return
 
-    setBoard(prev => {
-      const cards   = prev[colId] ?? []
-      const fromIdx = cards.findIndex(c => c.id === active.id)
-      const toIdx   = cards.findIndex(c => c.id === over.id)
-      if (fromIdx === -1 || toIdx === -1) return prev
-      return { ...prev, [colId]: arrayMove(cards, fromIdx, toIdx) }
-    })
-  }, [board])
+      setBoard((prev) => {
+        const cards = prev[colId] ?? []
+        const fromIdx = cards.findIndex((c) => c.id === active.id)
+        const toIdx = cards.findIndex((c) => c.id === over.id)
+        if (fromIdx === -1 || toIdx === -1) return prev
+        return { ...prev, [colId]: arrayMove(cards, fromIdx, toIdx) }
+      })
+    },
+    [board],
+  )
 
   return (
     <AppLayout>
@@ -480,7 +645,11 @@ export function KanbanPage() {
             <div className={styles.viewToggle}>
               <button
                 type="button"
-                className={viewMode === 'kanban' ? `${styles.viewToggleBtn} ${styles.viewToggleBtnActive}` : styles.viewToggleBtn}
+                className={
+                  viewMode === 'kanban'
+                    ? `${styles.viewToggleBtn} ${styles.viewToggleBtnActive}`
+                    : styles.viewToggleBtn
+                }
                 onClick={() => setViewMode('kanban')}
                 aria-label="Visualização Kanban"
                 title="Kanban"
@@ -489,7 +658,11 @@ export function KanbanPage() {
               </button>
               <button
                 type="button"
-                className={viewMode === 'list' ? `${styles.viewToggleBtn} ${styles.viewToggleBtnActive}` : styles.viewToggleBtn}
+                className={
+                  viewMode === 'list'
+                    ? `${styles.viewToggleBtn} ${styles.viewToggleBtnActive}`
+                    : styles.viewToggleBtn
+                }
                 onClick={() => setViewMode('list')}
                 aria-label="Visualização Lista"
                 title="Lista"
@@ -517,13 +690,17 @@ export function KanbanPage() {
         <div className={styles.metricsStrip}>
           <div className={styles.metricsLeft}>
             <span className={styles.metric}>
-              <span className={styles.metricIcon}><VolumeIcon /></span>
+              <span className={styles.metricIcon}>
+                <VolumeIcon />
+              </span>
               <span className={styles.metricLabel}>Volume Total em Cotas:</span>
               <span className={styles.metricValue}>R$ 8.450.000,00</span>
             </span>
             <span className={styles.metricDivider} />
             <span className={styles.metric}>
-              <span className={styles.metricIcon}><TicketIcon /></span>
+              <span className={styles.metricIcon}>
+                <TicketIcon />
+              </span>
               <span className={styles.metricLabel}>Ticket Médio:</span>
               <span className={styles.metricValue}>R$ 280.000,00</span>
             </span>
@@ -540,20 +717,49 @@ export function KanbanPage() {
             <div className={styles.board}>
               {COLUMN_META.map((meta, ci) => (
                 <div key={meta.id} className={styles.column}>
-                  <div className={styles.columnHeader} style={{ background: meta.headerBg, borderColor: meta.headerBorder }}>
+                  <div
+                    className={styles.columnHeader}
+                    style={{ background: meta.headerBg, borderColor: meta.headerBorder }}
+                  >
                     <Skeleton variant="text" width="90px" height="14px" />
-                    <Skeleton variant="rect" width="24px" height="20px" style={{ borderRadius: 99 }} />
+                    <Skeleton
+                      variant="rect"
+                      width="24px"
+                      height="20px"
+                      style={{ borderRadius: 99 }}
+                    />
                   </div>
                   <div className={styles.cardList}>
                     {Array.from({ length: ci < 2 ? 3 : ci < 4 ? 2 : 1 }).map((_, i) => (
                       <div key={i} className={styles.card} style={{ cursor: 'default', gap: 8 }}>
                         <Skeleton variant="text" width="80%" height="13px" />
                         <Skeleton variant="text" width="55%" height="11px" />
-                        <Skeleton variant="rect" width="100%" height="32px" style={{ borderRadius: 8 }} />
+                        <Skeleton
+                          variant="rect"
+                          width="100%"
+                          height="32px"
+                          style={{ borderRadius: 8 }}
+                        />
                         <Skeleton variant="text" width="65%" height="11px" />
-                        <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 4 }}>
-                          <Skeleton variant="rect" width="60px" height="16px" style={{ borderRadius: 4 }} />
-                          <Skeleton variant="rect" width="44px" height="16px" style={{ borderRadius: 99 }} />
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            paddingTop: 4,
+                          }}
+                        >
+                          <Skeleton
+                            variant="rect"
+                            width="60px"
+                            height="16px"
+                            style={{ borderRadius: 4 }}
+                          />
+                          <Skeleton
+                            variant="rect"
+                            width="44px"
+                            height="16px"
+                            style={{ borderRadius: 99 }}
+                          />
                         </div>
                       </div>
                     ))}
@@ -570,26 +776,33 @@ export function KanbanPage() {
         )}
 
         {/* ── Board ────────────────────────────────────────────────────── */}
-        {!isLoading && viewMode === 'kanban' && <DndContext
-          sensors={sensors}
-          collisionDetection={closestCorners}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
-        >
-          <div className={styles.boardWrapper}>
-            <div ref={boardRef} className={styles.board}>
-              {COLUMN_META.map(meta => (
-                <KanbanColumn key={meta.id} meta={meta} cards={board[meta.id] ?? []} onCardClick={setSelectedCard} />
-              ))}
+        {!isLoading && viewMode === 'kanban' && (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+          >
+            <div className={styles.boardWrapper}>
+              <div ref={boardRef} className={styles.board}>
+                {COLUMN_META.map((meta) => (
+                  <KanbanColumn
+                    key={meta.id}
+                    meta={meta}
+                    cards={board[meta.id] ?? []}
+                    onCardClick={setSelectedCard}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Card fantasma renderizado fora do DOM do board — sem reflow */}
-          <DragOverlay dropAnimation={{ duration: 180, easing: 'ease' }}>
-            {activeCard ? <CardView card={activeCard} isDragging /> : null}
-          </DragOverlay>
-        </DndContext>}
+            {/* Card fantasma renderizado fora do DOM do board — sem reflow */}
+            <DragOverlay dropAnimation={{ duration: 180, easing: 'ease' }}>
+              {activeCard ? <CardView card={activeCard} isDragging /> : null}
+            </DragOverlay>
+          </DndContext>
+        )}
       </div>
     </AppLayout>
   )

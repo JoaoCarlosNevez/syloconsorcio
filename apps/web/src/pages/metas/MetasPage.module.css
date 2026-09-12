@@ -97,7 +97,7 @@
 
 .stepperCircle.current {
   transform: scale(1.15);
-  box-shadow: 0 0 0 5px rgba(0,0,0,0.06);
+  box-shadow: 0 0 0 5px rgba(0, 0, 0, 0.06);
 }
 
 .stepperCircle.pending {
@@ -107,10 +107,22 @@
 }
 
 /* Cores por tier */
-.stepperCircle.turmalina.current { background: rgba(236,72,153,0.12); border-color: #be185d; }
-.stepperCircle.rubi.current      { background: rgba(239,68,68,0.12);  border-color: #dc2626; }
-.stepperCircle.platina.current   { background: rgba(96,165,250,0.12); border-color: #2563eb; }
-.stepperCircle.diamante.current  { background: rgba(139,92,246,0.12); border-color: #7c3aed; }
+.stepperCircle.turmalina.current {
+  background: rgba(236, 72, 153, 0.12);
+  border-color: #be185d;
+}
+.stepperCircle.rubi.current {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: #dc2626;
+}
+.stepperCircle.platina.current {
+  background: rgba(96, 165, 250, 0.12);
+  border-color: #2563eb;
+}
+.stepperCircle.diamante.current {
+  background: rgba(139, 92, 246, 0.12);
+  border-color: #7c3aed;
+}
 
 .stepperLabel {
   font-size: var(--font-size-sm);
@@ -255,7 +267,7 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgba(96,165,250,0.1);
+  background: rgba(96, 165, 250, 0.1);
   border: 2px solid #2563eb;
   display: flex;
   align-items: center;
@@ -294,7 +306,7 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: rgba(96,165,250,0.15);
+  background: rgba(96, 165, 250, 0.15);
   color: #2563eb;
   display: flex;
   align-items: center;

@@ -174,11 +174,7 @@ export function LoginPage() {
     <div className={styles.page}>
       {/* ── Painel esquerdo (Sara IA) ─────────────────────────────────────── */}
       <div className={styles.leftPanel} aria-hidden="true">
-        <img
-          src="/sara-ia.png"
-          alt="Sara, assistente de IA da Sylo"
-          className={styles.saraImage}
-        />
+        <img src="/sara-ia.png" alt="Sara, assistente de IA da Sylo" className={styles.saraImage} />
 
         <div className={styles.overlay} />
 

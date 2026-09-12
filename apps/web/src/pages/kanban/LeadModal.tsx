@@ -11,15 +11,36 @@ import styles from './LeadModal.module.css'
 
 function XIcon({ size = 14 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   )
 }
 
 function PencilIcon() {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
     </svg>
@@ -28,7 +49,17 @@ function PencilIcon() {
 
 function FlagIcon() {
   return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
       <line x1="4" y1="22" x2="4" y2="15" />
     </svg>
@@ -37,7 +68,17 @@ function FlagIcon() {
 
 function ChevronDownIcon() {
   return (
-    <svg width="8" height="5" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="8"
+      height="5"
+      viewBox="0 0 10 6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M1 1l4 4 4-4" />
     </svg>
   )
@@ -45,7 +86,17 @@ function ChevronDownIcon() {
 
 function ChevronRightIcon() {
   return (
-    <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="7"
+      height="7"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M9 18l6-6-6-6" />
     </svg>
   )
@@ -53,7 +104,17 @@ function ChevronRightIcon() {
 
 function PhoneIcon() {
   return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.37a16 16 0 0 0 7.72 7.72l.91-.91a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
     </svg>
   )
@@ -69,15 +130,36 @@ function WhatsAppIcon({ size = 11 }: { size?: number }) {
 
 function PersonIcon() {
   return (
-    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+    <svg
+      width="9"
+      height="9"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
     </svg>
   )
 }
 
 function SignalIcon() {
   return (
-    <svg width="12" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="12"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
     </svg>
   )
@@ -85,7 +167,17 @@ function SignalIcon() {
 
 function HomeIcon() {
   return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
       <polyline points="9 22 9 12 15 12 15 22" />
     </svg>
@@ -94,16 +186,38 @@ function HomeIcon() {
 
 function CalendarIcon() {
   return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-      <line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
     </svg>
   )
 }
 
 function TagIcon() {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
       <line x1="7" y1="7" x2="7.01" y2="7" />
     </svg>
@@ -112,16 +226,38 @@ function TagIcon() {
 
 function PlusIcon() {
   return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   )
 }
 
 function ClockIcon() {
   return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
     </svg>
   )
 }
@@ -129,23 +265,47 @@ function ClockIcon() {
 function DotsIcon() {
   return (
     <svg width="3" height="13" viewBox="0 0 3 13" fill="currentColor" aria-hidden="true">
-      <circle cx="1.5" cy="1.5" r="1.5" /><circle cx="1.5" cy="6.5" r="1.5" /><circle cx="1.5" cy="11.5" r="1.5" />
+      <circle cx="1.5" cy="1.5" r="1.5" />
+      <circle cx="1.5" cy="6.5" r="1.5" />
+      <circle cx="1.5" cy="11.5" r="1.5" />
     </svg>
   )
 }
 
 function TransferIcon() {
   return (
-    <svg width="14" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" />
-      <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
+    <svg
+      width="14"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="17 1 21 5 17 9" />
+      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+      <polyline points="7 23 3 19 7 15" />
+      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
     </svg>
   )
 }
 
 function ThumbsDownIcon() {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3z" />
       <path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17" />
     </svg>
@@ -154,8 +314,19 @@ function ThumbsDownIcon() {
 
 function TrophyIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="8 21 12 17 16 21" /><line x1="12" y1="17" x2="12" y2="11" />
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="8 21 12 17 16 21" />
+      <line x1="12" y1="17" x2="12" y2="11" />
       <path d="M7 4h10M17 4c0 0 0 8-5 8S7 4 7 4" />
       <path d="M6 4c-2 0-4 1-4 4 0 3 2 4 4 4M18 4c2 0 4 1 4 4 0 3-2 4-4 4" />
     </svg>
@@ -164,7 +335,17 @@ function TrophyIcon() {
 
 function LightningIcon() {
   return (
-    <svg width="8" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="8"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
     </svg>
   )
@@ -172,7 +353,17 @@ function LightningIcon() {
 
 function CheckIcon() {
   return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="white"
+      strokeWidth={3}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <polyline points="20 6 9 17 4 12" />
     </svg>
   )
@@ -180,23 +371,56 @@ function CheckIcon() {
 
 function SearchIcon() {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
   )
 }
 
 function FilterIcon() {
   return (
-    <svg width="13" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <line x1="4" y1="6" x2="20" y2="6" /><line x1="8" y1="12" x2="16" y2="12" /><line x1="11" y1="18" x2="13" y2="18" />
+    <svg
+      width="13"
+      height="9"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="4" y1="6" x2="20" y2="6" />
+      <line x1="8" y1="12" x2="16" y2="12" />
+      <line x1="11" y1="18" x2="13" y2="18" />
     </svg>
   )
 }
 
 function PdfIcon() {
   return (
-    <svg width="10" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="10"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
       <polyline points="14 2 14 8 20 8" />
       <line x1="12" y1="18" x2="12" y2="12" />
@@ -207,7 +431,17 @@ function PdfIcon() {
 
 function LinkIcon() {
   return (
-    <svg width="13" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="13"
+      height="7"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
       <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
     </svg>
@@ -279,7 +513,8 @@ const MOCK_HISTORY: HistoryEvent[] = [
     type: 'whatsapp',
     title: 'WhatsApp Enviado (Sara IA)',
     timestamp: '03/06/26 20:15',
-    message: '"Olá Aparecido! Notamos seu interesse no consórcio de R$ 350 mil do Parque do Sol. Preparamos 3 lances simulados para você..."',
+    message:
+      '"Olá Aparecido! Notamos seu interesse no consórcio de R$ 350 mil do Parque do Sol. Preparamos 3 lances simulados para você..."',
     byLabel: null,
     byName: null,
     detail: null,
@@ -327,20 +562,23 @@ export interface LeadModalProps {
 
 export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) {
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const [activeTab, setActiveTab] = useState<'qualificacao' | 'simulacoes' | 'anexos'>('qualificacao')
+  const [activeTab, setActiveTab] = useState<'qualificacao' | 'simulacoes' | 'anexos'>(
+    'qualificacao',
+  )
   const cota = parseCota(card.cota)
   const activeStage = 0 // Lead = índice 0
   const responsible = getAgentProfile(card.agent)
 
   return (
     <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={e => e.stopPropagation()}>
-
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* ── Header ────────────────────────────────────────────────────── */}
         <header className={styles.header}>
           <div className={styles.headerTop}>
@@ -380,7 +618,12 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                 Marcar como Ganho
               </button>
               <div className={styles.headerDivider} />
-              <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Fechar ficha do lead">
+              <button
+                type="button"
+                className={styles.closeBtn}
+                onClick={onClose}
+                aria-label="Fechar ficha do lead"
+              >
                 <XIcon size={16} />
               </button>
             </div>
@@ -395,7 +638,9 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                   {stage}
                 </span>
                 {i < FUNNEL_STAGES.length - 1 && (
-                  <span className={styles.funnelArrow}><ChevronRightIcon /></span>
+                  <span className={styles.funnelArrow}>
+                    <ChevronRightIcon />
+                  </span>
                 )}
               </span>
             ))}
@@ -408,15 +653,49 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
             <div className={styles.leftCol}>
               {/* Skeleton: card de qualificação */}
               <div className={styles.card}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 13, borderBottom: '1px solid rgba(216,195,173,0.2)' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    paddingBottom: 13,
+                    borderBottom: '1px solid rgba(216,195,173,0.2)',
+                  }}
+                >
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <Skeleton variant="rect" width="120px" height="30px" style={{ borderRadius: 8 }} />
-                    <Skeleton variant="rect" width="80px"  height="30px" style={{ borderRadius: 8 }} />
-                    <Skeleton variant="rect" width="64px"  height="30px" style={{ borderRadius: 8 }} />
+                    <Skeleton
+                      variant="rect"
+                      width="120px"
+                      height="30px"
+                      style={{ borderRadius: 8 }}
+                    />
+                    <Skeleton
+                      variant="rect"
+                      width="80px"
+                      height="30px"
+                      style={{ borderRadius: 8 }}
+                    />
+                    <Skeleton
+                      variant="rect"
+                      width="64px"
+                      height="30px"
+                      style={{ borderRadius: 8 }}
+                    />
                   </div>
-                  <Skeleton variant="rect" width="110px" height="28px" style={{ borderRadius: 8 }} />
+                  <Skeleton
+                    variant="rect"
+                    width="110px"
+                    height="28px"
+                    style={{ borderRadius: 8 }}
+                  />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px 24px', paddingTop: 4 }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: '20px 24px',
+                    paddingTop: 4,
+                  }}
+                >
                   {Array.from({ length: 5 }).map((_, i) => (
                     <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <Skeleton variant="text" width="70%" height="12px" />
@@ -431,8 +710,13 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <Skeleton variant="rect" width="36px" height="20px" style={{ borderRadius: 4 }} />
-                  <Skeleton variant="rect" width="100px" height="20px" style={{ borderRadius: 4 }} />
-                  <Skeleton variant="rect" width="72px"  height="20px" style={{ borderRadius: 4 }} />
+                  <Skeleton
+                    variant="rect"
+                    width="100px"
+                    height="20px"
+                    style={{ borderRadius: 4 }}
+                  />
+                  <Skeleton variant="rect" width="72px" height="20px" style={{ borderRadius: 4 }} />
                 </div>
               </div>
               {/* Skeleton: card de tarefas */}
@@ -442,16 +726,42 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                     <Skeleton variant="text" width="80px" height="18px" />
                     <Skeleton variant="text" width="260px" height="13px" />
                   </div>
-                  <Skeleton variant="rect" width="100px" height="34px" style={{ borderRadius: 8 }} />
+                  <Skeleton
+                    variant="rect"
+                    width="100px"
+                    height="34px"
+                    style={{ borderRadius: 8 }}
+                  />
                 </div>
                 {Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: 15, background: '#f8f9ff', borderRadius: 8, border: '1px solid rgba(216,195,173,0.3)' }}>
-                    <Skeleton variant="rect" width="16px" height="16px" style={{ borderRadius: 4, flexShrink: 0, marginTop: 2 }} />
+                  <div
+                    key={i}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 12,
+                      padding: 15,
+                      background: '#f8f9ff',
+                      borderRadius: 8,
+                      border: '1px solid rgba(216,195,173,0.3)',
+                    }}
+                  >
+                    <Skeleton
+                      variant="rect"
+                      width="16px"
+                      height="16px"
+                      style={{ borderRadius: 4, flexShrink: 0, marginTop: 2 }}
+                    />
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <Skeleton variant="text" width="85%" height="14px" />
                       <Skeleton variant="text" width="55%" height="12px" />
                     </div>
-                    <Skeleton variant="rect" width="70px" height="20px" style={{ borderRadius: 4 }} />
+                    <Skeleton
+                      variant="rect"
+                      width="70px"
+                      height="20px"
+                      style={{ borderRadius: 4 }}
+                    />
                   </div>
                 ))}
               </div>
@@ -462,8 +772,18 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                 <div className={styles.historyHeader}>
                   <Skeleton variant="text" width="80px" height="16px" />
                   <div style={{ display: 'flex', gap: 4 }}>
-                    <Skeleton variant="rect" width="30px" height="30px" style={{ borderRadius: 8 }} />
-                    <Skeleton variant="rect" width="30px" height="30px" style={{ borderRadius: 8 }} />
+                    <Skeleton
+                      variant="rect"
+                      width="30px"
+                      height="30px"
+                      style={{ borderRadius: 8 }}
+                    />
+                    <Skeleton
+                      variant="rect"
+                      width="30px"
+                      height="30px"
+                      style={{ borderRadius: 8 }}
+                    />
                   </div>
                 </div>
                 <div className={styles.timeline}>
@@ -493,417 +813,556 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
         )}
 
         {/* ── Workspace ─────────────────────────────────────────────────── */}
-        {!isLoading && <div className={styles.workspace}>
-
-          {/* Coluna esquerda */}
-          <div className={styles.leftCol}>
-
-            {/* Card: Ficha de Qualificação */}
-            <div className={styles.card}>
-              <div className={styles.cardTabsRow}>
-                <div className={styles.tabs}>
-                  <button type="button" className={activeTab === 'qualificacao' ? `${styles.tab} ${styles.tabActive}` : styles.tab} onClick={() => setActiveTab('qualificacao')}>Ficha de Qualificação</button>
-                  <button type="button" className={activeTab === 'simulacoes' ? `${styles.tab} ${styles.tabActive}` : styles.tab} onClick={() => setActiveTab('simulacoes')}>Simulações</button>
-                  <button type="button" className={activeTab === 'anexos' ? `${styles.tab} ${styles.tabActive}` : styles.tab} onClick={() => setActiveTab('anexos')}>Anexos</button>
-                </div>
-                {activeTab === 'qualificacao' && (
-                  <button type="button" className={styles.editBtn}>
-                    <PencilIcon />
-                    Editar Atributos
-                  </button>
-                )}
-                {activeTab === 'simulacoes' && (
-                  <button type="button" className={styles.novaSimBtn}>
-                    <LightningIcon />
-                    Nova Simulação
-                  </button>
-                )}
-              </div>
-
-              {/* ── Aba: Simulações ─────────────────────────────────── */}
-              {activeTab === 'simulacoes' && (
-                <div className={styles.simList}>
-
-                  {/* Simulação Principal */}
-                  <div className={styles.simCardMain}>
-                    <div className={styles.simTopRow}>
-                      <span className={styles.propPrincipalBadge}>
-                        <span className={styles.propDot} />
-                        Proposta Principal
-                      </span>
-                      <div className={styles.simMeta}>
-                        <span>Grupo: <strong>7829</strong></span>
-                        <span className={styles.simMetaDot}>•</span>
-                        <span>Cota: <strong>104</strong></span>
-                        <span className={styles.simMetaDot}>•</span>
-                        <span>Porthis Consórcio</span>
-                      </div>
-                    </div>
-
-                    <div className={styles.simHeader}>
-                      <div>
-                        <h3 className={styles.simTitle}>Cota Imobiliária Porto Seguro</h3>
-                        <p className={styles.simValue}>R$ 350.000,00</p>
-                      </div>
-                      <div className={styles.simParcelGroup}>
-                        <span className={styles.simParcelLabel}>Parcela Reduzida (50% até contemplação)</span>
-                        <div className={styles.simParcelValue}>
-                          <span className={styles.simParcelAmount}>R$ 1.205,55</span>
-                          <span className={styles.simParcelPer}>/mês</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className={styles.simMetrics}>
-                      <div className={styles.simMetricItem}>
-                        <span className={styles.simMetricLabel}>Crédito Contratado</span>
-                        <span className={styles.simMetricValue}>R$ 350.000,00</span>
-                        <span className={styles.simMetricSub}>Fundo Reserva: 2%</span>
-                      </div>
-                      <div className={`${styles.simMetricItem} ${styles.simMetricBorder}`}>
-                        <span className={styles.simMetricLabel}>Prazo Total</span>
-                        <span className={styles.simMetricValue}>180 meses</span>
-                        <span className={`${styles.simMetricSub} ${styles.simMetricSubGreen}`}>15 anos planejados</span>
-                      </div>
-                      <div className={`${styles.simMetricItem} ${styles.simMetricBorder}`}>
-                        <span className={styles.simMetricLabel}>Taxa Adm. Diluída</span>
-                        <span className={styles.simMetricValue}>15% total</span>
-                        <span className={styles.simMetricSub}>0,083% a.m. (sem juros)</span>
-                      </div>
-                      <div className={`${styles.simMetricItem} ${styles.simMetricBorder}`}>
-                        <span className={styles.simMetricLabel}>Assembleia Próxima</span>
-                        <span className={styles.simMetricValue}>18/06/2026</span>
-                        <span className={styles.simMetricSub}>Dia útil do sorteio</span>
-                      </div>
-                    </div>
-
-                    <div className={styles.simActions}>
-                      <button type="button" className={styles.pdfBtn}>
-                        <PdfIcon />
-                        Gerar PDF para WhatsApp
-                      </button>
-                      <div className={styles.simSecActions}>
-                        <button type="button" className={styles.simSecBtn}>
-                          <LinkIcon />
-                          Copiar Link
-                        </button>
-                        <button type="button" className={styles.simSecBtn}>
-                          <PencilIcon />
-                          Editar Parâmetros
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Simulação Secundária */}
-                  <div className={styles.simCardSec}>
-                    <div className={styles.simSecTopRow}>
-                      <div className={styles.simSecLeft}>
-                        <span className={styles.cenarioBadge}>Cenário Secundário</span>
-                        <h4 className={styles.simSecTitle}>Cota Imobiliária Caixa Consórcios — R$ 300.000,00</h4>
-                      </div>
-                      <div className={styles.simSecButtons}>
-                        <button type="button" className={styles.verDetalhesBtn}>Ver Detalhes</button>
-                        <button type="button" className={styles.descartarBtn}>Descartar</button>
-                      </div>
-                    </div>
-
-                    <div className={styles.simSecMetrics}>
-                      <div className={styles.simSecMetricItem}>
-                        <span className={styles.simMetricLabel}>Prazo Total</span>
-                        <span className={styles.simSecMetricValue}>200 meses</span>
-                      </div>
-                      <div className={styles.simSecMetricItem}>
-                        <span className={styles.simMetricLabel}>Parcela Mensal</span>
-                        <span className={styles.simSecMetricValue}>R$ 1.875,00 /mês</span>
-                      </div>
-                      <div className={styles.simSecMetricItem}>
-                        <span className={styles.simMetricLabel}>Lance Livre Recomendado</span>
-                        <span className={styles.simSecMetricValue}>35% (R$ 105.000)</span>
-                      </div>
-                      <div className={styles.simSecMetricItem}>
-                        <span className={styles.simMetricLabel}>Probabilidade Sara</span>
-                        <div className={styles.saraProb}>
-                          <SignalIcon />
-                          <span className={styles.simSecMetricValue}>62% (Média)</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Simular Novo Cenário */}
-                  <div className={styles.simNewBlock}>
-                    <div className={styles.simNewHeader}>
-                      <div className={styles.simNewIcon}>
-                        <LightningIcon />
-                      </div>
-                      <div>
-                        <h4 className={styles.simNewTitle}>Simular Novo Cenário</h4>
-                        <p className={styles.simNewSub}>Preencha os parâmetros para calcular lances médios contemplados dos últimos 6 meses.</p>
-                      </div>
-                    </div>
-                    <div className={styles.simForm}>
-                      <div className={styles.simFormField}>
-                        <label className={styles.simFormLabel}>Crédito Pretendido (R$)</label>
-                        <input type="text" className={styles.simInput} defaultValue="R$ 400.000,00" />
-                      </div>
-                      <div className={styles.simFormField}>
-                        <label className={styles.simFormLabel}>Tipo do Consórcio</label>
-                        <select className={styles.simSelect}>
-                          <option>Imóvel Residencial</option>
-                          <option>Automóvel</option>
-                          <option>Pesado / Caminhão</option>
-                        </select>
-                      </div>
-                      <div className={styles.simFormField}>
-                        <label className={styles.simFormLabel}>Prazo Desejado</label>
-                        <select className={styles.simSelect}>
-                          <option>180 meses (15 anos)</option>
-                          <option>120 meses (10 anos)</option>
-                          <option>200 meses</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-              )}
-
-              {/* ── Aba: Qualificação ────────────────────────────────── */}
-              {activeTab === 'qualificacao' && <>
-
-              {/* Grade de atributos */}
-              <div className={styles.attrsGrid}>
-                {/* Telefone */}
-                <div className={styles.attrCell}>
-                  <div className={styles.attrLabel}><PhoneIcon />Telefone / WhatsApp</div>
-                  <div className={styles.attrValue}>
-                    <span className={styles.attrValueText}>{card.phone}</span>
-                    <span className={styles.callBadge}><WhatsAppIcon />Chamar</span>
-                  </div>
-                </div>
-
-                {/* Responsável */}
-                <div className={styles.attrCell}>
-                  <div className={styles.attrLabel}><PersonIcon />Responsável</div>
-                  <div className={styles.attrValue}>
-                    <img src={responsible.photo} alt={responsible.name} className={styles.agentAvatar} />
-                    <span className={styles.attrValueText}>{responsible.name}</span>
-                    <span className={styles.attrValueMuted}>({responsible.team})</span>
-                  </div>
-                </div>
-
-                {/* Origem */}
-                <div className={styles.attrCell}>
-                  <div className={styles.attrLabel}><SignalIcon />Origem do Lead</div>
-                  <div className={styles.attrValue}>
-                    <span
-                      className={styles.sourceBadge}
-                      style={{ background: card.sourceBg, color: card.sourceText }}
+        {!isLoading && (
+          <div className={styles.workspace}>
+            {/* Coluna esquerda */}
+            <div className={styles.leftCol}>
+              {/* Card: Ficha de Qualificação */}
+              <div className={styles.card}>
+                <div className={styles.cardTabsRow}>
+                  <div className={styles.tabs}>
+                    <button
+                      type="button"
+                      className={
+                        activeTab === 'qualificacao'
+                          ? `${styles.tab} ${styles.tabActive}`
+                          : styles.tab
+                      }
+                      onClick={() => setActiveTab('qualificacao')}
                     >
-                      {card.source}
-                    </span>
-                    <span className={card.daysUrgent ? styles.daysTagUrgent : styles.daysTagNormal}>
-                      {card.days} no funil
-                    </span>
+                      Ficha de Qualificação
+                    </button>
+                    <button
+                      type="button"
+                      className={
+                        activeTab === 'simulacoes'
+                          ? `${styles.tab} ${styles.tabActive}`
+                          : styles.tab
+                      }
+                      onClick={() => setActiveTab('simulacoes')}
+                    >
+                      Simulações
+                    </button>
+                    <button
+                      type="button"
+                      className={
+                        activeTab === 'anexos' ? `${styles.tab} ${styles.tabActive}` : styles.tab
+                      }
+                      onClick={() => setActiveTab('anexos')}
+                    >
+                      Anexos
+                    </button>
                   </div>
+                  {activeTab === 'qualificacao' && (
+                    <button type="button" className={styles.editBtn}>
+                      <PencilIcon />
+                      Editar Atributos
+                    </button>
+                  )}
+                  {activeTab === 'simulacoes' && (
+                    <button type="button" className={styles.novaSimBtn}>
+                      <LightningIcon />
+                      Nova Simulação
+                    </button>
+                  )}
                 </div>
 
-                {/* Interesse */}
-                <div className={styles.attrCell}>
-                  <div className={styles.attrLabel}><HomeIcon />Interesse</div>
-                  <div className={styles.attrValueCol}>
-                    {cota.type && <span className={styles.attrValueBold}>{cota.type}</span>}
-                    {cota.value && <span className={styles.attrValueSub}>{cota.value}</span>}
-                    {!cota.type && <span className={styles.attrValueBold}>{card.cota}</span>}
-                  </div>
-                </div>
-
-                {/* Data de Cadastro */}
-                <div className={styles.attrCell}>
-                  <div className={styles.attrLabel}><CalendarIcon />Data de Cadastro</div>
-                  <div className={styles.attrValue}>
-                    <span className={styles.attrValueText}>{card.date}</span>
-                  </div>
-                </div>
-              </div>
-
-              <hr className={styles.separator} />
-
-              {/* Observações */}
-              <div className={styles.section}>
-                <span className={styles.sectionLabel}>Observações de Qualificação (Descoberta)</span>
-                <div className={styles.obsBox}>
-                  <p className={styles.obsText}>
-                    Renda familiar mensal: 3500; sua intenção de compra é em itapevi? sim; Pretende comprar: próximos_4_meses.
-                    Lance embutido estimado em 25% com recursos de FGTS previstos para compor oferta no consórcio imobiliário.
-                  </p>
-                </div>
-              </div>
-
-              {/* Tags */}
-              <div className={styles.tagsRow}>
-                <div className={styles.tagsLabel}><TagIcon />Tags:</div>
-                <span className={styles.tag}>#ConsorcioImobiliario</span>
-                <span className={styles.tag}>#LeadQuente</span>
-                <span className={styles.tag}>#Itapevi</span>
-                <button type="button" className={styles.addTagBtn}><PlusIcon />Adicionar Tag</button>
-              </div>
-            </>}
-            </div>
-
-            {/* Card: Tarefas */}
-            <div className={styles.card}>
-              <div className={styles.taskHeader}>
-                <div>
-                  <h2 className={styles.taskTitle}>Tarefas</h2>
-                  <p className={styles.taskSubtitle}>
-                    Acompanhe contatos telefônicos, envio de simulações e visitas presenciais.
-                  </p>
-                </div>
-                <button type="button" className={styles.newTaskBtn}>
-                  <PlusIcon />Nova Tarefa
-                </button>
-              </div>
-
-              {/* Quick chips */}
-              <div className={styles.chipsRow}>
-                <span className={styles.chipsLabel}>Criar rápido:</span>
-                <button type="button" className={styles.chip}><PhoneIcon />Ligação de Follow-up</button>
-                <button type="button" className={styles.chip}><CalendarIcon />Simulação de Lance</button>
-                <button type="button" className={styles.chip}><CalendarIcon />Agendar Reunião</button>
-              </div>
-
-              {/* Lista de tarefas */}
-              <div className={styles.taskList}>
-                {MOCK_TASKS.map(task => (
-                  <div key={task.id} className={task.urgent ? styles.taskItemUrgent : styles.taskItem}>
-                    <div className={styles.taskLeft}>
-                      <div className={styles.taskCheckbox} role="checkbox" aria-checked="false" aria-label="Concluir tarefa" />
-                      <div className={styles.taskContent}>
-                        <span className={styles.taskItemTitle}>{task.title}</span>
-                        <div className={styles.taskMeta}>
-                          <span className={task.dueUrgent ? styles.taskTimeUrgent : styles.taskTime}>
-                            <ClockIcon />{task.dueLabel}
+                {/* ── Aba: Simulações ─────────────────────────────────── */}
+                {activeTab === 'simulacoes' && (
+                  <div className={styles.simList}>
+                    {/* Simulação Principal */}
+                    <div className={styles.simCardMain}>
+                      <div className={styles.simTopRow}>
+                        <span className={styles.propPrincipalBadge}>
+                          <span className={styles.propDot} />
+                          Proposta Principal
+                        </span>
+                        <div className={styles.simMeta}>
+                          <span>
+                            Grupo: <strong>7829</strong>
                           </span>
-                          <span className={styles.taskMetaDot}>•</span>
-                          <span className={styles.taskMetaText}>Resp: {task.responsible}</span>
-                          {task.channel && (
-                            <>
-                              <span className={styles.taskMetaDot}>•</span>
-                              <span className={styles.taskChannel}>{task.channel}</span>
-                            </>
-                          )}
+                          <span className={styles.simMetaDot}>•</span>
+                          <span>
+                            Cota: <strong>104</strong>
+                          </span>
+                          <span className={styles.simMetaDot}>•</span>
+                          <span>Porthis Consórcio</span>
+                        </div>
+                      </div>
+
+                      <div className={styles.simHeader}>
+                        <div>
+                          <h3 className={styles.simTitle}>Cota Imobiliária Porto Seguro</h3>
+                          <p className={styles.simValue}>R$ 350.000,00</p>
+                        </div>
+                        <div className={styles.simParcelGroup}>
+                          <span className={styles.simParcelLabel}>
+                            Parcela Reduzida (50% até contemplação)
+                          </span>
+                          <div className={styles.simParcelValue}>
+                            <span className={styles.simParcelAmount}>R$ 1.205,55</span>
+                            <span className={styles.simParcelPer}>/mês</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className={styles.simMetrics}>
+                        <div className={styles.simMetricItem}>
+                          <span className={styles.simMetricLabel}>Crédito Contratado</span>
+                          <span className={styles.simMetricValue}>R$ 350.000,00</span>
+                          <span className={styles.simMetricSub}>Fundo Reserva: 2%</span>
+                        </div>
+                        <div className={`${styles.simMetricItem} ${styles.simMetricBorder}`}>
+                          <span className={styles.simMetricLabel}>Prazo Total</span>
+                          <span className={styles.simMetricValue}>180 meses</span>
+                          <span className={`${styles.simMetricSub} ${styles.simMetricSubGreen}`}>
+                            15 anos planejados
+                          </span>
+                        </div>
+                        <div className={`${styles.simMetricItem} ${styles.simMetricBorder}`}>
+                          <span className={styles.simMetricLabel}>Taxa Adm. Diluída</span>
+                          <span className={styles.simMetricValue}>15% total</span>
+                          <span className={styles.simMetricSub}>0,083% a.m. (sem juros)</span>
+                        </div>
+                        <div className={`${styles.simMetricItem} ${styles.simMetricBorder}`}>
+                          <span className={styles.simMetricLabel}>Assembleia Próxima</span>
+                          <span className={styles.simMetricValue}>18/06/2026</span>
+                          <span className={styles.simMetricSub}>Dia útil do sorteio</span>
+                        </div>
+                      </div>
+
+                      <div className={styles.simActions}>
+                        <button type="button" className={styles.pdfBtn}>
+                          <PdfIcon />
+                          Gerar PDF para WhatsApp
+                        </button>
+                        <div className={styles.simSecActions}>
+                          <button type="button" className={styles.simSecBtn}>
+                            <LinkIcon />
+                            Copiar Link
+                          </button>
+                          <button type="button" className={styles.simSecBtn}>
+                            <PencilIcon />
+                            Editar Parâmetros
+                          </button>
                         </div>
                       </div>
                     </div>
-                    <div className={styles.taskRight}>
-                      <span className={task.urgent ? styles.priorityBadgeUrgent : styles.priorityBadgeNormal}>
-                        {task.priority}
+
+                    {/* Simulação Secundária */}
+                    <div className={styles.simCardSec}>
+                      <div className={styles.simSecTopRow}>
+                        <div className={styles.simSecLeft}>
+                          <span className={styles.cenarioBadge}>Cenário Secundário</span>
+                          <h4 className={styles.simSecTitle}>
+                            Cota Imobiliária Caixa Consórcios — R$ 300.000,00
+                          </h4>
+                        </div>
+                        <div className={styles.simSecButtons}>
+                          <button type="button" className={styles.verDetalhesBtn}>
+                            Ver Detalhes
+                          </button>
+                          <button type="button" className={styles.descartarBtn}>
+                            Descartar
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className={styles.simSecMetrics}>
+                        <div className={styles.simSecMetricItem}>
+                          <span className={styles.simMetricLabel}>Prazo Total</span>
+                          <span className={styles.simSecMetricValue}>200 meses</span>
+                        </div>
+                        <div className={styles.simSecMetricItem}>
+                          <span className={styles.simMetricLabel}>Parcela Mensal</span>
+                          <span className={styles.simSecMetricValue}>R$ 1.875,00 /mês</span>
+                        </div>
+                        <div className={styles.simSecMetricItem}>
+                          <span className={styles.simMetricLabel}>Lance Livre Recomendado</span>
+                          <span className={styles.simSecMetricValue}>35% (R$ 105.000)</span>
+                        </div>
+                        <div className={styles.simSecMetricItem}>
+                          <span className={styles.simMetricLabel}>Probabilidade Sara</span>
+                          <div className={styles.saraProb}>
+                            <SignalIcon />
+                            <span className={styles.simSecMetricValue}>62% (Média)</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Simular Novo Cenário */}
+                    <div className={styles.simNewBlock}>
+                      <div className={styles.simNewHeader}>
+                        <div className={styles.simNewIcon}>
+                          <LightningIcon />
+                        </div>
+                        <div>
+                          <h4 className={styles.simNewTitle}>Simular Novo Cenário</h4>
+                          <p className={styles.simNewSub}>
+                            Preencha os parâmetros para calcular lances médios contemplados dos
+                            últimos 6 meses.
+                          </p>
+                        </div>
+                      </div>
+                      <div className={styles.simForm}>
+                        <div className={styles.simFormField}>
+                          <label className={styles.simFormLabel}>Crédito Pretendido (R$)</label>
+                          <input
+                            type="text"
+                            className={styles.simInput}
+                            defaultValue="R$ 400.000,00"
+                          />
+                        </div>
+                        <div className={styles.simFormField}>
+                          <label className={styles.simFormLabel}>Tipo do Consórcio</label>
+                          <select className={styles.simSelect}>
+                            <option>Imóvel Residencial</option>
+                            <option>Automóvel</option>
+                            <option>Pesado / Caminhão</option>
+                          </select>
+                        </div>
+                        <div className={styles.simFormField}>
+                          <label className={styles.simFormLabel}>Prazo Desejado</label>
+                          <select className={styles.simSelect}>
+                            <option>180 meses (15 anos)</option>
+                            <option>120 meses (10 anos)</option>
+                            <option>200 meses</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Aba: Qualificação ────────────────────────────────── */}
+                {activeTab === 'qualificacao' && (
+                  <>
+                    {/* Grade de atributos */}
+                    <div className={styles.attrsGrid}>
+                      {/* Telefone */}
+                      <div className={styles.attrCell}>
+                        <div className={styles.attrLabel}>
+                          <PhoneIcon />
+                          Telefone / WhatsApp
+                        </div>
+                        <div className={styles.attrValue}>
+                          <span className={styles.attrValueText}>{card.phone}</span>
+                          <span className={styles.callBadge}>
+                            <WhatsAppIcon />
+                            Chamar
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Responsável */}
+                      <div className={styles.attrCell}>
+                        <div className={styles.attrLabel}>
+                          <PersonIcon />
+                          Responsável
+                        </div>
+                        <div className={styles.attrValue}>
+                          <img
+                            src={responsible.photo}
+                            alt={responsible.name}
+                            className={styles.agentAvatar}
+                          />
+                          <span className={styles.attrValueText}>{responsible.name}</span>
+                          <span className={styles.attrValueMuted}>({responsible.team})</span>
+                        </div>
+                      </div>
+
+                      {/* Origem */}
+                      <div className={styles.attrCell}>
+                        <div className={styles.attrLabel}>
+                          <SignalIcon />
+                          Origem do Lead
+                        </div>
+                        <div className={styles.attrValue}>
+                          <span
+                            className={styles.sourceBadge}
+                            style={{ background: card.sourceBg, color: card.sourceText }}
+                          >
+                            {card.source}
+                          </span>
+                          <span
+                            className={
+                              card.daysUrgent ? styles.daysTagUrgent : styles.daysTagNormal
+                            }
+                          >
+                            {card.days} no funil
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Interesse */}
+                      <div className={styles.attrCell}>
+                        <div className={styles.attrLabel}>
+                          <HomeIcon />
+                          Interesse
+                        </div>
+                        <div className={styles.attrValueCol}>
+                          {cota.type && <span className={styles.attrValueBold}>{cota.type}</span>}
+                          {cota.value && <span className={styles.attrValueSub}>{cota.value}</span>}
+                          {!cota.type && <span className={styles.attrValueBold}>{card.cota}</span>}
+                        </div>
+                      </div>
+
+                      {/* Data de Cadastro */}
+                      <div className={styles.attrCell}>
+                        <div className={styles.attrLabel}>
+                          <CalendarIcon />
+                          Data de Cadastro
+                        </div>
+                        <div className={styles.attrValue}>
+                          <span className={styles.attrValueText}>{card.date}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <hr className={styles.separator} />
+
+                    {/* Observações */}
+                    <div className={styles.section}>
+                      <span className={styles.sectionLabel}>
+                        Observações de Qualificação (Descoberta)
                       </span>
-                      <button type="button" className={styles.taskMenuBtn} aria-label="Opções da tarefa">
-                        <DotsIcon />
+                      <div className={styles.obsBox}>
+                        <p className={styles.obsText}>
+                          Renda familiar mensal: 3500; sua intenção de compra é em itapevi? sim;
+                          Pretende comprar: próximos_4_meses. Lance embutido estimado em 25% com
+                          recursos de FGTS previstos para compor oferta no consórcio imobiliário.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Tags */}
+                    <div className={styles.tagsRow}>
+                      <div className={styles.tagsLabel}>
+                        <TagIcon />
+                        Tags:
+                      </div>
+                      <span className={styles.tag}>#ConsorcioImobiliario</span>
+                      <span className={styles.tag}>#LeadQuente</span>
+                      <span className={styles.tag}>#Itapevi</span>
+                      <button type="button" className={styles.addTagBtn}>
+                        <PlusIcon />
+                        Adicionar Tag
                       </button>
                     </div>
+                  </>
+                )}
+              </div>
+
+              {/* Card: Tarefas */}
+              <div className={styles.card}>
+                <div className={styles.taskHeader}>
+                  <div>
+                    <h2 className={styles.taskTitle}>Tarefas</h2>
+                    <p className={styles.taskSubtitle}>
+                      Acompanhe contatos telefônicos, envio de simulações e visitas presenciais.
+                    </p>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Coluna direita — Histórico (conteúdo real) */}
-          <div className={styles.rightCol}>
-            <div className={styles.historyCard}>
-              {/* Header do histórico */}
-              <div className={styles.historyHeader}>
-                <div className={styles.historyHeaderLeft}>
-                  <h2 className={styles.historyTitle}>Histórico</h2>
-                  <span className={styles.historyCount}>{MOCK_HISTORY.length}</span>
+                  <button type="button" className={styles.newTaskBtn}>
+                    <PlusIcon />
+                    Nova Tarefa
+                  </button>
                 </div>
-                <div className={styles.historyActions}>
-                  <button type="button" className={styles.historyActionBtn} aria-label="Pesquisar"><SearchIcon /></button>
-                  <button type="button" className={styles.historyActionBtn} aria-label="Filtrar"><FilterIcon /></button>
+
+                {/* Quick chips */}
+                <div className={styles.chipsRow}>
+                  <span className={styles.chipsLabel}>Criar rápido:</span>
+                  <button type="button" className={styles.chip}>
+                    <PhoneIcon />
+                    Ligação de Follow-up
+                  </button>
+                  <button type="button" className={styles.chip}>
+                    <CalendarIcon />
+                    Simulação de Lance
+                  </button>
+                  <button type="button" className={styles.chip}>
+                    <CalendarIcon />
+                    Agendar Reunião
+                  </button>
                 </div>
-              </div>
 
-              {/* Filtros */}
-              <div className={styles.historyFilters}>
-                <button type="button" className={styles.filterPillActive}>Tudo</button>
-                <button type="button" className={styles.filterPill}>Comentários</button>
-                <button type="button" className={styles.filterPill}>Sistema</button>
-                <button type="button" className={styles.filterPill}>WhatsApp</button>
-              </div>
-
-              {/* Timeline */}
-              <div className={styles.timeline}>
-                {MOCK_HISTORY.map((event, i) => (
-                  <div key={event.id} className={styles.timelineEvent}>
-                    <div className={styles.timelineLeft}>
-                      <div className={
-                        event.type === 'whatsapp'
-                          ? `${styles.timelineIcon} ${styles.timelineIconWa}`
-                          : event.type === 'lead_created'
-                            ? `${styles.timelineIcon} ${styles.timelineIconCreated}`
-                            : `${styles.timelineIcon} ${styles.timelineIconSystem}`
-                      }>
-                        {event.type === 'whatsapp' && <WhatsAppIcon size={12} />}
-                        {event.type === 'system' && <LightningIcon />}
-                        {event.type === 'lead_created' && <CheckIcon />}
+                {/* Lista de tarefas */}
+                <div className={styles.taskList}>
+                  {MOCK_TASKS.map((task) => (
+                    <div
+                      key={task.id}
+                      className={task.urgent ? styles.taskItemUrgent : styles.taskItem}
+                    >
+                      <div className={styles.taskLeft}>
+                        <div
+                          className={styles.taskCheckbox}
+                          role="checkbox"
+                          aria-checked="false"
+                          aria-label="Concluir tarefa"
+                        />
+                        <div className={styles.taskContent}>
+                          <span className={styles.taskItemTitle}>{task.title}</span>
+                          <div className={styles.taskMeta}>
+                            <span
+                              className={task.dueUrgent ? styles.taskTimeUrgent : styles.taskTime}
+                            >
+                              <ClockIcon />
+                              {task.dueLabel}
+                            </span>
+                            <span className={styles.taskMetaDot}>•</span>
+                            <span className={styles.taskMetaText}>Resp: {task.responsible}</span>
+                            {task.channel && (
+                              <>
+                                <span className={styles.taskMetaDot}>•</span>
+                                <span className={styles.taskChannel}>{task.channel}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      {i < MOCK_HISTORY.length - 1 && <div className={styles.timelineConnector} />}
-                    </div>
-                    <div className={styles.timelineContent}>
-                      <div className={styles.timelineRow}>
-                        <span className={
-                          event.type === 'whatsapp'
-                            ? `${styles.timelineTitle} ${styles.timelineTitleWa}`
-                            : styles.timelineTitle
-                        }>
-                          {event.title}
+                      <div className={styles.taskRight}>
+                        <span
+                          className={
+                            task.urgent ? styles.priorityBadgeUrgent : styles.priorityBadgeNormal
+                          }
+                        >
+                          {task.priority}
                         </span>
-                        <span className={styles.timelineDate}>{event.timestamp}</span>
+                        <button
+                          type="button"
+                          className={styles.taskMenuBtn}
+                          aria-label="Opções da tarefa"
+                        >
+                          <DotsIcon />
+                        </button>
                       </div>
-
-                      {event.byLabel && event.byName && (
-                        <p className={styles.timelineBody}>
-                          {event.byLabel}{' '}
-                          <strong className={styles.timelineBold}>{event.byName}</strong>
-                        </p>
-                      )}
-
-                      {event.type === 'whatsapp' && event.message && (
-                        <div className={styles.timelineWaMsg}>{event.message}</div>
-                      )}
-
-                      {event.type !== 'whatsapp' && event.detail && event.detailBold && (
-                        <div className={styles.timelineDetail}>
-                          {event.detail} → <strong className={styles.timelineBold}>{event.detailBold}</strong>
-                        </div>
-                      )}
-
-                      {'source' in event && event.source && (
-                        <div className={styles.timelineSource}>
-                          <TagIcon />
-                          Origem: {event.source}
-                        </div>
-                      )}
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
+            </div>
 
-              {/* Input de comentário */}
-              <div className={styles.commentInput}>
-                <img src={responsible.photo} alt={responsible.name} className={styles.commentAvatar} />
-                <input
-                  type="text"
-                  placeholder="Adicionar comentário ou nota interna..."
-                  className={styles.commentField}
-                />
+            {/* Coluna direita — Histórico (conteúdo real) */}
+            <div className={styles.rightCol}>
+              <div className={styles.historyCard}>
+                {/* Header do histórico */}
+                <div className={styles.historyHeader}>
+                  <div className={styles.historyHeaderLeft}>
+                    <h2 className={styles.historyTitle}>Histórico</h2>
+                    <span className={styles.historyCount}>{MOCK_HISTORY.length}</span>
+                  </div>
+                  <div className={styles.historyActions}>
+                    <button
+                      type="button"
+                      className={styles.historyActionBtn}
+                      aria-label="Pesquisar"
+                    >
+                      <SearchIcon />
+                    </button>
+                    <button type="button" className={styles.historyActionBtn} aria-label="Filtrar">
+                      <FilterIcon />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filtros */}
+                <div className={styles.historyFilters}>
+                  <button type="button" className={styles.filterPillActive}>
+                    Tudo
+                  </button>
+                  <button type="button" className={styles.filterPill}>
+                    Comentários
+                  </button>
+                  <button type="button" className={styles.filterPill}>
+                    Sistema
+                  </button>
+                  <button type="button" className={styles.filterPill}>
+                    WhatsApp
+                  </button>
+                </div>
+
+                {/* Timeline */}
+                <div className={styles.timeline}>
+                  {MOCK_HISTORY.map((event, i) => (
+                    <div key={event.id} className={styles.timelineEvent}>
+                      <div className={styles.timelineLeft}>
+                        <div
+                          className={
+                            event.type === 'whatsapp'
+                              ? `${styles.timelineIcon} ${styles.timelineIconWa}`
+                              : event.type === 'lead_created'
+                                ? `${styles.timelineIcon} ${styles.timelineIconCreated}`
+                                : `${styles.timelineIcon} ${styles.timelineIconSystem}`
+                          }
+                        >
+                          {event.type === 'whatsapp' && <WhatsAppIcon size={12} />}
+                          {event.type === 'system' && <LightningIcon />}
+                          {event.type === 'lead_created' && <CheckIcon />}
+                        </div>
+                        {i < MOCK_HISTORY.length - 1 && (
+                          <div className={styles.timelineConnector} />
+                        )}
+                      </div>
+                      <div className={styles.timelineContent}>
+                        <div className={styles.timelineRow}>
+                          <span
+                            className={
+                              event.type === 'whatsapp'
+                                ? `${styles.timelineTitle} ${styles.timelineTitleWa}`
+                                : styles.timelineTitle
+                            }
+                          >
+                            {event.title}
+                          </span>
+                          <span className={styles.timelineDate}>{event.timestamp}</span>
+                        </div>
+
+                        {event.byLabel && event.byName && (
+                          <p className={styles.timelineBody}>
+                            {event.byLabel}{' '}
+                            <strong className={styles.timelineBold}>{event.byName}</strong>
+                          </p>
+                        )}
+
+                        {event.type === 'whatsapp' && event.message && (
+                          <div className={styles.timelineWaMsg}>{event.message}</div>
+                        )}
+
+                        {event.type !== 'whatsapp' && event.detail && event.detailBold && (
+                          <div className={styles.timelineDetail}>
+                            {event.detail} →{' '}
+                            <strong className={styles.timelineBold}>{event.detailBold}</strong>
+                          </div>
+                        )}
+
+                        {'source' in event && event.source && (
+                          <div className={styles.timelineSource}>
+                            <TagIcon />
+                            Origem: {event.source}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Input de comentário */}
+                <div className={styles.commentInput}>
+                  <img
+                    src={responsible.photo}
+                    alt={responsible.name}
+                    className={styles.commentAvatar}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Adicionar comentário ou nota interna..."
+                    className={styles.commentField}
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </div>}
+        )}
       </div>
     </div>
   )
