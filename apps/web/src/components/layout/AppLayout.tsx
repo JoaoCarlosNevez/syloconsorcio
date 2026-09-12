@@ -144,7 +144,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           <button
             type="button"
             className={styles.userCard}
-            onClick={async () => { await signOut(); navigate('/login', { replace: true }) }}
+            onClick={() => navigate('/app/perfil')}
             aria-label="Perfil do usuário"
           >
             <div
