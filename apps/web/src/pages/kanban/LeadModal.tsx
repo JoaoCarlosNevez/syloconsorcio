@@ -4,7 +4,7 @@
 import { Skeleton } from '@sylocrm/ui'
 import { useEffect, useState } from 'react'
 import type { CardData } from '../../data/kanban-mock'
-import { ADMIN_USER, getAgentProfile } from '../../data/kanban-mock'
+import { getAgentProfile } from '../../data/kanban-mock'
 import styles from './LeadModal.module.css'
 
 // ── Ícones (SVG inline — padrão do projeto) ────────────────────────────────────
@@ -577,8 +577,19 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
   const responsible = getAgentProfile(card.agent)
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div
+      className={styles.overlay}
+      onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') onClose()
+      }}
+      role="presentation"
+    >
+      <div
+        className={styles.modal}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
         {/* ── Header ────────────────────────────────────────────────────── */}
         <header className={styles.header}>
           <div className={styles.headerTop}>
@@ -697,6 +708,7 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                   }}
                 >
                   {Array.from({ length: 5 }).map((_, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton array — order never changes
                     <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <Skeleton variant="text" width="70%" height="12px" />
                       <Skeleton variant="text" width="90%" height="16px" />
@@ -735,6 +747,7 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                 </div>
                 {Array.from({ length: 2 }).map((_, i) => (
                   <div
+                    // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton array — order never changes
                     key={i}
                     style={{
                       display: 'flex',
@@ -788,6 +801,7 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                 </div>
                 <div className={styles.timeline}>
                   {Array.from({ length: 3 }).map((_, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton array — order never changes
                     <div key={i} className={styles.timelineEvent}>
                       <div className={styles.timelineLeft}>
                         <Skeleton variant="circle" width="28px" height="28px" />
@@ -1007,24 +1021,31 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                       </div>
                       <div className={styles.simForm}>
                         <div className={styles.simFormField}>
-                          <label className={styles.simFormLabel}>Crédito Pretendido (R$)</label>
+                          <label className={styles.simFormLabel} htmlFor="sim-credito">
+                            Crédito Pretendido (R$)
+                          </label>
                           <input
+                            id="sim-credito"
                             type="text"
                             className={styles.simInput}
                             defaultValue="R$ 400.000,00"
                           />
                         </div>
                         <div className={styles.simFormField}>
-                          <label className={styles.simFormLabel}>Tipo do Consórcio</label>
-                          <select className={styles.simSelect}>
+                          <label className={styles.simFormLabel} htmlFor="sim-tipo">
+                            Tipo do Consórcio
+                          </label>
+                          <select id="sim-tipo" className={styles.simSelect}>
                             <option>Imóvel Residencial</option>
                             <option>Automóvel</option>
                             <option>Pesado / Caminhão</option>
                           </select>
                         </div>
                         <div className={styles.simFormField}>
-                          <label className={styles.simFormLabel}>Prazo Desejado</label>
-                          <select className={styles.simSelect}>
+                          <label className={styles.simFormLabel} htmlFor="sim-prazo">
+                            Prazo Desejado
+                          </label>
+                          <select id="sim-prazo" className={styles.simSelect}>
                             <option>180 meses (15 anos)</option>
                             <option>120 meses (10 anos)</option>
                             <option>200 meses</option>
@@ -1199,6 +1220,7 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                           role="checkbox"
                           aria-checked="false"
                           aria-label="Concluir tarefa"
+                          tabIndex={0}
                         />
                         <div className={styles.taskContent}>
                           <span className={styles.taskItemTitle}>{task.title}</span>

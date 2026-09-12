@@ -104,24 +104,6 @@ function LocationIcon() {
   )
 }
 
-function CheckCircleIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  )
-}
-
 function TrophyIcon() {
   return (
     <svg
@@ -339,6 +321,7 @@ export function PerfilPage() {
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-label="XP para próximo nível"
+                tabIndex={0}
               >
                 <div className={styles.xpFill} style={{ width: `${XP_PERCENT}%` }} />
               </div>

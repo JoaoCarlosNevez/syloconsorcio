@@ -9,15 +9,15 @@
 
 import {
   DndContext,
+  type DragEndEvent,
+  type DragOverEvent,
   DragOverlay,
+  type DragStartEvent,
   KeyboardSensor,
   PointerSensor,
   closestCorners,
   useSensor,
   useSensors,
-  type DragEndEvent,
-  type DragOverEvent,
-  type DragStartEvent,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -31,15 +31,14 @@ import { Skeleton } from '@sylocrm/ui'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
 import {
-  ADMIN_USER,
   COLUMN_META,
-  INITIAL_BOARD,
-  getAgentProfile,
   type CardData,
   type ColumnMeta,
+  INITIAL_BOARD,
+  getAgentProfile,
 } from '../../data/kanban-mock'
-import { LeadModal } from './LeadModal'
 import styles from './KanbanPage.module.css'
+import { LeadModal } from './LeadModal'
 
 // ── Ícones de view toggle ──────────────────────────────────────────────────────
 
@@ -469,6 +468,9 @@ function ListView({ board, onCardClick }: ListViewProps) {
                         key={card.id}
                         className={i % 2 === 0 ? styles.listRow : styles.listRowAlt}
                         onClick={() => onCardClick(card)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') onCardClick(card)
+                        }}
                       >
                         <td className={`${styles.listCell} ${styles.listCellName}`}>
                           <span className={styles.listName}>{card.name}</span>
@@ -510,6 +512,7 @@ function ListView({ board, onCardClick }: ListViewProps) {
                         <td
                           className={`${styles.listCell} ${styles.listCellActions}`}
                           onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
                         >
                           <button
                             type="button"
@@ -731,6 +734,7 @@ export function KanbanPage() {
                   </div>
                   <div className={styles.cardList}>
                     {Array.from({ length: ci < 2 ? 3 : ci < 4 ? 2 : 1 }).map((_, i) => (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton array — order never changes
                       <div key={i} className={styles.card} style={{ cursor: 'default', gap: 8 }}>
                         <Skeleton variant="text" width="80%" height="13px" />
                         <Skeleton variant="text" width="55%" height="11px" />

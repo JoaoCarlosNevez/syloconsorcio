@@ -116,12 +116,7 @@ export function ComingSoonPage() {
 
       {/* ── Modal de comentário (voto negativo) ──────────────────────────── */}
       {showModal && (
-        <div
-          className={styles.modalOverlay}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="modal-title"
-        >
+        <dialog className={styles.modalOverlay} aria-labelledby="modal-title" open>
           <div className={styles.modal}>
             <h2 id="modal-title" className={styles.modalTitle}>
               Quer nos contar mais?
@@ -145,7 +140,7 @@ export function ComingSoonPage() {
               </button>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
     </div>
   )

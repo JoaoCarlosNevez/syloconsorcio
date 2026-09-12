@@ -1,12 +1,10 @@
 // AppLayout — layout autenticado com sidebar branca.
 // Sidebar: logo, seletor de empresa, nav, Sara IA, status, tema, perfil.
 
-import { Avatar } from '@sylocrm/ui'
 import type { Tier } from '@sylocrm/ui'
 import type { ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { USER_TIER } from '../../data/kanban-mock'
-import { useAuth } from '../../hooks/useAuth'
 import styles from './AppLayout.module.css'
 
 // ── Ícones ────────────────────────────────────────────────────────────────────
@@ -36,25 +34,6 @@ function KanbanIcon() {
     >
       <path d="M12 20h9" />
       <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-    </svg>
-  )
-}
-function LeadsIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <ellipse cx="12" cy="5" rx="9" ry="3" />
-      <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5" />
-      <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3" />
     </svg>
   )
 }
@@ -148,24 +127,6 @@ function AdminIcon() {
       aria-hidden="true"
     >
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    </svg>
-  )
-}
-function NotifIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
     </svg>
   )
 }
@@ -315,11 +276,9 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const { user, signOut } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
 
-  const emailPrefix = user?.email?.split('@')[0] ?? 'usuário'
   // TODO: buscar nome real do perfil via API
   const displayName = 'Ennyo Café'
   const palette = TIER_PALETTE[USER_TIER]
@@ -399,14 +358,14 @@ export function AppLayout({ children }: AppLayoutProps) {
           </div>
 
           {/* Tema */}
-          <div className={styles.themeToggle} role="group" aria-label="Tema">
+          <fieldset className={styles.themeToggle} aria-label="Tema">
             <button type="button" className={`${styles.themeBtn} ${styles.active}`}>
               <SunIcon /> Claro
             </button>
             <button type="button" className={styles.themeBtn}>
               <MoonIcon /> Escuro
             </button>
-          </div>
+          </fieldset>
 
           {/* Perfil */}
           <button
