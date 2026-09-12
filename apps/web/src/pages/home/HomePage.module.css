@@ -11,7 +11,7 @@
 .profileHero {
   display: flex;
   height: 260px;
-  padding: 40px 10px;
+  padding: 40px 10px 40px 20px;
   justify-content: space-between;
   align-items: center;
   align-self: stretch;
@@ -29,8 +29,8 @@
 }
 
 .profileAvatarRing {
-  width: 112px;
-  height: 112px;
+  width: 134px;
+  height: 134px;
   border-radius: 50%;
   padding: 4px;
   flex-shrink: 0;
@@ -584,7 +584,7 @@
   display: flex;
   align-items: center;
   gap: 20px;
-  padding: 40px 10px;
+  padding: 40px 10px 40px 20px;
   margin: 20px 28px 0;
   background: #ffffff;
   border: 1px solid #e2e8f0;
