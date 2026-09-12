@@ -107,6 +107,7 @@
 }
 
 .navItem {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -126,14 +127,27 @@
 }
 
 .navItem:hover {
-  background: var(--color-bg-subtle);
+  background: var(--tier-muted, var(--color-bg-subtle));
   color: var(--color-text-primary);
 }
 
 .navItem.active {
-  background: var(--color-bg-subtle);
-  color: var(--color-text-primary);
+  background: var(--tier-subtle, var(--color-bg-subtle));
+  color: var(--tier-accent, var(--color-text-primary));
   font-weight: var(--font-weight-semibold);
+}
+
+/* Barra lateral esquerda no item ativo */
+.navItem.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  border-radius: 0 3px 3px 0;
+  background: var(--tier-accent, var(--color-accent));
 }
 
 /* Sara IA item */
@@ -211,7 +225,7 @@
 }
 
 .vendedorSla {
-  color: #10b981;
+  color: var(--tier-accent, #10b981);
   font-weight: var(--font-weight-semibold);
   margin-left: auto;
 }
@@ -307,8 +321,8 @@
 
 .userCardTier {
   font-size: 11px;
-  font-weight: var(--font-weight-normal);
-  color: #64748b;
+  font-weight: var(--font-weight-semibold);
+  color: var(--tier-accent, #64748b);
   margin: 0;
   line-height: 1.5;
 }

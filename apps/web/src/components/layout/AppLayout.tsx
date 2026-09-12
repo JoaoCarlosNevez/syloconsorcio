@@ -46,6 +46,14 @@ const TIER_LABELS: Record<Tier, string> = {
   diamante:  'Diamante',
 }
 
+// Paleta de cores por tier injetada como CSS custom properties no sidebar
+const TIER_PALETTE: Record<Tier, { accent: string; subtle: string; muted: string }> = {
+  turmalina: { accent: '#00a6cc', subtle: 'rgba(0,166,204,0.10)',  muted: 'rgba(0,166,204,0.06)' },
+  rubi:      { accent: '#e03135', subtle: 'rgba(224,49,53,0.10)',   muted: 'rgba(224,49,53,0.06)' },
+  platina:   { accent: '#005ecc', subtle: 'rgba(0,94,204,0.10)',    muted: 'rgba(0,94,204,0.06)'  },
+  diamante:  { accent: '#7c3aed', subtle: 'rgba(124,58,237,0.10)', muted: 'rgba(124,58,237,0.06)' },
+}
+
 // Itens de navegação principal
 const NAV_ITEMS = [
   { label: 'Início',         path: '/app/home',       icon: InicioIcon },
@@ -70,7 +78,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const emailPrefix = user?.email?.split('@')[0] ?? 'usuário'
   // TODO: buscar nome real do perfil via API
   const displayName = 'Ennyo Café'
-  const initials    = 'EC'
+  const palette = TIER_PALETTE[USER_TIER]
 
   function navTo(path: string) {
     return (e: React.MouseEvent) => { e.preventDefault(); navigate(path) }
@@ -79,7 +87,14 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className={styles.layout}>
       {/* ── Sidebar ──────────────────────────────────────────────────────── */}
-      <aside className={styles.sidebar}>
+      <aside
+        className={styles.sidebar}
+        style={{
+          '--tier-accent': palette.accent,
+          '--tier-subtle': palette.subtle,
+          '--tier-muted':  palette.muted,
+        } as React.CSSProperties}
+      >
 
         {/* Logo */}
         <div className={styles.logo}>

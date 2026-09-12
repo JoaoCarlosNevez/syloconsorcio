@@ -1,5 +1,6 @@
 // PerfilPage — Perfil completo do consultor: nível, XP, ofensiva e conquistas.
 
+import { AppLayout } from '../../components/layout/AppLayout'
 import { useAuth } from '../../hooks/useAuth'
 import styles from './PerfilPage.module.css'
 
@@ -181,6 +182,7 @@ export function PerfilPage() {
   const emailPrefix = user?.email?.split('@')[0] ?? 'consultor'
 
   return (
+    <AppLayout>
     <div className={styles.page}>
 
       {/* ── Barra de ações ──────────────────────────────────────────────────── */}
@@ -374,5 +376,6 @@ export function PerfilPage() {
       </div>
 
     </div>
+    </AppLayout>
   )
 }
