@@ -95,6 +95,7 @@ interface TarefaItem {
   tarefa: string
   status: 'Atendimento' | 'Simulação' | 'Proposta'
   daysUrgent: boolean
+  daysNum: number
 }
 
 const STATUS_CLASS: Record<TarefaItem['status'], string> = {
@@ -104,12 +105,13 @@ const STATUS_CLASS: Record<TarefaItem['status'], string> = {
 }
 
 // Derivado do board do Kanban — mesmo dado, sem duplicação.
-// Exibe leads das etapas ativas (exclui "venda" — negócio fechado).
+// Exibe os 3 leads com prazo mais próximo ou mais vencido (maior número de dias no funil).
 const MOCK_TAREFAS: TarefaItem[] = Object.entries(INITIAL_BOARD)
   .filter(([colId]) => colId !== 'venda')
   .flatMap(([colId, cards]) =>
     cards.map(card => {
       const { segmento, valor } = parseCotaFields(card.cota)
+      const daysNum = Number.parseInt(card.days, 10) || 0
       return {
         id:         card.id,
         cliente:    card.name,
@@ -119,9 +121,12 @@ const MOCK_TAREFAS: TarefaItem[] = Object.entries(INITIAL_BOARD)
         tarefa:     COLUMN_TAREFA_LABEL[colId] ?? 'Follow-Up',
         status:     (COLUMN_STATUS_LABEL[colId] ?? 'Atendimento') as TarefaItem['status'],
         daysUrgent: card.daysUrgent,
+        daysNum,
       }
     })
   )
+  .sort((a, b) => b.daysNum - a.daysNum)
+  .slice(0, 3)
 
 // TODO: buscar tier real do perfil via API
 const USER_TIER: Tier = 'turmalina'
