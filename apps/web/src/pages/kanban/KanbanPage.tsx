@@ -27,6 +27,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { Skeleton } from '@sylocrm/ui'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
 import {
@@ -383,7 +384,13 @@ export function KanbanPage() {
   const [activeCard, setActiveCard] = useState<CardData | null>(null)
   const [selectedCard, setSelectedCard] = useState<CardData | null>(null)
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban')
+  const [isLoading, setIsLoading] = useState(true)
   const boardRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const t = setTimeout(() => setIsLoading(false), 700)
+    return () => clearTimeout(t)
+  }, [])
 
   // Converte scroll vertical do mouse em scroll horizontal no board.
   // Usa addEventListener com passive:false para poder chamar preventDefault,
@@ -527,13 +534,43 @@ export function KanbanPage() {
           </div>
         </div>
 
+        {/* ── Skeleton do board ────────────────────────────────────────── */}
+        {isLoading && (
+          <div className={styles.boardWrapper}>
+            <div className={styles.board}>
+              {COLUMN_META.map((meta, ci) => (
+                <div key={meta.id} className={styles.column}>
+                  <div className={styles.columnHeader} style={{ background: meta.headerBg, borderColor: meta.headerBorder }}>
+                    <Skeleton variant="text" width="90px" height="14px" />
+                    <Skeleton variant="rect" width="24px" height="20px" style={{ borderRadius: 99 }} />
+                  </div>
+                  <div className={styles.cardList}>
+                    {Array.from({ length: ci < 2 ? 3 : ci < 4 ? 2 : 1 }).map((_, i) => (
+                      <div key={i} className={styles.card} style={{ cursor: 'default', gap: 8 }}>
+                        <Skeleton variant="text" width="80%" height="13px" />
+                        <Skeleton variant="text" width="55%" height="11px" />
+                        <Skeleton variant="rect" width="100%" height="32px" style={{ borderRadius: 8 }} />
+                        <Skeleton variant="text" width="65%" height="11px" />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 4 }}>
+                          <Skeleton variant="rect" width="60px" height="16px" style={{ borderRadius: 4 }} />
+                          <Skeleton variant="rect" width="44px" height="16px" style={{ borderRadius: 99 }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ── Lista ────────────────────────────────────────────────────── */}
-        {viewMode === 'list' && (
+        {!isLoading && viewMode === 'list' && (
           <ListView board={board} onCardClick={setSelectedCard} />
         )}
 
         {/* ── Board ────────────────────────────────────────────────────── */}
-        {viewMode === 'kanban' && <DndContext
+        {!isLoading && viewMode === 'kanban' && <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}

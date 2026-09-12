@@ -4,6 +4,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  animation: pageFadeIn var(--duration-slow) var(--easing-out) both;
 }
 
 /* ── Hero de perfil ──────────────────────────────────────────────────────── */

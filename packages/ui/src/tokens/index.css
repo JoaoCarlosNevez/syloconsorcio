@@ -212,6 +212,28 @@
   }
 }
 
+/* ─── Global keyframe animations ────────────────────────────────────────────── */
+/*
+ * Defined globally so any CSS Module can reference them by name.
+ * All use only opacity + transform — compositor-only, zero layout reflow.
+ * Disabled automatically via --duration-* tokens when prefers-reduced-motion.
+ */
+
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 /* ─── Global base styles ─────────────────────────────────────────────────────── */
 *,
 *::before,

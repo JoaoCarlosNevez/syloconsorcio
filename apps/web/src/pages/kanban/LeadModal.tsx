@@ -1,6 +1,7 @@
 // LeadModal — ficha completa do lead, aberta ao clicar em um card do Kanban.
 // Design: Figma SYLOAPP node 276:590
 
+import { Skeleton } from '@sylocrm/ui'
 import { useEffect, useState } from 'react'
 import type { CardData } from '../../data/kanban-mock'
 import { ADMIN_USER, getAgentProfile } from '../../data/kanban-mock'
@@ -320,9 +321,11 @@ function parseCota(cota: string): { type: string; value: string } {
 export interface LeadModalProps {
   card: CardData
   onClose: () => void
+  /** Quando true, exibe skeleton no workspace — para quando os dados vierem de API real */
+  isLoading?: boolean
 }
 
-export function LeadModal({ card, onClose }: LeadModalProps) {
+export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', onKey)
@@ -399,8 +402,98 @@ export function LeadModal({ card, onClose }: LeadModalProps) {
           </div>
         </header>
 
+        {/* ── Skeleton do workspace (API real) ──────────────────────────── */}
+        {isLoading && (
+          <div className={styles.workspace}>
+            <div className={styles.leftCol}>
+              {/* Skeleton: card de qualificação */}
+              <div className={styles.card}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 13, borderBottom: '1px solid rgba(216,195,173,0.2)' }}>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Skeleton variant="rect" width="120px" height="30px" style={{ borderRadius: 8 }} />
+                    <Skeleton variant="rect" width="80px"  height="30px" style={{ borderRadius: 8 }} />
+                    <Skeleton variant="rect" width="64px"  height="30px" style={{ borderRadius: 8 }} />
+                  </div>
+                  <Skeleton variant="rect" width="110px" height="28px" style={{ borderRadius: 8 }} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px 24px', paddingTop: 4 }}>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <Skeleton variant="text" width="70%" height="12px" />
+                      <Skeleton variant="text" width="90%" height="16px" />
+                    </div>
+                  ))}
+                </div>
+                <Skeleton variant="rect" width="100%" height="1px" />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <Skeleton variant="text" width="160px" height="12px" />
+                  <Skeleton variant="rect" width="100%" height="72px" style={{ borderRadius: 8 }} />
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Skeleton variant="rect" width="36px" height="20px" style={{ borderRadius: 4 }} />
+                  <Skeleton variant="rect" width="100px" height="20px" style={{ borderRadius: 4 }} />
+                  <Skeleton variant="rect" width="72px"  height="20px" style={{ borderRadius: 4 }} />
+                </div>
+              </div>
+              {/* Skeleton: card de tarefas */}
+              <div className={styles.card}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <Skeleton variant="text" width="80px" height="18px" />
+                    <Skeleton variant="text" width="260px" height="13px" />
+                  </div>
+                  <Skeleton variant="rect" width="100px" height="34px" style={{ borderRadius: 8 }} />
+                </div>
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: 15, background: '#f8f9ff', borderRadius: 8, border: '1px solid rgba(216,195,173,0.3)' }}>
+                    <Skeleton variant="rect" width="16px" height="16px" style={{ borderRadius: 4, flexShrink: 0, marginTop: 2 }} />
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <Skeleton variant="text" width="85%" height="14px" />
+                      <Skeleton variant="text" width="55%" height="12px" />
+                    </div>
+                    <Skeleton variant="rect" width="70px" height="20px" style={{ borderRadius: 4 }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Skeleton: histórico */}
+            <div className={styles.rightCol}>
+              <div className={styles.historyCard}>
+                <div className={styles.historyHeader}>
+                  <Skeleton variant="text" width="80px" height="16px" />
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <Skeleton variant="rect" width="30px" height="30px" style={{ borderRadius: 8 }} />
+                    <Skeleton variant="rect" width="30px" height="30px" style={{ borderRadius: 8 }} />
+                  </div>
+                </div>
+                <div className={styles.timeline}>
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className={styles.timelineEvent}>
+                      <div className={styles.timelineLeft}>
+                        <Skeleton variant="circle" width="28px" height="28px" />
+                        {i < 2 && <div className={styles.timelineConnector} />}
+                      </div>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Skeleton variant="text" width="55%" height="13px" />
+                          <Skeleton variant="text" width="25%" height="12px" />
+                        </div>
+                        <Skeleton variant="text" width="40%" height="12px" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className={styles.commentInput}>
+                  <Skeleton variant="circle" width="28px" height="28px" />
+                  <Skeleton variant="rect" style={{ flex: 1, borderRadius: 8 }} height="36px" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Workspace ─────────────────────────────────────────────────── */}
-        <div className={styles.workspace}>
+        {!isLoading && <div className={styles.workspace}>
 
           {/* Coluna esquerda */}
           <div className={styles.leftCol}>
@@ -718,7 +811,7 @@ export function LeadModal({ card, onClose }: LeadModalProps) {
             </div>
           </div>
 
-          {/* Coluna direita — Histórico */}
+          {/* Coluna direita — Histórico (conteúdo real) */}
           <div className={styles.rightCol}>
             <div className={styles.historyCard}>
               {/* Header do histórico */}
@@ -810,7 +903,7 @@ export function LeadModal({ card, onClose }: LeadModalProps) {
               </div>
             </div>
           </div>
-        </div>
+        </div>}
       </div>
     </div>
   )

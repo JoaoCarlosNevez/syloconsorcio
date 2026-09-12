@@ -8,6 +8,7 @@
   height: 100%;
   background: #ffffff;
   overflow: hidden;
+  animation: pageFadeIn var(--duration-slow) var(--easing-out) both;
 }
 
 /* ── Header ──────────────────────────────────────────────────────────────────── */
