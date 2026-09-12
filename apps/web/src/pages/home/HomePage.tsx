@@ -11,6 +11,7 @@ import {
   COLUMN_STATUS_LABEL,
   COLUMN_TAREFA_LABEL,
   INITIAL_BOARD,
+  USER_TIER,
   parseCotaFields,
 } from '../../data/kanban-mock'
 import styles from './HomePage.module.css'
@@ -129,8 +130,6 @@ const MOCK_TAREFAS: TarefaItem[] = Object.entries(INITIAL_BOARD)
   .sort((a, b) => b.daysNum - a.daysNum)
   .slice(0, 3)
 
-// TODO: buscar tier real do perfil via API
-const USER_TIER: Tier = 'turmalina'
 
 const TIER_GRADIENT: Record<Tier, string> = {
   turmalina: 'linear-gradient(135deg, #9ef5ff, #00d9ff, #00a6cc)',

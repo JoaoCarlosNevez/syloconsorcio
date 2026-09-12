@@ -28,6 +28,9 @@ export interface ColumnMeta {
 
 // ── Usuário admin (placeholder até integração com API) ────────────────────────
 
+// Tier do usuário autenticado — fonte única de verdade para toda a UI
+export const USER_TIER = 'diamante' as const
+
 export const ADMIN_USER = {
   name: 'Ennyo Café',
   team: 'Porthis',

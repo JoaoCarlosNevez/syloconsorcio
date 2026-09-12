@@ -13,7 +13,6 @@
   flex-direction: column;
   gap: 20px;
   padding: 0 0 40px;
-  max-width: 1200px;
   width: 100%;
   animation: pageFadeIn var(--duration-slow) var(--easing-out) both;
 }
@@ -103,7 +102,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   padding: 25px;
-  margin: 0 32px;
+  margin: 0 24px;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -136,21 +135,21 @@
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
-  overflow: hidden;
-  margin: 0 32px;
+  margin: 0 24px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 /* Cover banner */
 .coverBanner {
   position: relative;
-  height: 144px;
+  height: 160px;
   background: linear-gradient(135deg, #1e1b4b 0%, #312e81 30%, #4338ca 60%, #6366f1 85%, #818cf8 100%);
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
   padding: 16px;
   overflow: hidden;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 }
 
 .coverPattern {
@@ -188,24 +187,28 @@
   flex-direction: column;
   gap: 20px;
   padding: 0 32px 28px;
+  position: relative;
+  z-index: 1;
 }
 
 .profileMain {
   display: flex;
   align-items: flex-end;
   gap: 20px;
-  margin-top: -32px; /* pulls avatar over the cover banner */
+  margin-top: -56px; /* puxa o avatar para dentro do banner */
 }
 
 /* Avatar */
 .avatarWrap {
-  width: 112px;
-  height: 112px;
+  position: relative;
+  z-index: 2;
+  width: 116px;
+  height: 116px;
   border-radius: 50%;
   padding: 4px;
   background: linear-gradient(to left, var(--diamante-from), var(--diamante-to));
   flex-shrink: 0;
-  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
 }
 
 .avatar {
@@ -213,8 +216,8 @@
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
+  object-position: center top;
   display: block;
-  border: 1px solid rgba(252,211,77,0.3);
 }
 
 /* Identity info */
@@ -336,13 +339,184 @@
   transition: width var(--duration-slow) var(--easing-out);
 }
 
+/* ── Layout corpo: conteúdo + sidebar ────────────────────────────────────── */
+
+.bodyGrid {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 20px;
+  padding: 0 24px;
+  align-items: start;
+}
+
+.bodyMain {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.bodyMain > .card {
+  margin: 0;
+}
+
+.bodySidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Cards da sidebar lateral */
+.sideCard {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sideCardTitle {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  letter-spacing: -0.1px;
+}
+
+/* Level stepper */
+.levelSteps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.levelStep {
+  display: flex;
+  gap: 12px;
+}
+
+.levelStepLeft {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.levelDot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
+  flex-shrink: 0;
+}
+
+.levelDotDone {
+  background: rgba(124,58,237,0.12);
+  border: 2px solid #7c3aed;
+  color: #7c3aed;
+}
+
+.levelDotCurrent {
+  background: linear-gradient(135deg, var(--diamante-from), var(--diamante-to));
+  border: none;
+  color: #fff;
+  box-shadow: 0 0 0 4px rgba(124,58,237,0.15);
+  transform: scale(1.1);
+}
+
+.levelDotPending {
+  background: var(--color-bg-subtle);
+  border: 2px solid var(--color-border-input);
+  color: var(--color-text-muted);
+  opacity: 0.5;
+}
+
+.levelLine {
+  width: 2px;
+  flex: 1;
+  min-height: 20px;
+  border-radius: 1px;
+  margin: 3px 0;
+}
+
+.levelLineDone {
+  background: #7c3aed;
+}
+
+.levelLinePending {
+  background: var(--color-border);
+}
+
+.levelStepInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 0 20px;
+}
+
+.levelStepLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.levelStepCurrent {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.levelStepXP {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* XP summary */
+.xpSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.xpSummaryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-xs);
+}
+
+.xpSummaryLabel {
+  color: var(--color-text-secondary);
+}
+
+.xpSummaryValue {
+  color: #7c3aed;
+  font-weight: var(--font-weight-semibold);
+}
+
+.xpSummaryTotal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
 /* ── Mid grid (ofensiva + métricas) ──────────────────────────────────────── */
 
 .midGrid {
   display: grid;
   grid-template-columns: 5fr 7fr;
   gap: 20px;
-  padding: 0 32px;
 }
 
 .midGrid > .card {

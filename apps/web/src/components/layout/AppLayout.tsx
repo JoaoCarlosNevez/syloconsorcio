@@ -5,6 +5,7 @@ import { Avatar } from '@sylocrm/ui'
 import type { Tier } from '@sylocrm/ui'
 import type { ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { USER_TIER } from '../../data/kanban-mock'
 import { useAuth } from '../../hooks/useAuth'
 import styles from './AppLayout.module.css'
 
@@ -29,8 +30,6 @@ function MoonIcon()           { return <svg width="13" height="13" viewBox="0 0 
 
 // TODO: buscar organização ativa do contexto de tenant
 const COMPANY_NAME = 'Porthis Consórcio'
-// TODO: buscar tier real do perfil via API
-const USER_TIER: Tier = 'turmalina'
 
 const TIER_BORDER_COLOR: Record<Tier, string> = {
   turmalina: '#00a6cc',

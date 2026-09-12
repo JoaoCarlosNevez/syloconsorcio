@@ -262,6 +262,10 @@ export function PerfilPage() {
         </div>
       </div>
 
+      {/* ── Corpo principal: conteúdo + sidebar de nível ────────────────────── */}
+      <div className={styles.bodyGrid}>
+      <div className={styles.bodyMain}>
+
       {/* ── Seção 3: Ofensiva + Métricas ────────────────────────────────────── */}
       <div className={styles.midGrid}>
 
@@ -374,6 +378,72 @@ export function PerfilPage() {
           ))}
         </div>
       </div>
+
+      </div>{/* bodyMain */}
+
+      {/* ── Sidebar lateral: nível + próximos passos ─────────────────────── */}
+      <aside className={styles.bodySidebar}>
+
+        {/* Card: Nível atual */}
+        <div className={styles.sideCard}>
+          <div className={styles.sideCardTitle}>Nível & Evolução</div>
+
+          <div className={styles.levelSteps}>
+            {[
+              { num: 1, label: 'Iniciante Sylo',         xp: '0 XP',     done: true  },
+              { num: 2, label: 'Consultor Ágil',          xp: '500 XP',   done: true  },
+              { num: 3, label: 'Especialista',            xp: '1.000 XP', current: true },
+              { num: 4, label: 'Mestre em Fechamentos',   xp: '2.200 XP', done: false },
+            ].map((step, i, arr) => (
+              <div key={step.num} className={styles.levelStep}>
+                <div className={styles.levelStepLeft}>
+                  <div className={[
+                    styles.levelDot,
+                    step.done ? styles.levelDotDone : step.current ? styles.levelDotCurrent : styles.levelDotPending
+                  ].join(' ')}>
+                    {step.done ? '✓' : step.num}
+                  </div>
+                  {i < arr.length - 1 && (
+                    <div className={[styles.levelLine, step.done ? styles.levelLineDone : styles.levelLinePending].join(' ')} />
+                  )}
+                </div>
+                <div className={styles.levelStepInfo}>
+                  <span className={[styles.levelStepLabel, step.current ? styles.levelStepCurrent : ''].filter(Boolean).join(' ')}>
+                    {step.label}
+                  </span>
+                  <span className={styles.levelStepXP}>{step.xp}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Card: XP resumo */}
+        <div className={styles.sideCard}>
+          <div className={styles.sideCardTitle}>XP do Mês</div>
+          <div className={styles.xpSummary}>
+            {[
+              { label: 'Leads atendidos', xp: '+84 XP'  },
+              { label: 'Simulações',      xp: '+54 XP'  },
+              { label: 'Cotas fechadas',  xp: '+240 XP' },
+              { label: 'Ofensiva ativa',  xp: '+30 XP'  },
+              { label: 'Conquistas',      xp: '+350 XP' },
+            ].map(item => (
+              <div key={item.label} className={styles.xpSummaryRow}>
+                <span className={styles.xpSummaryLabel}>{item.label}</span>
+                <span className={styles.xpSummaryValue}>{item.xp}</span>
+              </div>
+            ))}
+            <div className={styles.xpSummaryTotal}>
+              <span>Total do mês</span>
+              <span>+758 XP</span>
+            </div>
+          </div>
+        </div>
+
+      </aside>
+
+      </div>{/* bodyGrid */}
 
     </div>
     </AppLayout>
