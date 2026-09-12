@@ -29,6 +29,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
+import { LeadModal } from './LeadModal'
 import styles from './KanbanPage.module.css'
 
 // ── Ícones ────────────────────────────────────────────────────────────────────
@@ -126,7 +127,7 @@ function TicketIcon() {
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
-interface CardData {
+export interface CardData {
   id: string
   name: string
   phone: string
@@ -246,7 +247,7 @@ function CardView({ card, isDragging }: CardViewProps) {
 
 // ── SortableCard (adiciona handles do @dnd-kit ao CardView) ───────────────────
 
-function SortableCard({ card }: { card: CardData }) {
+function SortableCard({ card, onCardClick }: { card: CardData; onCardClick: (card: CardData) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id })
 
   const style = {
@@ -258,7 +259,7 @@ function SortableCard({ card }: { card: CardData }) {
   }
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={() => { if (!isDragging) onCardClick(card) }}>
       <CardView card={card} />
     </div>
   )
@@ -269,9 +270,10 @@ function SortableCard({ card }: { card: CardData }) {
 interface KanbanColumnProps {
   meta: ColumnMeta
   cards: CardData[]
+  onCardClick: (card: CardData) => void
 }
 
-function KanbanColumn({ meta, cards }: KanbanColumnProps) {
+function KanbanColumn({ meta, cards, onCardClick }: KanbanColumnProps) {
   const cardIds = useMemo(() => cards.map(c => c.id), [cards])
 
   return (
@@ -287,7 +289,7 @@ function KanbanColumn({ meta, cards }: KanbanColumnProps) {
       <div className={styles.cardList} data-scroll="column">
         <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
           {cards.map(card => (
-            <SortableCard key={card.id} card={card} />
+            <SortableCard key={card.id} card={card} onCardClick={onCardClick} />
           ))}
         </SortableContext>
       </div>
@@ -300,6 +302,7 @@ function KanbanColumn({ meta, cards }: KanbanColumnProps) {
 export function KanbanPage() {
   const [board, setBoard] = useState<Record<string, CardData[]>>(INITIAL_BOARD)
   const [activeCard, setActiveCard] = useState<CardData | null>(null)
+  const [selectedCard, setSelectedCard] = useState<CardData | null>(null)
   const boardRef = useRef<HTMLDivElement>(null)
 
   // Converte scroll vertical do mouse em scroll horizontal no board.
@@ -381,6 +384,7 @@ export function KanbanPage() {
 
   return (
     <AppLayout>
+      {selectedCard && <LeadModal card={selectedCard} onClose={() => setSelectedCard(null)} />}
       <div className={styles.page}>
         {/* ── Header ──────────────────────────────────────────────────── */}
         <header className={styles.header}>
@@ -433,7 +437,7 @@ export function KanbanPage() {
           <div className={styles.boardWrapper}>
             <div ref={boardRef} className={styles.board}>
               {COLUMN_META.map(meta => (
-                <KanbanColumn key={meta.id} meta={meta} cards={board[meta.id] ?? []} />
+                <KanbanColumn key={meta.id} meta={meta} cards={board[meta.id] ?? []} onCardClick={setSelectedCard} />
               ))}
             </div>
           </div>

@@ -2,11 +2,10 @@
 // Seções: hero de perfil, metas pessoal + representação, tarefas, KPIs.
 // Dados mock com skeleton durante carregamento.
 
-import { Avatar, Skeleton, TierBadge } from '@sylocrm/ui'
+import { Skeleton } from '@sylocrm/ui'
 import type { Tier } from '@sylocrm/ui'
 import { useEffect, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
-import { useAuth } from '../../hooks/useAuth'
 import styles from './HomePage.module.css'
 
 // ── Ícones ────────────────────────────────────────────────────────────────────
@@ -44,23 +43,6 @@ function TrendUpIcon() {
   )
 }
 
-function CalendarIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-    </svg>
-  )
-}
-
-function MicIcon() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-      <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="currentColor" strokeWidth={2} strokeLinecap="round" fill="none"/>
-      <line x1="12" y1="19" x2="12" y2="23" stroke="currentColor" strokeWidth={2} strokeLinecap="round"/>
-    </svg>
-  )
-}
 
 function ChevronDownIcon() {
   return (
@@ -131,16 +113,20 @@ const TIER_GRADIENT: Record<Tier, string> = {
   diamante:  'linear-gradient(135deg, #b69eff, #4b00cc)',
 }
 
+const TIER_BG: Record<Tier, string> = {
+  turmalina: '/tier-bg-turmalina.png',
+  rubi:      '/tier-bg-rubi.png',
+  platina:   '/tier-bg-platina.png',
+  diamante:  '/tier-bg-diamante.png',
+}
+
 // ── HomePage ──────────────────────────────────────────────────────────────────
 
 export function HomePage() {
-  const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
 
-  const emailPrefix = user?.email?.split('@')[0] ?? 'consultor'
   // TODO: buscar nome real do perfil via API
   const displayName = 'Ennyo Café'
-  const initials    = 'EC'
   const handle      = '@ennyocafe'
 
   useEffect(() => {
@@ -155,48 +141,53 @@ export function HomePage() {
         {/* ── Hero de perfil ────────────────────────────────────────────── */}
         {isLoading ? (
           <div className={styles.skeletonHero}>
-            <Skeleton variant="circle" width="80px" height="80px" />
+            <Skeleton variant="circle" width="112px" height="112px" />
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                <Skeleton variant="text" width="160px" height="26px" />
-                <Skeleton variant="rect" width="80px" height="22px" style={{ borderRadius: 99 }} />
+                <Skeleton variant="text" width="160px" height="28px" />
+                <Skeleton variant="rect" width="90px" height="24px" style={{ borderRadius: 99 }} />
                 <Skeleton variant="text" width="80px" height="16px" />
               </div>
               <Skeleton variant="text" width="320px" height="16px" />
             </div>
-            <Skeleton variant="rect" width="148px" height="40px" style={{ borderRadius: 99 }} />
+            <Skeleton variant="rect" width="148px" height="40px" style={{ borderRadius: 12 }} />
           </div>
         ) : (
-          <div className={styles.profileHero}>
-            <div className={styles.profileAvatarWrap}>
-              <Avatar src="/sara-profile.png" alt={displayName} initials={initials} tier={USER_TIER} size="lg" showStatus />
-              <div className={styles.profileMicBadge} style={{ background: TIER_GRADIENT[USER_TIER] }}>
-                <img src="/icon-medalha-white.svg" alt="" aria-hidden="true" />
-              </div>
-            </div>
+          <div
+            className={styles.profileHero}
+            style={{ background: `linear-gradient(98deg, #FFF 51.46%, rgba(255, 255, 255, 0.00) 82.99%), url(${TIER_BG[USER_TIER]}) lightgray 50% / cover no-repeat` }}
+          >
 
-            <div className={styles.profileInfo}>
-              <div className={styles.profileNameRow}>
-                <h1 className={styles.profileName}>{displayName}</h1>
-                <TierBadge tier={USER_TIER} />
-                <span className={styles.profileHandle}>{handle}</span>
+            {/* Avatar + info (incluindo ações abaixo do nome) */}
+            <div className={styles.profileLeft}>
+              <div
+                className={styles.profileAvatarRing}
+                style={{ background: TIER_GRADIENT[USER_TIER] }}
+              >
+                <div className={styles.profileAvatarInner}>
+                  <img src="/sara-profile.png" alt={displayName} className={styles.profileAvatarImg} />
+                </div>
               </div>
-              <p className={styles.profileMeta}>
-                Equipe de Porthis, São Paulo
-                <span className={styles.profileMetaDot} aria-hidden="true" />
-                <CalendarIcon />
-                Membro desde Janeiro de 2024
-              </p>
-            </div>
 
-            <div className={styles.heroActions}>
-              <button type="button" className={styles.notifBtn} aria-label="Notificações">
-                <BellIcon />
-              </button>
-              <button type="button" className={styles.chamaSaraBtn}>
-                <img src="/sara-ia.png" alt="" aria-hidden="true" className={styles.chamaSaraBtnAvatar} />
-                Chamar Sara IA
-              </button>
+              <div className={styles.profileInfo}>
+                <div className={styles.profileNameRow}>
+                  <h1 className={styles.profileName}>{displayName}</h1>
+                  <span className={styles.tierPill} style={{ background: TIER_GRADIENT[USER_TIER] }}>
+                    {USER_TIER.charAt(0).toUpperCase() + USER_TIER.slice(1)}
+                  </span>
+                  <span className={styles.profileHandle}>{handle}</span>
+                </div>
+                <p className={styles.profileMeta}>Equipe de Porthis, São Paulo</p>
+                <div className={styles.heroActions}>
+                  <button type="button" className={styles.notifBtn} aria-label="Notificações">
+                    <BellIcon />
+                  </button>
+                  <button type="button" className={styles.chamaSaraBtn}>
+                    <img src="/sara-ia.png" alt="" aria-hidden="true" className={styles.chamaSaraBtnAvatar} />
+                    Chamar Sara IA
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
