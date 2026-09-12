@@ -6,6 +6,12 @@ import { Skeleton } from '@sylocrm/ui'
 import type { Tier } from '@sylocrm/ui'
 import { useEffect, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
+import {
+  COLUMN_STATUS_LABEL,
+  COLUMN_TAREFA_LABEL,
+  INITIAL_BOARD,
+  parseCotaFields,
+} from '../../data/kanban-mock'
 import styles from './HomePage.module.css'
 
 // ── Ícones ────────────────────────────────────────────────────────────────────
@@ -84,24 +90,38 @@ interface TarefaItem {
   id: string
   cliente: string
   segmento: string
-  grupo: string
+  cota: string
   valor: string
   tarefa: string
   status: 'Atendimento' | 'Simulação' | 'Proposta'
+  daysUrgent: boolean
 }
 
 const STATUS_CLASS: Record<TarefaItem['status'], string> = {
-  Atendimento: styles.statusAtendimento,
-  Simulação:   styles.statusSimulacao,
-  Proposta:    styles.statusProposta,
+  Atendimento: styles.statusAtendimento ?? '',
+  Simulação:   styles.statusSimulacao   ?? '',
+  Proposta:    styles.statusProposta    ?? '',
 }
 
-// TODO: substituir por chamadas à API
-const MOCK_TAREFAS: TarefaItem[] = [
-  { id: '1', cliente: 'Ana Melo Guimarães', segmento: 'Imóvel Comercial',    grupo: 'Grupo 1044 • Cota 218',     valor: 'R$ 550.000', tarefa: 'Follow - Up', status: 'Atendimento' },
-  { id: '2', cliente: 'Ana Melo Guimarães', segmento: 'Caminhões (2 Cotas)', grupo: 'Grupo 3020 • Cota 041/042', valor: 'R$ 780.000', tarefa: 'Follow - Up', status: 'Simulação'   },
-  { id: '3', cliente: 'Ana Melo Guimarães', segmento: 'Reforma Imóvel',      grupo: 'Grupo 1088 • Cota 112',     valor: 'R$ 320.000', tarefa: 'Follow - Up', status: 'Proposta'    },
-]
+// Derivado do board do Kanban — mesmo dado, sem duplicação.
+// Exibe leads das etapas ativas (exclui "venda" — negócio fechado).
+const MOCK_TAREFAS: TarefaItem[] = Object.entries(INITIAL_BOARD)
+  .filter(([colId]) => colId !== 'venda')
+  .flatMap(([colId, cards]) =>
+    cards.map(card => {
+      const { segmento, valor } = parseCotaFields(card.cota)
+      return {
+        id:         card.id,
+        cliente:    card.name,
+        segmento,
+        cota:       card.cota,
+        valor,
+        tarefa:     COLUMN_TAREFA_LABEL[colId] ?? 'Follow-Up',
+        status:     (COLUMN_STATUS_LABEL[colId] ?? 'Atendimento') as TarefaItem['status'],
+        daysUrgent: card.daysUrgent,
+      }
+    })
+  )
 
 // TODO: buscar tier real do perfil via API
 const USER_TIER: Tier = 'turmalina'
@@ -355,7 +375,7 @@ export function HomePage() {
                       <td className={styles.clienteNome}>{t.cliente}</td>
                       <td>
                         <p className={styles.segmentoNome}>{t.segmento}</p>
-                        <p className={styles.segmentoGrupo}>{t.grupo}</p>
+                        <p className={styles.segmentoGrupo}>{t.cota}</p>
                       </td>
                       <td className={styles.valorCell}>{t.valor}</td>
                       <td><span className={styles.tarefaPill}>{t.tarefa}</span></td>

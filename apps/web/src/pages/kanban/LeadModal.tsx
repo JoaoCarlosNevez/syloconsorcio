@@ -2,7 +2,8 @@
 // Design: Figma SYLOAPP node 276:590
 
 import { useEffect, useState } from 'react'
-import type { CardData } from './KanbanPage'
+import type { CardData } from '../../data/kanban-mock'
+import { ADMIN_USER, getAgentProfile } from '../../data/kanban-mock'
 import styles from './LeadModal.module.css'
 
 // ── Ícones (SVG inline — padrão do projeto) ────────────────────────────────────
@@ -212,19 +213,7 @@ function LinkIcon() {
   )
 }
 
-// ── Usuário admin (placeholder até integração com API) ────────────────────────
-
-const ADMIN_USER = {
-  name: 'Ennyo Café',
-  team: 'Porthis',
-  photo: '/sara-profile.png',
-}
-
-// Retorna o perfil completo do responsável.
-// Por enquanto usa o admin como fallback — substituir por lookup de API quando disponível.
-function getAgentProfile(_name: string) {
-  return ADMIN_USER
-}
+// ADMIN_USER e getAgentProfile importados de ../../data/kanban-mock
 
 // ── Dados estáticos (mock) ─────────────────────────────────────────────────────
 
