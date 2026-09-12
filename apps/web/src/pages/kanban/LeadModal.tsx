@@ -192,6 +192,20 @@ function FilterIcon() {
   )
 }
 
+// ── Usuário admin (placeholder até integração com API) ────────────────────────
+
+const ADMIN_USER = {
+  name: 'Ennyo Café',
+  team: 'Porthis',
+  photo: '/sara-profile.png',
+}
+
+// Retorna o perfil completo do responsável.
+// Por enquanto usa o admin como fallback — substituir por lookup de API quando disponível.
+function getAgentProfile(_name: string) {
+  return ADMIN_USER
+}
+
 // ── Dados estáticos (mock) ─────────────────────────────────────────────────────
 
 const FUNNEL_STAGES = [
@@ -308,6 +322,7 @@ export function LeadModal({ card, onClose }: LeadModalProps) {
 
   const cota = parseCota(card.cota)
   const activeStage = 0 // Lead = índice 0
+  const responsible = getAgentProfile(card.agent)
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -408,9 +423,9 @@ export function LeadModal({ card, onClose }: LeadModalProps) {
                 <div className={styles.attrCell}>
                   <div className={styles.attrLabel}><PersonIcon />Responsável</div>
                   <div className={styles.attrValue}>
-                    <div className={styles.agentAvatar}>{card.agent.charAt(0)}</div>
-                    <span className={styles.attrValueText}>{card.agent}</span>
-                    <span className={styles.attrValueMuted}>(Porthis)</span>
+                    <img src={responsible.photo} alt={responsible.name} className={styles.agentAvatar} />
+                    <span className={styles.attrValueText}>{responsible.name}</span>
+                    <span className={styles.attrValueMuted}>({responsible.team})</span>
                   </div>
                 </div>
 
@@ -614,7 +629,7 @@ export function LeadModal({ card, onClose }: LeadModalProps) {
 
               {/* Input de comentário */}
               <div className={styles.commentInput}>
-                <div className={styles.commentAvatar}>D</div>
+                <img src={responsible.photo} alt={responsible.name} className={styles.commentAvatar} />
                 <input
                   type="text"
                   placeholder="Adicionar comentário ou nota interna..."
