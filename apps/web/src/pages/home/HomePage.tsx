@@ -5,6 +5,7 @@
 import { Skeleton } from '@sylocrm/ui'
 import type { Tier } from '@sylocrm/ui'
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
 import {
   COLUMN_STATUS_LABEL,
@@ -358,9 +359,14 @@ export function HomePage() {
                     Propostas de alto valor com previsão de assembleia nos próximos 15 dias
                   </p>
                 </div>
-                <button type="button" className={styles.filtrarBtn}>
-                  Filtrar <ChevronDownIcon />
-                </button>
+                <div className={styles.tarefasHeaderActions}>
+                  <Link to="/app/tarefas" className={styles.verTudoBtn}>
+                    Ver tudo
+                  </Link>
+                  <button type="button" className={styles.filtrarBtn}>
+                    Filtrar <ChevronDownIcon />
+                  </button>
+                </div>
               </div>
 
               <table className={styles.tarefasTable}>

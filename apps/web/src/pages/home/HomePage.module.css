@@ -377,6 +377,33 @@
   margin-top: 2px;
 }
 
+.tarefasHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.verTudoBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-input);
+  background: #ffffff;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color var(--duration-normal), border-color var(--duration-normal);
+}
+
+.verTudoBtn:hover {
+  background: var(--color-bg-subtle);
+  border-color: #cbd5e1;
+}
+
 .filtrarBtn {
   display: flex;
   align-items: center;
