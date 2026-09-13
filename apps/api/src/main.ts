@@ -6,7 +6,11 @@
 // It creates the concrete adapters and injects them into the app factory.
 
 import 'dotenv/config'
-import { SupabaseAuthAdapter } from '@sylocrm/infrastructure'
+import {
+  DrizzleMembershipRepository,
+  SupabaseAuthAdapter,
+  createDatabase,
+} from '@sylocrm/infrastructure'
 import { buildApp } from './app'
 import { env } from './config/env'
 
@@ -19,7 +23,15 @@ const authProvider =
       })
     : undefined
 
-const app = buildApp({ authProvider })
+// Supabase's certificate chain fails strict SSL verification — 'require' encrypts
+// the connection without validating the chain, which is Supabase's documented setup.
+const database = env.DATABASE_URL
+  ? createDatabase({ url: env.DATABASE_URL, ssl: 'require' })
+  : undefined
+
+const membershipRepository = database ? new DrizzleMembershipRepository(database) : undefined
+
+const app = buildApp({ authProvider, membershipRepository })
 
 try {
   await app.listen({ port: env.PORT, host: env.HOST })

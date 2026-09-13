@@ -15,8 +15,11 @@ export type DatabaseConfig = {
   url: string
   /** Maximum number of connections in the pool (default: 10) */
   maxConnections?: number
-  /** Whether to use SSL (default: false for local, true for production) */
-  ssl?: boolean
+  /**
+   * SSL mode (default: false for local Postgres).
+   * Supabase requires 'require' — its certificate chain fails strict boolean verification.
+   */
+  ssl?: boolean | 'require'
 }
 
 export type Database = ReturnType<typeof createDatabase>

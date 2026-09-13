@@ -63,6 +63,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
 
   app.register(authRoute, {
     authProvider: resolvedDeps.authProvider,
+    membershipRepository: resolvedDeps.membershipRepository,
   })
 
   return app
