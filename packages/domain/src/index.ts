@@ -9,3 +9,4 @@ export { ValidationError } from './errors/validation-error'
 export type { ValidationIssue } from './errors/validation-error'
 
 export * from './auth'
+export * from './leads'
