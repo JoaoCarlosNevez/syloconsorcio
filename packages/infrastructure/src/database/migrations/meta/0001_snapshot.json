@@ -53,12 +53,8 @@
           "name": "lead_assignment_history_lead_id_leads_id_fk",
           "tableFrom": "lead_assignment_history",
           "tableTo": "leads",
-          "columnsFrom": [
-            "lead_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["lead_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -66,12 +62,8 @@
           "name": "lead_assignment_history_from_user_id_users_id_fk",
           "tableFrom": "lead_assignment_history",
           "tableTo": "users",
-          "columnsFrom": [
-            "from_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["from_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -79,12 +71,8 @@
           "name": "lead_assignment_history_to_user_id_users_id_fk",
           "tableFrom": "lead_assignment_history",
           "tableTo": "users",
-          "columnsFrom": [
-            "to_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["to_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -92,12 +80,8 @@
           "name": "lead_assignment_history_changed_by_user_id_users_id_fk",
           "tableFrom": "lead_assignment_history",
           "tableTo": "users",
-          "columnsFrom": [
-            "changed_by_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["changed_by_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -210,12 +194,8 @@
           "name": "leads_organization_id_organizations_id_fk",
           "tableFrom": "leads",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -223,12 +203,8 @@
           "name": "leads_assigned_user_id_users_id_fk",
           "tableFrom": "leads",
           "tableTo": "users",
-          "columnsFrom": [
-            "assigned_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["assigned_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -298,12 +274,8 @@
           "name": "organization_memberships_user_id_users_id_fk",
           "tableFrom": "organization_memberships",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -311,12 +283,8 @@
           "name": "organization_memberships_organization_id_organizations_id_fk",
           "tableFrom": "organization_memberships",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -326,10 +294,7 @@
         "organization_memberships_user_id_organization_id_unique": {
           "name": "organization_memberships_user_id_organization_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "user_id",
-            "organization_id"
-          ]
+          "columns": ["user_id", "organization_id"]
         }
       },
       "policies": {},
@@ -393,12 +358,8 @@
           "name": "organizations_parent_organization_id_organizations_id_fk",
           "tableFrom": "organizations",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "parent_organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["parent_organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -453,9 +414,7 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -467,41 +426,22 @@
     "public.lead_stage": {
       "name": "lead_stage",
       "schema": "public",
-      "values": [
-        "LEAD",
-        "ATENDIMENTO",
-        "SIMULACAO",
-        "PROPOSTA",
-        "FECHADO",
-        "VENDA"
-      ]
+      "values": ["LEAD", "ATENDIMENTO", "SIMULACAO", "PROPOSTA", "FECHADO", "VENDA"]
     },
     "public.membership_status": {
       "name": "membership_status",
       "schema": "public",
-      "values": [
-        "ACTIVE",
-        "INVITED",
-        "SUSPENDED"
-      ]
+      "values": ["ACTIVE", "INVITED", "SUSPENDED"]
     },
     "public.organization_type": {
       "name": "organization_type",
       "schema": "public",
-      "values": [
-        "INCORPORADORA",
-        "MASTER",
-        "REPRESENTACAO"
-      ]
+      "values": ["INCORPORADORA", "MASTER", "REPRESENTACAO"]
     },
     "public.role": {
       "name": "role",
       "schema": "public",
-      "values": [
-        "ADMIN",
-        "MANAGER",
-        "SELLER"
-      ]
+      "values": ["ADMIN", "MANAGER", "SELLER"]
     }
   },
   "schemas": {},
