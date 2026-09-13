@@ -45,3 +45,6 @@ test-results/
 
 # Drizzle
 drizzle/
+
+# Supabase CLI local session cache
+supabase/.temp/
