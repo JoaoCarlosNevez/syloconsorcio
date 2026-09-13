@@ -22,3 +22,5 @@ export * from './database/schema'
 
 // Repositories
 export { DrizzleMembershipRepository } from './database/repositories/drizzle-membership.repository'
+export { DrizzleOrganizationRepository } from './database/repositories/drizzle-organization.repository'
+export { DrizzleLeadRepository } from './database/repositories/drizzle-lead.repository'

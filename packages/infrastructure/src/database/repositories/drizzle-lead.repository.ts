@@ -1,0 +1,163 @@
+// DrizzleLeadRepository — implementação concreta de ILeadRepository.
+//
+// ADR-08: Drizzle é o único ORM. Queries passam sempre por este client.
+// Seleção explícita de colunas em toda query (nunca SELECT *) — AGENTS.md §10.
+// `organizationIds` vazio nunca deve virar "SELECT * FROM leads" — retorna
+// vazio imediatamente em vez de emitir um `IN ()` inválido.
+
+import type {
+  AssignmentChange,
+  ILeadRepository,
+  LeadListFilter,
+  LeadListPage,
+  LeadRecord,
+  LeadScopeFilter,
+  NewLeadInput,
+  UpdateLeadInput,
+} from '@sylocrm/application'
+import { and, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
+import type { Database } from '../client'
+import { type DbLead, leadAssignmentHistory, leads } from '../schema'
+
+const LEAD_COLUMNS = {
+  id: leads.id,
+  organizationId: leads.organizationId,
+  name: leads.name,
+  phone: leads.phone,
+  email: leads.email,
+  segment: leads.segment,
+  valueCents: leads.valueCents,
+  quotaCount: leads.quotaCount,
+  source: leads.source,
+  stage: leads.stage,
+  assignedUserId: leads.assignedUserId,
+  stageChangedAt: leads.stageChangedAt,
+  createdAt: leads.createdAt,
+  updatedAt: leads.updatedAt,
+} as const
+
+function toLeadRecord(row: DbLead): LeadRecord {
+  return { ...row }
+}
+
+function buildScopeConditions(scope: LeadScopeFilter) {
+  const conditions = [inArray(leads.organizationId, scope.organizationIds)]
+  if (scope.assignedUserId) {
+    conditions.push(eq(leads.assignedUserId, scope.assignedUserId))
+  }
+  return conditions
+}
+
+export class DrizzleLeadRepository implements ILeadRepository {
+  constructor(private readonly db: Database) {}
+
+  async list(filter: LeadListFilter, page: number, pageSize: number): Promise<LeadListPage> {
+    if (filter.organizationIds.length === 0) {
+      return { items: [], total: 0, page, pageSize }
+    }
+
+    const conditions = buildScopeConditions(filter)
+    if (filter.stage) {
+      conditions.push(eq(leads.stage, filter.stage))
+    }
+    if (filter.search) {
+      const pattern = `%${filter.search}%`
+      const searchCondition = or(ilike(leads.name, pattern), ilike(leads.phone, pattern))
+      if (searchCondition) conditions.push(searchCondition)
+    }
+    const where = and(...conditions)
+
+    const [rows, countRows] = await Promise.all([
+      this.db
+        .select(LEAD_COLUMNS)
+        .from(leads)
+        .where(where)
+        .orderBy(desc(leads.createdAt))
+        .limit(pageSize)
+        .offset((page - 1) * pageSize),
+      this.db.select({ count: sql<number>`count(*)::int` }).from(leads).where(where),
+    ])
+
+    return {
+      items: rows.map(toLeadRecord),
+      total: countRows[0]?.count ?? 0,
+      page,
+      pageSize,
+    }
+  }
+
+  async findById(id: string, scope: LeadScopeFilter): Promise<LeadRecord | null> {
+    if (scope.organizationIds.length === 0) return null
+
+    const rows = await this.db
+      .select(LEAD_COLUMNS)
+      .from(leads)
+      .where(and(eq(leads.id, id), ...buildScopeConditions(scope)))
+      .limit(1)
+
+    const row = rows[0]
+    return row ? toLeadRecord(row) : null
+  }
+
+  async create(input: NewLeadInput): Promise<LeadRecord> {
+    const rows = await this.db
+      .insert(leads)
+      .values({
+        organizationId: input.organizationId,
+        name: input.name,
+        phone: input.phone,
+        email: input.email ?? null,
+        segment: input.segment,
+        valueCents: input.valueCents,
+        quotaCount: input.quotaCount ?? 1,
+        source: input.source,
+        assignedUserId: input.assignedUserId ?? null,
+      })
+      .returning(LEAD_COLUMNS)
+
+    const row = rows[0]
+    if (!row) throw new Error('Failed to create lead: no row returned')
+    return toLeadRecord(row)
+  }
+
+  async update(
+    id: string,
+    scope: LeadScopeFilter,
+    input: UpdateLeadInput,
+  ): Promise<LeadRecord | null> {
+    if (scope.organizationIds.length === 0) return null
+
+    const rows = await this.db
+      .update(leads)
+      .set({
+        ...input,
+        updatedAt: new Date(),
+        ...(input.stage ? { stageChangedAt: new Date() } : {}),
+      })
+      .where(and(eq(leads.id, id), ...buildScopeConditions(scope)))
+      .returning(LEAD_COLUMNS)
+
+    const row = rows[0]
+    return row ? toLeadRecord(row) : null
+  }
+
+  async delete(id: string, scope: LeadScopeFilter): Promise<boolean> {
+    if (scope.organizationIds.length === 0) return false
+
+    const rows = await this.db
+      .delete(leads)
+      .where(and(eq(leads.id, id), ...buildScopeConditions(scope)))
+      .returning({ id: leads.id })
+
+    return rows.length > 0
+  }
+
+  async recordAssignmentChange(change: AssignmentChange): Promise<void> {
+    await this.db.insert(leadAssignmentHistory).values({
+      leadId: change.leadId,
+      fromUserId: change.fromUserId,
+      toUserId: change.toUserId,
+      changedByUserId: change.changedByUserId,
+    })
+  }
+}
