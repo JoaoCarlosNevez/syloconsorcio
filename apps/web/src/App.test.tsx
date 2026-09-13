@@ -1,6 +1,6 @@
 // Smoke test — verifica que a aplicação renderiza sem crash.
 // App agora renderiza BrowserRouter + AppRouter, que por sua vez renderiza
-// LoginPage (redirect de / → /app/dashboard → /login).
+// LoginPage (redirect de / → /app/home → /login).
 //
 // useAuth é mockado para evitar dependência do Supabase em testes unitários.
 
