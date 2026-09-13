@@ -27,16 +27,19 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Skeleton } from '@sylocrm/ui'
+import { EmptyState, Skeleton, useToast } from '@sylocrm/ui'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
 import {
   COLUMN_META,
   type CardData,
   type ColumnMeta,
-  INITIAL_BOARD,
   getAgentProfile,
 } from '../../data/kanban-mock'
+import { useLeadsQuery, useUpdateLead } from '../../hooks/useLeads'
+import { useActiveOrganization } from '../../hooks/useOrganization'
+import { COLUMN_ID_TO_STAGE, formatBRL, groupLeadsByColumn } from '../../lib/lead-adapters'
+import { CreateLeadModal } from './CreateLeadModal'
 import styles from './KanbanPage.module.css'
 import { LeadModal } from './LeadModal'
 
@@ -537,17 +540,39 @@ function ListView({ board, onCardClick }: ListViewProps) {
 // ── KanbanPage ────────────────────────────────────────────────────────────────
 
 export function KanbanPage() {
-  const [board, setBoard] = useState<Record<string, CardData[]>>(INITIAL_BOARD)
+  const { organizationId } = useActiveOrganization()
+  // pageSize=100: suficiente para o volume inicial do MVP. Lazy loading por
+  // coluna (AGENTS.md §12) fica para quando o volume real exigir — ver nota
+  // de status do projeto.
+  const { data, isLoading: isLoadingLeads } = useLeadsQuery(organizationId, { pageSize: 100 })
+  const updateLead = useUpdateLead(organizationId)
+  const { toast } = useToast()
+
+  const [board, setBoard] = useState<Record<string, CardData[]>>({})
   const [activeCard, setActiveCard] = useState<CardData | null>(null)
   const [selectedCard, setSelectedCard] = useState<CardData | null>(null)
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban')
-  const [isLoading, setIsLoading] = useState(true)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
   const boardRef = useRef<HTMLDivElement>(null)
+  // Coluna de onde o card saiu no início do drag — usada para saber se o
+  // estágio realmente mudou quando o drag termina (handleDragEnd).
+  const dragOriginColumnRef = useRef<string | null>(null)
 
+  const isLoading = isLoadingLeads || !organizationId
+
+  // Sincroniza o board local a partir dos dados reais sempre que a query
+  // resolve (inclusive após criar/mover um lead, via invalidateQueries).
   useEffect(() => {
-    const t = setTimeout(() => setIsLoading(false), 700)
-    return () => clearTimeout(t)
-  }, [])
+    if (!data) return
+    setBoard(groupLeadsByColumn(data.items))
+  }, [data])
+
+  // Métricas calculadas a partir da página carregada. Com paginação real
+  // (>100 leads) isto deixa de refletir o total exato — ok para o MVP atual.
+  const totalLeads = data?.total ?? 0
+  const volumeTotalCents = (data?.items ?? []).reduce((sum, lead) => sum + lead.valueCents, 0)
+  const ticketMedioCents =
+    data && data.items.length > 0 ? Math.round(volumeTotalCents / data.items.length) : 0
 
   // Converte scroll vertical do mouse em scroll horizontal no board.
   // Usa addEventListener com passive:false para poder chamar preventDefault,
@@ -582,6 +607,7 @@ export function KanbanPage() {
     ({ active }: DragStartEvent) => {
       const colId = findColumnOfCard(board, String(active.id))
       if (!colId) return
+      dragOriginColumnRef.current = colId
       const card = (board[colId] ?? []).find((c) => c.id === active.id) ?? null
       setActiveCard(card)
     },
@@ -621,10 +647,33 @@ export function KanbanPage() {
   const handleDragEnd = useCallback(
     ({ active, over }: DragEndEvent) => {
       setActiveCard(null)
-      if (!over || active.id === over.id) return
+      const originColId = dragOriginColumnRef.current
+      dragOriginColumnRef.current = null
 
       const colId = findColumnOfCard(board, String(active.id))
       if (!colId) return
+
+      // handleDragOver já moveu o card para a coluna de destino em tempo real —
+      // aqui só precisamos persistir o novo estágio se a coluna realmente mudou.
+      if (originColId && originColId !== colId) {
+        const stage = COLUMN_ID_TO_STAGE[colId]
+        if (stage) {
+          updateLead.mutate(
+            { id: String(active.id), payload: { stage } },
+            {
+              onError: (error) => {
+                toast({
+                  type: 'error',
+                  title: 'Não foi possível mover o lead',
+                  description: error instanceof Error ? error.message : undefined,
+                })
+              },
+            },
+          )
+        }
+      }
+
+      if (!over || active.id === over.id) return
 
       setBoard((prev) => {
         const cards = prev[colId] ?? []
@@ -634,7 +683,7 @@ export function KanbanPage() {
         return { ...prev, [colId]: arrayMove(cards, fromIdx, toIdx) }
       })
     },
-    [board],
+    [board, updateLead, toast],
   )
 
   return (
@@ -683,7 +732,12 @@ export function KanbanPage() {
             <button type="button" className={styles.filterBtn}>
               <TransferIcon /> Transferência
             </button>
-            <button type="button" className={styles.newLeadBtn}>
+            <button
+              type="button"
+              className={styles.newLeadBtn}
+              onClick={() => setIsCreateOpen(true)}
+              disabled={!organizationId}
+            >
               <PlusIcon /> Novo Lead
             </button>
           </div>
@@ -697,7 +751,7 @@ export function KanbanPage() {
                 <VolumeIcon />
               </span>
               <span className={styles.metricLabel}>Volume Total em Cotas:</span>
-              <span className={styles.metricValue}>R$ 8.450.000,00</span>
+              <span className={styles.metricValue}>R$ {formatBRL(volumeTotalCents)}</span>
             </span>
             <span className={styles.metricDivider} />
             <span className={styles.metric}>
@@ -705,12 +759,12 @@ export function KanbanPage() {
                 <TicketIcon />
               </span>
               <span className={styles.metricLabel}>Ticket Médio:</span>
-              <span className={styles.metricValue}>R$ 280.000,00</span>
+              <span className={styles.metricValue}>R$ {formatBRL(ticketMedioCents)}</span>
             </span>
           </div>
           <div className={styles.activeLeads}>
             <span className={styles.activeDot} />
-            <span className={styles.activeLabel}>69 Leads Ativos no Funil</span>
+            <span className={styles.activeLabel}>{totalLeads} Leads Ativos no Funil</span>
           </div>
         </div>
 
@@ -774,13 +828,30 @@ export function KanbanPage() {
           </div>
         )}
 
+        {/* ── Estado vazio ─────────────────────────────────────────────── */}
+        {!isLoading && totalLeads === 0 && (
+          <EmptyState
+            title="Nenhum lead no funil ainda"
+            description="Cadastre o primeiro lead para começar a acompanhar o funil de vendas."
+            action={
+              <button
+                type="button"
+                className={styles.newLeadBtn}
+                onClick={() => setIsCreateOpen(true)}
+              >
+                <PlusIcon /> Novo Lead
+              </button>
+            }
+          />
+        )}
+
         {/* ── Lista ────────────────────────────────────────────────────── */}
-        {!isLoading && viewMode === 'list' && (
+        {!isLoading && totalLeads > 0 && viewMode === 'list' && (
           <ListView board={board} onCardClick={setSelectedCard} />
         )}
 
         {/* ── Board ────────────────────────────────────────────────────── */}
-        {!isLoading && viewMode === 'kanban' && (
+        {!isLoading && totalLeads > 0 && viewMode === 'kanban' && (
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
@@ -808,6 +879,14 @@ export function KanbanPage() {
           </DndContext>
         )}
       </div>
+
+      {organizationId && (
+        <CreateLeadModal
+          open={isCreateOpen}
+          organizationId={organizationId}
+          onClose={() => setIsCreateOpen(false)}
+        />
+      )}
     </AppLayout>
   )
 }
