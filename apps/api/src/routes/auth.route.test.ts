@@ -1,12 +1,15 @@
 // Tests: authRoute
 //
 // Verifica os contratos das rotas de autenticação:
-//   GET  /auth/me     — retorna identidade quando token válido; 401 quando ausente
-//   POST /auth/logout — retorna 200 sempre que autenticado; tolera falha do provider
+//   GET  /auth/me          — retorna identidade quando token válido; 401 quando ausente
+//   GET  /auth/memberships — lista memberships ativas do usuário autenticado
+//   GET  /auth/context     — resolve o AuthenticatedContext via tenantMiddleware
+//   POST /auth/logout      — retorna 200 sempre que autenticado; tolera falha do provider
 //
-// Usa buildApp() com authProvider mockado via DI — sem Supabase real.
+// Usa buildApp() com authProvider/membershipRepository mockados via DI — sem Supabase real.
 
-import type { IAuthProvider } from '@sylocrm/application'
+import type { IAuthProvider, IMembershipRepository } from '@sylocrm/application'
+import { OrganizationType, Role } from '@sylocrm/domain'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { buildApp } from '../app'
 import { AuthErrorCode } from '../auth/errors'
@@ -15,8 +18,8 @@ import { AuthErrorCode } from '../auth/errors'
 
 const MOCK_IDENTITY = { id: 'user-uuid', email: 'user@empresa.com' }
 
-function buildTestApp(authProvider: IAuthProvider) {
-  return buildApp({ authProvider })
+function buildTestApp(authProvider: IAuthProvider, membershipRepository?: IMembershipRepository) {
+  return buildApp({ authProvider, membershipRepository })
 }
 
 // ── GET /auth/me ──────────────────────────────────────────────────────────────
@@ -91,6 +94,109 @@ describe('GET /auth/me', () => {
     })
 
     expect(mockProvider.verifyToken).toHaveBeenCalledWith('my-jwt-token')
+  })
+})
+
+// ── GET /auth/memberships ────────────────────────────────────────────────────
+
+describe('GET /auth/memberships', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('returns 401 when Authorization header is absent', async () => {
+    const mockProvider: IAuthProvider = { verifyToken: vi.fn(), signOut: vi.fn() }
+    const app = buildTestApp(mockProvider)
+
+    const response = await app.inject({ method: 'GET', url: '/auth/memberships' })
+
+    expect(response.statusCode).toBe(401)
+  })
+
+  it('returns memberships with dataScope/permissions calculated', async () => {
+    const mockProvider: IAuthProvider = {
+      verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
+      signOut: vi.fn(),
+    }
+    const mockRepo: IMembershipRepository = {
+      findActiveByUserId: vi.fn().mockResolvedValue([
+        {
+          organizationId: 'org-rep-01',
+          organizationType: OrganizationType.REPRESENTACAO,
+          role: Role.SELLER,
+          status: 'ACTIVE',
+        },
+      ]),
+      findActiveByUserAndOrganization: vi.fn(),
+    }
+    const app = buildTestApp(mockProvider, mockRepo)
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/auth/memberships',
+      headers: { authorization: 'Bearer valid-token' },
+    })
+
+    expect(response.statusCode).toBe(200)
+    const body = response.json<{ memberships: { organizationId: string; dataScope: string }[] }>()
+    expect(body.memberships).toHaveLength(1)
+    expect(body.memberships[0]?.organizationId).toBe('org-rep-01')
+    expect(mockRepo.findActiveByUserId).toHaveBeenCalledWith(MOCK_IDENTITY.id)
+  })
+})
+
+// ── GET /auth/context ─────────────────────────────────────────────────────────
+
+describe('GET /auth/context', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('returns 400 when X-Organization-Id header is absent', async () => {
+    const mockProvider: IAuthProvider = {
+      verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
+      signOut: vi.fn(),
+    }
+    const app = buildTestApp(mockProvider)
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/auth/context',
+      headers: { authorization: 'Bearer valid-token' },
+    })
+
+    expect(response.statusCode).toBe(400)
+    const body = response.json<{ code: string }>()
+    expect(body.code).toBe(AuthErrorCode.TENANT_HEADER_MISSING)
+  })
+
+  it('returns the resolved authContext when membership is valid', async () => {
+    const mockProvider: IAuthProvider = {
+      verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
+      signOut: vi.fn(),
+    }
+    const membership = {
+      organizationId: 'org-rep-01',
+      organizationType: OrganizationType.REPRESENTACAO,
+      role: Role.ADMIN,
+      status: 'ACTIVE' as const,
+    }
+    const mockRepo: IMembershipRepository = {
+      findActiveByUserId: vi.fn().mockResolvedValue([membership]),
+      findActiveByUserAndOrganization: vi.fn().mockResolvedValue(membership),
+    }
+    const app = buildTestApp(mockProvider, mockRepo)
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/auth/context',
+      headers: { authorization: 'Bearer valid-token', 'x-organization-id': 'org-rep-01' },
+    })
+
+    expect(response.statusCode).toBe(200)
+    const body = response.json<{ currentMembership: { organizationId: string; role: string } }>()
+    expect(body.currentMembership.organizationId).toBe('org-rep-01')
+    expect(body.currentMembership.role).toBe(Role.ADMIN)
   })
 })
 
