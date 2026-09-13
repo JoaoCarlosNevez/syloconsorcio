@@ -1,4 +1,4 @@
-// TarefasPage — gerenciamento de atividades em 3 views: Lista, Calendário e Gantt.
+// TarefasPage — gerenciamento de atividades em 2 views: Lista e Calendário.
 
 import { type FormEvent, useMemo, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
@@ -88,25 +88,6 @@ function CalIcon() {
   )
 }
 
-function GanttIcon() {
-  return (
-    <svg
-      width="15"
-      height="8"
-      viewBox="0 0 22 12"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <line x1="0" y1="2" x2="13" y2="2" />
-      <line x1="5" y1="6" x2="22" y2="6" />
-      <line x1="2" y1="10" x2="16" y2="10" />
-    </svg>
-  )
-}
-
 function ChevronLeftIcon() {
   return (
     <svg
@@ -190,25 +171,6 @@ function DotsVertIcon() {
   )
 }
 
-function ClockIcon() {
-  return (
-    <svg
-      width="11"
-      height="11"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
-  )
-}
-
 function CheckSmIcon() {
   return (
     <svg
@@ -223,55 +185,6 @@ function CheckSmIcon() {
       aria-hidden="true"
     >
       <polyline points="1 5 5 9 11 1" />
-    </svg>
-  )
-}
-
-function InfoIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="16" x2="12" y2="12" />
-      <line x1="12" y1="8" x2="12.01" y2="8" />
-    </svg>
-  )
-}
-
-function DragHandleIcon() {
-  return (
-    <svg width="6" height="10" viewBox="0 0 8 14" fill="#94a3b8" aria-hidden="true">
-      <circle cx="2" cy="2" r="1.5" />
-      <circle cx="6" cy="2" r="1.5" />
-      <circle cx="2" cy="7" r="1.5" />
-      <circle cx="6" cy="7" r="1.5" />
-      <circle cx="2" cy="12" r="1.5" />
-      <circle cx="6" cy="12" r="1.5" />
-    </svg>
-  )
-}
-
-function CheckCircleIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="#059669" aria-hidden="true">
-      <circle cx="12" cy="12" r="12" />
-      <polyline
-        points="7 13 11 17 17 9"
-        stroke="white"
-        strokeWidth={2.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
     </svg>
   )
 }
@@ -314,11 +227,6 @@ const TASKS: Task[] = [
     lead: 'Lead: João Silva (#4920)',
     dateTime: 'Ontem · 17:00',
     status: 'atrasada',
-    ganttOffset: -1,
-    ganttSpan: 1,
-    ganttLabel: 'Contato João',
-    ganttLeadName: 'João Silva',
-    ganttLeadSub: '#4920',
   },
   {
     id: '2',
@@ -327,12 +235,6 @@ const TASKS: Task[] = [
     lead: 'Lead: Mariana Duarte',
     dateTime: 'Hoje · 14:30',
     status: 'em_andamento',
-    ganttOffset: 0,
-    ganttSpan: 1,
-    ganttLabel: 'Reunião Apresentação',
-    ganttSubLabel: '14:30 - 15:30',
-    ganttLeadName: 'Mariana Duarte',
-    ganttLeadSub: 'Comercial',
   },
   {
     id: '3',
@@ -341,12 +243,6 @@ const TASKS: Task[] = [
     lead: 'Lead: Aparecido Oliveira',
     dateTime: 'Hoje · 16:00',
     status: 'pendente',
-    ganttOffset: 0,
-    ganttSpan: 1,
-    ganttLabel: 'Follow-up Proposta',
-    ganttSubLabel: '16:00',
-    ganttLeadName: 'Aparecido Oliveira',
-    ganttLeadSub: 'Imóvel PJ',
   },
   {
     id: '4',
@@ -355,29 +251,8 @@ const TASKS: Task[] = [
     lead: 'Lead: Mariana Duarte',
     dateTime: 'Amanhã · 10:00',
     status: 'concluida',
-    ganttOffset: 0,
-    ganttSpan: 2,
-    ganttLabel: 'Documentação FGTS',
-    ganttSubLabel: 'Validação Completa',
-    ganttLeadName: 'Mariana Duarte',
-    ganttLeadSub: 'Validação',
   },
 ]
-
-const GANTT_EXTRA: Task = {
-  id: '5',
-  type: T_SIMULACAO,
-  title: 'Simulação comparativa de lance embutido',
-  lead: 'Carlos Alberto',
-  dateTime: '2 dias',
-  status: 'pendente',
-  ganttOffset: 1,
-  ganttSpan: 2,
-  ganttLabel: 'Simulação Lance Embutido',
-  ganttSubLabel: 'Previsão 48h',
-  ganttLeadName: 'Carlos Alberto',
-  ganttLeadSub: 'Novo Lead',
-}
 
 const STATUS_CFG = {
   atrasada: { dot: '#ba1a1a', label: 'Atrasada', color: '#ba1a1a' },
@@ -399,20 +274,6 @@ const PT_MONTHS = [
   'Outubro',
   'Novembro',
   'Dezembro',
-]
-const PT_MONTHS_SHORT = [
-  'Jan',
-  'Fev',
-  'Mar',
-  'Abr',
-  'Mai',
-  'Jun',
-  'Jul',
-  'Ago',
-  'Set',
-  'Out',
-  'Nov',
-  'Dez',
 ]
 const PT_WEEK_DAYS = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB', 'DOM']
 
@@ -621,46 +482,6 @@ function buildCalendarGrid(year: number, month: number, today: Date): CalCell[] 
   return cells
 }
 
-// ── Gantt helpers ─────────────────────────────────────────────────────────────
-
-interface WeekDay {
-  label: string
-  dayNum: string
-  isToday: boolean
-  isWeekend: boolean
-}
-
-function getWeekDays(today: Date): WeekDay[] {
-  const dow = today.getDay()
-  const mondayOffset = dow === 0 ? 6 : dow - 1
-  const monday = new Date(today)
-  monday.setDate(today.getDate() - mondayOffset)
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday)
-    d.setDate(monday.getDate() + i)
-    return {
-      label: PT_WEEK_DAYS[i],
-      dayNum: d.getDate().toString().padStart(2, '0'),
-      isToday: d.toDateString() === today.toDateString(),
-      isWeekend: i >= 5,
-    }
-  })
-}
-
-function getTodayWeekIdx(today: Date): number {
-  const dow = today.getDay()
-  return dow === 0 ? 6 : dow - 1
-}
-
-function ganttBarStyle(task: Task): { bg: string; border: string; isDashed: boolean } {
-  if (task.status === 'atrasada') return { bg: '#fff1f2', border: '#fecdd3', isDashed: false }
-  if (task.status === 'concluida') return { bg: '#ecfdf5', border: '#6ee7b7', isDashed: false }
-  if (task.status === 'em_andamento') return { bg: '#faf5ff', border: '#e9d5ff', isDashed: false }
-  if (task.type.label === 'Simulação')
-    return { bg: 'rgba(238,242,255,0.85)', border: '#a5b4fc', isDashed: true }
-  return { bg: '#fffbeb', border: '#fcd34d', isDashed: false }
-}
-
 // ── Shared: StatusBadge ───────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: TaskStatus }) {
@@ -706,7 +527,6 @@ function ListView({ tasks, onTaskClick }: { tasks: Task[]; onTaskClick: (task: T
                 border: 'none',
                 width: '100%',
                 textAlign: 'left',
-                padding: 0,
               }}
             >
               <div className={`${styles.listCell} ${styles.lColActivity}`}>
@@ -902,327 +722,6 @@ function CalendarView() {
   )
 }
 
-// ── GanttView ─────────────────────────────────────────────────────────────────
-
-interface GanttViewProps {
-  tasks: Task[]
-  todayIdx: number
-  weekDays: WeekDay[]
-  today: Date
-}
-
-function GanttView({ tasks, todayIdx, weekDays, today }: GanttViewProps) {
-  const [weekOffset, setWeekOffset] = useState(0)
-  const COL = 100 / 7
-
-  function colStart(task: Task) {
-    return Math.max(0, Math.min(6, todayIdx + task.ganttOffset))
-  }
-  function colSpan(task: Task) {
-    const s = colStart(task)
-    return Math.min(task.ganttSpan, 7 - s)
-  }
-  function dateRange(task: Task): string | null {
-    if (task.ganttSpan <= 1) return null
-    const s = colStart(task)
-    const e = Math.min(s + task.ganttSpan - 1, 6)
-    const monthAbr = PT_MONTHS_SHORT[today.getMonth()]
-    return `${weekDays[s]?.dayNum} - ${weekDays[e]?.dayNum} ${monthAbr}`
-  }
-
-  return (
-    <div className={styles.ganttOuter}>
-      <div className={styles.ganttCard}>
-        {/* ── Split container ───────────────────────────────────────────── */}
-        <div className={styles.ganttSplit}>
-          {/* LEFT: task table */}
-          <div className={styles.ganttLeft}>
-            {/* Table header */}
-            <div className={styles.ganttLeftHead}>
-              <span className={styles.ganttColActivity}>Atividade</span>
-              <span className={styles.ganttColLead}>Lead / Cliente</span>
-              <span className={styles.ganttColStatus}>Status</span>
-            </div>
-            {/* Rows */}
-            {tasks.map((task, idx) => {
-              const done = task.status === 'concluida'
-              return (
-                <div
-                  key={task.id}
-                  className={`${styles.ganttLeftRow} ${idx > 0 ? styles.ganttRowBorder : ''}`}
-                >
-                  <div className={styles.ganttColActivity}>
-                    <span
-                      className={styles.typeBadgeSmall}
-                      style={{
-                        background: task.type.bg,
-                        borderColor: task.type.border,
-                        color: task.type.color,
-                      }}
-                    >
-                      {task.type.label}
-                    </span>
-                    <span className={done ? styles.ganttTaskTitleDone : styles.ganttTaskTitle}>
-                      {task.title}
-                    </span>
-                    {task.ganttSubLabel && !done && (
-                      <span className={styles.ganttTaskTime}>
-                        <ClockIcon />{' '}
-                        {task.ganttOffset === 0 && task.ganttSpan === 2
-                          ? 'Concluído ontem'
-                          : task.ganttSubLabel}
-                      </span>
-                    )}
-                    {done && (
-                      <span className={styles.ganttConcluded}>
-                        <CheckSmIcon /> Concluído ontem
-                      </span>
-                    )}
-                  </div>
-                  <div className={styles.ganttColLead}>
-                    <span className={styles.ganttLeadName}>{task.ganttLeadName}</span>
-                    {task.ganttLeadSub && (
-                      <span className={styles.ganttLeadSub}>{task.ganttLeadSub}</span>
-                    )}
-                  </div>
-                  <div className={styles.ganttColStatus}>
-                    <StatusBadge status={task.status} />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          {/* RIGHT: timeline */}
-          <div className={styles.ganttRight}>
-            {/* Timeline header */}
-            <div className={styles.ganttTimeHead}>
-              {weekDays.map((day) => (
-                <div
-                  key={day.label}
-                  className={[
-                    styles.ganttTimeDayCol,
-                    day.isToday && styles.ganttTimeDayToday,
-                    day.isWeekend && styles.ganttTimeDayWeekend,
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                >
-                  <span className={styles.ganttDayLabel}>{day.label}</span>
-                  <span className={styles.ganttDayNum}>{day.dayNum}</span>
-                  {day.isToday && <span className={styles.ganttHojeBadge}>HOJE</span>}
-                </div>
-              ))}
-            </div>
-
-            {/* Timeline body */}
-            <div className={styles.ganttTimeBody}>
-              {/* Column tracks */}
-              {weekDays.map((day, i) => (
-                <div
-                  key={day.label}
-                  className={[
-                    styles.ganttTrack,
-                    day.isToday && styles.ganttTrackToday,
-                    day.isWeekend && styles.ganttTrackWeekend,
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  style={{ left: `${i * COL}%`, width: `${COL}%` }}
-                />
-              ))}
-              {/* Today indicator line */}
-              <div className={styles.ganttTodayLine} style={{ left: `${todayIdx * COL}%` }}>
-                <div className={styles.ganttTodayDot} />
-              </div>
-
-              {/* Task rows */}
-              {tasks.map((task, idx) => {
-                const s = colStart(task)
-                const sp = colSpan(task)
-                const bs = ganttBarStyle(task)
-                const dr = dateRange(task)
-
-                return (
-                  <div
-                    key={task.id}
-                    className={`${styles.ganttTimeRow} ${idx > 0 ? styles.ganttRowBorder : ''}`}
-                  >
-                    <div
-                      className={`${styles.ganttBar} ${bs.isDashed ? styles.ganttBarDashed : ''}`}
-                      style={{
-                        left: `calc(${s * COL}% + 8px)`,
-                        right: `calc(${(7 - s - sp) * COL}% + 8px)`,
-                        background: bs.bg,
-                        borderColor: bs.border,
-                      }}
-                    >
-                      {/* Atrasada: dot + label */}
-                      {task.status === 'atrasada' && (
-                        <div className={styles.ganttBarInner}>
-                          <span className={styles.ganttBarDot} style={{ background: '#f43f5e' }} />
-                          <span className={styles.ganttBarTitle} style={{ color: '#9f1239' }}>
-                            {task.ganttLabel}
-                          </span>
-                          <DragHandleIcon />
-                        </div>
-                      )}
-                      {/* Em andamento: 2 lines + resize handles */}
-                      {task.status === 'em_andamento' && (
-                        <div className={styles.ganttBarInner}>
-                          <div className={styles.ganttBarTextStack}>
-                            <span className={styles.ganttBarTitle} style={{ color: '#581c87' }}>
-                              {task.ganttLabel}
-                            </span>
-                            {task.ganttSubLabel && (
-                              <span className={styles.ganttBarSub} style={{ color: '#9333ea' }}>
-                                {task.ganttSubLabel}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      {/* Follow-up pendente: clock + label + time */}
-                      {task.status === 'pendente' && task.type.label !== 'Simulação' && (
-                        <div className={styles.ganttBarInner}>
-                          <span className={styles.ganttBarClockWrap} style={{ color: '#b45309' }}>
-                            <ClockIcon />
-                          </span>
-                          <div className={styles.ganttBarTextStack}>
-                            <span className={styles.ganttBarTitle} style={{ color: '#78350f' }}>
-                              {task.ganttLabel}
-                            </span>
-                            {task.ganttSubLabel && (
-                              <span className={styles.ganttBarSub} style={{ color: '#b45309' }}>
-                                {task.ganttSubLabel}
-                              </span>
-                            )}
-                          </div>
-                          <span className={styles.ganttBarDot} style={{ background: '#f59e0b' }} />
-                        </div>
-                      )}
-                      {/* Simulação: clock + label + date badge */}
-                      {task.status === 'pendente' && task.type.label === 'Simulação' && (
-                        <div className={styles.ganttBarInner}>
-                          <span className={styles.ganttBarClockWrap} style={{ color: '#4f46e5' }}>
-                            <ClockIcon />
-                          </span>
-                          <div className={styles.ganttBarTextStack}>
-                            <span className={styles.ganttBarTitle} style={{ color: '#312e81' }}>
-                              {task.ganttLabel}
-                            </span>
-                            {task.ganttSubLabel && (
-                              <span className={styles.ganttBarSub} style={{ color: '#4f46e5' }}>
-                                {task.ganttSubLabel}
-                              </span>
-                            )}
-                          </div>
-                          {dr && (
-                            <span
-                              className={styles.ganttDateBadge}
-                              style={{ background: 'rgba(224,231,255,0.7)', color: '#4338ca' }}
-                            >
-                              {dr}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      {/* Concluída: checkmark circle + label + date range badge */}
-                      {task.status === 'concluida' && (
-                        <div className={styles.ganttBarInner}>
-                          <CheckCircleIcon />
-                          <div className={styles.ganttBarTextStack}>
-                            <span className={styles.ganttBarTitle} style={{ color: '#064e3b' }}>
-                              {task.ganttLabel}
-                            </span>
-                            {task.ganttSubLabel && (
-                              <span className={styles.ganttBarSub} style={{ color: '#047857' }}>
-                                {task.ganttSubLabel}
-                              </span>
-                            )}
-                          </div>
-                          {dr && (
-                            <span
-                              className={styles.ganttDateBadge}
-                              style={{ background: 'rgba(209,250,229,0.8)', color: '#047857' }}
-                            >
-                              {dr}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* ── Footer legend ─────────────────────────────────────────────── */}
-        <div className={styles.ganttFooter}>
-          <div className={styles.ganttLegend}>
-            <span className={styles.ganttLegendItem}>
-              <InfoIcon />
-              <span className={styles.ganttLegendLabel}>Legenda rápida:</span>
-            </span>
-            {(
-              [
-                { color: '#f43f5e', label: 'Atrasada' },
-                { color: '#3b82f6', label: 'Em curso' },
-                { color: '#10b981', label: 'Concluída' },
-                { color: '#94a3b8', label: 'Pendente' },
-              ] as const
-            ).map((item) => (
-              <span key={item.label} className={styles.ganttLegendItem}>
-                <span className={styles.ganttLegendDot} style={{ background: item.color }} />
-                <span className={styles.ganttLegendText}>{item.label}</span>
-              </span>
-            ))}
-          </div>
-          <div className={styles.ganttHint}>
-            <span className={styles.ganttHintText}>
-              {weekOffset === 0
-                ? 'Semana atual'
-                : weekOffset < 0
-                  ? `${Math.abs(weekOffset)} semana${Math.abs(weekOffset) > 1 ? 's' : ''} atrás`
-                  : `+${weekOffset} semana${weekOffset > 1 ? 's' : ''}`}
-            </span>
-            <div className={styles.ganttNavBtns}>
-              <button
-                type="button"
-                className={styles.ganttNavBtn}
-                aria-label="Semana anterior"
-                onClick={() => setWeekOffset((w) => w - 1)}
-              >
-                <ChevronLeftIcon />
-              </button>
-              {weekOffset !== 0 && (
-                <button
-                  type="button"
-                  className={styles.ganttNavBtn}
-                  style={{ fontSize: 11, padding: '0 6px', minWidth: 'auto' }}
-                  onClick={() => setWeekOffset(0)}
-                >
-                  Hoje
-                </button>
-              )}
-              <button
-                type="button"
-                className={styles.ganttNavBtn}
-                aria-label="Próxima semana"
-                onClick={() => setWeekOffset((w) => w + 1)}
-              >
-                <ChevronRightIcon />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ── NewTaskModal ──────────────────────────────────────────────────────────────
 
 const TYPE_OPTIONS: TypeBadge[] = [T_LIGACAO, T_REUNIAO, T_FOLLOWUP, T_TAREFA, T_SIMULACAO]
@@ -1267,7 +766,7 @@ function NewTaskModal({ onClose, onCreate }: NewTaskModalProps) {
     }
     onCreate({
       title: title.trim(),
-      type: TYPE_OPTIONS[typeIdx],
+      type: TYPE_OPTIONS[typeIdx] ?? T_TAREFA,
       lead: lead.trim(),
       dateTime: dateTime.trim(),
       status,
@@ -1388,10 +887,6 @@ export function TarefasPage() {
   const [search, setSearch] = useState('')
   const [creatingTask, setCreatingTask] = useState(false)
 
-  const today = useMemo(() => new Date(), [])
-  const weekDays = useMemo(() => getWeekDays(today), [today])
-  const todayWeekIdx = useMemo(() => getTodayWeekIdx(today), [today])
-
   function handleConcluir(taskId: string) {
     setTasks((prev) =>
       prev.map((t) => (t.id === taskId ? { ...t, status: 'concluida' as TaskStatus } : t)),
@@ -1413,10 +908,6 @@ export function TarefasPage() {
   }) {
     const newTask: Task = {
       id: String(Date.now()),
-      ganttOffset: 1,
-      ganttSpan: 1,
-      ganttLabel: data.title,
-      ganttLeadName: data.lead,
       ...data,
     }
     setTasks((prev) => [newTask, ...prev])
@@ -1433,8 +924,6 @@ export function TarefasPage() {
     }
     return list
   }, [tasks, statusFilter, search])
-
-  const ganttTasks = [...TASKS, GANTT_EXTRA]
 
   const STATUS_FILTER_LABELS: Record<'todos' | TaskStatus, string> = {
     todos: `Todos (${TASKS.length})`,
@@ -1505,9 +994,7 @@ export function TarefasPage() {
             </div>
 
             <button type="button" className={styles.periodBtn}>
-              {view === 'gantt'
-                ? `${PT_MONTHS[today.getMonth()]} ${today.getFullYear()} / Semana ${getWeekNumber(today)}`
-                : 'Período: Esta semana'}
+              Período: Esta semana
               <ChevronDownSmIcon />
             </button>
           </div>
@@ -1515,7 +1002,7 @@ export function TarefasPage() {
           {/* Row 2: view switcher */}
           <div className={styles.controlRow}>
             <div className={styles.viewToggle}>
-              {(['lista', 'calendario', 'gantt'] as ViewMode[]).map((v) => (
+              {(['lista', 'calendario'] as ViewMode[]).map((v) => (
                 <button
                   key={v}
                   type="button"
@@ -1532,11 +1019,6 @@ export function TarefasPage() {
                       <CalIcon /> Calendário
                     </>
                   )}
-                  {v === 'gantt' && (
-                    <>
-                      <GanttIcon /> Gantt
-                    </>
-                  )}
                 </button>
               ))}
             </div>
@@ -1546,19 +1028,7 @@ export function TarefasPage() {
         {/* ── Views ────────────────────────────────────────────────────── */}
         {view === 'lista' && <ListView tasks={filteredTasks} onTaskClick={setSelectedTask} />}
         {view === 'calendario' && <CalendarView />}
-        {view === 'gantt' && (
-          <GanttView tasks={ganttTasks} todayIdx={todayWeekIdx} weekDays={weekDays} today={today} />
-        )}
       </div>
     </AppLayout>
   )
-}
-
-// ── Utility ───────────────────────────────────────────────────────────────────
-
-function getWeekNumber(date: Date): number {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
-  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7))
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
-  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
 }

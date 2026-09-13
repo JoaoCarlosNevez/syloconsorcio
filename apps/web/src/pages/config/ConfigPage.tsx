@@ -635,6 +635,7 @@ function EquipeView() {
   const [search, setSearch] = useState('')
   const [contextMenu, setContextMenu] = useState<string | null>(null)
   const [page, setPage] = useState(1)
+  const [inviteOpen, setInviteOpen] = useState(false)
 
   const filtered = TEAM_USERS.filter(
     (u) =>
@@ -685,7 +686,7 @@ function EquipeView() {
             <FilterIcon />
             Filtros
           </button>
-          <button type="button" className={styles.addUserBtn}>
+          <button type="button" className={styles.addUserBtn} onClick={() => setInviteOpen(true)}>
             <PlusIcon />
             Adicionar usuário
           </button>
@@ -770,6 +771,8 @@ function EquipeView() {
           </tbody>
         </table>
       </div>
+
+      {inviteOpen && <InviteModal onClose={() => setInviteOpen(false)} />}
 
       {/* Pagination */}
       <div className={styles.pagination}>
@@ -1093,6 +1096,9 @@ function PreferenciasView() {
   const [theme, setThemeLocal] = useState<'light' | 'dark'>(
     () => (localStorage.getItem('sylo-theme') as 'light' | 'dark') ?? 'light',
   )
+  const [language, setLanguage] = useState('pt-BR')
+  const [timezone, setTimezone] = useState('America/Sao_Paulo')
+  const [dateFormat, setDateFormat] = useState('DD/MM/YYYY')
   const [toast, setToast] = useState('')
 
   function applyTheme(t: 'light' | 'dark') {
@@ -1106,117 +1112,128 @@ function PreferenciasView() {
     setToast('Preferências salvas com sucesso!')
   }
 
-  const rowStyle: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 6,
-    marginBottom: 20,
-  }
-  const labelStyle: React.CSSProperties = {
-    fontSize: 12,
-    fontWeight: 600,
-    color: '#565e74',
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
-  }
-  const selectStyle: React.CSSProperties = {
-    border: '1px solid rgba(216,195,173,0.4)',
-    borderRadius: 8,
-    padding: '10px 12px',
-    fontFamily: 'inherit',
-    fontSize: 14,
-    color: '#0b1c30',
-    background: '#fff',
-    outline: 'none',
-    width: '100%',
-    maxWidth: 320,
-  }
-
   return (
-    <div style={{ padding: '8px 0', maxWidth: 560 }}>
-      <form onSubmit={handleSave}>
+    <div className={styles.settingsContent}>
+      <form onSubmit={handleSave} style={{ display: 'contents' }}>
         {/* Aparência */}
-        <div style={rowStyle}>
-          <span style={labelStyle}>Aparência</span>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button
-              type="button"
-              onClick={() => applyTheme('light')}
-              style={{
-                padding: '10px 20px',
-                borderRadius: 8,
-                border: theme === 'light' ? '2px solid #0b1c30' : '1px solid rgba(216,195,173,0.4)',
-                fontFamily: 'inherit',
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-                background: theme === 'light' ? '#0b1c30' : '#fff',
-                color: theme === 'light' ? '#fff' : '#565e74',
-              }}
-            >
-              ☀️ Claro
-            </button>
-            <button
-              type="button"
-              onClick={() => applyTheme('dark')}
-              style={{
-                padding: '10px 20px',
-                borderRadius: 8,
-                border: theme === 'dark' ? '2px solid #0b1c30' : '1px solid rgba(216,195,173,0.4)',
-                fontFamily: 'inherit',
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-                background: theme === 'dark' ? '#0b1c30' : '#fff',
-                color: theme === 'dark' ? '#fff' : '#565e74',
-              }}
-            >
-              🌙 Escuro
-            </button>
+        <div className={styles.settingsCard}>
+          <div className={styles.settingsCardHeader}>
+            <div className={styles.settingsCardTitle}>Aparência</div>
+            <div className={styles.settingsCardDesc}>Escolha o tema da interface</div>
+          </div>
+          <div className={styles.settingsCardBody}>
+            <div className={styles.themeGrid}>
+              <button
+                type="button"
+                className={`${styles.themeOption} ${theme === 'light' ? styles.themeOptionActive : ''}`}
+                onClick={() => applyTheme('light')}
+              >
+                <svg
+                  width="28"
+                  height="28"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="5" />
+                  <line x1="12" y1="1" x2="12" y2="3" />
+                  <line x1="12" y1="21" x2="12" y2="23" />
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                  <line x1="1" y1="12" x2="3" y2="12" />
+                  <line x1="21" y1="12" x2="23" y2="12" />
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </svg>
+                Claro
+              </button>
+              <button
+                type="button"
+                className={`${styles.themeOption} ${theme === 'dark' ? styles.themeOptionActive : ''}`}
+                onClick={() => applyTheme('dark')}
+              >
+                <svg
+                  width="28"
+                  height="28"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                >
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+                Escuro
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Idioma */}
-        <div style={rowStyle}>
-          <label style={labelStyle}>
-            Idioma
-            <select style={{ ...selectStyle, marginTop: 6 }}>
-              <option>Português (Brasil)</option>
-              <option>English (US)</option>
-              <option>Español</option>
-            </select>
-          </label>
+        {/* Região */}
+        <div className={styles.settingsCard}>
+          <div className={styles.settingsCardHeader}>
+            <div className={styles.settingsCardTitle}>Região e idioma</div>
+            <div className={styles.settingsCardDesc}>Idioma, fuso horário e formato de data</div>
+          </div>
+          <div className={styles.settingsCardBody}>
+            <div className={styles.formRow}>
+              <label className={styles.formLabel} htmlFor="pref-language">
+                Idioma
+              </label>
+              <select
+                id="pref-language"
+                className={styles.formSelect}
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+              >
+                <option value="pt-BR">Português (Brasil)</option>
+                <option value="en-US">English (US)</option>
+                <option value="es">Español</option>
+              </select>
+            </div>
+            <div className={styles.formRowHalf}>
+              <div className={styles.formRow}>
+                <label className={styles.formLabel} htmlFor="pref-timezone">
+                  Fuso horário
+                </label>
+                <select
+                  id="pref-timezone"
+                  className={styles.formSelect}
+                  value={timezone}
+                  onChange={(e) => setTimezone(e.target.value)}
+                >
+                  <option value="America/Sao_Paulo">America/São_Paulo (UTC−3)</option>
+                  <option value="America/Manaus">America/Manaus (UTC−4)</option>
+                  <option value="America/Fortaleza">America/Fortaleza (UTC−3)</option>
+                  <option value="America/Belem">America/Belém (UTC−3)</option>
+                </select>
+              </div>
+              <div className={styles.formRow}>
+                <label className={styles.formLabel} htmlFor="pref-date">
+                  Formato de data
+                </label>
+                <select
+                  id="pref-date"
+                  className={styles.formSelect}
+                  value={dateFormat}
+                  onChange={(e) => setDateFormat(e.target.value)}
+                >
+                  <option value="DD/MM/YYYY">DD/MM/AAAA</option>
+                  <option value="MM/DD/YYYY">MM/DD/AAAA</option>
+                  <option value="YYYY-MM-DD">AAAA-MM-DD</option>
+                </select>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Fuso horário */}
-        <div style={rowStyle}>
-          <label style={labelStyle}>
-            Fuso Horário
-            <select style={{ ...selectStyle, marginTop: 6 }}>
-              <option>America/Sao_Paulo (UTC-3)</option>
-              <option>America/Manaus (UTC-4)</option>
-              <option>America/Fortaleza (UTC-3)</option>
-              <option>America/Belem (UTC-3)</option>
-            </select>
-          </label>
+        <div className={styles.saveRow}>
+          <button type="submit" className={styles.primaryBtn}>
+            Salvar preferências
+          </button>
         </div>
-
-        <button
-          type="submit"
-          style={{
-            padding: '10px 24px',
-            background: '#0b1c30',
-            border: 'none',
-            borderRadius: 8,
-            fontFamily: 'inherit',
-            fontSize: 13,
-            fontWeight: 600,
-            color: '#fff',
-            cursor: 'pointer',
-          }}
-        >
-          Salvar preferências
-        </button>
       </form>
 
       {toast && <Toast msg={toast} onDone={() => setToast('')} />}
@@ -1226,12 +1243,93 @@ function PreferenciasView() {
 
 // ── Segurança view ─────────────────────────────────────────────────────────────────
 
+function passwordStrength(pw: string): { score: number; label: string; color: string } {
+  if (pw.length === 0) return { score: 0, label: '', color: '#e2e8f0' }
+  let score = 0
+  if (pw.length >= 8) score++
+  if (pw.length >= 12) score++
+  if (/[A-Z]/.test(pw)) score++
+  if (/[0-9]/.test(pw)) score++
+  if (/[^A-Za-z0-9]/.test(pw)) score++
+  if (score <= 1) return { score: 20, label: 'Muito fraca', color: '#ef4444' }
+  if (score === 2) return { score: 40, label: 'Fraca', color: '#f97316' }
+  if (score === 3) return { score: 60, label: 'Razoável', color: '#f59e0b' }
+  if (score === 4) return { score: 80, label: 'Forte', color: '#22c55e' }
+  return { score: 100, label: 'Muito forte', color: '#15803d' }
+}
+
+const SESSIONS = [
+  {
+    id: '1',
+    device: 'Chrome — Windows 11',
+    location: 'São Paulo, BR',
+    time: 'Agora',
+    current: true,
+  },
+  {
+    id: '2',
+    device: 'Safari — iPhone 15',
+    location: 'São Paulo, BR',
+    time: 'Há 2 dias',
+    current: false,
+  },
+  {
+    id: '3',
+    device: 'Firefox — macOS',
+    location: 'Rio de Janeiro, BR',
+    time: 'Há 7 dias',
+    current: false,
+  },
+]
+
+function MonitorIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="2" y="3" width="20" height="14" rx="2" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+      <line x1="12" y1="17" x2="12" y2="21" />
+    </svg>
+  )
+}
+
+function SmartphoneIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="5" y="2" width="14" height="20" rx="2" />
+      <line x1="12" y1="18" x2="12.01" y2="18" />
+    </svg>
+  )
+}
+
 function SegurancaView() {
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
   const [toast, setToast] = useState('')
+  const [sessions, setSessions] = useState(SESSIONS)
+
+  const strength = passwordStrength(next)
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -1254,95 +1352,633 @@ function SegurancaView() {
     setToast('Senha alterada com sucesso!')
   }
 
-  const inputStyle: React.CSSProperties = {
-    border: '1px solid rgba(216,195,173,0.4)',
-    borderRadius: 8,
-    padding: '10px 12px',
-    fontFamily: 'inherit',
-    fontSize: 14,
-    color: '#0b1c30',
-    background: '#fff',
-    outline: 'none',
-    width: '100%',
-    maxWidth: 320,
-  }
-  const labelStyle: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 6,
-    fontSize: 12,
-    fontWeight: 600,
-    color: '#565e74',
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
-    marginBottom: 16,
+  function revokeSession(id: string) {
+    setSessions((prev) => prev.filter((s) => s.id !== id))
+    setToast('Sessão encerrada.')
   }
 
   return (
-    <div style={{ padding: '8px 0', maxWidth: 400 }}>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
-        <label style={labelStyle}>
-          Senha atual
-          <input
-            type="password"
-            style={inputStyle}
-            value={current}
-            onChange={(e) => setCurrent(e.target.value)}
-            placeholder="••••••••"
-          />
-        </label>
-        <label style={labelStyle}>
-          Nova senha
-          <input
-            type="password"
-            style={inputStyle}
-            value={next}
-            onChange={(e) => setNext(e.target.value)}
-            placeholder="Mínimo 8 caracteres"
-          />
-        </label>
-        <label style={labelStyle}>
-          Confirmar nova senha
-          <input
-            type="password"
-            style={inputStyle}
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            placeholder="Repita a nova senha"
-          />
-        </label>
-        {error && <span style={{ fontSize: 13, color: '#ba1a1a', marginBottom: 12 }}>{error}</span>}
-        <button
-          type="submit"
-          style={{
-            padding: '10px 24px',
-            background: '#0b1c30',
-            border: 'none',
-            borderRadius: 8,
-            fontFamily: 'inherit',
-            fontSize: 13,
-            fontWeight: 600,
-            color: '#fff',
-            cursor: 'pointer',
-            alignSelf: 'flex-start',
-          }}
-        >
-          Alterar senha
-        </button>
-      </form>
+    <div className={styles.settingsContent}>
+      {/* Trocar senha */}
+      <div className={styles.settingsCard}>
+        <div className={styles.settingsCardHeader}>
+          <div className={styles.settingsCardTitle}>Trocar senha</div>
+          <div className={styles.settingsCardDesc}>
+            Use uma senha forte com pelo menos 8 caracteres
+          </div>
+        </div>
+        <div className={styles.settingsCardBody}>
+          <form onSubmit={handleSubmit} style={{ display: 'contents' }}>
+            <div className={styles.formRow}>
+              <label className={styles.formLabel} htmlFor="sec-current">
+                Senha atual
+              </label>
+              <input
+                id="sec-current"
+                type="password"
+                className={styles.formInput}
+                value={current}
+                onChange={(e) => setCurrent(e.target.value)}
+                placeholder="••••••••"
+                style={{ maxWidth: 340 }}
+              />
+            </div>
+            <div className={styles.formRow}>
+              <label className={styles.formLabel} htmlFor="sec-next">
+                Nova senha
+              </label>
+              <input
+                id="sec-next"
+                type="password"
+                className={styles.formInput}
+                value={next}
+                onChange={(e) => setNext(e.target.value)}
+                placeholder="Mínimo 8 caracteres"
+                style={{ maxWidth: 340 }}
+              />
+              {next.length > 0 && (
+                <div className={styles.strengthWrap}>
+                  <div className={styles.strengthTrack}>
+                    <div
+                      className={styles.strengthFill}
+                      style={{ width: `${strength.score}%`, background: strength.color }}
+                    />
+                  </div>
+                  <span className={styles.strengthLabel} style={{ color: strength.color }}>
+                    {strength.label}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className={styles.formRow}>
+              <label className={styles.formLabel} htmlFor="sec-confirm">
+                Confirmar nova senha
+              </label>
+              <input
+                id="sec-confirm"
+                type="password"
+                className={styles.formInput}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                placeholder="Repita a nova senha"
+                style={{ maxWidth: 340 }}
+              />
+            </div>
+            {error && <span className={styles.formError}>{error}</span>}
+            <div className={styles.saveRow}>
+              <button type="submit" className={styles.primaryBtn}>
+                Alterar senha
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* Autenticação de dois fatores */}
+      <div className={styles.settingsCard}>
+        <div className={styles.settingsCardHeader}>
+          <div className={styles.settingsCardTitle}>Autenticação em dois fatores</div>
+          <div className={styles.settingsCardDesc}>
+            Adicione uma camada extra de proteção à sua conta
+          </div>
+        </div>
+        <div className={styles.settingsCardBody}>
+          <div className={styles.twoFaRow}>
+            <div>
+              <div style={{ fontSize: 'var(--cfg-text-sm)', fontWeight: 600, color: '#0b1c30' }}>
+                Aplicativo autenticador
+              </div>
+              <div style={{ fontSize: 'var(--cfg-text-xs)', color: '#94a3b8', marginTop: 2 }}>
+                Google Authenticator, Authy ou similar
+              </div>
+            </div>
+            <span className={styles.twoFaBadge}>Não configurado</span>
+          </div>
+          <button type="button" className={styles.secondaryBtn}>
+            Configurar 2FA
+          </button>
+        </div>
+      </div>
+
+      {/* Sessões ativas */}
+      <div className={styles.settingsCard}>
+        <div className={styles.settingsCardHeader}>
+          <div className={styles.settingsCardTitle}>Sessões ativas</div>
+          <div className={styles.settingsCardDesc}>Dispositivos com acesso à sua conta agora</div>
+        </div>
+        <div className={styles.sessionList}>
+          {sessions.map((s) => (
+            <div key={s.id} className={styles.sessionItem}>
+              <div className={styles.sessionIconWrap}>
+                {s.device.includes('iPhone') ? <SmartphoneIcon /> : <MonitorIcon />}
+              </div>
+              <div className={styles.sessionInfo}>
+                <div className={styles.sessionDevice}>{s.device}</div>
+                <div className={styles.sessionMeta}>
+                  {s.location} · {s.time}
+                </div>
+              </div>
+              {s.current ? (
+                <span className={styles.sessionCurrent}>Sessão atual</span>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.sessionKillBtn}
+                  onClick={() => revokeSession(s.id)}
+                >
+                  Encerrar
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
       {toast && <Toast msg={toast} onDone={() => setToast('')} />}
     </div>
   )
 }
 
-// ── Coming soon sub-page ─────────────────────────────────────────────────────────
+// ── Notificações view ─────────────────────────────────────────────────────────────
 
-function ComingSoonSub({ label }: { label: string }) {
+interface NotifSetting {
+  id: string
+  label: string
+  desc: string
+  email: boolean
+  push: boolean
+  inApp: boolean
+}
+
+const NOTIF_DEFAULTS: NotifSetting[] = [
+  {
+    id: 'new-lead',
+    label: 'Novo lead atribuído',
+    desc: 'Quando um lead é atribuído a você',
+    email: true,
+    push: true,
+    inApp: true,
+  },
+  {
+    id: 'task-due',
+    label: 'Tarefa próxima do vencimento',
+    desc: '24h antes do prazo',
+    email: true,
+    push: false,
+    inApp: true,
+  },
+  {
+    id: 'task-overdue',
+    label: 'Tarefa vencida',
+    desc: 'Quando uma tarefa passa do prazo',
+    email: true,
+    push: true,
+    inApp: true,
+  },
+  {
+    id: 'comment',
+    label: 'Novo comentário',
+    desc: 'Quando alguém comenta em suas tarefas',
+    email: false,
+    push: false,
+    inApp: true,
+  },
+  {
+    id: 'member-join',
+    label: 'Novo membro na equipe',
+    desc: 'Quando alguém aceita um convite',
+    email: false,
+    push: false,
+    inApp: true,
+  },
+  {
+    id: 'billing',
+    label: 'Cobrança e pagamentos',
+    desc: 'Faturas, falhas e renovações',
+    email: true,
+    push: false,
+    inApp: true,
+  },
+]
+
+function NotificacoesView() {
+  const [notifs, setNotifs] = useState<NotifSetting[]>(NOTIF_DEFAULTS)
+  const [toast, setToast] = useState('')
+
+  function toggle(id: string, channel: 'email' | 'push' | 'inApp') {
+    setNotifs((prev) => prev.map((n) => (n.id === id ? { ...n, [channel]: !n[channel] } : n)))
+  }
+
   return (
-    <div className={styles.comingSoonSub}>
-      <span className={styles.comingSoonSubLabel}>{label}</span>
-      <span className={styles.comingSoonSubHint}>Esta seção está em desenvolvimento.</span>
+    <div className={styles.settingsContent}>
+      <div className={styles.settingsCard}>
+        <div className={styles.notifHeader}>
+          <span className={styles.notifHeaderLabel}>Evento</span>
+          <span className={styles.notifHeaderLabel}>E-mail</span>
+          <span className={styles.notifHeaderLabel}>Push</span>
+          <span className={styles.notifHeaderLabel}>In-app</span>
+        </div>
+        {notifs.map((n) => (
+          <div key={n.id} className={styles.notifRow}>
+            <div>
+              <div className={styles.notifRowLabel}>{n.label}</div>
+              <div className={styles.notifRowDesc}>{n.desc}</div>
+            </div>
+            {(['email', 'push', 'inApp'] as const).map((ch) => (
+              <div key={ch} className={styles.notifCell}>
+                <label className={styles.toggleSwitch}>
+                  <input type="checkbox" checked={n[ch]} onChange={() => toggle(n.id, ch)} />
+                  <span className={styles.toggleTrack} />
+                  <span className={styles.toggleThumb} />
+                </label>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      <div className={styles.saveRow}>
+        <button
+          type="button"
+          className={styles.primaryBtn}
+          onClick={() => setToast('Preferências de notificação salvas!')}
+        >
+          Salvar notificações
+        </button>
+      </div>
+
+      {toast && <Toast msg={toast} onDone={() => setToast('')} />}
     </div>
+  )
+}
+
+// ── Organização view ───────────────────────────────────────────────────────────────
+
+function OrganizacaoView() {
+  const [orgName, setOrgName] = useState('Sylo Consultoria')
+  const [cnpj, setCnpj] = useState('12.345.678/0001-90')
+  const [website, setWebsite] = useState('https://sylocrm.com')
+  const [phone, setPhone] = useState('(11) 99999-0000')
+  const [sector, setSector] = useState('financeiro')
+  const [toast, setToast] = useState('')
+
+  function handleSave(e: FormEvent) {
+    e.preventDefault()
+    setToast('Dados da organização salvos com sucesso!')
+  }
+
+  return (
+    <div className={styles.settingsContent}>
+      <div className={styles.settingsCard}>
+        <div className={styles.settingsCardHeader}>
+          <div className={styles.settingsCardTitle}>Identidade da organização</div>
+          <div className={styles.settingsCardDesc}>Logo e nome público exibidos no sistema</div>
+        </div>
+        <div className={styles.settingsCardBody}>
+          <div className={styles.logoUploadRow}>
+            <div className={styles.logoPreview}>SC</div>
+            <div className={styles.logoUploadActions}>
+              <button type="button" className={styles.secondaryBtn}>
+                Alterar logo
+              </button>
+              <span className={styles.formHint}>PNG ou SVG · Máx. 1MB · 256×256px</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.settingsCard}>
+        <div className={styles.settingsCardHeader}>
+          <div className={styles.settingsCardTitle}>Dados da empresa</div>
+          <div className={styles.settingsCardDesc}>Informações cadastrais da organização</div>
+        </div>
+        <div className={styles.settingsCardBody}>
+          <form onSubmit={handleSave} style={{ display: 'contents' }}>
+            <div className={styles.formRow}>
+              <label className={styles.formLabel} htmlFor="org-name">
+                Nome da organização
+              </label>
+              <input
+                id="org-name"
+                className={styles.formInput}
+                value={orgName}
+                onChange={(e) => setOrgName(e.target.value)}
+                placeholder="Razão social ou nome fantasia"
+              />
+            </div>
+            <div className={styles.formRowHalf}>
+              <div className={styles.formRow}>
+                <label className={styles.formLabel} htmlFor="org-cnpj">
+                  CNPJ
+                </label>
+                <input
+                  id="org-cnpj"
+                  className={styles.formInput}
+                  value={cnpj}
+                  onChange={(e) => setCnpj(e.target.value)}
+                  placeholder="00.000.000/0001-00"
+                />
+              </div>
+              <div className={styles.formRow}>
+                <label className={styles.formLabel} htmlFor="org-phone">
+                  Telefone
+                </label>
+                <input
+                  id="org-phone"
+                  className={styles.formInput}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="(11) 00000-0000"
+                />
+              </div>
+            </div>
+            <div className={styles.formRowHalf}>
+              <div className={styles.formRow}>
+                <label className={styles.formLabel} htmlFor="org-website">
+                  Website
+                </label>
+                <input
+                  id="org-website"
+                  className={styles.formInput}
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="https://..."
+                />
+              </div>
+              <div className={styles.formRow}>
+                <label className={styles.formLabel} htmlFor="org-sector">
+                  Setor
+                </label>
+                <select
+                  id="org-sector"
+                  className={styles.formSelect}
+                  value={sector}
+                  onChange={(e) => setSector(e.target.value)}
+                >
+                  <option value="financeiro">Financeiro / Bancário</option>
+                  <option value="seguros">Seguros</option>
+                  <option value="imobiliario">Imobiliário</option>
+                  <option value="consorcio">Consórcio</option>
+                  <option value="outro">Outro</option>
+                </select>
+              </div>
+            </div>
+            <div className={styles.saveRow}>
+              <button type="submit" className={styles.primaryBtn}>
+                Salvar organização
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {toast && <Toast msg={toast} onDone={() => setToast('')} />}
+    </div>
+  )
+}
+
+// ── Atividade view ─────────────────────────────────────────────────────────────────
+
+interface ActivityEntry {
+  id: string
+  type: 'lead' | 'task' | 'user' | 'billing' | 'auth'
+  action: string
+  user: string
+  time: string
+  color: string
+  bg: string
+}
+
+const ACTIVITY_LOG: ActivityEntry[] = [
+  {
+    id: '1',
+    type: 'lead',
+    action: 'criou o lead',
+    user: 'Carlos Mendes',
+    time: 'Há 5 min',
+    color: '#1d4ed8',
+    bg: '#eff6ff',
+  },
+  {
+    id: '2',
+    type: 'task',
+    action: 'concluiu a tarefa "Follow-up Bradesco"',
+    user: 'Ana Souza',
+    time: 'Há 18 min',
+    color: '#059669',
+    bg: '#dcfce7',
+  },
+  {
+    id: '3',
+    type: 'user',
+    action: 'convidou Rafael Alves para a equipe',
+    user: 'Carlos Mendes',
+    time: 'Há 1 h',
+    color: '#8b5cf6',
+    bg: '#f3e8ff',
+  },
+  {
+    id: '4',
+    type: 'lead',
+    action: 'moveu lead para "Proposta Enviada"',
+    user: 'Pedro Lima',
+    time: 'Há 2 h',
+    color: '#1d4ed8',
+    bg: '#eff6ff',
+  },
+  {
+    id: '5',
+    type: 'auth',
+    action: 'fez login',
+    user: 'Juliana Costa',
+    time: 'Há 3 h',
+    color: '#64748b',
+    bg: '#f1f5f9',
+  },
+  {
+    id: '6',
+    type: 'billing',
+    action: 'fatura #2024-011 paga com sucesso',
+    user: 'Sistema',
+    time: '01/11/2024',
+    color: '#059669',
+    bg: '#dcfce7',
+  },
+  {
+    id: '7',
+    type: 'task',
+    action: 'criou a tarefa "Apresentação Itaú"',
+    user: 'Ana Souza',
+    time: '31/10/2024',
+    color: '#059669',
+    bg: '#dcfce7',
+  },
+  {
+    id: '8',
+    type: 'user',
+    action: 'alterou permissão de Juliana Costa para Visualizador',
+    user: 'Carlos Mendes',
+    time: '30/10/2024',
+    color: '#8b5cf6',
+    bg: '#f3e8ff',
+  },
+]
+
+const TYPE_LABELS: Record<ActivityEntry['type'], string> = {
+  lead: 'Lead',
+  task: 'Tarefa',
+  user: 'Usuário',
+  billing: 'Cobrança',
+  auth: 'Acesso',
+}
+
+function ActivityDotIcon({ color, bg }: { color: string; bg: string }) {
+  return (
+    <div className={styles.activityIconWrap} style={{ background: bg }}>
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke={color}
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="4" />
+      </svg>
+    </div>
+  )
+}
+
+function AtividadeView() {
+  const [filter, setFilter] = useState<ActivityEntry['type'] | 'all'>('all')
+
+  const filtered = filter === 'all' ? ACTIVITY_LOG : ACTIVITY_LOG.filter((a) => a.type === filter)
+
+  return (
+    <div className={styles.settingsContent}>
+      <div className={styles.activityToolbar}>
+        <select
+          className={styles.activityFilterSelect}
+          value={filter}
+          onChange={(e) => setFilter(e.target.value as ActivityEntry['type'] | 'all')}
+        >
+          <option value="all">Todos os eventos</option>
+          {(Object.keys(TYPE_LABELS) as ActivityEntry['type'][]).map((t) => (
+            <option key={t} value={t}>
+              {TYPE_LABELS[t]}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className={styles.settingsCard}>
+        <div className={styles.activityList}>
+          {filtered.map((entry) => (
+            <div key={entry.id} className={styles.activityItem}>
+              <ActivityDotIcon color={entry.color} bg={entry.bg} />
+              <div className={styles.activityContent}>
+                <div className={styles.activityAction}>
+                  <span className={styles.activityUser}>{entry.user}</span> {entry.action}
+                </div>
+                <div className={styles.activityMeta}>{entry.time}</div>
+              </div>
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <div
+              style={{
+                padding: '40px 22px',
+                textAlign: 'center',
+                color: '#94a3b8',
+                fontSize: 'var(--cfg-text-sm)',
+              }}
+            >
+              Nenhum evento encontrado.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── InviteModal ────────────────────────────────────────────────────────────────────
+
+function InviteModal({ onClose }: { onClose: () => void }) {
+  const [email, setEmail] = useState('')
+  const [role, setRole] = useState<UserRole>('Membro')
+  const [toast, setToast] = useState('')
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (!email.trim()) return
+    setToast(`Convite enviado para ${email}`)
+    setTimeout(onClose, 1800)
+  }
+
+  return (
+    <>
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: overlay backdrop */}
+      <div className={styles.modalOverlay} onClick={onClose}>
+        {/* biome-ignore lint/a11y/useKeyWithClickEvents: modal stops propagation */}
+        <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.modalHeader}>
+            <div className={styles.modalTitle}>Convidar usuário</div>
+            <div className={styles.modalDesc}>
+              O convite será enviado por e-mail. O usuário terá 7 dias para aceitar.
+            </div>
+          </div>
+          <form onSubmit={handleSubmit}>
+            <div className={styles.modalBody}>
+              <div className={styles.formRow}>
+                <label className={styles.formLabel} htmlFor="invite-email">
+                  E-mail
+                </label>
+                <input
+                  id="invite-email"
+                  type="email"
+                  className={styles.formInput}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="nome@empresa.com"
+                />
+              </div>
+              <div className={styles.formRow}>
+                <span className={styles.formLabel}>Função</span>
+                <div className={styles.roleSelect}>
+                  {(['Administrador', 'Membro', 'Visualizador'] as UserRole[]).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      className={`${styles.roleOption} ${role === r ? styles.roleOptionActive : ''}`}
+                      onClick={() => setRole(r)}
+                    >
+                      <span className={styles.roleOptionLabel}>{r}</span>
+                      <span className={styles.roleOptionDesc}>
+                        {r === 'Administrador' && 'Acesso total'}
+                        {r === 'Membro' && 'Criar e editar'}
+                        {r === 'Visualizador' && 'Somente leitura'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button type="button" className={styles.secondaryBtn} onClick={onClose}>
+                Cancelar
+              </button>
+              <button type="submit" className={styles.primaryBtn}>
+                Enviar convite
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+      {toast && <Toast msg={toast} onDone={() => setToast('')} />}
+    </>
   )
 }
 
@@ -1411,10 +2047,10 @@ export function ConfigPage() {
         {view === 'equipe' && <EquipeView />}
         {view === 'plano' && <PlanoView />}
         {view === 'preferencias' && <PreferenciasView />}
+        {view === 'notificacoes' && <NotificacoesView />}
         {view === 'seguranca' && <SegurancaView />}
-        {(view === 'notificacoes' || view === 'organizacao' || view === 'atividade') && (
-          <ComingSoonSub label={VIEW_LABELS[view]} />
-        )}
+        {view === 'organizacao' && <OrganizacaoView />}
+        {view === 'atividade' && <AtividadeView />}
       </div>
     </AppLayout>
   )
