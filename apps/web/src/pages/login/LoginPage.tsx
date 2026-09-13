@@ -13,10 +13,174 @@
 //   - aria-label nos ícones
 
 import { Button, Checkbox, Input } from '@sylocrm/ui'
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import styles from './LoginPage.module.css'
+
+// ── RecoveryModal ─────────────────────────────────────────────────────────────
+
+function RecoveryModal({ onClose }: { onClose: () => void }) {
+  const [recoveryEmail, setRecoveryEmail] = useState('')
+  const [sent, setSent] = useState(false)
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (recoveryEmail.trim()) setSent(true)
+  }
+
+  return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: overlay backdrop dismiss
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 500,
+        background: 'rgba(11,28,48,0.55)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+      }}
+      onClick={onClose}
+    >
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: modal stops propagation */}
+      <div
+        style={{
+          background: '#fff',
+          borderRadius: 16,
+          width: '100%',
+          maxWidth: 400,
+          boxShadow: '0 8px 40px rgba(11,28,48,0.18)',
+          overflow: 'hidden',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ padding: '22px 24px', borderBottom: '1px solid #e9ecef' }}>
+          <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#0b1c30' }}>
+            Recuperar senha
+          </p>
+        </div>
+        {sent ? (
+          <div style={{ padding: '28px 24px', textAlign: 'center' }}>
+            <p style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 600, color: '#0b1c30' }}>
+              E-mail enviado!
+            </p>
+            <p style={{ margin: '0 0 20px', fontSize: 13, color: '#565e74', lineHeight: 1.5 }}>
+              Verifique sua caixa de entrada e siga as instruções para redefinir sua senha.
+            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: '9px 20px',
+                background: '#0b1c30',
+                border: 'none',
+                borderRadius: 8,
+                fontFamily: 'inherit',
+                fontSize: 13,
+                fontWeight: 600,
+                color: '#fff',
+                cursor: 'pointer',
+              }}
+            >
+              Fechar
+            </button>
+          </div>
+        ) : (
+          <form
+            style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: 24 }}
+            onSubmit={handleSubmit}
+          >
+            <p style={{ margin: 0, fontSize: 13, color: '#565e74', lineHeight: 1.5 }}>
+              Informe seu e-mail corporativo. Enviaremos um link para você redefinir sua senha.
+            </p>
+            <input
+              type="email"
+              placeholder="seu.email@empresa.com.br"
+              value={recoveryEmail}
+              onChange={(e) => setRecoveryEmail(e.target.value)}
+              style={{
+                border: '1px solid #d1d5db',
+                borderRadius: 8,
+                padding: '10px 12px',
+                fontFamily: 'inherit',
+                fontSize: 14,
+                color: '#0b1c30',
+                outline: 'none',
+              }}
+            />
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  padding: '8px 16px',
+                  background: 'none',
+                  border: '1px solid #d1d5db',
+                  borderRadius: 8,
+                  fontFamily: 'inherit',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: '#565e74',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                style={{
+                  padding: '8px 18px',
+                  background: '#0b1c30',
+                  border: 'none',
+                  borderRadius: 8,
+                  fontFamily: 'inherit',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                Enviar link
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── InlineToast ───────────────────────────────────────────────────────────────
+
+function InlineToast({ msg, onDone }: { msg: string; onDone: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 3000)
+    return () => clearTimeout(t)
+  }, [onDone])
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        bottom: 24,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 600,
+        background: '#0b1c30',
+        color: '#fff',
+        padding: '10px 20px',
+        borderRadius: 10,
+        fontSize: 14,
+        fontWeight: 500,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {msg}
+    </div>
+  )
+}
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -128,6 +292,8 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [recoveryOpen, setRecoveryOpen] = useState(false)
+  const [toast, setToast] = useState('')
 
   const displayError = validationError ?? signInError?.message ?? null
 
@@ -171,167 +337,180 @@ export function LoginPage() {
   }
 
   return (
-    <div className={styles.page}>
-      {/* ── Painel esquerdo (Sara IA) ─────────────────────────────────────── */}
-      <div className={styles.leftPanel} aria-hidden="true">
-        <img src="/sara-ia.png" alt="Sara, assistente de IA da Sylo" className={styles.saraImage} />
+    <>
+      {recoveryOpen && <RecoveryModal onClose={() => setRecoveryOpen(false)} />}
+      {toast && <InlineToast msg={toast} onDone={() => setToast('')} />}
+      <div className={styles.page}>
+        {/* ── Painel esquerdo (Sara IA) ─────────────────────────────────────── */}
+        <div className={styles.leftPanel} aria-hidden="true">
+          <img
+            src="/sara-ia.png"
+            alt="Sara, assistente de IA da Sylo"
+            className={styles.saraImage}
+          />
 
-        <div className={styles.overlay} />
+          <div className={styles.overlay} />
 
-        {/* Floating badge "Sara IA" */}
-        <div className={styles.saraBadge}>
-          <span className={styles.saraDot} />
-          <span className={styles.saraBadgeText}>Sara IA</span>
-        </div>
+          {/* Floating badge "Sara IA" */}
+          <div className={styles.saraBadge}>
+            <span className={styles.saraDot} />
+            <span className={styles.saraBadgeText}>Sara IA</span>
+          </div>
 
-        {/* Conteúdo textual */}
-        <div className={styles.leftContent}>
-          <h1 className={styles.headline}>Potencialize suas vendas com o Sylo CRM</h1>
-          <p className={styles.subtitle}>
-            Acompanhe seus leads, acelere fechamentos de consórcios e conte com um suporte da Sara
-            em tempo real para superar todas as suas metas.
-          </p>
+          {/* Conteúdo textual */}
+          <div className={styles.leftContent}>
+            <h1 className={styles.headline}>Potencialize suas vendas com o Sylo CRM</h1>
+            <p className={styles.subtitle}>
+              Acompanhe seus leads, acelere fechamentos de consórcios e conte com um suporte da Sara
+              em tempo real para superar todas as suas metas.
+            </p>
 
-          {/* Faixa de métricas */}
-          <div className={styles.metrics}>
-            <div className={styles.metric}>
-              <div className={styles.metricValue}>+38%</div>
-              <div className={styles.metricLabel}>Taxa de Conversão</div>
-            </div>
-            <div className={styles.metricDivider} />
-            <div className={styles.metric}>
-              <div className={styles.metricValue}>2.4x</div>
-              <div className={styles.metricLabel}>Velocidade no Pipeline</div>
-            </div>
-            <div className={styles.metricDivider} />
-            <div className={styles.metric}>
-              <div className={`${styles.metricValue} ${styles.amber}`}>24/7</div>
-              <div className={styles.metricLabel}>Mentoria Comercial IA</div>
+            {/* Faixa de métricas */}
+            <div className={styles.metrics}>
+              <div className={styles.metric}>
+                <div className={styles.metricValue}>+38%</div>
+                <div className={styles.metricLabel}>Taxa de Conversão</div>
+              </div>
+              <div className={styles.metricDivider} />
+              <div className={styles.metric}>
+                <div className={styles.metricValue}>2.4x</div>
+                <div className={styles.metricLabel}>Velocidade no Pipeline</div>
+              </div>
+              <div className={styles.metricDivider} />
+              <div className={styles.metric}>
+                <div className={`${styles.metricValue} ${styles.amber}`}>24/7</div>
+                <div className={styles.metricLabel}>Mentoria Comercial IA</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* ── Painel direito (formulário) ───────────────────────────────────── */}
-      <div className={styles.rightPanel}>
-        <div className={styles.formContainer}>
-          {/* Logo */}
-          <div className={styles.logo} aria-label="Sylo CRM">
-            <img src="/sylo-logo.png" alt="Sylo CRM" className={styles.logoImg} />
-          </div>
+        {/* ── Painel direito (formulário) ───────────────────────────────────── */}
+        <div className={styles.rightPanel}>
+          <div className={styles.formContainer}>
+            {/* Logo */}
+            <div className={styles.logo} aria-label="Sylo CRM">
+              <img src="/sylo-logo.png" alt="Sylo CRM" className={styles.logoImg} />
+            </div>
 
-          {/* Cabeçalho */}
-          <h2 className={styles.formHeading}>Entrar</h2>
-          <p className={styles.formSubtitle}>
-            Bem-vindo ao Sylo CRM. Acesse sua conta para gerenciar seu pipeline e metas de vendas.
-          </p>
+            {/* Cabeçalho */}
+            <h2 className={styles.formHeading}>Entrar</h2>
+            <p className={styles.formSubtitle}>
+              Bem-vindo ao Sylo CRM. Acesse sua conta para gerenciar seu pipeline e metas de vendas.
+            </p>
 
-          {/* Formulário */}
-          <form className={styles.form} onSubmit={handleSubmit} noValidate>
-            <Input
-              label="E-MAIL CORPORATIVO"
-              type="email"
-              placeholder="seu.email@empresa.com.br"
-              leftIcon={<EmailIcon />}
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value)
-                setValidationError(null)
-              }}
-              autoComplete="email"
-              inputMode="email"
-              disabled={isSigningIn}
-              errorMessage={
-                (validationError?.includes('mail') ?? validationError?.includes('e-mail'))
-                  ? validationError
-                  : undefined
-              }
-            />
+            {/* Formulário */}
+            <form className={styles.form} onSubmit={handleSubmit} noValidate>
+              <Input
+                label="E-MAIL CORPORATIVO"
+                type="email"
+                placeholder="seu.email@empresa.com.br"
+                leftIcon={<EmailIcon />}
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  setValidationError(null)
+                }}
+                autoComplete="email"
+                inputMode="email"
+                disabled={isSigningIn}
+                errorMessage={
+                  (validationError?.includes('mail') ?? validationError?.includes('e-mail'))
+                    ? validationError
+                    : undefined
+                }
+              />
 
-            <Input
-              label="SENHA"
-              passwordToggle
-              placeholder="••••••••••••"
-              leftIcon={<LockIcon />}
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value)
-                setValidationError(null)
-              }}
-              autoComplete="current-password"
-              disabled={isSigningIn}
-            />
-
-            <div className={styles.optionsRow}>
-              <Checkbox
-                label="Lembrar de mim"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
+              <Input
+                label="SENHA"
+                passwordToggle
+                placeholder="••••••••••••"
+                leftIcon={<LockIcon />}
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  setValidationError(null)
+                }}
+                autoComplete="current-password"
                 disabled={isSigningIn}
               />
-              <a href="/recuperar-senha" className={styles.forgotLink}>
-                Esqueceu sua senha?
-              </a>
-            </div>
 
-            {displayError && (
-              <div role="alert" className={styles.errorBanner}>
-                {displayError}
+              <div className={styles.optionsRow}>
+                <Checkbox
+                  label="Lembrar de mim"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  disabled={isSigningIn}
+                />
+                <button
+                  type="button"
+                  className={styles.forgotLink}
+                  onClick={() => setRecoveryOpen(true)}
+                >
+                  Esqueceu sua senha?
+                </button>
               </div>
-            )}
 
-            <div className={styles.submitButton}>
-              <Button
-                type="submit"
-                variant="primary"
-                fullWidth
-                loading={isSigningIn}
-                disabled={isSigningIn}
-              >
-                Acessar Plataforma <ArrowRightIcon />
-              </Button>
+              {displayError && (
+                <div role="alert" className={styles.errorBanner}>
+                  {displayError}
+                </div>
+              )}
+
+              <div className={styles.submitButton}>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  fullWidth
+                  loading={isSigningIn}
+                  disabled={isSigningIn}
+                >
+                  Acessar Plataforma <ArrowRightIcon />
+                </Button>
+              </div>
+            </form>
+
+            {/* Divider */}
+            <div className={styles.dividerRow} aria-hidden="true">
+              <span className={styles.dividerLine} />
+              <span className={styles.dividerText}>OU CONTINUE COM</span>
+              <span className={styles.dividerLine} />
             </div>
-          </form>
 
-          {/* Divider */}
-          <div className={styles.dividerRow} aria-hidden="true">
-            <span className={styles.dividerLine} />
-            <span className={styles.dividerText}>OU CONTINUE COM</span>
-            <span className={styles.dividerLine} />
-          </div>
+            {/* Google button */}
+            <button
+              type="button"
+              className={styles.googleButton}
+              disabled={isSigningIn}
+              aria-label="Entrar com Google Workspace"
+              onClick={() => setToast('Login com Google disponível em breve')}
+            >
+              <GoogleIcon />
+              Google Workspace
+            </button>
 
-          {/* Google button */}
-          <button
-            type="button"
-            className={styles.googleButton}
-            disabled={isSigningIn}
-            aria-label="Entrar com Google Workspace"
-          >
-            <GoogleIcon />
-            Google Workspace
-          </button>
-
-          {/* Notice */}
-          <p className={styles.notice}>
-            Seu acesso e credenciais chegam por e-mail corporativo assim que o plano da sua equipe
-            for liberado.
-          </p>
-
-          {/* Footer */}
-          <footer className={styles.footer}>
-            <div className={styles.footerSecurity}>
-              <ShieldIcon />
-              <span>Ambiente seguro</span>
-            </div>
-            <p className={styles.footerHelp}>
-              Precisa de ajuda?{' '}
-              <a href="/suporte" className={styles.footerHelpLink}>
-                Fale com o suporte
-              </a>
+            {/* Notice */}
+            <p className={styles.notice}>
+              Seu acesso e credenciais chegam por e-mail corporativo assim que o plano da sua equipe
+              for liberado.
             </p>
-          </footer>
+
+            {/* Footer */}
+            <footer className={styles.footer}>
+              <div className={styles.footerSecurity}>
+                <ShieldIcon />
+                <span>Ambiente seguro</span>
+              </div>
+              <p className={styles.footerHelp}>
+                Precisa de ajuda?{' '}
+                <a href="/suporte" className={styles.footerHelpLink}>
+                  Fale com o suporte
+                </a>
+              </p>
+            </footer>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }

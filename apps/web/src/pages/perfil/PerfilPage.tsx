@@ -1,5 +1,6 @@
 // PerfilPage — Perfil completo do consultor: nível, XP, ofensiva e conquistas.
 
+import { type CSSProperties, type FormEvent, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { useAuth } from '../../hooks/useAuth'
 import styles from './PerfilPage.module.css'
@@ -235,14 +236,436 @@ const BADGES = [
   },
 ]
 
+// ── Tipos de badge ────────────────────────────────────────────────────────────
+
+type BadgeData = (typeof BADGES)[number]
+
+// ── BadgeModal ────────────────────────────────────────────────────────────────
+
+function BadgeModal({ badge, onClose }: { badge: BadgeData; onClose: () => void }) {
+  return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: overlay backdrop dismiss
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 400,
+        background: 'rgba(11,28,48,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      onClick={onClose}
+    >
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: modal stops propagation */}
+      <div
+        style={{
+          background: '#fff',
+          borderRadius: 16,
+          width: '100%',
+          maxWidth: 380,
+          boxShadow: '0 8px 40px rgba(11,28,48,0.2)',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: '32px 28px',
+          gap: 12,
+          textAlign: 'center',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          style={{
+            fontSize: 48,
+            width: 80,
+            height: 80,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: badge.bg,
+            borderRadius: 20,
+          }}
+        >
+          {badge.emoji}
+        </div>
+        <span style={{ fontSize: 18, fontWeight: 700, color: '#0b1c30' }}>{badge.name}</span>
+        <p style={{ fontSize: 14, color: '#565e74', margin: 0, lineHeight: 1.5 }}>{badge.desc}</p>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 4 }}>
+          <span
+            style={{
+              fontSize: 13,
+              fontWeight: 700,
+              color: '#047857',
+              background: '#ecfdf5',
+              border: '1px solid #a7f3d0',
+              borderRadius: 9999,
+              padding: '3px 12px',
+            }}
+          >
+            {badge.xp}
+          </span>
+          {badge.unlocked && badge.date && (
+            <span style={{ fontSize: 12, color: '#94a3b8' }}>Desbloqueada em {badge.date}</span>
+          )}
+          {!badge.unlocked && (
+            <span
+              style={{
+                fontSize: 12,
+                color: '#94a3b8',
+                background: '#f1f5f9',
+                borderRadius: 9999,
+                padding: '3px 12px',
+              }}
+            >
+              🔒 Não desbloqueada
+            </span>
+          )}
+        </div>
+        {!badge.unlocked && (
+          <p style={{ fontSize: 13, color: '#94a3b8', margin: 0, marginTop: 4 }}>
+            Complete o desafio para desbloquear esta conquista.
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            marginTop: 8,
+            padding: '8px 24px',
+            background: 'linear-gradient(to right,#ffeab1,#ffa705)',
+            border: 'none',
+            borderRadius: 8,
+            fontFamily: 'inherit',
+            fontSize: 13,
+            fontWeight: 600,
+            color: '#0b1c30',
+            cursor: 'pointer',
+          }}
+        >
+          Fechar
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── EditProfileModal ──────────────────────────────────────────────────────────
+
+interface ProfileData {
+  name: string
+  handle: string
+  location: string
+}
+
+function EditProfileModal({
+  initial,
+  onClose,
+  onSave,
+}: { initial: ProfileData; onClose: () => void; onSave: (d: ProfileData) => void }) {
+  const [name, setName] = useState(initial.name)
+  const [handle, setHandle] = useState(initial.handle)
+  const [location, setLocation] = useState(initial.location)
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    onSave({
+      name: name.trim() || initial.name,
+      handle: handle.trim() || initial.handle,
+      location: location.trim() || initial.location,
+    })
+  }
+
+  const inp: CSSProperties = {
+    height: 38,
+    border: '1px solid rgba(216,195,173,0.4)',
+    borderRadius: 8,
+    padding: '0 12px',
+    fontFamily: 'inherit',
+    fontSize: 14,
+    color: '#0b1c30',
+    background: '#f8f9ff',
+    outline: 'none',
+    width: '100%',
+    boxSizing: 'border-box',
+  }
+  const lbl: CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+    fontSize: 12,
+    fontWeight: 600,
+    color: '#565e74',
+    textTransform: 'uppercase',
+    letterSpacing: '0.02em',
+  }
+
+  return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: overlay backdrop dismiss
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 400,
+        background: 'rgba(11,28,48,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      onClick={onClose}
+    >
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: modal stops propagation */}
+      <div
+        style={{
+          background: '#fff',
+          borderRadius: 14,
+          width: '100%',
+          maxWidth: 440,
+          boxShadow: '0 8px 40px rgba(11,28,48,0.18)',
+          overflow: 'hidden',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '18px 22px',
+            borderBottom: '1px solid rgba(216,195,173,0.3)',
+          }}
+        >
+          <span style={{ fontSize: 16, fontWeight: 700, color: '#0b1c30' }}>Editar Perfil</span>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 30,
+              height: 30,
+              borderRadius: 8,
+              border: 'none',
+              background: 'none',
+              color: '#94a3b8',
+              cursor: 'pointer',
+            }}
+            aria-label="Fechar"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+        <form
+          style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: 22 }}
+          onSubmit={handleSubmit}
+        >
+          <label style={lbl}>
+            Nome
+            <input style={inp} type="text" value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
+          <label style={lbl}>
+            Handle
+            <input
+              style={inp}
+              type="text"
+              value={handle}
+              onChange={(e) => setHandle(e.target.value)}
+              placeholder="@handle"
+            />
+          </label>
+          <label style={lbl}>
+            Localização
+            <input
+              style={inp}
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            />
+          </label>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 4 }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: '8px 16px',
+                background: 'none',
+                border: '1px solid rgba(216,195,173,0.5)',
+                borderRadius: 8,
+                fontFamily: 'inherit',
+                fontSize: 13,
+                fontWeight: 500,
+                color: '#565e74',
+                cursor: 'pointer',
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              style={{
+                padding: '8px 18px',
+                background: 'linear-gradient(to right,#ffeab1,#ffa705)',
+                border: 'none',
+                borderRadius: 8,
+                fontFamily: 'inherit',
+                fontSize: 13,
+                fontWeight: 600,
+                color: '#0b1c30',
+                cursor: 'pointer',
+              }}
+            >
+              Salvar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ── PerfilPage ─────────────────────────────────────────────────────────────────
+
+const ACTIVITY_TYPES = [
+  '☎️ Ligação',
+  '💬 WhatsApp',
+  '📧 E-mail',
+  '🤝 Reunião',
+  '📄 Proposta Enviada',
+  '🏆 Venda Fechada',
+]
 
 export function PerfilPage() {
   const { user } = useAuth()
   const emailPrefix = user?.email?.split('@')[0] ?? 'consultor'
+  const [selectedBadge, setSelectedBadge] = useState<BadgeData | null>(null)
+  const [editingProfile, setEditingProfile] = useState(false)
+  const [activityOpen, setActivityOpen] = useState(false)
+  const [activityToast, setActivityToast] = useState('')
+  const [profile, setProfile] = useState({
+    name: 'Ennyo Café',
+    handle: `@${emailPrefix}`,
+    location: 'São Paulo, SP',
+  })
 
   return (
     <AppLayout>
+      {selectedBadge && <BadgeModal badge={selectedBadge} onClose={() => setSelectedBadge(null)} />}
+      {editingProfile && (
+        <EditProfileModal
+          initial={profile}
+          onClose={() => setEditingProfile(false)}
+          onSave={(d) => {
+            setProfile(d)
+            setEditingProfile(false)
+          }}
+        />
+      )}
+      {activityOpen && (
+        // biome-ignore lint/a11y/useKeyWithClickEvents: overlay backdrop dismiss
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 400,
+            background: 'rgba(11,28,48,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onClick={() => setActivityOpen(false)}
+        >
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: modal stops propagation */}
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: 16,
+              width: 340,
+              boxShadow: '0 8px 40px rgba(11,28,48,0.18)',
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ padding: '18px 20px', borderBottom: '1px solid #e9ecef' }}>
+              <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#0b1c30' }}>
+                Registrar Atividade
+              </p>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#94a3b8' }}>
+                Selecione o tipo de atividade realizada hoje
+              </p>
+            </div>
+            <div style={{ padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {ACTIVITY_TYPES.map((act) => (
+                <button
+                  key={act}
+                  type="button"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '10px 14px',
+                    background: 'none',
+                    border: 'none',
+                    borderRadius: 8,
+                    fontFamily: 'inherit',
+                    fontSize: 14,
+                    color: '#0f172a',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'background 0.12s',
+                  }}
+                  onMouseEnter={(e) => {
+                    ;(e.currentTarget as HTMLElement).style.background = '#f1f5f9'
+                  }}
+                  onMouseLeave={(e) => {
+                    ;(e.currentTarget as HTMLElement).style.background = 'none'
+                  }}
+                  onClick={() => {
+                    setActivityToast(`✓ ${act} registrada!`)
+                    setActivityOpen(false)
+                    setTimeout(() => setActivityToast(''), 3000)
+                  }}
+                >
+                  {act}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {activityToast && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 600,
+            background: '#0b1c30',
+            color: '#fff',
+            padding: '10px 20px',
+            borderRadius: 10,
+            fontSize: 14,
+            fontWeight: 500,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {activityToast}
+        </div>
+      )}
       <div className={styles.page}>
         {/* ── Barra de ações ──────────────────────────────────────────────────── */}
         <div className={styles.topBar}>
@@ -267,7 +690,11 @@ export function PerfilPage() {
           {/* Banner */}
           <div className={styles.coverBanner}>
             <div className={styles.coverPattern} aria-hidden="true" />
-            <button type="button" className={styles.editBannerBtn}>
+            <button
+              type="button"
+              className={styles.editBannerBtn}
+              onClick={() => setEditingProfile(true)}
+            >
               <PencilIcon />
               Editar Perfil
             </button>
@@ -281,12 +708,12 @@ export function PerfilPage() {
               </div>
               <div className={styles.profileInfo}>
                 <div className={styles.profileNameRow}>
-                  <h1 className={styles.profileName}>Sara Sylo</h1>
+                  <h1 className={styles.profileName}>{profile.name}</h1>
                   <span className={styles.tierBadge}>Diamante</span>
-                  <span className={styles.profileHandle}>@sara.sylo</span>
+                  <span className={styles.profileHandle}>{profile.handle}</span>
                 </div>
                 <div className={styles.profileMetaRow}>
-                  <span className={styles.profileMeta}>Equipe de Porthis, São Paulo</span>
+                  <span className={styles.profileMeta}>Equipe de Porthis, {profile.location}</span>
                   <span className={styles.profileMetaDot} aria-hidden="true" />
                   <span className={styles.profileMeta}>
                     <LocationIcon />
@@ -373,7 +800,11 @@ export function PerfilPage() {
                   </div>
                 </div>
 
-                <button type="button" className={styles.streakActionBtn}>
+                <button
+                  type="button"
+                  className={styles.streakActionBtn}
+                  onClick={() => setActivityOpen(true)}
+                >
                   Registrar Atividade de Hoje
                 </button>
               </div>
@@ -431,12 +862,15 @@ export function PerfilPage() {
 
               <div className={styles.badgesGrid}>
                 {BADGES.map((badge) => (
+                  // biome-ignore lint/a11y/useKeyWithClickEvents: badge card click
                   <div
                     key={badge.name}
                     className={[
                       styles.badgeCard,
                       badge.unlocked ? styles.badgeUnlocked : styles.badgeLocked,
                     ].join(' ')}
+                    onClick={() => setSelectedBadge(badge)}
+                    style={{ cursor: 'pointer' }}
                   >
                     <div className={styles.badgeCardTop}>
                       <div className={styles.badgeEmoji} style={{ background: badge.bg }}>

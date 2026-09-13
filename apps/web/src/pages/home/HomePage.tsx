@@ -5,7 +5,7 @@
 import { Skeleton } from '@sylocrm/ui'
 import type { Tier } from '@sylocrm/ui'
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
 import {
   COLUMN_STATUS_LABEL,
@@ -167,6 +167,7 @@ function WhatsAppIcon() {
 interface TarefaItem {
   id: string
   cliente: string
+  phone: string
   segmento: string
   cota: string
   valor: string
@@ -193,6 +194,7 @@ const MOCK_TAREFAS: TarefaItem[] = Object.entries(INITIAL_BOARD)
       return {
         id: card.id,
         cliente: card.name,
+        phone: card.phone,
         segmento,
         cota: card.cota,
         valor,
@@ -223,6 +225,7 @@ const TIER_BG: Record<Tier, string> = {
 // ── HomePage ──────────────────────────────────────────────────────────────────
 
 export function HomePage() {
+  const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(true)
 
   // TODO: buscar nome real do perfil via API
@@ -508,6 +511,9 @@ export function HomePage() {
                             type="button"
                             className={styles.whatsappBtn}
                             aria-label={`WhatsApp — ${t.cliente}`}
+                            onClick={() =>
+                              window.open(`https://wa.me/55${t.phone.replace(/\D/g, '')}`, '_blank')
+                            }
                           >
                             <WhatsAppIcon />
                           </button>
@@ -515,6 +521,7 @@ export function HomePage() {
                             type="button"
                             className={styles.viewBtn}
                             aria-label={`Ver tarefa — ${t.cliente}`}
+                            onClick={() => navigate('/app/tarefas')}
                           >
                             <EyeIcon />
                           </button>

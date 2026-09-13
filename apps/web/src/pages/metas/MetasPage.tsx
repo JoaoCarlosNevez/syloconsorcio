@@ -113,6 +113,7 @@ const PROXIMO_NIVEL_BENEFICIOS = [
 // TODO: buscar tier real do perfil via API
 const USER_TIER: Tier = 'rubi'
 const PROXIMO_TIER: Tier = 'platina'
+// biome-ignore lint/style/noNonNullAssertion: TIERS contains all valid tier values
 const PROXIMO_TIER_CONFIG = TIERS.find((t) => t.tier === PROXIMO_TIER)!
 
 // ── Componente do stepper ─────────────────────────────────────────────────────

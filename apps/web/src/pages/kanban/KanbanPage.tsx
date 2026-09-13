@@ -28,7 +28,16 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Skeleton } from '@sylocrm/ui'
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type CSSProperties,
+  type FormEvent,
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
 import {
   COLUMN_META,
@@ -366,13 +375,14 @@ interface KanbanColumnProps {
   meta: ColumnMeta
   cards: CardData[]
   onCardClick: (card: CardData) => void
+  isOver?: boolean
 }
 
-function KanbanColumn({ meta, cards, onCardClick }: KanbanColumnProps) {
+function KanbanColumn({ meta, cards, onCardClick, isOver }: KanbanColumnProps) {
   const cardIds = useMemo(() => cards.map((c) => c.id), [cards])
 
   return (
-    <section className={styles.column}>
+    <section className={`${styles.column} ${isOver ? styles.columnOver : ''}`}>
       <div
         className={styles.columnHeader}
         style={{ background: meta.headerBg, borderColor: meta.headerBorder }}
@@ -401,12 +411,16 @@ function KanbanColumn({ meta, cards, onCardClick }: KanbanColumnProps) {
 interface ListViewProps {
   board: Record<string, CardData[]>
   onCardClick: (card: CardData) => void
+  hideVenda?: boolean
 }
 
-function ListView({ board, onCardClick }: ListViewProps) {
+function ListView({ board, onCardClick, hideVenda }: ListViewProps) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
   const toggle = (colId: string) => setCollapsed((prev) => ({ ...prev, [colId]: !prev[colId] }))
+
+  const visibleMeta = hideVenda ? COLUMN_META.filter((m) => m.id !== 'venda') : COLUMN_META
+  const totalVisible = visibleMeta.reduce((sum, m) => sum + (board[m.id]?.length ?? 0), 0)
 
   return (
     <div className={styles.listView}>
@@ -424,7 +438,17 @@ function ListView({ board, onCardClick }: ListViewProps) {
           </tr>
         </thead>
         <tbody>
-          {COLUMN_META.map((meta) => {
+          {totalVisible === 0 && (
+            <tr>
+              <td
+                colSpan={8}
+                style={{ padding: '40px 0', textAlign: 'center', color: '#94a3b8', fontSize: 14 }}
+              >
+                Nenhum lead encontrado com o filtro atual.
+              </td>
+            </tr>
+          )}
+          {visibleMeta.map((meta) => {
             const cards = board[meta.id] ?? []
             const isCollapsed = collapsed[meta.id] ?? false
             return (
@@ -534,6 +558,221 @@ function ListView({ board, onCardClick }: ListViewProps) {
   )
 }
 
+// ── NewLeadModal ──────────────────────────────────────────────────────────────
+
+interface NewLeadModalProps {
+  onClose: () => void
+  onCreate: (data: { name: string; phone: string; cota: string; source: string }) => void
+}
+
+function NewLeadModal({ onClose, onCreate }: NewLeadModalProps) {
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [cota, setCota] = useState('')
+  const [source, setSource] = useState('Indicação')
+  const [error, setError] = useState('')
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (!name.trim()) {
+      setError('Nome é obrigatório.')
+      return
+    }
+    if (!phone.trim()) {
+      setError('Telefone é obrigatório.')
+      return
+    }
+    if (!cota.trim()) {
+      setError('Cota é obrigatória.')
+      return
+    }
+    onCreate({ name: name.trim(), phone: phone.trim(), cota: cota.trim(), source: source.trim() })
+  }
+
+  const inputStyle: CSSProperties = {
+    height: 38,
+    border: '1px solid rgba(216,195,173,0.4)',
+    borderRadius: 8,
+    padding: '0 12px',
+    fontFamily: 'inherit',
+    fontSize: 14,
+    color: '#0b1c30',
+    background: '#f8f9ff',
+    outline: 'none',
+    width: '100%',
+    boxSizing: 'border-box',
+  }
+  const labelStyle: CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+    fontSize: 12,
+    fontWeight: 600,
+    color: '#565e74',
+    textTransform: 'uppercase',
+    letterSpacing: '0.02em',
+  }
+
+  return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: overlay backdrop dismiss
+    <div
+      style={{
+        position: 'fixed',
+        inset: '0 0 0 260px',
+        zIndex: 400,
+        background: 'rgba(11,28,48,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      onClick={onClose}
+    >
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: modal stops propagation */}
+      <div
+        style={{
+          background: '#fff',
+          borderRadius: 14,
+          width: '100%',
+          maxWidth: 460,
+          boxShadow: '0 8px 40px rgba(11,28,48,0.18)',
+          overflow: 'hidden',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '18px 22px',
+            borderBottom: '1px solid rgba(216,195,173,0.3)',
+          }}
+        >
+          <span style={{ fontSize: 16, fontWeight: 700, color: '#0b1c30' }}>Novo Lead</span>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 30,
+              height: 30,
+              borderRadius: 8,
+              border: 'none',
+              background: 'none',
+              color: '#94a3b8',
+              cursor: 'pointer',
+            }}
+            aria-label="Fechar"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+        <form
+          style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: 22 }}
+          onSubmit={handleSubmit}
+        >
+          <label style={labelStyle}>
+            Nome completo
+            <input
+              style={inputStyle}
+              type="text"
+              placeholder="Ex: João da Silva"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+          <label style={labelStyle}>
+            Telefone
+            <input
+              style={inputStyle}
+              type="text"
+              placeholder="Ex: (11) 99999-9999"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+          </label>
+          <label style={labelStyle}>
+            Cota
+            <input
+              style={inputStyle}
+              type="text"
+              placeholder="Ex: R$ 120.000"
+              value={cota}
+              onChange={(e) => setCota(e.target.value)}
+            />
+          </label>
+          <label style={labelStyle}>
+            Origem
+            <select
+              style={{ ...inputStyle, padding: '0 12px' }}
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+            >
+              {['Indicação', 'Instagram', 'Facebook', 'Site', 'WhatsApp', 'Ligação', 'Outro'].map(
+                (o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ),
+              )}
+            </select>
+          </label>
+          {error && <span style={{ fontSize: 13, color: '#ba1a1a' }}>{error}</span>}
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 4 }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: '8px 16px',
+                background: 'none',
+                border: '1px solid rgba(216,195,173,0.5)',
+                borderRadius: 8,
+                fontFamily: 'inherit',
+                fontSize: 13,
+                fontWeight: 500,
+                color: '#565e74',
+                cursor: 'pointer',
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              style={{
+                padding: '8px 18px',
+                background: 'linear-gradient(to right,#ffeab1,#ffa705)',
+                border: 'none',
+                borderRadius: 8,
+                fontFamily: 'inherit',
+                fontSize: 13,
+                fontWeight: 600,
+                color: '#0b1c30',
+                cursor: 'pointer',
+              }}
+            >
+              Criar Lead
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ── KanbanPage ────────────────────────────────────────────────────────────────
 
 export function KanbanPage() {
@@ -541,7 +780,10 @@ export function KanbanPage() {
   const [activeCard, setActiveCard] = useState<CardData | null>(null)
   const [selectedCard, setSelectedCard] = useState<CardData | null>(null)
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban')
+  const [creatingLead, setCreatingLead] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [overColId, setOverColId] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<'todos' | 'aberto'>('aberto')
   const boardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -590,13 +832,17 @@ export function KanbanPage() {
 
   const handleDragOver = useCallback(
     ({ active, over }: DragOverEvent) => {
-      if (!over) return
+      if (!over) {
+        setOverColId(null)
+        return
+      }
 
       const activeColId = findColumnOfCard(board, String(active.id))
       const overColId =
         findColumnOfCard(board, String(over.id)) ??
         (COLUMN_META.some((m) => m.id === over.id) ? String(over.id) : null)
 
+      setOverColId(overColId)
       if (!activeColId || !overColId || activeColId === overColId) return
 
       setBoard((prev) => {
@@ -621,6 +867,7 @@ export function KanbanPage() {
   const handleDragEnd = useCallback(
     ({ active, over }: DragEndEvent) => {
       setActiveCard(null)
+      setOverColId(null)
       if (!over || active.id === over.id) return
 
       const colId = findColumnOfCard(board, String(active.id))
@@ -637,9 +884,31 @@ export function KanbanPage() {
     [board],
   )
 
+  function handleCreateLead(data: { name: string; phone: string; cota: string; source: string }) {
+    const newCard: CardData = {
+      id: `lead-${Date.now()}`,
+      name: data.name,
+      phone: data.phone,
+      cota: data.cota,
+      date: new Date().toLocaleDateString('pt-BR'),
+      agent: 'Ennyo Café',
+      source: data.source,
+      sourceBg: '#f3f4f6',
+      sourceText: '#4b5563',
+      days: '0d',
+      daysUrgent: false,
+    }
+    const firstCol = COLUMN_META[0].id
+    setBoard((prev) => ({ ...prev, [firstCol]: [newCard, ...(prev[firstCol] ?? [])] }))
+    setCreatingLead(false)
+  }
+
   return (
     <AppLayout>
       {selectedCard && <LeadModal card={selectedCard} onClose={() => setSelectedCard(null)} />}
+      {creatingLead && (
+        <NewLeadModal onClose={() => setCreatingLead(false)} onCreate={handleCreateLead} />
+      )}
       <div className={styles.page}>
         {/* ── Header ──────────────────────────────────────────────────── */}
         <header className={styles.header}>
@@ -674,8 +943,12 @@ export function KanbanPage() {
               </button>
             </div>
             <span className={styles.headerDivider} />
-            <button type="button" className={styles.filterBtn}>
-              Em Aberto <ChevronDownIcon />
+            <button
+              type="button"
+              className={`${styles.filterBtn} ${statusFilter === 'aberto' ? styles.filterBtnActive : ''}`}
+              onClick={() => setStatusFilter((f) => (f === 'aberto' ? 'todos' : 'aberto'))}
+            >
+              {statusFilter === 'aberto' ? 'Em Aberto' : 'Todos'} <ChevronDownIcon />
             </button>
             <button type="button" className={styles.filterBtn}>
               <TagIcon /> Todas as tags <ChevronDownIcon />
@@ -683,7 +956,11 @@ export function KanbanPage() {
             <button type="button" className={styles.filterBtn}>
               <TransferIcon /> Transferência
             </button>
-            <button type="button" className={styles.newLeadBtn}>
+            <button
+              type="button"
+              className={styles.newLeadBtn}
+              onClick={() => setCreatingLead(true)}
+            >
               <PlusIcon /> Novo Lead
             </button>
           </div>
@@ -776,7 +1053,11 @@ export function KanbanPage() {
 
         {/* ── Lista ────────────────────────────────────────────────────── */}
         {!isLoading && viewMode === 'list' && (
-          <ListView board={board} onCardClick={setSelectedCard} />
+          <ListView
+            board={board}
+            onCardClick={setSelectedCard}
+            hideVenda={statusFilter === 'aberto'}
+          />
         )}
 
         {/* ── Board ────────────────────────────────────────────────────── */}
@@ -796,6 +1077,7 @@ export function KanbanPage() {
                     meta={meta}
                     cards={board[meta.id] ?? []}
                     onCardClick={setSelectedCard}
+                    isOver={overColId === meta.id}
                   />
                 ))}
               </div>

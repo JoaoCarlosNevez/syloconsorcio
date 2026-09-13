@@ -103,6 +103,12 @@
   background: #f8fafc;
 }
 
+.filterBtnActive {
+  background: #0b1c30;
+  color: #ffffff;
+  border-color: #0b1c30;
+}
+
 .newLeadBtn {
   display: flex;
   align-items: center;
@@ -256,6 +262,12 @@
   overflow: hidden;
   /* Margem inferior para o scrollbar horizontal não cobrir os cards */
   margin-bottom: 16px;
+}
+
+.columnOver {
+  border-color: rgba(11, 28, 48, 0.35);
+  background: rgba(11, 28, 48, 0.04);
+  box-shadow: inset 0 0 0 2px rgba(11, 28, 48, 0.15);
 }
 
 .columnHeader {
