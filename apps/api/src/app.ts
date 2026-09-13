@@ -8,15 +8,23 @@
 // adapters when Supabase env vars are not configured (development without credentials).
 
 import cors from '@fastify/cors'
-import type { IAuthProvider, IMembershipRepository } from '@sylocrm/application'
+import type {
+  IAuthProvider,
+  ILeadRepository,
+  IMembershipRepository,
+  IOrganizationRepository,
+} from '@sylocrm/application'
 import Fastify from 'fastify'
 import { env } from './config/env'
 import { authRoute } from './routes/auth.route'
 import { healthRoute } from './routes/health.route'
+import { leadsRoute } from './routes/leads.route'
 
 export interface BuildAppDeps {
   authProvider: IAuthProvider
   membershipRepository: IMembershipRepository
+  leadRepository: ILeadRepository
+  organizationRepository: IOrganizationRepository
 }
 
 /** No-op auth provider used when Supabase env vars are not configured. */
@@ -35,12 +43,35 @@ function createNoOpMembershipRepository(): IMembershipRepository {
   }
 }
 
+/** No-op lead repository used when database is not configured. */
+function createNoOpLeadRepository(): ILeadRepository {
+  return {
+    list: async (_filter, page, pageSize) => ({ items: [], total: 0, page, pageSize }),
+    findById: async () => null,
+    create: async () => {
+      throw new Error('Database not configured — cannot create leads.')
+    },
+    update: async () => null,
+    delete: async () => false,
+    recordAssignmentChange: async () => {},
+  }
+}
+
+/** No-op organization repository used when database is not configured. */
+function createNoOpOrganizationRepository(): IOrganizationRepository {
+  return {
+    findChildOrganizationIds: async () => [],
+  }
+}
+
 export function buildApp(deps?: Partial<BuildAppDeps>) {
   // Use provided deps or fall back to no-op adapters.
   // Real adapters are created in main.ts (composition root) from env vars.
   const resolvedDeps: BuildAppDeps = {
     authProvider: deps?.authProvider ?? createNoOpAuthProvider(),
     membershipRepository: deps?.membershipRepository ?? createNoOpMembershipRepository(),
+    leadRepository: deps?.leadRepository ?? createNoOpLeadRepository(),
+    organizationRepository: deps?.organizationRepository ?? createNoOpOrganizationRepository(),
   }
 
   const app = Fastify({
@@ -64,6 +95,13 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
   app.register(authRoute, {
     authProvider: resolvedDeps.authProvider,
     membershipRepository: resolvedDeps.membershipRepository,
+  })
+
+  app.register(leadsRoute, {
+    authProvider: resolvedDeps.authProvider,
+    membershipRepository: resolvedDeps.membershipRepository,
+    leadRepository: resolvedDeps.leadRepository,
+    organizationRepository: resolvedDeps.organizationRepository,
   })
 
   return app

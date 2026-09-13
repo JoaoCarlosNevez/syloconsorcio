@@ -7,7 +7,9 @@
 
 import 'dotenv/config'
 import {
+  DrizzleLeadRepository,
   DrizzleMembershipRepository,
+  DrizzleOrganizationRepository,
   SupabaseAuthAdapter,
   createDatabase,
 } from '@sylocrm/infrastructure'
@@ -30,8 +32,10 @@ const database = env.DATABASE_URL
   : undefined
 
 const membershipRepository = database ? new DrizzleMembershipRepository(database) : undefined
+const leadRepository = database ? new DrizzleLeadRepository(database) : undefined
+const organizationRepository = database ? new DrizzleOrganizationRepository(database) : undefined
 
-const app = buildApp({ authProvider, membershipRepository })
+const app = buildApp({ authProvider, membershipRepository, leadRepository, organizationRepository })
 
 try {
   await app.listen({ port: env.PORT, host: env.HOST })
