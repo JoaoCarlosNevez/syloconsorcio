@@ -36,6 +36,11 @@ const UsuariosPage = lazy(() =>
 const AdminPage = lazy(() =>
   import('../pages/admin/AdminPage').then((m) => ({ default: m.AdminPage })),
 )
+const AdminOrganizationDetailPage = lazy(() =>
+  import('../pages/admin/AdminOrganizationDetailPage').then((m) => ({
+    default: m.AdminOrganizationDetailPage,
+  })),
+)
 
 export function AppRouter() {
   return (
@@ -55,6 +60,7 @@ export function AppRouter() {
           <Route path="fila" element={<ComingSoonPage />} />
           <Route path="config" element={<ComingSoonPage />} />
           <Route path="admin" element={<AdminPage />} />
+          <Route path="admin/:id" element={<AdminOrganizationDetailPage />} />
           <Route path="ajuda" element={<ComingSoonPage />} />
           <Route path="sara" element={<ComingSoonPage />} />
           <Route path="perfil" element={<PerfilPage />} />

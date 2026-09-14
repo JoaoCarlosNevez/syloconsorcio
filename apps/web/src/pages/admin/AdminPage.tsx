@@ -1,58 +1,48 @@
-// AdminPage — Super Admin cria novas Representações (tenants).
+// AdminPage — painel do Super Admin: lista todas as Representações (tenants).
 //
 // Restrita a usuários com isPlatformAdmin=true (ver useCurrentUser). Não é
 // um Role de Membership — é uma capacidade de nível plataforma.
 
-import { Button, Input, Skeleton, useToast } from '@sylocrm/ui'
-import { type FormEvent, useState } from 'react'
+import { Button, DataTable, Skeleton } from '@sylocrm/ui'
+import type { ColumnDef } from '@sylocrm/ui'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
-import { createRepresentation } from '../../lib/organizations-api'
+import { useOrganizationsQuery } from '../../hooks/useOrganizations'
+import type { Organization } from '../../lib/organizations-api'
 import styles from './AdminPage.module.css'
+import { CreateRepresentationModal } from './CreateRepresentationModal'
 
-const initialForm = { organizationName: '', ownerName: '', ownerEmail: '' }
+const TYPE_LABEL: Record<Organization['type'], string> = {
+  INCORPORADORA: 'Incorporadora',
+  MASTER: 'Master',
+  REPRESENTACAO: 'Representação',
+}
 
 export function AdminPage() {
   const { data: currentUser, isLoading: isLoadingUser } = useCurrentUser()
-  const [form, setForm] = useState(initialForm)
-  const [formError, setFormError] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null)
-  const { toast } = useToast()
+  const { data, isLoading } = useOrganizationsQuery()
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const navigate = useNavigate()
 
-  function updateField<K extends keyof typeof initialForm>(key: K, value: string) {
-    setForm((prev) => ({ ...prev, [key]: value }))
-  }
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    setFormError(null)
-
-    if (!form.organizationName.trim() || !form.ownerName.trim() || !form.ownerEmail.trim()) {
-      setFormError('Preencha todos os campos.')
-      return
-    }
-
-    setIsSubmitting(true)
-    try {
-      const result = await createRepresentation({
-        organizationName: form.organizationName.trim(),
-        ownerName: form.ownerName.trim(),
-        ownerEmail: form.ownerEmail.trim(),
-      })
-      setCredentials({ email: result.owner.email, password: result.owner.temporaryPassword })
-      setForm(initialForm)
-      toast({ type: 'success', title: 'Representação criada com sucesso' })
-    } catch (error) {
-      toast({
-        type: 'error',
-        title: 'Não foi possível criar a organização',
-        description: error instanceof Error ? error.message : undefined,
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+  const columns: ColumnDef<Organization>[] = [
+    {
+      key: 'icon',
+      header: '',
+      width: '56px',
+      render: (row) =>
+        row.branding?.iconUrl ? (
+          <img src={row.branding.iconUrl} alt="" className={styles.orgIcon} />
+        ) : (
+          <div className={styles.orgIconPlaceholder} aria-hidden="true">
+            {row.name.charAt(0).toUpperCase()}
+          </div>
+        ),
+    },
+    { key: 'name', header: 'Nome', render: (row) => row.name },
+    { key: 'type', header: 'Tipo', render: (row) => TYPE_LABEL[row.type] },
+  ]
 
   if (isLoadingUser) {
     return (
@@ -75,72 +65,31 @@ export function AdminPage() {
 
   return (
     <AppLayout>
-      <div className={styles.page}>
-        <div>
-          <h1 className={styles.title}>Administração</h1>
-          <p className={styles.subtitle}>Crie uma nova Representação e defina o dono da conta.</p>
-        </div>
+      <div className={styles.page} style={{ maxWidth: 'none' }}>
+        <header className={styles.header}>
+          <div>
+            <h1 className={styles.title}>Administração</h1>
+            <p className={styles.subtitle}>Representações cadastradas na plataforma.</p>
+          </div>
+          <Button type="button" onClick={() => setIsCreateOpen(true)}>
+            Nova Representação
+          </Button>
+        </header>
 
-        <div className={styles.card}>
-          {credentials ? (
-            <>
-              <p>Compartilhe estas credenciais com o dono da representação:</p>
-              <div className={styles.credentialsBox}>
-                <div className={styles.credentialsRow}>
-                  <span>{credentials.email}</span>
-                </div>
-                <div className={styles.credentialsRow}>
-                  <span>{credentials.password}</span>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => navigator.clipboard.writeText(credentials.password)}
-                  >
-                    Copiar senha
-                  </Button>
-                </div>
-              </div>
-              <Button type="button" onClick={() => setCredentials(null)}>
-                Criar outra representação
-              </Button>
-            </>
-          ) : (
-            <form
-              onSubmit={handleSubmit}
-              style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
-            >
-              <Input
-                label="Nome da Representação"
-                value={form.organizationName}
-                onChange={(e) => updateField('organizationName', e.target.value)}
-                required
-              />
-              <Input
-                label="Nome do dono"
-                value={form.ownerName}
-                onChange={(e) => updateField('ownerName', e.target.value)}
-                required
-              />
-              <Input
-                label="E-mail do dono"
-                type="email"
-                value={form.ownerEmail}
-                onChange={(e) => updateField('ownerEmail', e.target.value)}
-                required
-              />
-              {formError && (
-                <span role="alert" className={styles.formError}>
-                  {formError}
-                </span>
-              )}
-              <Button type="submit" loading={isSubmitting}>
-                Criar Representação
-              </Button>
-            </form>
-          )}
+        <div className={styles.tableWrapper}>
+          <DataTable
+            columns={columns}
+            data={data?.organizations ?? []}
+            rowKey={(row) => row.id}
+            isLoading={isLoading}
+            emptyTitle="Nenhuma representação ainda"
+            emptyDescription="Crie a primeira representação para começar."
+            onRowClick={(row) => navigate(`/app/admin/${row.id}`)}
+          />
         </div>
       </div>
+
+      <CreateRepresentationModal open={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
     </AppLayout>
   )
 }

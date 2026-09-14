@@ -27,6 +27,8 @@ export interface DataTableProps<T> {
   onSort?: (key: string) => void
   selectedKeys?: Set<string>
   skeletonRows?: number
+  /** When provided, rows become clickable (mouse + keyboard). */
+  onRowClick?: (row: T) => void
 }
 
 /**
@@ -46,6 +48,7 @@ export function DataTable<T>({
   onSort,
   selectedKeys,
   skeletonRows = 5,
+  onRowClick,
 }: DataTableProps<T>) {
   const colCount = columns.length
 
@@ -140,6 +143,19 @@ export function DataTable<T>({
                     .filter(Boolean)
                     .join(' ')}
                   aria-selected={selectedKeys ? selectedKeys.has(key) : undefined}
+                  style={onRowClick ? { cursor: 'pointer' } : undefined}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  onKeyDown={
+                    onRowClick
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            onRowClick(row)
+                          }
+                        }
+                      : undefined
+                  }
                 >
                   {columns.map((col) => (
                     <td key={col.key} className={styles.td}>

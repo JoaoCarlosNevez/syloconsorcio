@@ -234,17 +234,15 @@ describe('GET /organizations', () => {
 
   it('lists all organizations for a platform admin', async () => {
     const organizationRepository = buildOrganizationRepository()
-    organizationRepository.list = vi
-      .fn()
-      .mockResolvedValue([
-        {
-          id: 'org-1',
-          name: 'Representação A',
-          type: 'REPRESENTACAO',
-          parentOrganizationId: null,
-          branding: null,
-        },
-      ])
+    organizationRepository.list = vi.fn().mockResolvedValue([
+      {
+        id: 'org-1',
+        name: 'Representação A',
+        type: 'REPRESENTACAO',
+        parentOrganizationId: null,
+        branding: null,
+      },
+    ])
     const app = buildApp({
       authProvider: buildAuthProvider(),
       userRepository: buildUserRepository(true),

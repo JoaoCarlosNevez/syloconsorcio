@@ -36,8 +36,12 @@ interface RequestOptions extends Omit<RequestInit, 'body'> {
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { body, organizationId, ...fetchOptions } = options
 
+  // FormData (upload de arquivo) define seu próprio Content-Type com boundary —
+  // o navegador cuida disso; nunca serializar como JSON nesse caso.
+  const isFormData = body instanceof FormData
+
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(fetchOptions.headers as Record<string, string>),
   }
 
@@ -53,7 +57,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const response = await fetch(`${API_URL}${path}`, {
     ...fetchOptions,
     headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: isFormData ? (body as FormData) : body !== undefined ? JSON.stringify(body) : undefined,
   })
 
   if (!response.ok) {
