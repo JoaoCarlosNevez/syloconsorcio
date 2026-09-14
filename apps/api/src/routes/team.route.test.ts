@@ -22,6 +22,8 @@ const AUTH_HEADERS = { authorization: 'Bearer valid-token', 'x-organization-id':
 const ADMIN_MEMBERSHIP: UserMembership = {
   organizationId: ORG_ID,
   organizationType: OrganizationType.REPRESENTACAO,
+  organizationName: 'Representação Teste',
+  organizationIconUrl: null,
   role: Role.ADMIN,
   status: 'ACTIVE',
 }
@@ -29,6 +31,8 @@ const ADMIN_MEMBERSHIP: UserMembership = {
 const MANAGER_MEMBERSHIP: UserMembership = {
   organizationId: ORG_ID,
   organizationType: OrganizationType.REPRESENTACAO,
+  organizationName: 'Representação Teste',
+  organizationIconUrl: null,
   role: Role.MANAGER,
   status: 'ACTIVE',
 }
@@ -36,6 +40,8 @@ const MANAGER_MEMBERSHIP: UserMembership = {
 const SELLER_MEMBERSHIP: UserMembership = {
   organizationId: ORG_ID,
   organizationType: OrganizationType.REPRESENTACAO,
+  organizationName: 'Representação Teste',
+  organizationIconUrl: null,
   role: Role.SELLER,
   status: 'ACTIVE',
 }

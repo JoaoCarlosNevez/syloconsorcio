@@ -12,6 +12,8 @@ export function buildMembershipContext(membership: UserMembership): MembershipCo
   return {
     organizationId: membership.organizationId,
     organizationType: membership.organizationType,
+    organizationName: membership.organizationName,
+    organizationIconUrl: membership.organizationIconUrl,
     role: membership.role,
     dataScope: calculateDataScope(membership.organizationType, membership.role),
     permissions: getPermissionsForRole(membership.role),

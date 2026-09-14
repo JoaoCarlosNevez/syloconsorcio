@@ -16,6 +16,9 @@ import type { OrganizationType, Role } from '@sylocrm/domain'
 export interface UserMembership {
   organizationId: string
   organizationType: OrganizationType
+  organizationName: string
+  /** Ícone da organização (branding.iconUrl), null quando não definido. */
+  organizationIconUrl: string | null
   role: Role
   status: 'ACTIVE' | 'INVITED' | 'SUSPENDED'
 }

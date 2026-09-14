@@ -1,11 +1,17 @@
 // AppLayout — layout autenticado com sidebar branca.
 // Sidebar: logo, seletor de empresa, nav, Sara IA, status, tema, perfil.
 
-import type { Tier } from '@sylocrm/ui'
+import { Dropdown } from '@sylocrm/ui'
+import type { DropdownEntry, Tier } from '@sylocrm/ui'
 import type { ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { USER_TIER } from '../../data/kanban-mock'
+import { useActiveOrganization } from '../../hooks/useOrganization'
 import styles from './AppLayout.module.css'
+
+// Padrão de identidade visual (AGENTS.md §11): toda organização usa a marca
+// Sylo até definir seu próprio ícone (ver painel de Administração).
+const DEFAULT_ORG_ICON_URL = '/sylo-logo.png'
 
 // ── Ícones ────────────────────────────────────────────────────────────────────
 
@@ -230,10 +236,7 @@ function MoonIcon() {
   )
 }
 
-// ── Dados fixos (mock até multi-tenant) ───────────────────────────────────────
-
-// TODO: buscar organização ativa do contexto de tenant
-const COMPANY_NAME = 'Porthis Consórcio'
+// ── Dados fixos ────────────────────────────────────────────────────────────────
 
 const TIER_BORDER_COLOR: Record<Tier, string> = {
   turmalina: '#00a6cc',
@@ -278,10 +281,25 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation()
   const navigate = useNavigate()
+  const { membership, memberships, setActiveOrganizationId } = useActiveOrganization()
 
   // TODO: buscar nome real do perfil via API
   const displayName = 'Ennyo Café'
   const palette = TIER_PALETTE[USER_TIER]
+
+  const organizationSwitcherItems: DropdownEntry[] = memberships.map((m) => ({
+    key: m.organizationId,
+    label: m.organizationName,
+    icon: (
+      <img
+        src={m.organizationIconUrl ?? DEFAULT_ORG_ICON_URL}
+        alt=""
+        className={styles.companyMenuIcon}
+      />
+    ),
+    disabled: m.organizationId === membership?.organizationId,
+    onSelect: () => setActiveOrganizationId(m.organizationId),
+  }))
 
   function navTo(path: string) {
     return (e: React.MouseEvent) => {
@@ -308,18 +326,27 @@ export function AppLayout({ children }: AppLayoutProps) {
           <img src="/sylo-logo.png" alt="Sylo CRM" className={styles.logoImg} />
         </div>
 
-        {/* Seletor de empresa */}
-        <button type="button" className={styles.companySelector} aria-label="Trocar empresa">
-          <div className={styles.companySelectorLeft}>
-            <div className={styles.companyIconWrap}>
-              <img src="/porthis-icon.png" alt="Porthis" />
-            </div>
-            <span className={styles.companyName}>{COMPANY_NAME}</span>
-          </div>
-          <span className={styles.companyCaret}>
-            <ChevronUpDownIcon />
-          </span>
-        </button>
+        {/* Seletor de empresa — troca entre as organizações do usuário */}
+        <div className={styles.companySwitcherSlot}>
+          <Dropdown
+            items={organizationSwitcherItems}
+            trigger={
+              <button type="button" className={styles.companySelector} aria-label="Trocar empresa">
+                <div className={styles.companySelectorLeft}>
+                  <div className={styles.companyIconWrap}>
+                    <img src={membership?.organizationIconUrl ?? DEFAULT_ORG_ICON_URL} alt="" />
+                  </div>
+                  <span className={styles.companyName}>
+                    {membership?.organizationName ?? 'Carregando…'}
+                  </span>
+                </div>
+                <span className={styles.companyCaret}>
+                  <ChevronUpDownIcon />
+                </span>
+              </button>
+            }
+          />
+        </div>
 
         {/* Navegação */}
         <nav className={styles.nav} aria-label="Navegação principal">

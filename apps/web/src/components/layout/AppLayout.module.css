@@ -64,23 +64,45 @@
   min-width: 0;
 }
 
+.companySwitcherSlot {
+  width: 100%;
+}
+
+/* Dropdown (packages/ui) envolve o trigger num wrapper inline-block — força
+   esse wrapper a ocupar a largura da sidebar como o <button> fazia sozinho. */
+.companySwitcherSlot > div {
+  display: block;
+  width: 100%;
+}
+
 .companyIconWrap {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: #0075ff;
+  background: #fff;
+  border: 1px solid rgba(226, 232, 240, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
+  padding: 3px;
+  box-sizing: border-box;
 }
 
 .companyIconWrap img {
-  width: 24px;
-  height: 15px;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   display: block;
+}
+
+.companyMenuIcon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  border-radius: 4px;
+  background: #fff;
 }
 
 .companyName {

@@ -23,6 +23,10 @@ export interface MembershipContext {
   organizationId: string
   /** Tipo da organização (INCORPORADORA, MASTER, REPRESENTACAO) */
   organizationType: OrganizationType
+  /** Nome de exibição da organização — usado pelo seletor de organização na sidebar */
+  organizationName: string
+  /** Ícone da organização (branding.iconUrl), null quando não definido */
+  organizationIconUrl: string | null
   /** Papel do usuário nesta organização específica */
   role: Role
   /** Alcance de dados calculado a partir do tipo da org + role */
