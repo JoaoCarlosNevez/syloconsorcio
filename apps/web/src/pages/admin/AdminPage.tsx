@@ -20,6 +20,10 @@ const TYPE_LABEL: Record<Organization['type'], string> = {
   REPRESENTACAO: 'Representação',
 }
 
+// Padrão de identidade visual (AGENTS.md §11): toda Representação usa a marca
+// Sylo até virar White Label e definir seu próprio ícone.
+const DEFAULT_ICON_URL = '/sylo-logo.png'
+
 export function AdminPage() {
   const { data: currentUser, isLoading: isLoadingUser } = useCurrentUser()
   const { data, isLoading } = useOrganizationsQuery()
@@ -31,14 +35,13 @@ export function AdminPage() {
       key: 'icon',
       header: '',
       width: '56px',
-      render: (row) =>
-        row.branding?.iconUrl ? (
-          <img src={row.branding.iconUrl} alt="" className={styles.orgIcon} />
-        ) : (
-          <div className={styles.orgIconPlaceholder} aria-hidden="true">
-            {row.name.charAt(0).toUpperCase()}
-          </div>
-        ),
+      render: (row) => (
+        <img
+          src={row.isWhiteLabel && row.branding?.iconUrl ? row.branding.iconUrl : DEFAULT_ICON_URL}
+          alt=""
+          className={styles.orgIcon}
+        />
+      ),
     },
     { key: 'name', header: 'Nome', render: (row) => row.name },
     { key: 'type', header: 'Tipo', render: (row) => TYPE_LABEL[row.type] },

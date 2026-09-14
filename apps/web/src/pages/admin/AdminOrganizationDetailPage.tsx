@@ -3,7 +3,7 @@
 //
 // Restrita a isPlatformAdmin=true, igual à AdminPage (lista).
 
-import { Badge, Button, DataTable, Input, Skeleton, useToast } from '@sylocrm/ui'
+import { Badge, Button, DataTable, Input, Skeleton, Switch, useToast } from '@sylocrm/ui'
 import type { ColumnDef } from '@sylocrm/ui'
 import { type ChangeEvent, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
@@ -25,6 +25,9 @@ const ROLE_LABEL: Record<TeamMember['role'], string> = {
 }
 
 const MAX_ICON_SIZE_BYTES = 2 * 1024 * 1024
+// Padrão de identidade visual (AGENTS.md §11): toda Representação usa a marca
+// Sylo até virar White Label e definir seu próprio ícone.
+const DEFAULT_ICON_URL = '/sylo-logo.png'
 
 export function AdminOrganizationDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -61,10 +64,31 @@ export function AdminOrganizationDetailPage() {
     }
   }
 
+  async function toggleWhiteLabel(checked: boolean) {
+    try {
+      await updateOrganization.mutateAsync({ isWhiteLabel: checked })
+      toast({
+        type: 'success',
+        title: checked ? 'White Label ativado' : 'White Label desativado',
+        description: checked
+          ? undefined
+          : 'O ícone volta a ser o padrão da Sylo até White Label ser reativado.',
+      })
+    } catch (error) {
+      toast({
+        type: 'error',
+        title: 'Não foi possível atualizar o White Label',
+        description: error instanceof Error ? error.message : undefined,
+      })
+    }
+  }
+
   async function handleIconChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
+
+    if (!organization?.isWhiteLabel) return
 
     if (file.size > MAX_ICON_SIZE_BYTES) {
       toast({ type: 'error', title: 'Imagem muito grande', description: 'Limite de 2MB.' })
@@ -133,26 +157,43 @@ export function AdminOrganizationDetailPage() {
               <button
                 type="button"
                 className={styles.iconUpload}
-                onClick={() => fileInputRef.current?.click()}
-                aria-label="Alterar ícone da representação"
+                onClick={() => organization.isWhiteLabel && fileInputRef.current?.click()}
+                aria-label={
+                  organization.isWhiteLabel
+                    ? 'Alterar ícone da representação'
+                    : 'Ative o White Label para definir um ícone próprio'
+                }
+                disabled={!organization.isWhiteLabel}
               >
-                {organization.branding?.iconUrl ? (
-                  <img src={organization.branding.iconUrl} alt="" />
-                ) : (
-                  <span className={styles.iconUploadHint}>
-                    {uploadIcon.isPending ? 'Enviando…' : 'Enviar ícone'}
-                  </span>
-                )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                  className={styles.iconUploadInput}
-                  onChange={handleIconChange}
+                <img
+                  src={
+                    organization.isWhiteLabel && organization.branding?.iconUrl
+                      ? organization.branding.iconUrl
+                      : DEFAULT_ICON_URL
+                  }
+                  alt=""
                 />
+                {organization.isWhiteLabel && (
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                    className={styles.iconUploadInput}
+                    onChange={handleIconChange}
+                  />
+                )}
               </button>
 
               <div>
+                <div style={{ marginBottom: 8 }}>
+                  <Switch
+                    label={`White Label ${organization.isWhiteLabel ? '(ativado)' : '(desativado)'}`}
+                    checked={organization.isWhiteLabel}
+                    onChange={(e) => toggleWhiteLabel(e.target.checked)}
+                    disabled={updateOrganization.isPending}
+                  />
+                </div>
+
                 {isEditingName ? (
                   <div className={styles.nameEditRow}>
                     <Input

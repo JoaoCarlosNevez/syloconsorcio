@@ -39,7 +39,8 @@ export function useOrganizationMembersQuery(organizationId: string | null) {
 export function useUpdateOrganization(organizationId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (payload: { name: string }) => updateOrganization(organizationId, payload),
+    mutationFn: (payload: { name?: string; isWhiteLabel?: boolean }) =>
+      updateOrganization(organizationId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'organizations'] })
     },

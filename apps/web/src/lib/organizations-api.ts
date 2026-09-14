@@ -13,6 +13,8 @@ export interface Organization {
   name: string
   type: 'INCORPORADORA' | 'MASTER' | 'REPRESENTACAO'
   parentOrganizationId: string | null
+  /** Só organizações White Label podem definir um ícone próprio (branding.iconUrl). */
+  isWhiteLabel: boolean
   branding: OrganizationBranding | null
 }
 
@@ -42,7 +44,7 @@ export function listOrganizations(): Promise<{ organizations: Organization[] }> 
 
 export function updateOrganization(
   id: string,
-  payload: { name: string },
+  payload: { name?: string; isWhiteLabel?: boolean },
 ): Promise<{ organization: Organization }> {
   return apiClient.patch<{ organization: Organization }>(`/organizations/${id}`, payload)
 }
