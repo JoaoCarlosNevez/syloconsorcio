@@ -1,0 +1,23 @@
+// useTeam — server state da equipe da organização ativa (ADR-09).
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { type InviteTeamMemberPayload, inviteTeamMember, listTeamMembers } from '../lib/team-api'
+
+export function useTeamMembersQuery(organizationId: string | null) {
+  return useQuery({
+    queryKey: ['team', 'members', organizationId],
+    queryFn: () => listTeamMembers(organizationId as string),
+    enabled: Boolean(organizationId),
+  })
+}
+
+export function useInviteTeamMember(organizationId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: InviteTeamMemberPayload) =>
+      inviteTeamMember(organizationId as string, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team', 'members', organizationId] })
+    },
+  })
+}

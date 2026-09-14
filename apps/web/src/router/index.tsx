@@ -30,6 +30,12 @@ const ComingSoonPage = lazy(() =>
 const PerfilPage = lazy(() =>
   import('../pages/perfil/PerfilPage').then((m) => ({ default: m.PerfilPage })),
 )
+const UsuariosPage = lazy(() =>
+  import('../pages/usuarios/UsuariosPage').then((m) => ({ default: m.UsuariosPage })),
+)
+const AdminPage = lazy(() =>
+  import('../pages/admin/AdminPage').then((m) => ({ default: m.AdminPage })),
+)
 
 export function AppRouter() {
   return (
@@ -45,10 +51,10 @@ export function AppRouter() {
           <Route path="metas" element={<MetasPage />} />
           <Route path="kanban" element={<KanbanPage />} />
           <Route path="tarefas" element={<ComingSoonPage />} />
-          <Route path="usuarios" element={<ComingSoonPage />} />
+          <Route path="usuarios" element={<UsuariosPage />} />
           <Route path="fila" element={<ComingSoonPage />} />
           <Route path="config" element={<ComingSoonPage />} />
-          <Route path="admin" element={<ComingSoonPage />} />
+          <Route path="admin" element={<AdminPage />} />
           <Route path="ajuda" element={<ComingSoonPage />} />
           <Route path="sara" element={<ComingSoonPage />} />
           <Route path="perfil" element={<PerfilPage />} />

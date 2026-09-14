@@ -64,17 +64,15 @@ function buildMembershipRepository(membership: UserMembership): IMembershipRepos
   return {
     findActiveByUserId: vi.fn().mockResolvedValue([membership]),
     findActiveByUserAndOrganization: vi.fn().mockResolvedValue(membership),
-    findActiveByOrganizationId: vi
-      .fn()
-      .mockResolvedValue([
-        {
-          userId: IDENTITY.id,
-          name: null,
-          email: IDENTITY.email,
-          role: membership.role,
-          status: 'ACTIVE',
-        },
-      ]),
+    findActiveByOrganizationId: vi.fn().mockResolvedValue([
+      {
+        userId: IDENTITY.id,
+        name: null,
+        email: IDENTITY.email,
+        role: membership.role,
+        status: 'ACTIVE',
+      },
+    ]),
     create: vi.fn(),
   }
 }
