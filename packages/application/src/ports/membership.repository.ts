@@ -1,10 +1,11 @@
-// IMembershipRepository — port para resolução de memberships por requisição.
+// IMembershipRepository — port para resolução e escrita de memberships.
 //
 // Definido na camada Application (o consumidor define o contrato).
 // Implementação concreta: packages/infrastructure/src/database/repositories/
 //
 // Usado pelo tenantMiddleware para resolver o contexto organizacional
-// a partir do userId autenticado e do X-Organization-Id header.
+// a partir do userId autenticado e do X-Organization-Id header, e pelos
+// fluxos de criação de Representação / convite de equipe.
 
 import type { OrganizationType, Role } from '@sylocrm/domain'
 
@@ -15,8 +16,26 @@ import type { OrganizationType, Role } from '@sylocrm/domain'
 export interface UserMembership {
   organizationId: string
   organizationType: OrganizationType
+  organizationName: string
+  /** Ícone da organização (branding.iconUrl), null quando não definido. */
+  organizationIconUrl: string | null
   role: Role
   status: 'ACTIVE' | 'INVITED' | 'SUSPENDED'
+}
+
+/** Membership com os dados do usuário — usado na listagem de equipe. */
+export interface TeamMember {
+  userId: string
+  name: string | null
+  email: string
+  role: Role
+  status: 'ACTIVE' | 'INVITED' | 'SUSPENDED'
+}
+
+export interface NewMembershipInput {
+  userId: string
+  organizationId: string
+  role: Role
 }
 
 /**
@@ -40,4 +59,9 @@ export interface IMembershipRepository {
     userId: string,
     organizationId: string,
   ): Promise<UserMembership | null>
+
+  /** Lista os membros ativos de uma organização, com dados do usuário. */
+  findActiveByOrganizationId(organizationId: string): Promise<TeamMember[]>
+
+  create(input: NewMembershipInput): Promise<void>
 }

@@ -7,5 +7,8 @@
 export { DomainError } from './errors/domain-error'
 export { ValidationError } from './errors/validation-error'
 export type { ValidationIssue } from './errors/validation-error'
+export { ConflictError } from './errors/conflict-error'
+export { AuthorizationError } from './errors/authorization-error'
 
 export * from './auth'
+export * from './leads'

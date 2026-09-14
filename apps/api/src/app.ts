@@ -8,15 +8,30 @@
 // adapters when Supabase env vars are not configured (development without credentials).
 
 import cors from '@fastify/cors'
-import type { IAuthProvider, IMembershipRepository } from '@sylocrm/application'
+import multipart from '@fastify/multipart'
+import type {
+  IAuthProvider,
+  ILeadRepository,
+  IMembershipRepository,
+  IOrganizationRepository,
+  IStorageProvider,
+  IUserRepository,
+} from '@sylocrm/application'
 import Fastify from 'fastify'
 import { env } from './config/env'
 import { authRoute } from './routes/auth.route'
 import { healthRoute } from './routes/health.route'
+import { leadsRoute } from './routes/leads.route'
+import { organizationsRoute } from './routes/organizations.route'
+import { teamRoute } from './routes/team.route'
 
 export interface BuildAppDeps {
   authProvider: IAuthProvider
   membershipRepository: IMembershipRepository
+  leadRepository: ILeadRepository
+  organizationRepository: IOrganizationRepository
+  userRepository: IUserRepository
+  storageProvider: IStorageProvider
 }
 
 /** No-op auth provider used when Supabase env vars are not configured. */
@@ -24,6 +39,9 @@ function createNoOpAuthProvider(): IAuthProvider {
   return {
     verifyToken: async () => null,
     signOut: async () => {},
+    createUser: async () => {
+      throw new Error('Auth provider not configured — cannot create users.')
+    },
   }
 }
 
@@ -32,6 +50,56 @@ function createNoOpMembershipRepository(): IMembershipRepository {
   return {
     findActiveByUserId: async () => [],
     findActiveByUserAndOrganization: async () => null,
+    findActiveByOrganizationId: async () => [],
+    create: async () => {
+      throw new Error('Database not configured — cannot create memberships.')
+    },
+  }
+}
+
+/** No-op lead repository used when database is not configured. */
+function createNoOpLeadRepository(): ILeadRepository {
+  return {
+    list: async (_filter, page, pageSize) => ({ items: [], total: 0, page, pageSize }),
+    findById: async () => null,
+    create: async () => {
+      throw new Error('Database not configured — cannot create leads.')
+    },
+    update: async () => null,
+    delete: async () => false,
+    recordAssignmentChange: async () => {},
+  }
+}
+
+/** No-op organization repository used when database is not configured. */
+function createNoOpOrganizationRepository(): IOrganizationRepository {
+  return {
+    findChildOrganizationIds: async () => [],
+    create: async () => {
+      throw new Error('Database not configured — cannot create organizations.')
+    },
+    list: async () => [],
+    findById: async () => null,
+    update: async () => null,
+  }
+}
+
+/** No-op user repository used when database is not configured. */
+function createNoOpUserRepository(): IUserRepository {
+  return {
+    findById: async () => null,
+    upsert: async () => {
+      throw new Error('Database not configured — cannot upsert users.')
+    },
+  }
+}
+
+/** No-op storage provider used when Supabase env vars are not configured. */
+function createNoOpStorageProvider(): IStorageProvider {
+  return {
+    uploadPublicFile: async () => {
+      throw new Error('Storage provider not configured — cannot upload files.')
+    },
   }
 }
 
@@ -41,6 +109,10 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
   const resolvedDeps: BuildAppDeps = {
     authProvider: deps?.authProvider ?? createNoOpAuthProvider(),
     membershipRepository: deps?.membershipRepository ?? createNoOpMembershipRepository(),
+    leadRepository: deps?.leadRepository ?? createNoOpLeadRepository(),
+    organizationRepository: deps?.organizationRepository ?? createNoOpOrganizationRepository(),
+    userRepository: deps?.userRepository ?? createNoOpUserRepository(),
+    storageProvider: deps?.storageProvider ?? createNoOpStorageProvider(),
   }
 
   const app = Fastify({
@@ -58,11 +130,38 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     credentials: true,
   })
 
+  app.register(multipart, {
+    limits: { fileSize: 2 * 1024 * 1024 }, // 2MB — mesmo limite do bucket organization-icons
+  })
+
   // ── Routes ────────────────────────────────────────────────────────────────
   app.register(healthRoute)
 
   app.register(authRoute, {
     authProvider: resolvedDeps.authProvider,
+    membershipRepository: resolvedDeps.membershipRepository,
+    userRepository: resolvedDeps.userRepository,
+  })
+
+  app.register(leadsRoute, {
+    authProvider: resolvedDeps.authProvider,
+    membershipRepository: resolvedDeps.membershipRepository,
+    leadRepository: resolvedDeps.leadRepository,
+    organizationRepository: resolvedDeps.organizationRepository,
+  })
+
+  app.register(organizationsRoute, {
+    authProvider: resolvedDeps.authProvider,
+    userRepository: resolvedDeps.userRepository,
+    organizationRepository: resolvedDeps.organizationRepository,
+    membershipRepository: resolvedDeps.membershipRepository,
+    storageProvider: resolvedDeps.storageProvider,
+  })
+
+  app.register(teamRoute, {
+    authProvider: resolvedDeps.authProvider,
+    userRepository: resolvedDeps.userRepository,
+    membershipRepository: resolvedDeps.membershipRepository,
   })
 
   return app

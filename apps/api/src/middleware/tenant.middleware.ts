@@ -15,11 +15,10 @@
 //   403 — membership inativa/suspensa (MEMBERSHIP_INACTIVE)
 
 import type { IMembershipRepository } from '@sylocrm/application'
-import type { AuthenticatedContext, MembershipContext } from '@sylocrm/application'
+import type { AuthenticatedContext } from '@sylocrm/application'
 import type { FastifyReply, FastifyRequest } from 'fastify'
-import { calculateDataScope } from '../auth/data-scope'
 import { AuthErrorCode } from '../auth/errors'
-import { getPermissionsForRole } from '../auth/permissions'
+import { buildMembershipContext } from '../auth/membership-context'
 
 /**
  * Cria o preHandler de tenant com o repositório de memberships injetado.
@@ -77,14 +76,6 @@ export function createTenantMiddleware(membershipRepository: IMembershipReposito
 
     // Busca todas as memberships para disponibilizar troca de contexto no frontend
     const allMemberships = await membershipRepository.findActiveByUserId(identity.id)
-
-    const buildMembershipContext = (m: typeof currentMembershipData): MembershipContext => ({
-      organizationId: m.organizationId,
-      organizationType: m.organizationType,
-      role: m.role,
-      dataScope: calculateDataScope(m.organizationType, m.role),
-      permissions: getPermissionsForRole(m.role),
-    })
 
     const authContext: AuthenticatedContext = {
       identityId: identity.id,

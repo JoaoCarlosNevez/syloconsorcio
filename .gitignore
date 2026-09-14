@@ -12,6 +12,9 @@ out/
 # Turbo
 .turbo/
 
+# Maestri — AI agent session/role tooling directory
+.maestri/
+
 # Environment — NEVER commit .env with real values
 .env
 .env.local
@@ -45,3 +48,6 @@ test-results/
 
 # Drizzle
 drizzle/
+
+# Supabase CLI local session cache
+supabase/.temp/

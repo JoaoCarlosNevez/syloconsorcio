@@ -4,7 +4,7 @@
 //   - Validação de campos (email vazio, email inválido, senha curta)
 //   - Estado de loading enquanto signIn está pendente
 //   - Banner de erro quando useAuth reporta signInError
-//   - Navegação para /app/dashboard quando login é bem-sucedido
+//   - Navegação para /app/home quando login é bem-sucedido
 //
 // useAuth é mockado via vi.mock com factory controlável por teste.
 // Renderizado dentro de MemoryRouter — sem BrowserRouter real.
@@ -134,7 +134,7 @@ describe('LoginPage — signIn interaction', () => {
     })
   })
 
-  it('navigates to /app/dashboard after successful login', async () => {
+  it('navigates to /app/home after successful login', async () => {
     mockSignIn.mockResolvedValue(undefined)
     const user = userEvent.setup()
     renderLoginPage()

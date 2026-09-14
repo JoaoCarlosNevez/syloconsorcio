@@ -1,23 +1,32 @@
 // Rotas de autenticação.
 //
-// POST /auth/logout — invalida a sessão do usuário autenticado
-// GET  /auth/me     — retorna a identidade do usuário autenticado
+// POST /auth/logout      — invalida a sessão do usuário autenticado
+// GET  /auth/me          — retorna a identidade do usuário autenticado
+// GET  /auth/memberships — lista as organizações às quais o usuário pertence
+// GET  /auth/context     — resolve o contexto multi-tenant para a organização ativa
 //
-// Ambas requerem authMiddleware (Bearer token válido).
-// Nenhuma requer tenantMiddleware (não dependem de contexto organizacional).
+// Todas requerem authMiddleware (Bearer token válido).
+// Apenas /auth/context requer tenantMiddleware — as demais não dependem de
+// um X-Organization-Id já escolhido (o frontend usa /auth/memberships
+// justamente para decidir qual organização selecionar).
 //
 // Login acontece diretamente no Supabase via SDK no frontend (ADR-13).
 
-import type { IAuthProvider } from '@sylocrm/application'
+import type { IAuthProvider, IMembershipRepository, IUserRepository } from '@sylocrm/application'
 import type { FastifyPluginAsync } from 'fastify'
+import { buildMembershipContext } from '../auth/membership-context'
 import { createAuthMiddleware } from '../middleware/auth.middleware'
+import { createTenantMiddleware } from '../middleware/tenant.middleware'
 
 interface AuthRouteOptions {
   authProvider: IAuthProvider
+  membershipRepository: IMembershipRepository
+  userRepository: IUserRepository
 }
 
 export const authRoute: FastifyPluginAsync<AuthRouteOptions> = async (fastify, options) => {
   const authMiddleware = createAuthMiddleware(options.authProvider)
+  const tenantMiddleware = createTenantMiddleware(options.membershipRepository)
 
   // ── GET /auth/me ──────────────────────────────────────────────────────────
   // Retorna a identidade do usuário autenticado.
@@ -33,17 +42,43 @@ export const authRoute: FastifyPluginAsync<AuthRouteOptions> = async (fastify, o
             properties: {
               id: { type: 'string' },
               email: { type: 'string' },
+              isPlatformAdmin: { type: 'boolean' },
             },
-            required: ['id', 'email'],
+            required: ['id', 'email', 'isPlatformAdmin'],
           },
         },
       },
     },
     async (request) => {
       // authMiddleware garante que authIdentity está presente
-      const identity = request.authIdentity
-      return { id: identity?.id, email: identity?.email }
+      const identity = request.authIdentity as NonNullable<typeof request.authIdentity>
+      const user = await options.userRepository.findById(identity.id)
+      return {
+        id: identity.id,
+        email: identity.email,
+        isPlatformAdmin: user?.isPlatformAdmin ?? false,
+      }
     },
+  )
+
+  // ── GET /auth/memberships ─────────────────────────────────────────────────
+  // Lista todas as organizações ativas do usuário, com role/dataScope/permissions
+  // já calculados. O frontend usa isto para montar o seletor de organização
+  // (ou auto-selecionar quando há apenas uma) antes de enviar X-Organization-Id.
+  fastify.get('/auth/memberships', { preHandler: [authMiddleware] }, async (request) => {
+    // authMiddleware garante que authIdentity está presente
+    const identity = request.authIdentity
+    const memberships = await options.membershipRepository.findActiveByUserId(identity?.id ?? '')
+    return { memberships: memberships.map(buildMembershipContext) }
+  })
+
+  // ── GET /auth/context ─────────────────────────────────────────────────────
+  // Resolve o AuthenticatedContext completo (membership ativa + disponíveis)
+  // para a organização informada em X-Organization-Id.
+  fastify.get(
+    '/auth/context',
+    { preHandler: [authMiddleware, tenantMiddleware] },
+    async (request) => request.authContext,
   )
 
   // ── POST /auth/logout ─────────────────────────────────────────────────────

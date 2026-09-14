@@ -4,16 +4,13 @@
 
 import { Skeleton } from '@sylocrm/ui'
 import type { Tier } from '@sylocrm/ui'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
-import {
-  COLUMN_STATUS_LABEL,
-  COLUMN_TAREFA_LABEL,
-  INITIAL_BOARD,
-  USER_TIER,
-  parseCotaFields,
-} from '../../data/kanban-mock'
+import { COLUMN_STATUS_LABEL, COLUMN_TAREFA_LABEL, USER_TIER } from '../../data/kanban-mock'
+import { useLeadsQuery } from '../../hooks/useLeads'
+import { useActiveOrganization } from '../../hooks/useOrganization'
+import { STAGE_TO_COLUMN_ID, daysSince, formatCota } from '../../lib/lead-adapters'
 import styles from './HomePage.module.css'
 
 // ── Ícones ────────────────────────────────────────────────────────────────────
@@ -162,7 +159,7 @@ function WhatsAppIcon() {
   )
 }
 
-// ── Tipos e mock ──────────────────────────────────────────────────────────────
+// ── Tipos ─────────────────────────────────────────────────────────────────────
 
 interface TarefaItem {
   id: string
@@ -183,30 +180,7 @@ const STATUS_CLASS: Record<TarefaItem['status'], string> = {
   Proposta: styles.statusProposta ?? '',
 }
 
-// Derivado do board do Kanban — mesmo dado, sem duplicação.
-// Exibe os 3 leads com prazo mais próximo ou mais vencido (maior número de dias no funil).
-const MOCK_TAREFAS: TarefaItem[] = Object.entries(INITIAL_BOARD)
-  .filter(([colId]) => colId !== 'venda')
-  .flatMap(([colId, cards]) =>
-    cards.map((card) => {
-      const { segmento, valor } = parseCotaFields(card.cota)
-      const daysNum = Number.parseInt(card.days, 10) || 0
-      return {
-        id: card.id,
-        cliente: card.name,
-        phone: card.phone,
-        segmento,
-        cota: card.cota,
-        valor,
-        tarefa: COLUMN_TAREFA_LABEL[colId] ?? 'Follow-Up',
-        status: (COLUMN_STATUS_LABEL[colId] ?? 'Atendimento') as TarefaItem['status'],
-        daysUrgent: card.daysUrgent,
-        daysNum,
-      }
-    }),
-  )
-  .sort((a, b) => b.daysNum - a.daysNum)
-  .slice(0, 3)
+const URGENT_AFTER_DAYS = 60
 
 const TIER_GRADIENT: Record<Tier, string> = {
   turmalina: 'linear-gradient(135deg, #9ef5ff, #00d9ff, #00a6cc)',
@@ -227,6 +201,8 @@ const TIER_BG: Record<Tier, string> = {
 export function HomePage() {
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(true)
+  const { organizationId } = useActiveOrganization()
+  const { data: leadsPage } = useLeadsQuery(organizationId, { pageSize: 100 })
 
   // TODO: buscar nome real do perfil via API
   const displayName = 'Ennyo Café'
@@ -236,6 +212,32 @@ export function HomePage() {
     const t = setTimeout(() => setIsLoading(false), 1500)
     return () => clearTimeout(t)
   }, [])
+
+  // Os 3 leads com mais dias no funil (exceto os já vendidos) — mesma regra
+  // de negócio que o Kanban usa para calcular urgência.
+  const tarefas = useMemo<TarefaItem[]>(() => {
+    const leads = leadsPage?.items ?? []
+    return leads
+      .filter((lead) => lead.stage !== 'VENDA')
+      .map((lead): TarefaItem => {
+        const columnId = STAGE_TO_COLUMN_ID[lead.stage]
+        const daysNum = daysSince(lead.createdAt)
+        return {
+          id: lead.id,
+          cliente: lead.name,
+          phone: lead.phone,
+          segmento: lead.segment,
+          cota: formatCota(lead.valueCents, lead.segment, lead.quotaCount),
+          valor: `R$ ${(lead.valueCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+          tarefa: COLUMN_TAREFA_LABEL[columnId] ?? 'Follow-Up',
+          status: (COLUMN_STATUS_LABEL[columnId] ?? 'Atendimento') as TarefaItem['status'],
+          daysUrgent: daysNum > URGENT_AFTER_DAYS,
+          daysNum,
+        }
+      })
+      .sort((a, b) => b.daysNum - a.daysNum)
+      .slice(0, 3)
+  }, [leadsPage])
 
   return (
     <AppLayout>
@@ -489,7 +491,18 @@ export function HomePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {MOCK_TAREFAS.map((t) => (
+                  {tarefas.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className={styles.segmentoGrupo}
+                        style={{ padding: '24px 0' }}
+                      >
+                        Nenhuma tarefa pendente no funil.
+                      </td>
+                    </tr>
+                  )}
+                  {tarefas.map((t) => (
                     <tr key={t.id}>
                       <td className={styles.clienteNome}>{t.cliente}</td>
                       <td>

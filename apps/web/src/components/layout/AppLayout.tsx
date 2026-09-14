@@ -1,12 +1,18 @@
 // AppLayout — layout autenticado com sidebar branca.
-// Sidebar: logo, seletor de empresa, nav, Sara IA, status, tema, perfil.
+// Sidebar: logo, seletor de empresa, nav, Sara IA, status, sair, perfil.
 
-import type { Tier } from '@sylocrm/ui'
-import { type ReactNode, useEffect, useState } from 'react'
+import { Dropdown } from '@sylocrm/ui'
+import type { DropdownEntry, Tier } from '@sylocrm/ui'
+import type { ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { USER_TIER } from '../../data/kanban-mock'
 import { useAuth } from '../../hooks/useAuth'
+import { useActiveOrganization } from '../../hooks/useOrganization'
 import styles from './AppLayout.module.css'
+
+// Padrão de identidade visual (AGENTS.md §11): toda organização usa a marca
+// Sylo até definir seu próprio ícone (ver painel de Administração).
+const DEFAULT_ORG_ICON_URL = '/sylo-logo.png'
 
 function deriveDisplayName(email: string | undefined): string {
   if (!email) return 'Usuário'
@@ -62,6 +68,26 @@ function TarefasIcon() {
       <line x1="8" y1="2" x2="8" y2="6" />
       <line x1="3" y1="10" x2="21" y2="10" />
       <path d="m9 16 2 2 4-4" />
+    </svg>
+  )
+}
+function UsuariosIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   )
 }
@@ -174,56 +200,27 @@ function ChevronDownIcon() {
     </svg>
   )
 }
-function SunIcon() {
+function SairIcon() {
   return (
     <svg
-      width="13"
-      height="13"
+      width="16"
+      height="16"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={2}
+      strokeWidth={1.75}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <circle cx="12" cy="12" r="5" />
-      <line x1="12" y1="1" x2="12" y2="3" />
-      <line x1="12" y1="21" x2="12" y2="23" />
-      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-      <line x1="1" y1="12" x2="3" y2="12" />
-      <line x1="21" y1="12" x2="23" y2="12" />
-      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-    </svg>
-  )
-}
-function MoonIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   )
 }
 
-// ── Dados fixos (mock até multi-tenant) ───────────────────────────────────────
-
-const WORKSPACES = [
-  { id: '1', name: 'Porthis Consórcio', icon: '/porthis-icon.png', active: true },
-  { id: '2', name: 'Sylo Vendas SP', icon: '/porthis-icon.png', active: false },
-  { id: '3', name: 'Matriz Norte', icon: '/porthis-icon.png', active: false },
-]
+// ── Dados fixos ────────────────────────────────────────────────────────────────
 
 const TIER_BORDER_COLOR: Record<Tier, string> = {
   turmalina: '#00a6cc',
@@ -252,6 +249,7 @@ const NAV_ITEMS = [
   { label: 'Início', path: '/app/home', icon: InicioIcon },
   { label: 'Kanban', path: '/app/kanban', icon: KanbanIcon },
   { label: 'Tarefas', path: '/app/tarefas', icon: TarefasIcon },
+  { label: 'Usuários', path: '/app/usuarios', icon: UsuariosIcon },
   { label: 'Fila', path: '/app/fila', icon: FilaIcon },
   { label: 'Configurações', path: '/app/config', icon: ConfigIcon },
   { label: 'Administração', path: '/app/admin', icon: AdminIcon },
@@ -267,23 +265,31 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { user } = useAuth()
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('sylo-theme') as 'light' | 'dark') ?? 'light'
-  })
-  const [companyOpen, setCompanyOpen] = useState(false)
-  // biome-ignore lint/style/noNonNullAssertion: WORKSPACES is a non-empty const array
-  const [activeWorkspace, setActiveWorkspace] = useState(WORKSPACES[0]!)
-
-  // Aplica o tema no <html> e persiste
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
-    localStorage.setItem('sylo-theme', theme)
-  }, [theme])
+  const { user, signOut } = useAuth()
+  const { membership, memberships, setActiveOrganizationId } = useActiveOrganization()
 
   const displayName =
     (user?.user_metadata?.full_name as string | undefined) ?? deriveDisplayName(user?.email)
   const palette = TIER_PALETTE[USER_TIER]
+
+  async function handleSignOut() {
+    await signOut()
+    navigate('/login', { replace: true })
+  }
+
+  const organizationSwitcherItems: DropdownEntry[] = memberships.map((m) => ({
+    key: m.organizationId,
+    label: m.organizationName,
+    icon: (
+      <img
+        src={m.organizationIconUrl ?? DEFAULT_ORG_ICON_URL}
+        alt=""
+        className={styles.companyMenuIcon}
+      />
+    ),
+    disabled: m.organizationId === membership?.organizationId,
+    onSelect: () => setActiveOrganizationId(m.organizationId),
+  }))
 
   function navTo(path: string) {
     return (e: React.MouseEvent) => {
@@ -306,130 +312,30 @@ export function AppLayout({ children }: AppLayoutProps) {
         }
       >
         {/* Logo */}
-        {/* biome-ignore lint/a11y/useKeyWithClickEvents: logo navigate home */}
-        <div className={styles.logo} onClick={navTo('/app/home')} style={{ cursor: 'pointer' }}>
+        <div className={styles.logo}>
           <img src="/sylo-logo.png" alt="Sylo CRM" className={styles.logoImg} />
         </div>
 
-        {/* Seletor de empresa */}
-        <div style={{ position: 'relative', marginBottom: 18 }}>
-          <button
-            type="button"
-            className={styles.companySelector}
-            style={{ marginBottom: 0 }}
-            aria-label="Trocar empresa"
-            onClick={() => setCompanyOpen((o) => !o)}
-          >
-            <div className={styles.companySelectorLeft}>
-              <div className={styles.companyIconWrap}>
-                <img src={activeWorkspace.icon} alt={activeWorkspace.name} />
-              </div>
-              <span className={styles.companyName}>{activeWorkspace.name}</span>
-            </div>
-            <span className={styles.companyCaret}>
-              <ChevronUpDownIcon />
-            </span>
-          </button>
-
-          {companyOpen && (
-            // biome-ignore lint/a11y/useKeyWithClickEvents: backdrop dismiss
-            <div
-              style={{ position: 'fixed', inset: 0, zIndex: 200 }}
-              onClick={() => setCompanyOpen(false)}
-            >
-              {/* biome-ignore lint/a11y/useKeyWithClickEvents: dropdown stops propagation */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 260,
-                  width: 220,
-                  background: '#fff',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: 12,
-                  boxShadow: '0 8px 24px rgba(11,28,48,0.12)',
-                  padding: '8px 0',
-                  zIndex: 201,
-                }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <p
-                  style={{
-                    margin: 0,
-                    padding: '6px 14px 8px',
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: '#94a3b8',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                  }}
-                >
-                  Workspaces
-                </p>
-                {WORKSPACES.map((ws) => (
-                  <button
-                    key={ws.id}
-                    type="button"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      width: '100%',
-                      padding: '9px 14px',
-                      background: ws.id === activeWorkspace.id ? '#f1f5f9' : 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                      textAlign: 'left',
-                    }}
-                    onClick={() => {
-                      setActiveWorkspace(ws)
-                      setCompanyOpen(false)
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: 7,
-                        background: '#0075ff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <img
-                        src={ws.icon}
-                        alt=""
-                        style={{ width: 18, height: 12, objectFit: 'contain' }}
-                      />
-                    </div>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: '#0f172a' }}>
-                      {ws.name}
-                    </span>
-                    {ws.id === activeWorkspace.id && (
-                      <svg
-                        style={{ marginLeft: 'auto', flexShrink: 0 }}
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#0075ff"
-                        strokeWidth={2.5}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+        {/* Seletor de empresa — troca entre as organizações do usuário */}
+        <div className={styles.companySwitcherSlot}>
+          <Dropdown
+            items={organizationSwitcherItems}
+            trigger={
+              <button type="button" className={styles.companySelector} aria-label="Trocar empresa">
+                <div className={styles.companySelectorLeft}>
+                  <div className={styles.companyIconWrap}>
+                    <img src={membership?.organizationIconUrl ?? DEFAULT_ORG_ICON_URL} alt="" />
+                  </div>
+                  <span className={styles.companyName}>
+                    {membership?.organizationName ?? 'Carregando…'}
+                  </span>
+                </div>
+                <span className={styles.companyCaret}>
+                  <ChevronUpDownIcon />
+                </span>
+              </button>
+            }
+          />
         </div>
 
         {/* Navegação */}
@@ -468,23 +374,11 @@ export function AppLayout({ children }: AppLayoutProps) {
             <span className={styles.vendedorSla}>99.8% SLA</span>
           </div>
 
-          {/* Tema */}
-          <fieldset className={styles.themeToggle} aria-label="Tema">
-            <button
-              type="button"
-              className={`${styles.themeBtn} ${theme === 'light' ? styles.active : ''}`}
-              onClick={() => setTheme('light')}
-            >
-              <SunIcon /> Claro
-            </button>
-            <button
-              type="button"
-              className={`${styles.themeBtn} ${theme === 'dark' ? styles.active : ''}`}
-              onClick={() => setTheme('dark')}
-            >
-              <MoonIcon /> Escuro
-            </button>
-          </fieldset>
+          {/* Sair */}
+          <button type="button" className={styles.logoutButton} onClick={handleSignOut}>
+            <SairIcon />
+            <span>Sair</span>
+          </button>
 
           {/* Perfil */}
           <button

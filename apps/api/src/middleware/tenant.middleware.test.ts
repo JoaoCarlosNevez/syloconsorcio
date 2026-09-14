@@ -26,6 +26,8 @@ const IDENTITY: AuthIdentity = { id: 'user-uuid', email: 'user@empresa.com' }
 const ACTIVE_REPRESENTACAO_SELLER: UserMembership = {
   organizationId: 'org-rep-01',
   organizationType: OrganizationType.REPRESENTACAO,
+  organizationName: 'Representação Teste',
+  organizationIconUrl: null,
   role: Role.SELLER,
   status: 'ACTIVE',
 }
@@ -33,6 +35,8 @@ const ACTIVE_REPRESENTACAO_SELLER: UserMembership = {
 const ACTIVE_REPRESENTACAO_ADMIN: UserMembership = {
   organizationId: 'org-rep-01',
   organizationType: OrganizationType.REPRESENTACAO,
+  organizationName: 'Representação Teste',
+  organizationIconUrl: null,
   role: Role.ADMIN,
   status: 'ACTIVE',
 }
@@ -40,6 +44,8 @@ const ACTIVE_REPRESENTACAO_ADMIN: UserMembership = {
 const ACTIVE_MASTER: UserMembership = {
   organizationId: 'org-master-01',
   organizationType: OrganizationType.MASTER,
+  organizationName: 'Master Teste',
+  organizationIconUrl: null,
   role: Role.MANAGER,
   status: 'ACTIVE',
 }
@@ -47,6 +53,8 @@ const ACTIVE_MASTER: UserMembership = {
 const SUSPENDED_MEMBERSHIP: UserMembership = {
   organizationId: 'org-rep-01',
   organizationType: OrganizationType.REPRESENTACAO,
+  organizationName: 'Representação Teste',
+  organizationIconUrl: null,
   role: Role.SELLER,
   status: 'SUSPENDED',
 }
@@ -104,6 +112,8 @@ describe('tenantMiddleware', () => {
     const mockRepo: IMembershipRepository = {
       findActiveByUserId: vi.fn(),
       findActiveByUserAndOrganization: vi.fn(),
+      findActiveByOrganizationId: vi.fn(),
+      create: vi.fn(),
     }
     const app = buildTestAppWithoutAuth(mockRepo)
 
@@ -123,6 +133,8 @@ describe('tenantMiddleware', () => {
     const mockRepo: IMembershipRepository = {
       findActiveByUserId: vi.fn(),
       findActiveByUserAndOrganization: vi.fn(),
+      findActiveByOrganizationId: vi.fn(),
+      create: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
 
@@ -138,6 +150,8 @@ describe('tenantMiddleware', () => {
     const mockRepo: IMembershipRepository = {
       findActiveByUserId: vi.fn(),
       findActiveByUserAndOrganization: vi.fn().mockResolvedValue(null),
+      findActiveByOrganizationId: vi.fn(),
+      create: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
 
@@ -156,6 +170,8 @@ describe('tenantMiddleware', () => {
     const mockRepo: IMembershipRepository = {
       findActiveByUserId: vi.fn(),
       findActiveByUserAndOrganization: vi.fn().mockResolvedValue(SUSPENDED_MEMBERSHIP),
+      findActiveByOrganizationId: vi.fn(),
+      create: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
 
@@ -174,6 +190,8 @@ describe('tenantMiddleware', () => {
     const mockRepo: IMembershipRepository = {
       findActiveByUserId: vi.fn().mockResolvedValue([ACTIVE_REPRESENTACAO_SELLER]),
       findActiveByUserAndOrganization: vi.fn().mockResolvedValue(ACTIVE_REPRESENTACAO_SELLER),
+      findActiveByOrganizationId: vi.fn(),
+      create: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
 
@@ -197,6 +215,8 @@ describe('tenantMiddleware', () => {
     const mockRepo: IMembershipRepository = {
       findActiveByUserId: vi.fn().mockResolvedValue([ACTIVE_REPRESENTACAO_SELLER]),
       findActiveByUserAndOrganization: vi.fn().mockResolvedValue(ACTIVE_REPRESENTACAO_SELLER),
+      findActiveByOrganizationId: vi.fn(),
+      create: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
 
@@ -215,6 +235,8 @@ describe('tenantMiddleware', () => {
       const mockRepo: IMembershipRepository = {
         findActiveByUserId: vi.fn().mockResolvedValue([ACTIVE_REPRESENTACAO_SELLER]),
         findActiveByUserAndOrganization: vi.fn().mockResolvedValue(ACTIVE_REPRESENTACAO_SELLER),
+        findActiveByOrganizationId: vi.fn(),
+        create: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
 
@@ -232,6 +254,8 @@ describe('tenantMiddleware', () => {
       const mockRepo: IMembershipRepository = {
         findActiveByUserId: vi.fn().mockResolvedValue([ACTIVE_REPRESENTACAO_ADMIN]),
         findActiveByUserAndOrganization: vi.fn().mockResolvedValue(ACTIVE_REPRESENTACAO_ADMIN),
+        findActiveByOrganizationId: vi.fn(),
+        create: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
 
@@ -249,6 +273,8 @@ describe('tenantMiddleware', () => {
       const mockRepo: IMembershipRepository = {
         findActiveByUserId: vi.fn().mockResolvedValue([ACTIVE_MASTER]),
         findActiveByUserAndOrganization: vi.fn().mockResolvedValue(ACTIVE_MASTER),
+        findActiveByOrganizationId: vi.fn(),
+        create: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
 
@@ -268,6 +294,8 @@ describe('tenantMiddleware', () => {
       const mockRepo: IMembershipRepository = {
         findActiveByUserId: vi.fn().mockResolvedValue([ACTIVE_REPRESENTACAO_SELLER]),
         findActiveByUserAndOrganization: vi.fn().mockResolvedValue(ACTIVE_REPRESENTACAO_SELLER),
+        findActiveByOrganizationId: vi.fn(),
+        create: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
 
@@ -289,6 +317,8 @@ describe('tenantMiddleware', () => {
       const mockRepo: IMembershipRepository = {
         findActiveByUserId: vi.fn().mockResolvedValue([ACTIVE_REPRESENTACAO_ADMIN]),
         findActiveByUserAndOrganization: vi.fn().mockResolvedValue(ACTIVE_REPRESENTACAO_ADMIN),
+        findActiveByOrganizationId: vi.fn(),
+        create: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
 
@@ -308,6 +338,8 @@ describe('tenantMiddleware', () => {
     const mockRepo: IMembershipRepository = {
       findActiveByUserId: vi.fn().mockResolvedValue(allMemberships),
       findActiveByUserAndOrganization: vi.fn().mockResolvedValue(ACTIVE_REPRESENTACAO_SELLER),
+      findActiveByOrganizationId: vi.fn(),
+      create: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
 

@@ -6,7 +6,7 @@
 // Structure:
 //   database/       — Drizzle client, schema, repository implementations
 //   auth/           — Supabase Auth adapter
-//   storage/        — Supabase Storage adapter (not yet implemented)
+//   storage/        — Supabase Storage adapter
 //   observability/  — OpenTelemetry and error tracking ports
 
 export { createDatabase } from './database/client'
@@ -17,8 +17,15 @@ export type { ErrorTracker, Logger, ObservabilityConfig } from './observability/
 export { SupabaseAuthAdapter } from './auth/supabase-auth.adapter'
 export type { SupabaseAuthConfig } from './auth/supabase-auth.adapter'
 
+// Storage
+export { SupabaseStorageAdapter } from './storage/supabase-storage.adapter'
+export type { SupabaseStorageConfig } from './storage/supabase-storage.adapter'
+
 // Database schema
 export * from './database/schema'
 
 // Repositories
 export { DrizzleMembershipRepository } from './database/repositories/drizzle-membership.repository'
+export { DrizzleOrganizationRepository } from './database/repositories/drizzle-organization.repository'
+export { DrizzleLeadRepository } from './database/repositories/drizzle-lead.repository'
+export { DrizzleUserRepository } from './database/repositories/drizzle-user.repository'

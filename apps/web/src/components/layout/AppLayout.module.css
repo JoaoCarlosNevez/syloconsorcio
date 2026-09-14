@@ -64,23 +64,45 @@
   min-width: 0;
 }
 
+.companySwitcherSlot {
+  width: 100%;
+}
+
+/* Dropdown (packages/ui) envolve o trigger num wrapper inline-block — força
+   esse wrapper a ocupar a largura da sidebar como o <button> fazia sozinho. */
+.companySwitcherSlot > div {
+  display: block;
+  width: 100%;
+}
+
 .companyIconWrap {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: #0075ff;
+  background: #fff;
+  border: 1px solid rgba(226, 232, 240, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
+  padding: 3px;
+  box-sizing: border-box;
 }
 
 .companyIconWrap img {
-  width: 24px;
-  height: 15px;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   display: block;
+}
+
+.companyMenuIcon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  border-radius: 4px;
+  background: #fff;
 }
 
 .companyName {
@@ -230,37 +252,26 @@
   margin-left: auto;
 }
 
-/* Theme toggle */
-.themeToggle {
-  display: flex;
-  background: var(--color-bg-subtle);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-  padding: 3px;
-}
-
-.themeBtn {
-  flex: 1;
+/* Sair */
+.logoutButton {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 6px 8px;
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-xs);
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  color: var(--color-text-muted);
+  color: #991b1b;
   border: none;
   background: none;
   cursor: pointer;
-  transition: all var(--duration-normal);
-  white-space: nowrap;
+  transition: background-color var(--duration-normal);
+  width: 100%;
+  text-align: left;
 }
 
-.themeBtn.active {
-  background: #ffffff;
-  color: var(--color-text-primary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+.logoutButton:hover {
+  background: rgba(239, 68, 68, 0.06);
 }
 
 /* User card */

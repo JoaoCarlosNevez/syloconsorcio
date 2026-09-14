@@ -27,25 +27,19 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Skeleton } from '@sylocrm/ui'
-import {
-  type CSSProperties,
-  type FormEvent,
-  Fragment,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { EmptyState, Skeleton, useToast } from '@sylocrm/ui'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
 import {
   COLUMN_META,
   type CardData,
   type ColumnMeta,
-  INITIAL_BOARD,
   getAgentProfile,
 } from '../../data/kanban-mock'
+import { useLeadsQuery, useUpdateLead } from '../../hooks/useLeads'
+import { useActiveOrganization } from '../../hooks/useOrganization'
+import { COLUMN_ID_TO_STAGE, formatBRL, groupLeadsByColumn } from '../../lib/lead-adapters'
+import { CreateLeadModal } from './CreateLeadModal'
 import styles from './KanbanPage.module.css'
 import { LeadModal } from './LeadModal'
 
@@ -558,238 +552,44 @@ function ListView({ board, onCardClick, hideVenda }: ListViewProps) {
   )
 }
 
-// ── NewLeadModal ──────────────────────────────────────────────────────────────
-
-interface NewLeadModalProps {
-  onClose: () => void
-  onCreate: (data: { name: string; phone: string; cota: string; source: string }) => void
-}
-
-function NewLeadModal({ onClose, onCreate }: NewLeadModalProps) {
-  const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [cota, setCota] = useState('')
-  const [source, setSource] = useState('Indicação')
-  const [error, setError] = useState('')
-
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    if (!name.trim()) {
-      setError('Nome é obrigatório.')
-      return
-    }
-    if (!phone.trim()) {
-      setError('Telefone é obrigatório.')
-      return
-    }
-    if (!cota.trim()) {
-      setError('Cota é obrigatória.')
-      return
-    }
-    onCreate({ name: name.trim(), phone: phone.trim(), cota: cota.trim(), source: source.trim() })
-  }
-
-  const inputStyle: CSSProperties = {
-    height: 38,
-    border: '1px solid rgba(216,195,173,0.4)',
-    borderRadius: 8,
-    padding: '0 12px',
-    fontFamily: 'inherit',
-    fontSize: 14,
-    color: '#0b1c30',
-    background: '#f8f9ff',
-    outline: 'none',
-    width: '100%',
-    boxSizing: 'border-box',
-  }
-  const labelStyle: CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 6,
-    fontSize: 12,
-    fontWeight: 600,
-    color: '#565e74',
-    textTransform: 'uppercase',
-    letterSpacing: '0.02em',
-  }
-
-  return (
-    // biome-ignore lint/a11y/useKeyWithClickEvents: overlay backdrop dismiss
-    <div
-      style={{
-        position: 'fixed',
-        inset: '0 0 0 260px',
-        zIndex: 400,
-        background: 'rgba(11,28,48,0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-      onClick={onClose}
-    >
-      {/* biome-ignore lint/a11y/useKeyWithClickEvents: modal stops propagation */}
-      <div
-        style={{
-          background: '#fff',
-          borderRadius: 14,
-          width: '100%',
-          maxWidth: 460,
-          boxShadow: '0 8px 40px rgba(11,28,48,0.18)',
-          overflow: 'hidden',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '18px 22px',
-            borderBottom: '1px solid rgba(216,195,173,0.3)',
-          }}
-        >
-          <span style={{ fontSize: 16, fontWeight: 700, color: '#0b1c30' }}>Novo Lead</span>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 30,
-              height: 30,
-              borderRadius: 8,
-              border: 'none',
-              background: 'none',
-              color: '#94a3b8',
-              cursor: 'pointer',
-            }}
-            aria-label="Fechar"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.5}
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-        <form
-          style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: 22 }}
-          onSubmit={handleSubmit}
-        >
-          <label style={labelStyle}>
-            Nome completo
-            <input
-              style={inputStyle}
-              type="text"
-              placeholder="Ex: João da Silva"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </label>
-          <label style={labelStyle}>
-            Telefone
-            <input
-              style={inputStyle}
-              type="text"
-              placeholder="Ex: (11) 99999-9999"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-          </label>
-          <label style={labelStyle}>
-            Cota
-            <input
-              style={inputStyle}
-              type="text"
-              placeholder="Ex: R$ 120.000"
-              value={cota}
-              onChange={(e) => setCota(e.target.value)}
-            />
-          </label>
-          <label style={labelStyle}>
-            Origem
-            <select
-              style={{ ...inputStyle, padding: '0 12px' }}
-              value={source}
-              onChange={(e) => setSource(e.target.value)}
-            >
-              {['Indicação', 'Instagram', 'Facebook', 'Site', 'WhatsApp', 'Ligação', 'Outro'].map(
-                (o) => (
-                  <option key={o} value={o}>
-                    {o}
-                  </option>
-                ),
-              )}
-            </select>
-          </label>
-          {error && <span style={{ fontSize: 13, color: '#ba1a1a' }}>{error}</span>}
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 4 }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                padding: '8px 16px',
-                background: 'none',
-                border: '1px solid rgba(216,195,173,0.5)',
-                borderRadius: 8,
-                fontFamily: 'inherit',
-                fontSize: 13,
-                fontWeight: 500,
-                color: '#565e74',
-                cursor: 'pointer',
-              }}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              style={{
-                padding: '8px 18px',
-                background: 'linear-gradient(to right,#ffeab1,#ffa705)',
-                border: 'none',
-                borderRadius: 8,
-                fontFamily: 'inherit',
-                fontSize: 13,
-                fontWeight: 600,
-                color: '#0b1c30',
-                cursor: 'pointer',
-              }}
-            >
-              Criar Lead
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
-
 // ── KanbanPage ────────────────────────────────────────────────────────────────
 
 export function KanbanPage() {
-  const [board, setBoard] = useState<Record<string, CardData[]>>(INITIAL_BOARD)
+  const { organizationId } = useActiveOrganization()
+  // pageSize=100: suficiente para o volume inicial do MVP. Lazy loading por
+  // coluna (AGENTS.md §12) fica para quando o volume real exigir — ver nota
+  // de status do projeto.
+  const { data, isLoading: isLoadingLeads } = useLeadsQuery(organizationId, { pageSize: 100 })
+  const updateLead = useUpdateLead(organizationId)
+  const { toast } = useToast()
+
+  const [board, setBoard] = useState<Record<string, CardData[]>>({})
   const [activeCard, setActiveCard] = useState<CardData | null>(null)
   const [selectedCard, setSelectedCard] = useState<CardData | null>(null)
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban')
-  const [creatingLead, setCreatingLead] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [overColId, setOverColId] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<'todos' | 'aberto'>('aberto')
   const boardRef = useRef<HTMLDivElement>(null)
+  // Coluna de onde o card saiu no início do drag — usada para saber se o
+  // estágio realmente mudou quando o drag termina (handleDragEnd).
+  const dragOriginColumnRef = useRef<string | null>(null)
 
+  const isLoading = isLoadingLeads || !organizationId
+
+  // Sincroniza o board local a partir dos dados reais sempre que a query
+  // resolve (inclusive após criar/mover um lead, via invalidateQueries).
   useEffect(() => {
-    const t = setTimeout(() => setIsLoading(false), 700)
-    return () => clearTimeout(t)
-  }, [])
+    if (!data) return
+    setBoard(groupLeadsByColumn(data.items))
+  }, [data])
+
+  // Métricas calculadas a partir da página carregada. Com paginação real
+  // (>100 leads) isto deixa de refletir o total exato — ok para o MVP atual.
+  const totalLeads = data?.total ?? 0
+  const volumeTotalCents = (data?.items ?? []).reduce((sum, lead) => sum + lead.valueCents, 0)
+  const ticketMedioCents =
+    data && data.items.length > 0 ? Math.round(volumeTotalCents / data.items.length) : 0
 
   // Converte scroll vertical do mouse em scroll horizontal no board.
   // Usa addEventListener com passive:false para poder chamar preventDefault,
@@ -824,6 +624,7 @@ export function KanbanPage() {
     ({ active }: DragStartEvent) => {
       const colId = findColumnOfCard(board, String(active.id))
       if (!colId) return
+      dragOriginColumnRef.current = colId
       const card = (board[colId] ?? []).find((c) => c.id === active.id) ?? null
       setActiveCard(card)
     },
@@ -868,10 +669,33 @@ export function KanbanPage() {
     ({ active, over }: DragEndEvent) => {
       setActiveCard(null)
       setOverColId(null)
-      if (!over || active.id === over.id) return
+      const originColId = dragOriginColumnRef.current
+      dragOriginColumnRef.current = null
 
       const colId = findColumnOfCard(board, String(active.id))
       if (!colId) return
+
+      // handleDragOver já moveu o card para a coluna de destino em tempo real —
+      // aqui só precisamos persistir o novo estágio se a coluna realmente mudou.
+      if (originColId && originColId !== colId) {
+        const stage = COLUMN_ID_TO_STAGE[colId]
+        if (stage) {
+          updateLead.mutate(
+            { id: String(active.id), payload: { stage } },
+            {
+              onError: (error) => {
+                toast({
+                  type: 'error',
+                  title: 'Não foi possível mover o lead',
+                  description: error instanceof Error ? error.message : undefined,
+                })
+              },
+            },
+          )
+        }
+      }
+
+      if (!over || active.id === over.id) return
 
       setBoard((prev) => {
         const cards = prev[colId] ?? []
@@ -881,34 +705,12 @@ export function KanbanPage() {
         return { ...prev, [colId]: arrayMove(cards, fromIdx, toIdx) }
       })
     },
-    [board],
+    [board, updateLead, toast],
   )
-
-  function handleCreateLead(data: { name: string; phone: string; cota: string; source: string }) {
-    const newCard: CardData = {
-      id: `lead-${Date.now()}`,
-      name: data.name,
-      phone: data.phone,
-      cota: data.cota,
-      date: new Date().toLocaleDateString('pt-BR'),
-      agent: 'Ennyo Café',
-      source: data.source,
-      sourceBg: '#f3f4f6',
-      sourceText: '#4b5563',
-      days: '0d',
-      daysUrgent: false,
-    }
-    const firstCol = COLUMN_META[0].id
-    setBoard((prev) => ({ ...prev, [firstCol]: [newCard, ...(prev[firstCol] ?? [])] }))
-    setCreatingLead(false)
-  }
 
   return (
     <AppLayout>
       {selectedCard && <LeadModal card={selectedCard} onClose={() => setSelectedCard(null)} />}
-      {creatingLead && (
-        <NewLeadModal onClose={() => setCreatingLead(false)} onCreate={handleCreateLead} />
-      )}
       <div className={styles.page}>
         {/* ── Header ──────────────────────────────────────────────────── */}
         <header className={styles.header}>
@@ -959,7 +761,8 @@ export function KanbanPage() {
             <button
               type="button"
               className={styles.newLeadBtn}
-              onClick={() => setCreatingLead(true)}
+              onClick={() => setIsCreateOpen(true)}
+              disabled={!organizationId}
             >
               <PlusIcon /> Novo Lead
             </button>
@@ -974,7 +777,7 @@ export function KanbanPage() {
                 <VolumeIcon />
               </span>
               <span className={styles.metricLabel}>Volume Total em Cotas:</span>
-              <span className={styles.metricValue}>R$ 8.450.000,00</span>
+              <span className={styles.metricValue}>R$ {formatBRL(volumeTotalCents)}</span>
             </span>
             <span className={styles.metricDivider} />
             <span className={styles.metric}>
@@ -982,12 +785,12 @@ export function KanbanPage() {
                 <TicketIcon />
               </span>
               <span className={styles.metricLabel}>Ticket Médio:</span>
-              <span className={styles.metricValue}>R$ 280.000,00</span>
+              <span className={styles.metricValue}>R$ {formatBRL(ticketMedioCents)}</span>
             </span>
           </div>
           <div className={styles.activeLeads}>
             <span className={styles.activeDot} />
-            <span className={styles.activeLabel}>69 Leads Ativos no Funil</span>
+            <span className={styles.activeLabel}>{totalLeads} Leads Ativos no Funil</span>
           </div>
         </div>
 
@@ -1051,8 +854,25 @@ export function KanbanPage() {
           </div>
         )}
 
+        {/* ── Estado vazio ─────────────────────────────────────────────── */}
+        {!isLoading && totalLeads === 0 && (
+          <EmptyState
+            title="Nenhum lead no funil ainda"
+            description="Cadastre o primeiro lead para começar a acompanhar o funil de vendas."
+            action={
+              <button
+                type="button"
+                className={styles.newLeadBtn}
+                onClick={() => setIsCreateOpen(true)}
+              >
+                <PlusIcon /> Novo Lead
+              </button>
+            }
+          />
+        )}
+
         {/* ── Lista ────────────────────────────────────────────────────── */}
-        {!isLoading && viewMode === 'list' && (
+        {!isLoading && totalLeads > 0 && viewMode === 'list' && (
           <ListView
             board={board}
             onCardClick={setSelectedCard}
@@ -1061,7 +881,7 @@ export function KanbanPage() {
         )}
 
         {/* ── Board ────────────────────────────────────────────────────── */}
-        {!isLoading && viewMode === 'kanban' && (
+        {!isLoading && totalLeads > 0 && viewMode === 'kanban' && (
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
@@ -1090,6 +910,14 @@ export function KanbanPage() {
           </DndContext>
         )}
       </div>
+
+      {organizationId && (
+        <CreateLeadModal
+          open={isCreateOpen}
+          organizationId={organizationId}
+          onClose={() => setIsCreateOpen(false)}
+        />
+      )}
     </AppLayout>
   )
 }

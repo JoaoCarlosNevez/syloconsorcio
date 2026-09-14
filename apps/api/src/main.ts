@@ -6,7 +6,15 @@
 // It creates the concrete adapters and injects them into the app factory.
 
 import 'dotenv/config'
-import { SupabaseAuthAdapter } from '@sylocrm/infrastructure'
+import {
+  DrizzleLeadRepository,
+  DrizzleMembershipRepository,
+  DrizzleOrganizationRepository,
+  DrizzleUserRepository,
+  SupabaseAuthAdapter,
+  SupabaseStorageAdapter,
+  createDatabase,
+} from '@sylocrm/infrastructure'
 import { buildApp } from './app'
 import { env } from './config/env'
 
@@ -19,7 +27,33 @@ const authProvider =
       })
     : undefined
 
-const app = buildApp({ authProvider })
+// Supabase's certificate chain fails strict SSL verification — 'require' encrypts
+// the connection without validating the chain, which is Supabase's documented setup.
+const database = env.DATABASE_URL
+  ? createDatabase({ url: env.DATABASE_URL, ssl: 'require' })
+  : undefined
+
+const membershipRepository = database ? new DrizzleMembershipRepository(database) : undefined
+const leadRepository = database ? new DrizzleLeadRepository(database) : undefined
+const organizationRepository = database ? new DrizzleOrganizationRepository(database) : undefined
+const userRepository = database ? new DrizzleUserRepository(database) : undefined
+
+const storageProvider =
+  env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY
+    ? new SupabaseStorageAdapter({
+        supabaseUrl: env.SUPABASE_URL,
+        supabaseServiceKey: env.SUPABASE_SERVICE_KEY,
+      })
+    : undefined
+
+const app = buildApp({
+  authProvider,
+  membershipRepository,
+  leadRepository,
+  organizationRepository,
+  userRepository,
+  storageProvider,
+})
 
 try {
   await app.listen({ port: env.PORT, host: env.HOST })

@@ -3,6 +3,7 @@
 // Renders the BrowserRouter + AppRouter.
 // In dev: ?showcase=1 renders the design system component showcase.
 
+import { ToastProvider } from '@sylocrm/ui'
 import { BrowserRouter } from 'react-router-dom'
 import { AppRouter } from './router'
 import { Showcase } from './showcase/Showcase'
@@ -14,9 +15,11 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
-      <AppRouter />
-    </BrowserRouter>
+    <ToastProvider>
+      <BrowserRouter>
+        <AppRouter />
+      </BrowserRouter>
+    </ToastProvider>
   )
 }
 
