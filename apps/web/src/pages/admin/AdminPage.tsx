@@ -1,17 +1,18 @@
-// AdminPage — painel do Super Admin: lista todas as Representações (tenants).
+// AdminPage — painel do Super Admin: Representações (tenants) e Usuários (cross-org).
 //
 // Restrita a usuários com isPlatformAdmin=true (ver useCurrentUser). Não é
 // um Role de Membership — é uma capacidade de nível plataforma.
 
-import { Button, DataTable, Skeleton } from '@sylocrm/ui'
+import { Badge, Button, DataTable, Skeleton, Tabs } from '@sylocrm/ui'
 import type { ColumnDef } from '@sylocrm/ui'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
-import { useOrganizationsQuery } from '../../hooks/useOrganizations'
-import type { Organization } from '../../lib/organizations-api'
+import { useOrganizationsQuery, usePlatformMembersQuery } from '../../hooks/useOrganizations'
+import type { Organization, PlatformMember } from '../../lib/organizations-api'
 import styles from './AdminPage.module.css'
+import { CreatePlatformUserModal } from './CreatePlatformUserModal'
 import { CreateRepresentationModal } from './CreateRepresentationModal'
 
 const TYPE_LABEL: Record<Organization['type'], string> = {
@@ -20,12 +21,17 @@ const TYPE_LABEL: Record<Organization['type'], string> = {
   REPRESENTACAO: 'Representação',
 }
 
+const ROLE_LABEL: Record<PlatformMember['role'], string> = {
+  ADMIN: 'Dono',
+  MANAGER: 'Supervisor',
+  SELLER: 'Vendedor',
+}
+
 // Padrão de identidade visual (AGENTS.md §11): toda Representação usa a marca
 // Sylo até virar White Label e definir seu próprio ícone.
 const DEFAULT_ICON_URL = '/sylo-logo.png'
 
-export function AdminPage() {
-  const { data: currentUser, isLoading: isLoadingUser } = useCurrentUser()
+function RepresentacoesTab() {
   const { data, isLoading } = useOrganizationsQuery()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const navigate = useNavigate()
@@ -42,6 +48,76 @@ export function AdminPage() {
     { key: 'name', header: 'Nome', render: (row) => row.name },
     { key: 'type', header: 'Tipo', render: (row) => TYPE_LABEL[row.type] },
   ]
+
+  return (
+    <div className={styles.tabContent}>
+      <div className={styles.tabHeader}>
+        <p className={styles.subtitle}>Representações cadastradas na plataforma.</p>
+        <Button type="button" onClick={() => setIsCreateOpen(true)}>
+          Nova Representação
+        </Button>
+      </div>
+
+      <div className={styles.tableWrapper}>
+        <DataTable
+          columns={columns}
+          data={data?.organizations ?? []}
+          rowKey={(row) => row.id}
+          isLoading={isLoading}
+          emptyTitle="Nenhuma representação ainda"
+          emptyDescription="Crie a primeira representação para começar."
+          onRowClick={(row) => navigate(`/app/admin/${row.id}`)}
+        />
+      </div>
+
+      <CreateRepresentationModal open={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+    </div>
+  )
+}
+
+function UsuariosTab() {
+  const { data, isLoading } = usePlatformMembersQuery()
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+
+  const columns: ColumnDef<PlatformMember>[] = [
+    { key: 'name', header: 'Nome', render: (row) => row.name ?? '—' },
+    { key: 'email', header: 'E-mail', render: (row) => row.email },
+    {
+      key: 'role',
+      header: 'Papel',
+      render: (row) => <Badge variant="slate">{ROLE_LABEL[row.role]}</Badge>,
+    },
+    { key: 'organizationName', header: 'Representação', render: (row) => row.organizationName },
+  ]
+
+  return (
+    <div className={styles.tabContent}>
+      <div className={styles.tabHeader}>
+        <p className={styles.subtitle}>Todos os usuários cadastrados na plataforma.</p>
+        <Button type="button" onClick={() => setIsCreateOpen(true)}>
+          Novo Usuário
+        </Button>
+      </div>
+
+      <div className={styles.tableWrapper}>
+        <DataTable
+          columns={columns}
+          data={data?.members ?? []}
+          rowKey={(row) => row.userId}
+          isLoading={isLoading}
+          emptyTitle="Nenhum usuário ainda"
+          emptyDescription="Crie o primeiro usuário para uma representação."
+        />
+      </div>
+
+      <CreatePlatformUserModal open={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+    </div>
+  )
+}
+
+export function AdminPage() {
+  const { data: currentUser, isLoading: isLoadingUser } = useCurrentUser()
+  const [activeTab, setActiveTab] = useState<'representacoes' | 'usuarios'>('representacoes')
 
   if (isLoadingUser) {
     return (
@@ -68,27 +144,18 @@ export function AdminPage() {
         <header className={styles.header}>
           <div>
             <h1 className={styles.title}>Administração</h1>
-            <p className={styles.subtitle}>Representações cadastradas na plataforma.</p>
           </div>
-          <Button type="button" onClick={() => setIsCreateOpen(true)}>
-            Nova Representação
-          </Button>
         </header>
 
-        <div className={styles.tableWrapper}>
-          <DataTable
-            columns={columns}
-            data={data?.organizations ?? []}
-            rowKey={(row) => row.id}
-            isLoading={isLoading}
-            emptyTitle="Nenhuma representação ainda"
-            emptyDescription="Crie a primeira representação para começar."
-            onRowClick={(row) => navigate(`/app/admin/${row.id}`)}
-          />
-        </div>
+        <Tabs
+          activeKey={activeTab}
+          onChange={(key) => setActiveTab(key as 'representacoes' | 'usuarios')}
+          items={[
+            { key: 'representacoes', label: 'Representações', content: <RepresentacoesTab /> },
+            { key: 'usuarios', label: 'Usuários', content: <UsuariosTab /> },
+          ]}
+        />
       </div>
-
-      <CreateRepresentationModal open={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
     </AppLayout>
   )
 }

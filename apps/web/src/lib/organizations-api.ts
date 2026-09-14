@@ -29,6 +29,28 @@ export interface CreateRepresentationResult {
   owner: { id: string; email: string; temporaryPassword: string }
 }
 
+/** Membro de qualquer organização da plataforma — visão cross-org do Super Admin. */
+export interface PlatformMember extends TeamMember {
+  organizationId: string
+  organizationName: string
+}
+
+export interface CreatePlatformUserPayload {
+  organizationId: string
+  name: string
+  email: string
+  role: 'ADMIN' | 'MANAGER' | 'SELLER'
+}
+
+export interface CreatePlatformUserResult {
+  member: {
+    id: string
+    email: string
+    role: 'ADMIN' | 'MANAGER' | 'SELLER'
+    temporaryPassword: string
+  }
+}
+
 // Rotas de plataforma — não são escopadas por organização, então nunca
 // enviam X-Organization-Id (o Super Admin não precisa ser membro do alvo).
 
@@ -60,4 +82,14 @@ export async function uploadOrganizationIcon(
 
 export function getOrganizationMembers(id: string): Promise<{ members: TeamMember[] }> {
   return apiClient.get<{ members: TeamMember[] }>(`/organizations/${id}/members`)
+}
+
+export function listPlatformMembers(): Promise<{ members: PlatformMember[] }> {
+  return apiClient.get<{ members: PlatformMember[] }>('/organizations/members')
+}
+
+export function createPlatformUser(
+  payload: CreatePlatformUserPayload,
+): Promise<CreatePlatformUserResult> {
+  return apiClient.post<CreatePlatformUserResult>('/organizations/members', payload)
 }

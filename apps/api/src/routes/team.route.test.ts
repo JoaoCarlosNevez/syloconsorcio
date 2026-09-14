@@ -79,6 +79,7 @@ function buildMembershipRepository(membership: UserMembership): IMembershipRepos
         status: 'ACTIVE',
       },
     ]),
+    findAllActive: vi.fn().mockResolvedValue([]),
     create: vi.fn(),
   }
 }

@@ -1242,8 +1242,8 @@ button.breadcrumbCurrent:hover {
   font-size: var(--cfg-text-sm);
   font-weight: 500;
   color: #565e74;
-  transition: border-color var(--duration-normal), background-color var(--duration-normal),
-    color var(--duration-normal);
+  transition: border-color var(--duration-normal), background-color var(--duration-normal), color
+    var(--duration-normal);
 }
 
 .themeOption:hover {

@@ -90,6 +90,7 @@ function buildMembershipRepository(): IMembershipRepository {
     findActiveByUserId: vi.fn().mockResolvedValue([]),
     findActiveByUserAndOrganization: vi.fn().mockResolvedValue(null),
     findActiveByOrganizationId: vi.fn().mockResolvedValue([]),
+    findAllActive: vi.fn().mockResolvedValue([]),
     create: vi.fn(),
   }
 }
@@ -259,6 +260,187 @@ describe('GET /organizations', () => {
     expect(response.statusCode).toBe(200)
     const body = response.json<{ organizations: { id: string }[] }>()
     expect(body.organizations).toHaveLength(1)
+  })
+})
+
+// ── GET /organizations/members ────────────────────────────────────────────────
+
+describe('GET /organizations/members', () => {
+  it('returns 403 when the caller is not a platform admin', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(false),
+      organizationRepository: buildOrganizationRepository(),
+      membershipRepository: buildMembershipRepository(),
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/organizations/members',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(403)
+  })
+
+  it('lists members across every organization for a platform admin', async () => {
+    const membershipRepository = buildMembershipRepository()
+    membershipRepository.findAllActive = vi.fn().mockResolvedValue([
+      {
+        userId: 'u1',
+        name: 'Dono',
+        email: 'dono@empresa.com',
+        role: 'ADMIN',
+        status: 'ACTIVE',
+        organizationId: 'org-1',
+        organizationName: 'Representação A',
+      },
+    ])
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      organizationRepository: buildOrganizationRepository(),
+      membershipRepository,
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/organizations/members',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    const body = response.json<{ members: { organizationId: string }[] }>()
+    expect(body.members).toHaveLength(1)
+    expect(body.members[0]?.organizationId).toBe('org-1')
+  })
+})
+
+// ── POST /organizations/members ─────────────────────────────────────────────
+
+describe('POST /organizations/members', () => {
+  const validMemberPayload = {
+    organizationId: 'org-uuid',
+    name: 'Novo Supervisor',
+    email: 'supervisor@empresa.com',
+    role: 'MANAGER',
+  }
+
+  it('returns 403 when the caller is not a platform admin', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(false),
+      organizationRepository: buildOrganizationRepository(),
+      membershipRepository: buildMembershipRepository(),
+    })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/organizations/members',
+      headers: AUTH_HEADERS,
+      payload: validMemberPayload,
+    })
+
+    expect(response.statusCode).toBe(403)
+  })
+
+  it('returns 400 for an invalid role', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      organizationRepository: buildOrganizationRepository(),
+      membershipRepository: buildMembershipRepository(),
+    })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/organizations/members',
+      headers: AUTH_HEADERS,
+      payload: { ...validMemberPayload, role: 'SUPER' },
+    })
+
+    expect(response.statusCode).toBe(400)
+  })
+
+  it('returns 404 when the target organization does not exist', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      organizationRepository: buildOrganizationRepository(),
+      membershipRepository: buildMembershipRepository(),
+    })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/organizations/members',
+      headers: AUTH_HEADERS,
+      payload: validMemberPayload,
+    })
+
+    expect(response.statusCode).toBe(404)
+  })
+
+  it('creates a user with any Role — including ADMIN — for an existing organization', async () => {
+    const organizationRepository = buildOrganizationRepository()
+    organizationRepository.findById = vi.fn().mockResolvedValue({
+      id: 'org-uuid',
+      name: 'Representação',
+      type: 'REPRESENTACAO',
+      parentOrganizationId: null,
+      isWhiteLabel: false,
+      branding: null,
+    })
+    const membershipRepository = buildMembershipRepository()
+    const app = buildApp({
+      authProvider: buildAuthProvider({ id: 'new-user-uuid', email: 'novo-admin@empresa.com' }),
+      userRepository: buildUserRepository(true),
+      organizationRepository,
+      membershipRepository,
+    })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/organizations/members',
+      headers: AUTH_HEADERS,
+      payload: { ...validMemberPayload, email: 'novo-admin@empresa.com', role: 'ADMIN' },
+    })
+
+    expect(response.statusCode).toBe(201)
+    const body = response.json<{ member: { role: string; temporaryPassword: string } }>()
+    expect(body.member.role).toBe('ADMIN')
+    expect(body.member.temporaryPassword).toBeTruthy()
+    expect(membershipRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ organizationId: 'org-uuid', role: 'ADMIN' }),
+    )
+  })
+
+  it('returns 409 when the email is already registered', async () => {
+    const organizationRepository = buildOrganizationRepository()
+    organizationRepository.findById = vi.fn().mockResolvedValue({
+      id: 'org-uuid',
+      name: 'Representação',
+      type: 'REPRESENTACAO',
+      parentOrganizationId: null,
+      isWhiteLabel: false,
+      branding: null,
+    })
+    const authProvider = buildAuthProvider()
+    authProvider.createUser = vi.fn().mockRejectedValue(new ConflictError('E-mail já cadastrado'))
+    const app = buildApp({
+      authProvider,
+      userRepository: buildUserRepository(true),
+      organizationRepository,
+      membershipRepository: buildMembershipRepository(),
+    })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/organizations/members',
+      headers: AUTH_HEADERS,
+      payload: validMemberPayload,
+    })
+
+    expect(response.statusCode).toBe(409)
   })
 })
 

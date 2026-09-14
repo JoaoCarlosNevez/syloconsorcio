@@ -113,6 +113,7 @@ describe('tenantMiddleware', () => {
       findActiveByUserId: vi.fn(),
       findActiveByUserAndOrganization: vi.fn(),
       findActiveByOrganizationId: vi.fn(),
+      findAllActive: vi.fn(),
       create: vi.fn(),
     }
     const app = buildTestAppWithoutAuth(mockRepo)
@@ -134,6 +135,7 @@ describe('tenantMiddleware', () => {
       findActiveByUserId: vi.fn(),
       findActiveByUserAndOrganization: vi.fn(),
       findActiveByOrganizationId: vi.fn(),
+      findAllActive: vi.fn(),
       create: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
@@ -151,6 +153,7 @@ describe('tenantMiddleware', () => {
       findActiveByUserId: vi.fn(),
       findActiveByUserAndOrganization: vi.fn().mockResolvedValue(null),
       findActiveByOrganizationId: vi.fn(),
+      findAllActive: vi.fn(),
       create: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
@@ -171,6 +174,7 @@ describe('tenantMiddleware', () => {
       findActiveByUserId: vi.fn(),
       findActiveByUserAndOrganization: vi.fn().mockResolvedValue(SUSPENDED_MEMBERSHIP),
       findActiveByOrganizationId: vi.fn(),
+      findAllActive: vi.fn(),
       create: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
@@ -191,6 +195,7 @@ describe('tenantMiddleware', () => {
       findActiveByUserId: vi.fn().mockResolvedValue([ACTIVE_REPRESENTACAO_SELLER]),
       findActiveByUserAndOrganization: vi.fn().mockResolvedValue(ACTIVE_REPRESENTACAO_SELLER),
       findActiveByOrganizationId: vi.fn(),
+      findAllActive: vi.fn(),
       create: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
@@ -216,6 +221,7 @@ describe('tenantMiddleware', () => {
       findActiveByUserId: vi.fn().mockResolvedValue([ACTIVE_REPRESENTACAO_SELLER]),
       findActiveByUserAndOrganization: vi.fn().mockResolvedValue(ACTIVE_REPRESENTACAO_SELLER),
       findActiveByOrganizationId: vi.fn(),
+      findAllActive: vi.fn(),
       create: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
@@ -236,6 +242,7 @@ describe('tenantMiddleware', () => {
         findActiveByUserId: vi.fn().mockResolvedValue([ACTIVE_REPRESENTACAO_SELLER]),
         findActiveByUserAndOrganization: vi.fn().mockResolvedValue(ACTIVE_REPRESENTACAO_SELLER),
         findActiveByOrganizationId: vi.fn(),
+        findAllActive: vi.fn(),
         create: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
@@ -255,6 +262,7 @@ describe('tenantMiddleware', () => {
         findActiveByUserId: vi.fn().mockResolvedValue([ACTIVE_REPRESENTACAO_ADMIN]),
         findActiveByUserAndOrganization: vi.fn().mockResolvedValue(ACTIVE_REPRESENTACAO_ADMIN),
         findActiveByOrganizationId: vi.fn(),
+        findAllActive: vi.fn(),
         create: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
@@ -274,6 +282,7 @@ describe('tenantMiddleware', () => {
         findActiveByUserId: vi.fn().mockResolvedValue([ACTIVE_MASTER]),
         findActiveByUserAndOrganization: vi.fn().mockResolvedValue(ACTIVE_MASTER),
         findActiveByOrganizationId: vi.fn(),
+        findAllActive: vi.fn(),
         create: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
@@ -295,6 +304,7 @@ describe('tenantMiddleware', () => {
         findActiveByUserId: vi.fn().mockResolvedValue([ACTIVE_REPRESENTACAO_SELLER]),
         findActiveByUserAndOrganization: vi.fn().mockResolvedValue(ACTIVE_REPRESENTACAO_SELLER),
         findActiveByOrganizationId: vi.fn(),
+        findAllActive: vi.fn(),
         create: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
@@ -318,6 +328,7 @@ describe('tenantMiddleware', () => {
         findActiveByUserId: vi.fn().mockResolvedValue([ACTIVE_REPRESENTACAO_ADMIN]),
         findActiveByUserAndOrganization: vi.fn().mockResolvedValue(ACTIVE_REPRESENTACAO_ADMIN),
         findActiveByOrganizationId: vi.fn(),
+        findAllActive: vi.fn(),
         create: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
@@ -339,6 +350,7 @@ describe('tenantMiddleware', () => {
       findActiveByUserId: vi.fn().mockResolvedValue(allMemberships),
       findActiveByUserAndOrganization: vi.fn().mockResolvedValue(ACTIVE_REPRESENTACAO_SELLER),
       findActiveByOrganizationId: vi.fn(),
+      findAllActive: vi.fn(),
       create: vi.fn(),
     }
     const app = buildTestApp(mockRepo)

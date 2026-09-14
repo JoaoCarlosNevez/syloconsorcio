@@ -32,6 +32,12 @@ export interface TeamMember {
   status: 'ACTIVE' | 'INVITED' | 'SUSPENDED'
 }
 
+/** TeamMember com os dados da organização — usado na listagem cross-org do Super Admin. */
+export interface PlatformTeamMember extends TeamMember {
+  organizationId: string
+  organizationName: string
+}
+
 export interface NewMembershipInput {
   userId: string
   organizationId: string
@@ -62,6 +68,9 @@ export interface IMembershipRepository {
 
   /** Lista os membros ativos de uma organização, com dados do usuário. */
   findActiveByOrganizationId(organizationId: string): Promise<TeamMember[]>
+
+  /** Lista os membros ativos de toda a plataforma, com dados da organização. Uso: Super Admin. */
+  findAllActive(): Promise<PlatformTeamMember[]>
 
   create(input: NewMembershipInput): Promise<void>
 }
