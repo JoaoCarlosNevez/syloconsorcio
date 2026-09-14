@@ -561,6 +561,16 @@ export interface LeadModalProps {
 }
 
 export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) {
+  const [comment, setComment] = useState('')
+  const [localComments, setLocalComments] = useState<{ id: string; text: string }[]>([])
+
+  function submitComment() {
+    const trimmed = comment.trim()
+    if (!trimmed) return
+    setLocalComments((prev) => [{ id: crypto.randomUUID(), text: trimmed }, ...prev])
+    setComment('')
+  }
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -1369,6 +1379,26 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                 </div>
 
                 {/* Input de comentário */}
+                {localComments.length > 0 && (
+                  <div
+                    style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}
+                  >
+                    {localComments.map(({ id, text }) => (
+                      <div
+                        key={id}
+                        style={{
+                          background: '#f1f5f9',
+                          borderRadius: 8,
+                          padding: '8px 12px',
+                          fontSize: 13,
+                          color: '#1e293b',
+                        }}
+                      >
+                        {text}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className={styles.commentInput}>
                   <img
                     src={responsible.photo}
@@ -1379,7 +1409,33 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                     type="text"
                     placeholder="Adicionar comentário ou nota interna..."
                     className={styles.commentField}
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        submitComment()
+                      }
+                    }}
                   />
+                  <button
+                    type="button"
+                    onClick={submitComment}
+                    style={{
+                      padding: '0 10px',
+                      background: '#0b1c30',
+                      border: 'none',
+                      borderRadius: 7,
+                      color: '#fff',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      height: 32,
+                    }}
+                  >
+                    Enviar
+                  </button>
                 </div>
               </div>
             </div>

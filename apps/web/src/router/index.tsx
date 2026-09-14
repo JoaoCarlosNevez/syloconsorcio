@@ -41,6 +41,12 @@ const AdminOrganizationDetailPage = lazy(() =>
     default: m.AdminOrganizationDetailPage,
   })),
 )
+const TarefasPage = lazy(() =>
+  import('../pages/tarefas/TarefasPage').then((m) => ({ default: m.TarefasPage })),
+)
+const ConfigPage = lazy(() =>
+  import('../pages/config/ConfigPage').then((m) => ({ default: m.ConfigPage })),
+)
 
 export function AppRouter() {
   return (
@@ -55,10 +61,10 @@ export function AppRouter() {
           <Route path="home" element={<HomePage />} />
           <Route path="metas" element={<MetasPage />} />
           <Route path="kanban" element={<KanbanPage />} />
-          <Route path="tarefas" element={<ComingSoonPage />} />
+          <Route path="tarefas" element={<TarefasPage />} />
           <Route path="usuarios" element={<UsuariosPage />} />
           <Route path="fila" element={<ComingSoonPage />} />
-          <Route path="config" element={<ComingSoonPage />} />
+          <Route path="config" element={<ConfigPage />} />
           <Route path="admin" element={<AdminPage />} />
           <Route path="admin/:id" element={<AdminOrganizationDetailPage />} />
           <Route path="ajuda" element={<ComingSoonPage />} />

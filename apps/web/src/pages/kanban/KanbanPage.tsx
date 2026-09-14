@@ -369,13 +369,14 @@ interface KanbanColumnProps {
   meta: ColumnMeta
   cards: CardData[]
   onCardClick: (card: CardData) => void
+  isOver?: boolean
 }
 
-function KanbanColumn({ meta, cards, onCardClick }: KanbanColumnProps) {
+function KanbanColumn({ meta, cards, onCardClick, isOver }: KanbanColumnProps) {
   const cardIds = useMemo(() => cards.map((c) => c.id), [cards])
 
   return (
-    <section className={styles.column}>
+    <section className={`${styles.column} ${isOver ? styles.columnOver : ''}`}>
       <div
         className={styles.columnHeader}
         style={{ background: meta.headerBg, borderColor: meta.headerBorder }}
@@ -404,12 +405,16 @@ function KanbanColumn({ meta, cards, onCardClick }: KanbanColumnProps) {
 interface ListViewProps {
   board: Record<string, CardData[]>
   onCardClick: (card: CardData) => void
+  hideVenda?: boolean
 }
 
-function ListView({ board, onCardClick }: ListViewProps) {
+function ListView({ board, onCardClick, hideVenda }: ListViewProps) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
   const toggle = (colId: string) => setCollapsed((prev) => ({ ...prev, [colId]: !prev[colId] }))
+
+  const visibleMeta = hideVenda ? COLUMN_META.filter((m) => m.id !== 'venda') : COLUMN_META
+  const totalVisible = visibleMeta.reduce((sum, m) => sum + (board[m.id]?.length ?? 0), 0)
 
   return (
     <div className={styles.listView}>
@@ -427,7 +432,17 @@ function ListView({ board, onCardClick }: ListViewProps) {
           </tr>
         </thead>
         <tbody>
-          {COLUMN_META.map((meta) => {
+          {totalVisible === 0 && (
+            <tr>
+              <td
+                colSpan={8}
+                style={{ padding: '40px 0', textAlign: 'center', color: '#94a3b8', fontSize: 14 }}
+              >
+                Nenhum lead encontrado com o filtro atual.
+              </td>
+            </tr>
+          )}
+          {visibleMeta.map((meta) => {
             const cards = board[meta.id] ?? []
             const isCollapsed = collapsed[meta.id] ?? false
             return (
@@ -553,6 +568,8 @@ export function KanbanPage() {
   const [selectedCard, setSelectedCard] = useState<CardData | null>(null)
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [overColId, setOverColId] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<'todos' | 'aberto'>('aberto')
   const boardRef = useRef<HTMLDivElement>(null)
   // Coluna de onde o card saiu no início do drag — usada para saber se o
   // estágio realmente mudou quando o drag termina (handleDragEnd).
@@ -616,13 +633,17 @@ export function KanbanPage() {
 
   const handleDragOver = useCallback(
     ({ active, over }: DragOverEvent) => {
-      if (!over) return
+      if (!over) {
+        setOverColId(null)
+        return
+      }
 
       const activeColId = findColumnOfCard(board, String(active.id))
       const overColId =
         findColumnOfCard(board, String(over.id)) ??
         (COLUMN_META.some((m) => m.id === over.id) ? String(over.id) : null)
 
+      setOverColId(overColId)
       if (!activeColId || !overColId || activeColId === overColId) return
 
       setBoard((prev) => {
@@ -647,6 +668,7 @@ export function KanbanPage() {
   const handleDragEnd = useCallback(
     ({ active, over }: DragEndEvent) => {
       setActiveCard(null)
+      setOverColId(null)
       const originColId = dragOriginColumnRef.current
       dragOriginColumnRef.current = null
 
@@ -723,8 +745,12 @@ export function KanbanPage() {
               </button>
             </div>
             <span className={styles.headerDivider} />
-            <button type="button" className={styles.filterBtn}>
-              Em Aberto <ChevronDownIcon />
+            <button
+              type="button"
+              className={`${styles.filterBtn} ${statusFilter === 'aberto' ? styles.filterBtnActive : ''}`}
+              onClick={() => setStatusFilter((f) => (f === 'aberto' ? 'todos' : 'aberto'))}
+            >
+              {statusFilter === 'aberto' ? 'Em Aberto' : 'Todos'} <ChevronDownIcon />
             </button>
             <button type="button" className={styles.filterBtn}>
               <TagIcon /> Todas as tags <ChevronDownIcon />
@@ -847,7 +873,11 @@ export function KanbanPage() {
 
         {/* ── Lista ────────────────────────────────────────────────────── */}
         {!isLoading && totalLeads > 0 && viewMode === 'list' && (
-          <ListView board={board} onCardClick={setSelectedCard} />
+          <ListView
+            board={board}
+            onCardClick={setSelectedCard}
+            hideVenda={statusFilter === 'aberto'}
+          />
         )}
 
         {/* ── Board ────────────────────────────────────────────────────── */}
@@ -867,6 +897,7 @@ export function KanbanPage() {
                     meta={meta}
                     cards={board[meta.id] ?? []}
                     onCardClick={setSelectedCard}
+                    isOver={overColId === meta.id}
                   />
                 ))}
               </div>

@@ -5,7 +5,7 @@
 import { Skeleton } from '@sylocrm/ui'
 import type { Tier } from '@sylocrm/ui'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { COLUMN_STATUS_LABEL, COLUMN_TAREFA_LABEL, USER_TIER } from '../../data/kanban-mock'
 import { useLeadsQuery } from '../../hooks/useLeads'
@@ -164,6 +164,7 @@ function WhatsAppIcon() {
 interface TarefaItem {
   id: string
   cliente: string
+  phone: string
   segmento: string
   cota: string
   valor: string
@@ -198,6 +199,7 @@ const TIER_BG: Record<Tier, string> = {
 // ── HomePage ──────────────────────────────────────────────────────────────────
 
 export function HomePage() {
+  const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(true)
   const { organizationId } = useActiveOrganization()
   const { data: leadsPage } = useLeadsQuery(organizationId, { pageSize: 100 })
@@ -223,6 +225,7 @@ export function HomePage() {
         return {
           id: lead.id,
           cliente: lead.name,
+          phone: lead.phone,
           segmento: lead.segment,
           cota: formatCota(lead.valueCents, lead.segment, lead.quotaCount),
           valor: `R$ ${(lead.valueCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
@@ -521,6 +524,9 @@ export function HomePage() {
                             type="button"
                             className={styles.whatsappBtn}
                             aria-label={`WhatsApp — ${t.cliente}`}
+                            onClick={() =>
+                              window.open(`https://wa.me/55${t.phone.replace(/\D/g, '')}`, '_blank')
+                            }
                           >
                             <WhatsAppIcon />
                           </button>
@@ -528,6 +534,7 @@ export function HomePage() {
                             type="button"
                             className={styles.viewBtn}
                             aria-label={`Ver tarefa — ${t.cliente}`}
+                            onClick={() => navigate('/app/tarefas')}
                           >
                             <EyeIcon />
                           </button>
@@ -565,7 +572,24 @@ export function HomePage() {
               <div className={styles.kpiCard}>
                 <div className={styles.kpiTopRow}>
                   <span className={styles.kpiLabel}>Cartas em Andamento</span>
-                  <span className={styles.kpiIconSlot} />
+                  <span className={styles.kpiIconSlot}>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.75}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <rect x="2" y="7" width="20" height="14" rx="2" />
+                      <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+                      <line x1="12" y1="12" x2="12" y2="16" />
+                      <line x1="10" y1="14" x2="14" y2="14" />
+                    </svg>
+                  </span>
                 </div>
                 <span className={styles.kpiValue}>439</span>
                 <span className={styles.kpiDesc}>Propostas ativas no funil geral</span>
@@ -577,7 +601,24 @@ export function HomePage() {
               <div className={styles.kpiCard}>
                 <div className={styles.kpiTopRow}>
                   <span className={styles.kpiLabel}>Novos Leads de Consórcio</span>
-                  <span className={styles.kpiIconSlot} />
+                  <span className={styles.kpiIconSlot}>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.75}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <line x1="19" y1="8" x2="19" y2="14" />
+                      <line x1="22" y1="11" x2="16" y2="11" />
+                    </svg>
+                  </span>
                 </div>
                 <span className={styles.kpiValue}>26</span>
                 <span className={styles.kpiDesc}>Aguardando primeiro contato</span>
@@ -586,7 +627,25 @@ export function HomePage() {
               <div className={styles.kpiCard}>
                 <div className={styles.kpiTopRow}>
                   <span className={styles.kpiLabel}>Volume Contemplado</span>
-                  <span className={styles.kpiIconSlot} />
+                  <span className={styles.kpiIconSlot}>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.75}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <polyline points="20 12 20 22 4 22 4 12" />
+                      <rect x="2" y="7" width="20" height="5" />
+                      <line x1="12" y1="22" x2="12" y2="7" />
+                      <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+                      <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+                    </svg>
+                  </span>
                 </div>
                 <span className={styles.kpiValue}>R$ 1,25M</span>
                 <span className={styles.kpiDesc}>Taxa média de lance: 34%</span>
@@ -598,7 +657,22 @@ export function HomePage() {
               <div className={styles.kpiCard}>
                 <div className={styles.kpiTopRow}>
                   <span className={styles.kpiLabel}>Ticket Médio de Venda</span>
-                  <span className={styles.kpiIconSlot} />
+                  <span className={styles.kpiIconSlot}>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.75}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                      <polyline points="17 6 23 6 23 12" />
+                    </svg>
+                  </span>
                 </div>
                 <span className={styles.kpiValue}>R$ 185.000</span>
                 <span className={styles.kpiDesc}>Meta média: R$ 160.000</span>

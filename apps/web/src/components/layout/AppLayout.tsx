@@ -14,6 +14,12 @@ import styles from './AppLayout.module.css'
 // Sylo até definir seu próprio ícone (ver painel de Administração).
 const DEFAULT_ORG_ICON_URL = '/sylo-logo.png'
 
+function deriveDisplayName(email: string | undefined): string {
+  if (!email) return 'Usuário'
+  const prefix = email.split('@')[0] ?? ''
+  return prefix.replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
 // ── Ícones ────────────────────────────────────────────────────────────────────
 
 function InicioIcon() {
@@ -259,11 +265,11 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { signOut } = useAuth()
+  const { user, signOut } = useAuth()
   const { membership, memberships, setActiveOrganizationId } = useActiveOrganization()
 
-  // TODO: buscar nome real do perfil via API
-  const displayName = 'Ennyo Café'
+  const displayName =
+    (user?.user_metadata?.full_name as string | undefined) ?? deriveDisplayName(user?.email)
   const palette = TIER_PALETTE[USER_TIER]
 
   async function handleSignOut() {
