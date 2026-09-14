@@ -7,7 +7,8 @@
 // ADR-13: Validação de Bearer token via Admin SDK.
 
 import { createClient } from '@supabase/supabase-js'
-import type { AuthIdentity, IAuthProvider } from '@sylocrm/application'
+import type { AuthIdentity, CreateAuthUserInput, IAuthProvider } from '@sylocrm/application'
+import { ConflictError } from '@sylocrm/domain'
 
 export interface SupabaseAuthConfig {
   supabaseUrl: string
@@ -72,5 +73,32 @@ export class SupabaseAuthAdapter implements IAuthProvider {
     if (identity) {
       await this.client.auth.admin.signOut(identity.id)
     }
+  }
+
+  /**
+   * Cria uma nova identidade (dono de Representação ou convite de equipe).
+   * O e-mail já entra confirmado — quem cria a conta em nome de outra pessoa
+   * já validou o contato por fora do fluxo de auto-cadastro.
+   */
+  async createUser(input: CreateAuthUserInput): Promise<AuthIdentity> {
+    const { data, error } = await this.client.auth.admin.createUser({
+      email: input.email,
+      password: input.password,
+      email_confirm: true,
+    })
+
+    if (error || !data.user) {
+      if (error?.status === 422 || error?.message.includes('already been registered')) {
+        throw new ConflictError(`E-mail já cadastrado: ${input.email}`)
+      }
+      throw new Error(error?.message ?? 'Falha ao criar usuário no Supabase Auth.')
+    }
+
+    const email = data.user.email
+    if (!email) {
+      throw new Error('Usuário criado sem e-mail — estado inesperado do Supabase Auth.')
+    }
+
+    return { id: data.user.id, email }
   }
 }
