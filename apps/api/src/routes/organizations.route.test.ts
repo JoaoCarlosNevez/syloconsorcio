@@ -335,13 +335,45 @@ describe('POST /organizations/:id/icon', () => {
     expect(response.statusCode).toBe(404)
   })
 
-  it('uploads the icon and updates the organization branding', async () => {
+  it('returns 403 when the organization is not White Label', async () => {
     const organizationRepository = buildOrganizationRepository()
     organizationRepository.findById = vi.fn().mockResolvedValue({
       id: 'org-uuid',
       name: 'Representação',
       type: 'REPRESENTACAO',
       parentOrganizationId: null,
+      isWhiteLabel: false,
+      branding: null,
+    })
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      organizationRepository,
+      membershipRepository: buildMembershipRepository(),
+      storageProvider: buildStorageProvider(),
+    })
+
+    const { payload, headers } = buildMultipartUpload('icon.png', 'image/png', 'fake-image-bytes')
+    const response = await app.inject({
+      method: 'POST',
+      url: '/organizations/org-uuid/icon',
+      headers: { ...AUTH_HEADERS, ...headers },
+      payload,
+    })
+
+    expect(response.statusCode).toBe(403)
+    const body = response.json<{ code: string }>()
+    expect(body.code).toBe('NOT_WHITE_LABEL')
+  })
+
+  it('uploads the icon and updates the organization branding when White Label is enabled', async () => {
+    const organizationRepository = buildOrganizationRepository()
+    organizationRepository.findById = vi.fn().mockResolvedValue({
+      id: 'org-uuid',
+      name: 'Representação',
+      type: 'REPRESENTACAO',
+      parentOrganizationId: null,
+      isWhiteLabel: true,
       branding: null,
     })
     organizationRepository.update = vi.fn().mockResolvedValue({
@@ -349,6 +381,7 @@ describe('POST /organizations/:id/icon', () => {
       name: 'Representação',
       type: 'REPRESENTACAO',
       parentOrganizationId: null,
+      isWhiteLabel: true,
       branding: { iconUrl: 'https://example.com/icon.png' },
     })
     const storageProvider = buildStorageProvider()
@@ -387,6 +420,7 @@ describe('POST /organizations/:id/icon', () => {
       name: 'Representação',
       type: 'REPRESENTACAO',
       parentOrganizationId: null,
+      isWhiteLabel: true,
       branding: null,
     })
     const app = buildApp({

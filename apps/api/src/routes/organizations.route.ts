@@ -47,6 +47,7 @@ const createRepresentationSchema = z.object({
 
 const updateOrganizationSchema = z.object({
   name: z.string().min(1).optional(),
+  isWhiteLabel: z.boolean().optional(),
 })
 
 function validationErrorResponse(fieldErrors: Record<string, string[] | undefined>) {
@@ -139,6 +140,15 @@ export const organizationsRoute: FastifyPluginAsync<OrganizationsRouteOptions> =
       const organization = await options.organizationRepository.findById(request.params.id)
       if (!organization) {
         return reply.status(404).send(organizationNotFoundResponse())
+      }
+
+      if (!organization.isWhiteLabel) {
+        return reply.status(403).send({
+          error:
+            'Esta representação não é White Label — ative o White Label antes de definir um ícone próprio.',
+          code: 'NOT_WHITE_LABEL',
+          status: 403,
+        })
       }
 
       const file = await request.file()

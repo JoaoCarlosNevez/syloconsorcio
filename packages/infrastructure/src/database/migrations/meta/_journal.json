@@ -22,6 +22,13 @@
       "when": 1789348305052,
       "tag": "0002_great_mattie_franklin",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789353505645,
+      "tag": "0003_curly_darkstar",
+      "breakpoints": true
     }
   ]
 }

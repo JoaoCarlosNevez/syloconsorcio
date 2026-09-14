@@ -17,6 +17,8 @@ export interface OrganizationRecord {
   name: string
   type: OrganizationType
   parentOrganizationId: string | null
+  /** Só organizações White Label podem definir branding.iconUrl (AGENTS.md §11). */
+  isWhiteLabel: boolean
   branding: OrganizationBranding | null
 }
 
@@ -28,6 +30,7 @@ export interface NewOrganizationInput {
 
 export interface UpdateOrganizationInput {
   name?: string
+  isWhiteLabel?: boolean
   branding?: OrganizationBranding
 }
 

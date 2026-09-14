@@ -19,6 +19,7 @@ const ORGANIZATION_COLUMNS = {
   name: organizations.name,
   type: organizations.type,
   parentOrganizationId: organizations.parentOrganizationId,
+  isWhiteLabel: organizations.isWhiteLabel,
   branding: organizations.branding,
 } as const
 
@@ -27,6 +28,7 @@ function toOrganizationRecord(row: {
   name: string
   type: string
   parentOrganizationId: string | null
+  isWhiteLabel: boolean
   branding: unknown
 }): OrganizationRecord {
   return {
@@ -34,6 +36,7 @@ function toOrganizationRecord(row: {
     name: row.name,
     type: row.type as OrganizationType,
     parentOrganizationId: row.parentOrganizationId,
+    isWhiteLabel: row.isWhiteLabel,
     branding: (row.branding as OrganizationBranding | null) ?? null,
   }
 }
@@ -90,6 +93,7 @@ export class DrizzleOrganizationRepository implements IOrganizationRepository {
       .update(organizations)
       .set({
         ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.isWhiteLabel !== undefined ? { isWhiteLabel: input.isWhiteLabel } : {}),
         ...(input.branding !== undefined ? { branding: input.branding } : {}),
         updatedAt: new Date(),
       })
