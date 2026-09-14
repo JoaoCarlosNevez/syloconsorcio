@@ -1,17 +1,46 @@
 // Tests: organizationsRoute
 //
-// POST /organizations — só Super Admin; cria Representação + dono (ADMIN)
+// POST  /organizations             — só Super Admin; cria Representação + dono (ADMIN)
+// GET   /organizations             — lista todas as organizações
+// PATCH /organizations/:id         — edita nome
+// POST  /organizations/:id/icon    — upload de ícone
+// GET   /organizations/:id/members — equipe de uma organização qualquer
 
 import type {
   IAuthProvider,
   IMembershipRepository,
   IOrganizationRepository,
+  IStorageProvider,
   IUserRepository,
 } from '@sylocrm/application'
 import { ConflictError } from '@sylocrm/domain'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { buildApp } from '../app'
 import { AuthErrorCode } from '../auth/errors'
+
+function buildStorageProvider(): IStorageProvider {
+  return {
+    uploadPublicFile: vi.fn().mockResolvedValue({
+      url: 'https://xvzsobntyhvxrbdfboax.supabase.co/storage/v1/object/public/organization-icons/org-uuid/icon.png',
+    }),
+  }
+}
+
+/** Monta um corpo multipart/form-data mínimo com um único arquivo. */
+function buildMultipartUpload(filename: string, contentType: string, content: string) {
+  const boundary = '----sylocrmTestBoundary'
+  const payload = [
+    `--${boundary}`,
+    `Content-Disposition: form-data; name="file"; filename="${filename}"`,
+    `Content-Type: ${contentType}`,
+    '',
+    content,
+    `--${boundary}--`,
+    '',
+  ].join('\r\n')
+
+  return { payload, headers: { 'content-type': `multipart/form-data; boundary=${boundary}` } }
+}
 
 const IDENTITY = { id: 'admin-uuid', email: 'admin@sylo.app' }
 const AUTH_HEADERS = { authorization: 'Bearer valid-token' }
@@ -48,7 +77,11 @@ function buildOrganizationRepository(): IOrganizationRepository {
       name: 'Nova Representação',
       type: 'REPRESENTACAO',
       parentOrganizationId: null,
+      branding: null,
     }),
+    list: vi.fn().mockResolvedValue([]),
+    findById: vi.fn().mockResolvedValue(null),
+    update: vi.fn(),
   }
 }
 
@@ -176,5 +209,251 @@ describe('POST /organizations', () => {
     })
 
     expect(response.statusCode).toBe(409)
+  })
+})
+
+// ── GET /organizations ──────────────────────────────────────────────────────
+
+describe('GET /organizations', () => {
+  it('returns 403 when the caller is not a platform admin', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(false),
+      organizationRepository: buildOrganizationRepository(),
+      membershipRepository: buildMembershipRepository(),
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/organizations',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(403)
+  })
+
+  it('lists all organizations for a platform admin', async () => {
+    const organizationRepository = buildOrganizationRepository()
+    organizationRepository.list = vi
+      .fn()
+      .mockResolvedValue([
+        {
+          id: 'org-1',
+          name: 'Representação A',
+          type: 'REPRESENTACAO',
+          parentOrganizationId: null,
+          branding: null,
+        },
+      ])
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      organizationRepository,
+      membershipRepository: buildMembershipRepository(),
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/organizations',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    const body = response.json<{ organizations: { id: string }[] }>()
+    expect(body.organizations).toHaveLength(1)
+  })
+})
+
+// ── PATCH /organizations/:id ─────────────────────────────────────────────────
+
+describe('PATCH /organizations/:id', () => {
+  it('returns 404 when the organization does not exist', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      organizationRepository: buildOrganizationRepository(),
+      membershipRepository: buildMembershipRepository(),
+    })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/organizations/does-not-exist',
+      headers: AUTH_HEADERS,
+      payload: { name: 'Novo Nome' },
+    })
+
+    expect(response.statusCode).toBe(404)
+  })
+
+  it('updates the organization name for a platform admin', async () => {
+    const organizationRepository = buildOrganizationRepository()
+    organizationRepository.update = vi.fn().mockResolvedValue({
+      id: 'org-uuid',
+      name: 'Novo Nome',
+      type: 'REPRESENTACAO',
+      parentOrganizationId: null,
+      branding: null,
+    })
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      organizationRepository,
+      membershipRepository: buildMembershipRepository(),
+    })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/organizations/org-uuid',
+      headers: AUTH_HEADERS,
+      payload: { name: 'Novo Nome' },
+    })
+
+    expect(response.statusCode).toBe(200)
+    const body = response.json<{ organization: { name: string } }>()
+    expect(body.organization.name).toBe('Novo Nome')
+  })
+})
+
+// ── POST /organizations/:id/icon ─────────────────────────────────────────────
+
+describe('POST /organizations/:id/icon', () => {
+  it('returns 404 when the organization does not exist', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      organizationRepository: buildOrganizationRepository(),
+      membershipRepository: buildMembershipRepository(),
+      storageProvider: buildStorageProvider(),
+    })
+
+    const { payload, headers } = buildMultipartUpload('icon.png', 'image/png', 'fake-image-bytes')
+    const response = await app.inject({
+      method: 'POST',
+      url: '/organizations/does-not-exist/icon',
+      headers: { ...AUTH_HEADERS, ...headers },
+      payload,
+    })
+
+    expect(response.statusCode).toBe(404)
+  })
+
+  it('uploads the icon and updates the organization branding', async () => {
+    const organizationRepository = buildOrganizationRepository()
+    organizationRepository.findById = vi.fn().mockResolvedValue({
+      id: 'org-uuid',
+      name: 'Representação',
+      type: 'REPRESENTACAO',
+      parentOrganizationId: null,
+      branding: null,
+    })
+    organizationRepository.update = vi.fn().mockResolvedValue({
+      id: 'org-uuid',
+      name: 'Representação',
+      type: 'REPRESENTACAO',
+      parentOrganizationId: null,
+      branding: { iconUrl: 'https://example.com/icon.png' },
+    })
+    const storageProvider = buildStorageProvider()
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      organizationRepository,
+      membershipRepository: buildMembershipRepository(),
+      storageProvider,
+    })
+
+    const { payload, headers } = buildMultipartUpload('icon.png', 'image/png', 'fake-image-bytes')
+    const response = await app.inject({
+      method: 'POST',
+      url: '/organizations/org-uuid/icon',
+      headers: { ...AUTH_HEADERS, ...headers },
+      payload,
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(storageProvider.uploadPublicFile).toHaveBeenCalledWith(
+      expect.objectContaining({ bucket: 'organization-icons', path: 'org-uuid/icon.png' }),
+    )
+    expect(organizationRepository.update).toHaveBeenCalledWith(
+      'org-uuid',
+      expect.objectContaining({
+        branding: expect.objectContaining({ iconUrl: expect.any(String) }),
+      }),
+    )
+  })
+
+  it('returns 400 for an unsupported image format', async () => {
+    const organizationRepository = buildOrganizationRepository()
+    organizationRepository.findById = vi.fn().mockResolvedValue({
+      id: 'org-uuid',
+      name: 'Representação',
+      type: 'REPRESENTACAO',
+      parentOrganizationId: null,
+      branding: null,
+    })
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      organizationRepository,
+      membershipRepository: buildMembershipRepository(),
+      storageProvider: buildStorageProvider(),
+    })
+
+    const { payload, headers } = buildMultipartUpload('icon.gif', 'image/gif', 'fake-image-bytes')
+    const response = await app.inject({
+      method: 'POST',
+      url: '/organizations/org-uuid/icon',
+      headers: { ...AUTH_HEADERS, ...headers },
+      payload,
+    })
+
+    expect(response.statusCode).toBe(400)
+  })
+})
+
+// ── GET /organizations/:id/members ───────────────────────────────────────────
+
+describe('GET /organizations/:id/members', () => {
+  it('returns 403 when the caller is not a platform admin', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(false),
+      organizationRepository: buildOrganizationRepository(),
+      membershipRepository: buildMembershipRepository(),
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/organizations/org-uuid/members',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(403)
+  })
+
+  it("lists any organization's team for a platform admin", async () => {
+    const membershipRepository = buildMembershipRepository()
+    membershipRepository.findActiveByOrganizationId = vi
+      .fn()
+      .mockResolvedValue([
+        { userId: 'u1', name: 'Dono', email: 'dono@empresa.com', role: 'ADMIN', status: 'ACTIVE' },
+      ])
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      organizationRepository: buildOrganizationRepository(),
+      membershipRepository,
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/organizations/org-uuid/members',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    const body = response.json<{ members: unknown[] }>()
+    expect(body.members).toHaveLength(1)
+    expect(membershipRepository.findActiveByOrganizationId).toHaveBeenCalledWith('org-uuid')
   })
 })

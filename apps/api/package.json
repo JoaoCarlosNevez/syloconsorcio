@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",
+    "@fastify/multipart": "^10.1.1",
     "@sylocrm/application": "workspace:*",
     "@sylocrm/domain": "workspace:*",
     "@sylocrm/infrastructure": "workspace:*",

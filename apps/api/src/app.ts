@@ -8,11 +8,13 @@
 // adapters when Supabase env vars are not configured (development without credentials).
 
 import cors from '@fastify/cors'
+import multipart from '@fastify/multipart'
 import type {
   IAuthProvider,
   ILeadRepository,
   IMembershipRepository,
   IOrganizationRepository,
+  IStorageProvider,
   IUserRepository,
 } from '@sylocrm/application'
 import Fastify from 'fastify'
@@ -29,6 +31,7 @@ export interface BuildAppDeps {
   leadRepository: ILeadRepository
   organizationRepository: IOrganizationRepository
   userRepository: IUserRepository
+  storageProvider: IStorageProvider
 }
 
 /** No-op auth provider used when Supabase env vars are not configured. */
@@ -75,6 +78,9 @@ function createNoOpOrganizationRepository(): IOrganizationRepository {
     create: async () => {
       throw new Error('Database not configured — cannot create organizations.')
     },
+    list: async () => [],
+    findById: async () => null,
+    update: async () => null,
   }
 }
 
@@ -88,6 +94,15 @@ function createNoOpUserRepository(): IUserRepository {
   }
 }
 
+/** No-op storage provider used when Supabase env vars are not configured. */
+function createNoOpStorageProvider(): IStorageProvider {
+  return {
+    uploadPublicFile: async () => {
+      throw new Error('Storage provider not configured — cannot upload files.')
+    },
+  }
+}
+
 export function buildApp(deps?: Partial<BuildAppDeps>) {
   // Use provided deps or fall back to no-op adapters.
   // Real adapters are created in main.ts (composition root) from env vars.
@@ -97,6 +112,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     leadRepository: deps?.leadRepository ?? createNoOpLeadRepository(),
     organizationRepository: deps?.organizationRepository ?? createNoOpOrganizationRepository(),
     userRepository: deps?.userRepository ?? createNoOpUserRepository(),
+    storageProvider: deps?.storageProvider ?? createNoOpStorageProvider(),
   }
 
   const app = Fastify({
@@ -112,6 +128,10 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     origin: env.CORS_ORIGIN,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
+  })
+
+  app.register(multipart, {
+    limits: { fileSize: 2 * 1024 * 1024 }, // 2MB — mesmo limite do bucket organization-icons
   })
 
   // ── Routes ────────────────────────────────────────────────────────────────
@@ -135,6 +155,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     userRepository: resolvedDeps.userRepository,
     organizationRepository: resolvedDeps.organizationRepository,
     membershipRepository: resolvedDeps.membershipRepository,
+    storageProvider: resolvedDeps.storageProvider,
   })
 
   app.register(teamRoute, {

@@ -106,6 +106,9 @@ function buildOrganizationRepository(): IOrganizationRepository {
   return {
     findChildOrganizationIds: vi.fn().mockResolvedValue([]),
     create: vi.fn(),
+    list: vi.fn().mockResolvedValue([]),
+    findById: vi.fn().mockResolvedValue(null),
+    update: vi.fn(),
   }
 }
 

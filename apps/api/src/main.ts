@@ -12,6 +12,7 @@ import {
   DrizzleOrganizationRepository,
   DrizzleUserRepository,
   SupabaseAuthAdapter,
+  SupabaseStorageAdapter,
   createDatabase,
 } from '@sylocrm/infrastructure'
 import { buildApp } from './app'
@@ -37,12 +38,21 @@ const leadRepository = database ? new DrizzleLeadRepository(database) : undefine
 const organizationRepository = database ? new DrizzleOrganizationRepository(database) : undefined
 const userRepository = database ? new DrizzleUserRepository(database) : undefined
 
+const storageProvider =
+  env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY
+    ? new SupabaseStorageAdapter({
+        supabaseUrl: env.SUPABASE_URL,
+        supabaseServiceKey: env.SUPABASE_SERVICE_KEY,
+      })
+    : undefined
+
 const app = buildApp({
   authProvider,
   membershipRepository,
   leadRepository,
   organizationRepository,
   userRepository,
+  storageProvider,
 })
 
 try {
