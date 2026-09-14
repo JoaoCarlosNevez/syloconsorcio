@@ -1,17 +1,23 @@
-// IOrganizationRepository — port para leitura e criação de organizações.
+// IOrganizationRepository — port para leitura, criação e atualização de organizações.
 //
 // Usado pelo resolvedor de DataScope (packages/application/src/leads/lead-scope.ts)
 // para descobrir quais organizações um Membership MASTER ou INCORPORADORA alcança,
-// e pelo fluxo de criação de Representações (Super Admin).
+// pelo fluxo de criação de Representações (Super Admin), e pelo painel de
+// Administração (listar/editar tenants).
 // Implementação concreta: packages/infrastructure/src/database/repositories/
 
 import type { OrganizationType } from '@sylocrm/domain'
+
+export interface OrganizationBranding {
+  iconUrl?: string
+}
 
 export interface OrganizationRecord {
   id: string
   name: string
   type: OrganizationType
   parentOrganizationId: string | null
+  branding: OrganizationBranding | null
 }
 
 export interface NewOrganizationInput {
@@ -20,9 +26,21 @@ export interface NewOrganizationInput {
   parentOrganizationId?: string | null
 }
 
+export interface UpdateOrganizationInput {
+  name?: string
+  branding?: OrganizationBranding
+}
+
 export interface IOrganizationRepository {
   /** IDs das organizações cujo parentOrganizationId é `parentOrganizationId`. */
   findChildOrganizationIds(parentOrganizationId: string): Promise<string[]>
 
   create(input: NewOrganizationInput): Promise<OrganizationRecord>
+
+  /** Lista todas as organizações — usado pelo painel de Administração (Super Admin). */
+  list(): Promise<OrganizationRecord[]>
+
+  findById(id: string): Promise<OrganizationRecord | null>
+
+  update(id: string, input: UpdateOrganizationInput): Promise<OrganizationRecord | null>
 }
