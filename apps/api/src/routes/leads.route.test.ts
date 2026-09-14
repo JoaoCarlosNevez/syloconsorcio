@@ -92,6 +92,7 @@ function buildMembershipRepository(
     findActiveByUserId: vi.fn().mockResolvedValue([membership]),
     findActiveByUserAndOrganization: vi.fn().mockResolvedValue(membership),
     findActiveByOrganizationId: vi.fn().mockResolvedValue([]),
+    findAllActive: vi.fn().mockResolvedValue([]),
     create: vi.fn(),
   }
 }

@@ -5,6 +5,8 @@
 // PATCH /organizations/:id         — edita nome
 // POST  /organizations/:id/icon    — envia o ícone (upload para Supabase Storage)
 // GET   /organizations/:id/members — lista a equipe de uma organização qualquer
+// GET   /organizations/members     — lista todos os membros da plataforma (cross-org)
+// POST  /organizations/members     — cria um usuário com qualquer Role em qualquer Representação
 //
 // Todas exigem authMiddleware + requirePlatformAdmin — não são escopadas por
 // tenant (o Super Admin não precisa ser membro da organização-alvo).
@@ -16,8 +18,8 @@ import type {
   IStorageProvider,
   IUserRepository,
 } from '@sylocrm/application'
-import { CreateRepresentationUseCase } from '@sylocrm/application'
-import { ConflictError } from '@sylocrm/domain'
+import { CreatePlatformUserUseCase, CreateRepresentationUseCase } from '@sylocrm/application'
+import { ConflictError, Role } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { createAuthMiddleware } from '../middleware/auth.middleware'
@@ -50,6 +52,13 @@ const updateOrganizationSchema = z.object({
   isWhiteLabel: z.boolean().optional(),
 })
 
+const createPlatformUserSchema = z.object({
+  organizationId: z.string().min(1),
+  name: z.string().min(1),
+  email: z.string().email(),
+  role: z.enum([Role.ADMIN, Role.MANAGER, Role.SELLER]),
+})
+
 function validationErrorResponse(fieldErrors: Record<string, string[] | undefined>) {
   return { error: 'Dados inválidos.', code: 'VALIDATION_ERROR', status: 400, details: fieldErrors }
 }
@@ -72,6 +81,12 @@ export const organizationsRoute: FastifyPluginAsync<OrganizationsRouteOptions> =
     options.membershipRepository,
   )
 
+  const createPlatformUser = new CreatePlatformUserUseCase(
+    options.authProvider,
+    options.userRepository,
+    options.membershipRepository,
+  )
+
   // ── GET /organizations ────────────────────────────────────────────────────
   fastify.get(
     '/organizations',
@@ -79,6 +94,50 @@ export const organizationsRoute: FastifyPluginAsync<OrganizationsRouteOptions> =
     async () => {
       const organizations = await options.organizationRepository.list()
       return { organizations }
+    },
+  )
+
+  // ── GET /organizations/members ────────────────────────────────────────────
+  fastify.get(
+    '/organizations/members',
+    { preHandler: [authMiddleware, platformAdminMiddleware] },
+    async () => {
+      const members = await options.membershipRepository.findAllActive()
+      return { members }
+    },
+  )
+
+  // ── POST /organizations/members ───────────────────────────────────────────
+  fastify.post(
+    '/organizations/members',
+    { preHandler: [authMiddleware, platformAdminMiddleware] },
+    async (request, reply) => {
+      const parsed = createPlatformUserSchema.safeParse(request.body)
+      if (!parsed.success) {
+        return reply.status(400).send(validationErrorResponse(parsed.error.flatten().fieldErrors))
+      }
+
+      const organization = await options.organizationRepository.findById(parsed.data.organizationId)
+      if (!organization) {
+        return reply.status(404).send(organizationNotFoundResponse())
+      }
+
+      try {
+        const result = await createPlatformUser.execute(parsed.data)
+        return reply.status(201).send({
+          member: {
+            id: result.member.id,
+            email: result.member.email,
+            role: result.member.role,
+            temporaryPassword: result.member.temporaryPassword,
+          },
+        })
+      } catch (error) {
+        if (error instanceof ConflictError) {
+          return reply.status(409).send({ error: error.message, code: error.code, status: 409 })
+        }
+        throw error
+      }
     },
   )
 

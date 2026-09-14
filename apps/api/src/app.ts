@@ -51,6 +51,7 @@ function createNoOpMembershipRepository(): IMembershipRepository {
     findActiveByUserId: async () => [],
     findActiveByUserAndOrganization: async () => null,
     findActiveByOrganizationId: async () => [],
+    findAllActive: async () => [],
     create: async () => {
       throw new Error('Database not configured — cannot create memberships.')
     },

@@ -9,6 +9,7 @@ import type {
   IMembershipRepository,
   NewMembershipInput,
   OrganizationBranding,
+  PlatformTeamMember,
   TeamMember,
   UserMembership,
 } from '@sylocrm/application'
@@ -101,6 +102,25 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
           eq(organizationMemberships.status, 'ACTIVE'),
         ),
       )
+
+    return rows.map((row) => ({ ...row, role: row.role as Role }))
+  }
+
+  async findAllActive(): Promise<PlatformTeamMember[]> {
+    const rows = await this.db
+      .select({
+        userId: organizationMemberships.userId,
+        name: users.name,
+        email: users.email,
+        role: organizationMemberships.role,
+        status: organizationMemberships.status,
+        organizationId: organizationMemberships.organizationId,
+        organizationName: organizations.name,
+      })
+      .from(organizationMemberships)
+      .innerJoin(users, eq(organizationMemberships.userId, users.id))
+      .innerJoin(organizations, eq(organizationMemberships.organizationId, organizations.id))
+      .where(eq(organizationMemberships.status, 'ACTIVE'))
 
     return rows.map((row) => ({ ...row, role: row.role as Role }))
   }

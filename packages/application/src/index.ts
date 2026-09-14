@@ -15,6 +15,7 @@ export type {
   IMembershipRepository,
   UserMembership,
   TeamMember,
+  PlatformTeamMember,
   NewMembershipInput,
 } from './ports/membership.repository'
 export type {
@@ -56,6 +57,12 @@ export type {
   CreateRepresentationInput,
   CreateRepresentationOutput,
 } from './organizations/create-representation.use-case'
+
+export { CreatePlatformUserUseCase } from './organizations/create-platform-user.use-case'
+export type {
+  CreatePlatformUserInput,
+  CreatePlatformUserOutput,
+} from './organizations/create-platform-user.use-case'
 
 export { InviteTeamMemberUseCase } from './team/invite-team-member.use-case'
 export type {

@@ -4,9 +4,11 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  createPlatformUser,
   createRepresentation,
   getOrganizationMembers,
   listOrganizations,
+  listPlatformMembers,
   updateOrganization,
   uploadOrganizationIcon,
 } from '../lib/organizations-api'
@@ -53,6 +55,23 @@ export function useUploadOrganizationIcon(organizationId: string) {
     mutationFn: (file: File) => uploadOrganizationIcon(organizationId, file),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'organizations'] })
+    },
+  })
+}
+
+export function usePlatformMembersQuery() {
+  return useQuery({
+    queryKey: ['admin', 'platform-members'],
+    queryFn: listPlatformMembers,
+  })
+}
+
+export function useCreatePlatformUser() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: createPlatformUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'platform-members'] })
     },
   })
 }
