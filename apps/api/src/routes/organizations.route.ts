@@ -142,15 +142,6 @@ export const organizationsRoute: FastifyPluginAsync<OrganizationsRouteOptions> =
         return reply.status(404).send(organizationNotFoundResponse())
       }
 
-      if (!organization.isWhiteLabel) {
-        return reply.status(403).send({
-          error:
-            'Esta representação não é White Label — ative o White Label antes de definir um ícone próprio.',
-          code: 'NOT_WHITE_LABEL',
-          status: 403,
-        })
-      }
-
       const file = await request.file()
       if (!file) {
         return reply

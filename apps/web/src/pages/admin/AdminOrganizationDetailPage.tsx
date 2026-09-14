@@ -70,9 +70,6 @@ export function AdminOrganizationDetailPage() {
       toast({
         type: 'success',
         title: checked ? 'White Label ativado' : 'White Label desativado',
-        description: checked
-          ? undefined
-          : 'O ícone volta a ser o padrão da Sylo até White Label ser reativado.',
       })
     } catch (error) {
       toast({
@@ -87,8 +84,6 @@ export function AdminOrganizationDetailPage() {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
-
-    if (!organization?.isWhiteLabel) return
 
     if (file.size > MAX_ICON_SIZE_BYTES) {
       toast({ type: 'error', title: 'Imagem muito grande', description: 'Limite de 2MB.' })
@@ -157,31 +152,17 @@ export function AdminOrganizationDetailPage() {
               <button
                 type="button"
                 className={styles.iconUpload}
-                onClick={() => organization.isWhiteLabel && fileInputRef.current?.click()}
-                aria-label={
-                  organization.isWhiteLabel
-                    ? 'Alterar ícone da representação'
-                    : 'Ative o White Label para definir um ícone próprio'
-                }
-                disabled={!organization.isWhiteLabel}
+                onClick={() => fileInputRef.current?.click()}
+                aria-label="Alterar ícone da representação"
               >
-                <img
-                  src={
-                    organization.isWhiteLabel && organization.branding?.iconUrl
-                      ? organization.branding.iconUrl
-                      : DEFAULT_ICON_URL
-                  }
-                  alt=""
+                <img src={organization.branding?.iconUrl ?? DEFAULT_ICON_URL} alt="" />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  className={styles.iconUploadInput}
+                  onChange={handleIconChange}
                 />
-                {organization.isWhiteLabel && (
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                    className={styles.iconUploadInput}
-                    onChange={handleIconChange}
-                  />
-                )}
               </button>
 
               <div>

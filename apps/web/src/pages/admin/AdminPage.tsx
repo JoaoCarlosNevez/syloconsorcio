@@ -36,11 +36,7 @@ export function AdminPage() {
       header: '',
       width: '56px',
       render: (row) => (
-        <img
-          src={row.isWhiteLabel && row.branding?.iconUrl ? row.branding.iconUrl : DEFAULT_ICON_URL}
-          alt=""
-          className={styles.orgIcon}
-        />
+        <img src={row.branding?.iconUrl ?? DEFAULT_ICON_URL} alt="" className={styles.orgIcon} />
       ),
     },
     { key: 'name', header: 'Nome', render: (row) => row.name },
