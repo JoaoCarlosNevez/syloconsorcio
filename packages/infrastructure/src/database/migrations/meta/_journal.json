@@ -15,6 +15,13 @@
       "when": 1789322337860,
       "tag": "0001_motionless_lockjaw",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789348305052,
+      "tag": "0002_great_mattie_franklin",
+      "breakpoints": true
     }
   ]
 }
