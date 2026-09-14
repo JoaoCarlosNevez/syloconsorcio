@@ -8,10 +8,21 @@
 // Each use case receives repository interfaces (ports) from Domain via dependency injection.
 
 export type { UseCase } from './ports/use-case'
-export type { IAuthProvider, AuthIdentity } from './ports/auth.provider'
+export type { IAuthProvider, AuthIdentity, CreateAuthUserInput } from './ports/auth.provider'
 export type { AuthenticatedContext, MembershipContext } from './auth/auth-context'
-export type { IMembershipRepository, UserMembership } from './ports/membership.repository'
-export type { IOrganizationRepository } from './ports/organization.repository'
+export { generateTemporaryPassword } from './auth/generate-temporary-password'
+export type {
+  IMembershipRepository,
+  UserMembership,
+  TeamMember,
+  NewMembershipInput,
+} from './ports/membership.repository'
+export type {
+  IOrganizationRepository,
+  OrganizationRecord,
+  NewOrganizationInput,
+} from './ports/organization.repository'
+export type { IUserRepository, UserRecord, UpsertUserInput } from './ports/user.repository'
 export type {
   ILeadRepository,
   LeadRecord,
@@ -36,3 +47,15 @@ export { UpdateLeadUseCase } from './leads/update-lead.use-case'
 export type { UpdateLeadUseCaseInput } from './leads/update-lead.use-case'
 export { DeleteLeadUseCase } from './leads/delete-lead.use-case'
 export type { DeleteLeadInput } from './leads/delete-lead.use-case'
+
+export { CreateRepresentationUseCase } from './organizations/create-representation.use-case'
+export type {
+  CreateRepresentationInput,
+  CreateRepresentationOutput,
+} from './organizations/create-representation.use-case'
+
+export { InviteTeamMemberUseCase } from './team/invite-team-member.use-case'
+export type {
+  InviteTeamMemberInput,
+  InviteTeamMemberOutput,
+} from './team/invite-team-member.use-case'

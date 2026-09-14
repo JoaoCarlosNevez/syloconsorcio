@@ -27,6 +27,11 @@ export interface AuthIdentity {
  * A Infrastructure implementa este port usando o Supabase Admin SDK.
  * O restante da aplicação não conhece o Supabase.
  */
+export interface CreateAuthUserInput {
+  email: string
+  password: string
+}
+
 export interface IAuthProvider {
   /**
    * Verifica um Bearer token e retorna a identidade autenticada.
@@ -39,4 +44,11 @@ export interface IAuthProvider {
    * Chamado no fluxo de logout.
    */
   signOut(token: string): Promise<void>
+
+  /**
+   * Cria uma nova identidade autenticada (usado ao criar o dono de uma nova
+   * Representação, ou ao convidar um membro de equipe). Lança ConflictError
+   * (ver @sylocrm/domain) se o e-mail já estiver cadastrado.
+   */
+  createUser(input: CreateAuthUserInput): Promise<AuthIdentity>
 }
