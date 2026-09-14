@@ -33,6 +33,7 @@ describe('GET /auth/me', () => {
     const mockProvider: IAuthProvider = {
       verifyToken: vi.fn(),
       signOut: vi.fn(),
+      createUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -47,6 +48,7 @@ describe('GET /auth/me', () => {
     const mockProvider: IAuthProvider = {
       verifyToken: vi.fn().mockResolvedValue(null),
       signOut: vi.fn(),
+      createUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -65,6 +67,7 @@ describe('GET /auth/me', () => {
     const mockProvider: IAuthProvider = {
       verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
       signOut: vi.fn(),
+      createUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -84,6 +87,7 @@ describe('GET /auth/me', () => {
     const mockProvider: IAuthProvider = {
       verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
       signOut: vi.fn(),
+      createUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -105,7 +109,11 @@ describe('GET /auth/memberships', () => {
   })
 
   it('returns 401 when Authorization header is absent', async () => {
-    const mockProvider: IAuthProvider = { verifyToken: vi.fn(), signOut: vi.fn() }
+    const mockProvider: IAuthProvider = {
+      verifyToken: vi.fn(),
+      signOut: vi.fn(),
+      createUser: vi.fn(),
+    }
     const app = buildTestApp(mockProvider)
 
     const response = await app.inject({ method: 'GET', url: '/auth/memberships' })
@@ -117,6 +125,7 @@ describe('GET /auth/memberships', () => {
     const mockProvider: IAuthProvider = {
       verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
       signOut: vi.fn(),
+      createUser: vi.fn(),
     }
     const mockRepo: IMembershipRepository = {
       findActiveByUserId: vi.fn().mockResolvedValue([
@@ -128,6 +137,8 @@ describe('GET /auth/memberships', () => {
         },
       ]),
       findActiveByUserAndOrganization: vi.fn(),
+      findActiveByOrganizationId: vi.fn(),
+      create: vi.fn(),
     }
     const app = buildTestApp(mockProvider, mockRepo)
 
@@ -156,6 +167,7 @@ describe('GET /auth/context', () => {
     const mockProvider: IAuthProvider = {
       verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
       signOut: vi.fn(),
+      createUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -174,6 +186,7 @@ describe('GET /auth/context', () => {
     const mockProvider: IAuthProvider = {
       verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
       signOut: vi.fn(),
+      createUser: vi.fn(),
     }
     const membership = {
       organizationId: 'org-rep-01',
@@ -184,6 +197,8 @@ describe('GET /auth/context', () => {
     const mockRepo: IMembershipRepository = {
       findActiveByUserId: vi.fn().mockResolvedValue([membership]),
       findActiveByUserAndOrganization: vi.fn().mockResolvedValue(membership),
+      findActiveByOrganizationId: vi.fn(),
+      create: vi.fn(),
     }
     const app = buildTestApp(mockProvider, mockRepo)
 
@@ -211,6 +226,7 @@ describe('POST /auth/logout', () => {
     const mockProvider: IAuthProvider = {
       verifyToken: vi.fn(),
       signOut: vi.fn(),
+      createUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -226,6 +242,7 @@ describe('POST /auth/logout', () => {
     const mockProvider: IAuthProvider = {
       verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
       signOut: vi.fn().mockResolvedValue(undefined),
+      createUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -245,6 +262,7 @@ describe('POST /auth/logout', () => {
     const mockProvider: IAuthProvider = {
       verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
       signOut: vi.fn().mockRejectedValue(new Error('Supabase unreachable')),
+      createUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -262,6 +280,7 @@ describe('POST /auth/logout', () => {
     const mockProvider: IAuthProvider = {
       verifyToken: vi.fn().mockResolvedValue(null),
       signOut: vi.fn(),
+      createUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 

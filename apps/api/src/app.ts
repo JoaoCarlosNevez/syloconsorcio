@@ -13,18 +13,22 @@ import type {
   ILeadRepository,
   IMembershipRepository,
   IOrganizationRepository,
+  IUserRepository,
 } from '@sylocrm/application'
 import Fastify from 'fastify'
 import { env } from './config/env'
 import { authRoute } from './routes/auth.route'
 import { healthRoute } from './routes/health.route'
 import { leadsRoute } from './routes/leads.route'
+import { organizationsRoute } from './routes/organizations.route'
+import { teamRoute } from './routes/team.route'
 
 export interface BuildAppDeps {
   authProvider: IAuthProvider
   membershipRepository: IMembershipRepository
   leadRepository: ILeadRepository
   organizationRepository: IOrganizationRepository
+  userRepository: IUserRepository
 }
 
 /** No-op auth provider used when Supabase env vars are not configured. */
@@ -32,6 +36,9 @@ function createNoOpAuthProvider(): IAuthProvider {
   return {
     verifyToken: async () => null,
     signOut: async () => {},
+    createUser: async () => {
+      throw new Error('Auth provider not configured — cannot create users.')
+    },
   }
 }
 
@@ -40,6 +47,10 @@ function createNoOpMembershipRepository(): IMembershipRepository {
   return {
     findActiveByUserId: async () => [],
     findActiveByUserAndOrganization: async () => null,
+    findActiveByOrganizationId: async () => [],
+    create: async () => {
+      throw new Error('Database not configured — cannot create memberships.')
+    },
   }
 }
 
@@ -61,6 +72,19 @@ function createNoOpLeadRepository(): ILeadRepository {
 function createNoOpOrganizationRepository(): IOrganizationRepository {
   return {
     findChildOrganizationIds: async () => [],
+    create: async () => {
+      throw new Error('Database not configured — cannot create organizations.')
+    },
+  }
+}
+
+/** No-op user repository used when database is not configured. */
+function createNoOpUserRepository(): IUserRepository {
+  return {
+    findById: async () => null,
+    upsert: async () => {
+      throw new Error('Database not configured — cannot upsert users.')
+    },
   }
 }
 
@@ -72,6 +96,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     membershipRepository: deps?.membershipRepository ?? createNoOpMembershipRepository(),
     leadRepository: deps?.leadRepository ?? createNoOpLeadRepository(),
     organizationRepository: deps?.organizationRepository ?? createNoOpOrganizationRepository(),
+    userRepository: deps?.userRepository ?? createNoOpUserRepository(),
   }
 
   const app = Fastify({
@@ -95,6 +120,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
   app.register(authRoute, {
     authProvider: resolvedDeps.authProvider,
     membershipRepository: resolvedDeps.membershipRepository,
+    userRepository: resolvedDeps.userRepository,
   })
 
   app.register(leadsRoute, {
@@ -102,6 +128,19 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     membershipRepository: resolvedDeps.membershipRepository,
     leadRepository: resolvedDeps.leadRepository,
     organizationRepository: resolvedDeps.organizationRepository,
+  })
+
+  app.register(organizationsRoute, {
+    authProvider: resolvedDeps.authProvider,
+    userRepository: resolvedDeps.userRepository,
+    organizationRepository: resolvedDeps.organizationRepository,
+    membershipRepository: resolvedDeps.membershipRepository,
+  })
+
+  app.register(teamRoute, {
+    authProvider: resolvedDeps.authProvider,
+    userRepository: resolvedDeps.userRepository,
+    membershipRepository: resolvedDeps.membershipRepository,
   })
 
   return app

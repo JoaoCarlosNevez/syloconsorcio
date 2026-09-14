@@ -10,6 +10,7 @@ import {
   DrizzleLeadRepository,
   DrizzleMembershipRepository,
   DrizzleOrganizationRepository,
+  DrizzleUserRepository,
   SupabaseAuthAdapter,
   createDatabase,
 } from '@sylocrm/infrastructure'
@@ -34,8 +35,15 @@ const database = env.DATABASE_URL
 const membershipRepository = database ? new DrizzleMembershipRepository(database) : undefined
 const leadRepository = database ? new DrizzleLeadRepository(database) : undefined
 const organizationRepository = database ? new DrizzleOrganizationRepository(database) : undefined
+const userRepository = database ? new DrizzleUserRepository(database) : undefined
 
-const app = buildApp({ authProvider, membershipRepository, leadRepository, organizationRepository })
+const app = buildApp({
+  authProvider,
+  membershipRepository,
+  leadRepository,
+  organizationRepository,
+  userRepository,
+})
 
 try {
   await app.listen({ port: env.PORT, host: env.HOST })

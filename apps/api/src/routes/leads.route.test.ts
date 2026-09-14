@@ -75,6 +75,7 @@ function buildAuthProvider(): IAuthProvider {
   return {
     verifyToken: vi.fn().mockResolvedValue(IDENTITY),
     signOut: vi.fn(),
+    createUser: vi.fn(),
   }
 }
 
@@ -84,6 +85,8 @@ function buildMembershipRepository(
   return {
     findActiveByUserId: vi.fn().mockResolvedValue([membership]),
     findActiveByUserAndOrganization: vi.fn().mockResolvedValue(membership),
+    findActiveByOrganizationId: vi.fn().mockResolvedValue([]),
+    create: vi.fn(),
   }
 }
 
@@ -100,7 +103,10 @@ function buildLeadRepository(overrides: Partial<ILeadRepository> = {}): ILeadRep
 }
 
 function buildOrganizationRepository(): IOrganizationRepository {
-  return { findChildOrganizationIds: vi.fn().mockResolvedValue([]) }
+  return {
+    findChildOrganizationIds: vi.fn().mockResolvedValue([]),
+    create: vi.fn(),
+  }
 }
 
 function buildTestApp(options: { membership?: UserMembership; leadRepository?: ILeadRepository }) {

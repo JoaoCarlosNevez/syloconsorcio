@@ -12,7 +12,7 @@
 //
 // Login acontece diretamente no Supabase via SDK no frontend (ADR-13).
 
-import type { IAuthProvider, IMembershipRepository } from '@sylocrm/application'
+import type { IAuthProvider, IMembershipRepository, IUserRepository } from '@sylocrm/application'
 import type { FastifyPluginAsync } from 'fastify'
 import { buildMembershipContext } from '../auth/membership-context'
 import { createAuthMiddleware } from '../middleware/auth.middleware'
@@ -21,6 +21,7 @@ import { createTenantMiddleware } from '../middleware/tenant.middleware'
 interface AuthRouteOptions {
   authProvider: IAuthProvider
   membershipRepository: IMembershipRepository
+  userRepository: IUserRepository
 }
 
 export const authRoute: FastifyPluginAsync<AuthRouteOptions> = async (fastify, options) => {
@@ -41,16 +42,22 @@ export const authRoute: FastifyPluginAsync<AuthRouteOptions> = async (fastify, o
             properties: {
               id: { type: 'string' },
               email: { type: 'string' },
+              isPlatformAdmin: { type: 'boolean' },
             },
-            required: ['id', 'email'],
+            required: ['id', 'email', 'isPlatformAdmin'],
           },
         },
       },
     },
     async (request) => {
       // authMiddleware garante que authIdentity está presente
-      const identity = request.authIdentity
-      return { id: identity?.id, email: identity?.email }
+      const identity = request.authIdentity as NonNullable<typeof request.authIdentity>
+      const user = await options.userRepository.findById(identity.id)
+      return {
+        id: identity.id,
+        email: identity.email,
+        isPlatformAdmin: user?.isPlatformAdmin ?? false,
+      }
     },
   )
 
