@@ -5,10 +5,12 @@
 import type {
   IOrganizationRepository,
   NewOrganizationInput,
+  OrganizationBranding,
   OrganizationRecord,
+  UpdateOrganizationInput,
 } from '@sylocrm/application'
 import type { OrganizationType } from '@sylocrm/domain'
-import { eq } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 import type { Database } from '../client'
 import { organizations } from '../schema'
 
@@ -17,7 +19,24 @@ const ORGANIZATION_COLUMNS = {
   name: organizations.name,
   type: organizations.type,
   parentOrganizationId: organizations.parentOrganizationId,
+  branding: organizations.branding,
 } as const
+
+function toOrganizationRecord(row: {
+  id: string
+  name: string
+  type: string
+  parentOrganizationId: string | null
+  branding: unknown
+}): OrganizationRecord {
+  return {
+    id: row.id,
+    name: row.name,
+    type: row.type as OrganizationType,
+    parentOrganizationId: row.parentOrganizationId,
+    branding: (row.branding as OrganizationBranding | null) ?? null,
+  }
+}
 
 export class DrizzleOrganizationRepository implements IOrganizationRepository {
   constructor(private readonly db: Database) {}
@@ -43,6 +62,41 @@ export class DrizzleOrganizationRepository implements IOrganizationRepository {
 
     const row = rows[0]
     if (!row) throw new Error('Failed to create organization: no row returned')
-    return { ...row, type: row.type as OrganizationType }
+    return toOrganizationRecord(row)
+  }
+
+  async list(): Promise<OrganizationRecord[]> {
+    const rows = await this.db
+      .select(ORGANIZATION_COLUMNS)
+      .from(organizations)
+      .orderBy(desc(organizations.createdAt))
+
+    return rows.map(toOrganizationRecord)
+  }
+
+  async findById(id: string): Promise<OrganizationRecord | null> {
+    const rows = await this.db
+      .select(ORGANIZATION_COLUMNS)
+      .from(organizations)
+      .where(eq(organizations.id, id))
+      .limit(1)
+
+    const row = rows[0]
+    return row ? toOrganizationRecord(row) : null
+  }
+
+  async update(id: string, input: UpdateOrganizationInput): Promise<OrganizationRecord | null> {
+    const rows = await this.db
+      .update(organizations)
+      .set({
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.branding !== undefined ? { branding: input.branding } : {}),
+        updatedAt: new Date(),
+      })
+      .where(eq(organizations.id, id))
+      .returning(ORGANIZATION_COLUMNS)
+
+    const row = rows[0]
+    return row ? toOrganizationRecord(row) : null
   }
 }
