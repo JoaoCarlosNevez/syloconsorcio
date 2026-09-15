@@ -7,6 +7,7 @@ import type { ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { USER_TIER } from '../../data/kanban-mock'
 import { useAuth } from '../../hooks/useAuth'
+import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import styles from './AppLayout.module.css'
 
@@ -241,10 +242,13 @@ export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, signOut } = useAuth()
+  const { data: currentUser } = useCurrentUser()
   const { membership, memberships, setActiveOrganizationId } = useActiveOrganization()
 
   const displayName =
-    (user?.user_metadata?.full_name as string | undefined) ?? deriveDisplayName(user?.email)
+    currentUser?.name ??
+    (user?.user_metadata?.full_name as string | undefined) ??
+    deriveDisplayName(user?.email)
   const palette = TIER_PALETTE[USER_TIER]
 
   async function handleSignOut() {

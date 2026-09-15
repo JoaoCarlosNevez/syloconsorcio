@@ -42,9 +42,10 @@ export const authRoute: FastifyPluginAsync<AuthRouteOptions> = async (fastify, o
             properties: {
               id: { type: 'string' },
               email: { type: 'string' },
+              name: { type: ['string', 'null'] },
               isPlatformAdmin: { type: 'boolean' },
             },
-            required: ['id', 'email', 'isPlatformAdmin'],
+            required: ['id', 'email', 'name', 'isPlatformAdmin'],
           },
         },
       },
@@ -56,6 +57,7 @@ export const authRoute: FastifyPluginAsync<AuthRouteOptions> = async (fastify, o
       return {
         id: identity.id,
         email: identity.email,
+        name: user?.name ?? null,
         isPlatformAdmin: user?.isPlatformAdmin ?? false,
       }
     },

@@ -11,6 +11,7 @@ import { useAuth } from './useAuth'
 export interface CurrentUser {
   id: string
   email: string
+  name: string | null
   isPlatformAdmin: boolean
 }
 

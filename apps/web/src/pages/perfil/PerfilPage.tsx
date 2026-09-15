@@ -1,8 +1,9 @@
 // PerfilPage — Perfil completo do consultor: nível, XP, ofensiva e conquistas.
 
-import { type CSSProperties, type FormEvent, useState } from 'react'
+import { type CSSProperties, type FormEvent, useEffect, useRef, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { useAuth } from '../../hooks/useAuth'
+import { useCurrentUser } from '../../hooks/useCurrentUser'
 import styles from './PerfilPage.module.css'
 
 // ── Ícones ────────────────────────────────────────────────────────────────────
@@ -549,16 +550,24 @@ const ACTIVITY_TYPES = [
 
 export function PerfilPage() {
   const { user } = useAuth()
+  const { data: currentUser } = useCurrentUser()
   const emailPrefix = user?.email?.split('@')[0] ?? 'consultor'
+  const fallbackName = emailPrefix.replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
   const [selectedBadge, setSelectedBadge] = useState<BadgeData | null>(null)
   const [editingProfile, setEditingProfile] = useState(false)
   const [activityOpen, setActivityOpen] = useState(false)
   const [activityToast, setActivityToast] = useState('')
   const [profile, setProfile] = useState({
-    name: 'Ennyo Café',
+    name: currentUser?.name ?? fallbackName,
     handle: `@${emailPrefix}`,
     location: 'São Paulo, SP',
   })
+  const hasManualNameEdit = useRef(false)
+
+  useEffect(() => {
+    if (hasManualNameEdit.current || !currentUser?.name) return
+    setProfile((prev) => ({ ...prev, name: currentUser.name as string }))
+  }, [currentUser?.name])
 
   return (
     <AppLayout>
@@ -568,6 +577,7 @@ export function PerfilPage() {
           initial={profile}
           onClose={() => setEditingProfile(false)}
           onSave={(d) => {
+            hasManualNameEdit.current = true
             setProfile(d)
             setEditingProfile(false)
           }}
