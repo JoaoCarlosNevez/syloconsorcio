@@ -15,6 +15,7 @@ import {
   useUpdateOrganization,
   useUploadOrganizationIcon,
 } from '../../hooks/useOrganizations'
+import { validateIconFile } from '../../lib/icon-validation'
 import type { TeamMember } from '../../lib/team-api'
 import styles from './AdminPage.module.css'
 
@@ -24,7 +25,6 @@ const ROLE_LABEL: Record<TeamMember['role'], string> = {
   SELLER: 'Vendedor',
 }
 
-const MAX_ICON_SIZE_BYTES = 2 * 1024 * 1024
 // Padrão de identidade visual (AGENTS.md §11): toda Representação usa a marca
 // Sylo até virar White Label e definir seu próprio ícone.
 const DEFAULT_ICON_URL = '/sylo-logo.png'
@@ -85,8 +85,13 @@ export function AdminOrganizationDetailPage() {
     e.target.value = ''
     if (!file) return
 
-    if (file.size > MAX_ICON_SIZE_BYTES) {
-      toast({ type: 'error', title: 'Imagem muito grande', description: 'Limite de 2MB.' })
+    const validationError = await validateIconFile(file)
+    if (validationError) {
+      toast({
+        type: 'error',
+        title: 'Não foi possível usar essa imagem',
+        description: validationError,
+      })
       return
     }
 

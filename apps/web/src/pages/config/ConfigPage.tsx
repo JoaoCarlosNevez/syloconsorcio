@@ -8,6 +8,7 @@ import {
   useUpdateOrganizationSettings,
   useUploadOrganizationSettingsIcon,
 } from '../../hooks/useOrganizationSettings'
+import { validateIconFile } from '../../lib/icon-validation'
 import styles from './ConfigPage.module.css'
 
 // Padrão de identidade visual (AGENTS.md §11): toda organização usa a marca
@@ -1669,6 +1670,13 @@ function OrganizacaoView() {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
+
+    const validationError = await validateIconFile(file)
+    if (validationError) {
+      setToast(validationError)
+      return
+    }
+
     try {
       await uploadIcon.mutateAsync(file)
       setToast('Ícone atualizado com sucesso!')
@@ -1718,7 +1726,7 @@ function OrganizacaoView() {
               </button>
               <span className={styles.formHint}>
                 {canChangeLogo
-                  ? 'PNG, JPEG, WEBP ou SVG · Máx. 2MB'
+                  ? 'PNG, JPEG, WEBP ou SVG · Quadrada · Máx. 2MB'
                   : 'Disponível apenas para organizações White Label'}
               </span>
               <input

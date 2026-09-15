@@ -22,6 +22,7 @@ import { CreatePlatformUserUseCase, CreateRepresentationUseCase } from '@sylocrm
 import { ConflictError, Role } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
+import { ICON_EXTENSION_BY_MIME, validateIconUpload } from '../lib/icon-validation'
 import { createAuthMiddleware } from '../middleware/auth.middleware'
 import { requirePlatformAdmin } from '../middleware/platform-admin.middleware'
 
@@ -34,12 +35,6 @@ interface OrganizationsRouteOptions {
 }
 
 const ICON_BUCKET = 'organization-icons'
-const EXTENSION_BY_MIME: Record<string, string> = {
-  'image/png': 'png',
-  'image/jpeg': 'jpg',
-  'image/webp': 'webp',
-  'image/svg+xml': 'svg',
-}
 
 const createRepresentationSchema = z.object({
   organizationName: z.string().min(1),
@@ -208,16 +203,15 @@ export const organizationsRoute: FastifyPluginAsync<OrganizationsRouteOptions> =
           .send({ error: 'Nenhum arquivo enviado.', code: 'VALIDATION_ERROR', status: 400 })
       }
 
-      const extension = EXTENSION_BY_MIME[file.mimetype]
-      if (!extension) {
-        return reply.status(400).send({
-          error: 'Formato de imagem não suportado. Use PNG, JPEG, WEBP ou SVG.',
-          code: 'VALIDATION_ERROR',
-          status: 400,
-        })
+      const buffer = await file.toBuffer()
+      const validationError = validateIconUpload(buffer, file.mimetype)
+      if (validationError) {
+        return reply
+          .status(400)
+          .send({ error: validationError.message, code: validationError.code, status: 400 })
       }
 
-      const buffer = await file.toBuffer()
+      const extension = ICON_EXTENSION_BY_MIME[file.mimetype] as string
       const { url } = await options.storageProvider.uploadPublicFile({
         bucket: ICON_BUCKET,
         path: `${organization.id}/icon.${extension}`,

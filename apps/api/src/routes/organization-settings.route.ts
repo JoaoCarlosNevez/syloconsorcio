@@ -18,6 +18,7 @@ import type { IAuthProvider } from '@sylocrm/application'
 import { Permission } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
+import { ICON_EXTENSION_BY_MIME, validateIconUpload } from '../lib/icon-validation'
 import { createAuthMiddleware } from '../middleware/auth.middleware'
 import { requirePermission } from '../middleware/permission.middleware'
 import { createTenantMiddleware } from '../middleware/tenant.middleware'
@@ -30,12 +31,6 @@ interface OrganizationSettingsRouteOptions {
 }
 
 const ICON_BUCKET = 'organization-icons'
-const EXTENSION_BY_MIME: Record<string, string> = {
-  'image/png': 'png',
-  'image/jpeg': 'jpg',
-  'image/webp': 'webp',
-  'image/svg+xml': 'svg',
-}
 
 const updateOrganizationSettingsSchema = z.object({
   name: z.string().min(1).optional(),
@@ -65,13 +60,11 @@ export const organizationSettingsRoute: FastifyPluginAsync<
         context.currentMembership.organizationId,
       )
       if (!organization) {
-        return reply
-          .status(404)
-          .send({
-            error: 'Organização não encontrada.',
-            code: 'ORGANIZATION_NOT_FOUND',
-            status: 404,
-          })
+        return reply.status(404).send({
+          error: 'Organização não encontrada.',
+          code: 'ORGANIZATION_NOT_FOUND',
+          status: 404,
+        })
       }
       return { organization }
     },
@@ -93,13 +86,11 @@ export const organizationSettingsRoute: FastifyPluginAsync<
         parsed.data,
       )
       if (!organization) {
-        return reply
-          .status(404)
-          .send({
-            error: 'Organização não encontrada.',
-            code: 'ORGANIZATION_NOT_FOUND',
-            status: 404,
-          })
+        return reply.status(404).send({
+          error: 'Organização não encontrada.',
+          code: 'ORGANIZATION_NOT_FOUND',
+          status: 404,
+        })
       }
       return { organization }
     },
@@ -115,13 +106,11 @@ export const organizationSettingsRoute: FastifyPluginAsync<
         context.currentMembership.organizationId,
       )
       if (!organization) {
-        return reply
-          .status(404)
-          .send({
-            error: 'Organização não encontrada.',
-            code: 'ORGANIZATION_NOT_FOUND',
-            status: 404,
-          })
+        return reply.status(404).send({
+          error: 'Organização não encontrada.',
+          code: 'ORGANIZATION_NOT_FOUND',
+          status: 404,
+        })
       }
 
       if (!organization.isWhiteLabel) {
@@ -139,16 +128,15 @@ export const organizationSettingsRoute: FastifyPluginAsync<
           .send({ error: 'Nenhum arquivo enviado.', code: 'VALIDATION_ERROR', status: 400 })
       }
 
-      const extension = EXTENSION_BY_MIME[file.mimetype]
-      if (!extension) {
-        return reply.status(400).send({
-          error: 'Formato de imagem não suportado. Use PNG, JPEG, WEBP ou SVG.',
-          code: 'VALIDATION_ERROR',
-          status: 400,
-        })
+      const buffer = await file.toBuffer()
+      const validationError = validateIconUpload(buffer, file.mimetype)
+      if (validationError) {
+        return reply
+          .status(400)
+          .send({ error: validationError.message, code: validationError.code, status: 400 })
       }
 
-      const buffer = await file.toBuffer()
+      const extension = ICON_EXTENSION_BY_MIME[file.mimetype] as string
       const { url } = await options.storageProvider.uploadPublicFile({
         bucket: ICON_BUCKET,
         path: `${organization.id}/icon.${extension}`,

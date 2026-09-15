@@ -132,8 +132,12 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     credentials: true,
   })
 
+  // Limite do plugin fica ACIMA do limite de negócio (2MB, ver icon-validation.ts).
+  // Se fossem iguais, um arquivo maior que 2MB seria truncado exatamente no limite
+  // pelo @fastify/multipart em vez de disparar nosso erro real — a rota acabaria
+  // aceitando um arquivo corrompido em silêncio.
   app.register(multipart, {
-    limits: { fileSize: 2 * 1024 * 1024 }, // 2MB — mesmo limite do bucket organization-icons
+    limits: { fileSize: 6 * 1024 * 1024 },
   })
 
   // ── Routes ────────────────────────────────────────────────────────────────

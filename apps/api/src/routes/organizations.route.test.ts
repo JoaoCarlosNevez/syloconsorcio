@@ -17,6 +17,7 @@ import { ConflictError } from '@sylocrm/domain'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { buildApp } from '../app'
 import { AuthErrorCode } from '../auth/errors'
+import { buildTestPng } from '../test-utils/png'
 
 function buildStorageProvider(): IStorageProvider {
   return {
@@ -27,17 +28,14 @@ function buildStorageProvider(): IStorageProvider {
 }
 
 /** Monta um corpo multipart/form-data mínimo com um único arquivo. */
-function buildMultipartUpload(filename: string, contentType: string, content: string) {
+function buildMultipartUpload(filename: string, contentType: string, content: Buffer | string) {
   const boundary = '----sylocrmTestBoundary'
-  const payload = [
-    `--${boundary}`,
-    `Content-Disposition: form-data; name="file"; filename="${filename}"`,
-    `Content-Type: ${contentType}`,
-    '',
-    content,
-    `--${boundary}--`,
-    '',
-  ].join('\r\n')
+  const contentBuffer = typeof content === 'string' ? Buffer.from(content) : content
+  const header = Buffer.from(
+    `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${contentType}\r\n\r\n`,
+  )
+  const footer = Buffer.from(`\r\n--${boundary}--\r\n`)
+  const payload = Buffer.concat([header, contentBuffer, footer])
 
   return { payload, headers: { 'content-type': `multipart/form-data; boundary=${boundary}` } }
 }
@@ -544,7 +542,7 @@ describe('POST /organizations/:id/icon', () => {
       storageProvider,
     })
 
-    const { payload, headers } = buildMultipartUpload('icon.png', 'image/png', 'fake-image-bytes')
+    const { payload, headers } = buildMultipartUpload('icon.png', 'image/png', buildTestPng(64, 64))
     const response = await app.inject({
       method: 'POST',
       url: '/organizations/org-uuid/icon',
@@ -591,6 +589,73 @@ describe('POST /organizations/:id/icon', () => {
     })
 
     expect(response.statusCode).toBe(400)
+  })
+
+  it('returns 400 when the image is not square', async () => {
+    const organizationRepository = buildOrganizationRepository()
+    organizationRepository.findById = vi.fn().mockResolvedValue({
+      id: 'org-uuid',
+      name: 'Representação',
+      type: 'REPRESENTACAO',
+      parentOrganizationId: null,
+      isWhiteLabel: true,
+      branding: null,
+    })
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      organizationRepository,
+      membershipRepository: buildMembershipRepository(),
+      storageProvider: buildStorageProvider(),
+    })
+
+    const { payload, headers } = buildMultipartUpload(
+      'icon.png',
+      'image/png',
+      buildTestPng(600, 300),
+    )
+    const response = await app.inject({
+      method: 'POST',
+      url: '/organizations/org-uuid/icon',
+      headers: { ...AUTH_HEADERS, ...headers },
+      payload,
+    })
+
+    expect(response.statusCode).toBe(400)
+    const body = response.json<{ code: string }>()
+    expect(body.code).toBe('NOT_SQUARE')
+  })
+
+  it('returns 400 when the image is larger than 2MB', async () => {
+    const organizationRepository = buildOrganizationRepository()
+    organizationRepository.findById = vi.fn().mockResolvedValue({
+      id: 'org-uuid',
+      name: 'Representação',
+      type: 'REPRESENTACAO',
+      parentOrganizationId: null,
+      isWhiteLabel: true,
+      branding: null,
+    })
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      organizationRepository,
+      membershipRepository: buildMembershipRepository(),
+      storageProvider: buildStorageProvider(),
+    })
+
+    const oversizedContent = Buffer.alloc(2 * 1024 * 1024 + 1, 1)
+    const { payload, headers } = buildMultipartUpload('icon.png', 'image/png', oversizedContent)
+    const response = await app.inject({
+      method: 'POST',
+      url: '/organizations/org-uuid/icon',
+      headers: { ...AUTH_HEADERS, ...headers },
+      payload,
+    })
+
+    expect(response.statusCode).toBe(400)
+    const body = response.json<{ code: string }>()
+    expect(body.code).toBe('FILE_TOO_LARGE')
   })
 })
 

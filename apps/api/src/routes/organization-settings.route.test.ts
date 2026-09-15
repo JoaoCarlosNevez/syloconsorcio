@@ -15,6 +15,7 @@ import { OrganizationType, Role } from '@sylocrm/domain'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { buildApp } from '../app'
 import { AuthErrorCode } from '../auth/errors'
+import { buildTestPng } from '../test-utils/png'
 
 const IDENTITY = { id: 'user-uuid', email: 'user@empresa.com' }
 const ORG_ID = 'org-rep-01'
@@ -86,17 +87,14 @@ function buildStorageProvider(): IStorageProvider {
 }
 
 /** Monta um corpo multipart/form-data mínimo com um único arquivo. */
-function buildMultipartUpload(filename: string, contentType: string, content: string) {
+function buildMultipartUpload(filename: string, contentType: string, content: Buffer | string) {
   const boundary = '----sylocrmTestBoundary'
-  const payload = [
-    `--${boundary}`,
-    `Content-Disposition: form-data; name="file"; filename="${filename}"`,
-    `Content-Type: ${contentType}`,
-    '',
-    content,
-    `--${boundary}--`,
-    '',
-  ].join('\r\n')
+  const contentBuffer = typeof content === 'string' ? Buffer.from(content) : content
+  const header = Buffer.from(
+    `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${contentType}\r\n\r\n`,
+  )
+  const footer = Buffer.from(`\r\n--${boundary}--\r\n`)
+  const payload = Buffer.concat([header, contentBuffer, footer])
 
   return { payload, headers: { 'content-type': `multipart/form-data; boundary=${boundary}` } }
 }
@@ -264,7 +262,7 @@ describe('POST /organization/icon', () => {
     const storageProvider = buildStorageProvider()
     const app = buildTestApp({ organizationRepository, storageProvider })
 
-    const { payload, headers } = buildMultipartUpload('icon.png', 'image/png', 'fake-image-bytes')
+    const { payload, headers } = buildMultipartUpload('icon.png', 'image/png', buildTestPng(64, 64))
     const response = await app.inject({
       method: 'POST',
       url: '/organization/icon',
@@ -293,5 +291,48 @@ describe('POST /organization/icon', () => {
     })
 
     expect(response.statusCode).toBe(400)
+  })
+
+  it('returns 400 when the image is not square', async () => {
+    const organizationRepository = buildOrganizationRepository({
+      findById: vi.fn().mockResolvedValue({ ...SAMPLE_ORG, isWhiteLabel: true }),
+    })
+    const app = buildTestApp({ organizationRepository })
+
+    const { payload, headers } = buildMultipartUpload(
+      'icon.png',
+      'image/png',
+      buildTestPng(600, 300),
+    )
+    const response = await app.inject({
+      method: 'POST',
+      url: '/organization/icon',
+      headers: { ...AUTH_HEADERS, ...headers },
+      payload,
+    })
+
+    expect(response.statusCode).toBe(400)
+    const body = response.json<{ code: string }>()
+    expect(body.code).toBe('NOT_SQUARE')
+  })
+
+  it('returns 400 when the image is larger than 2MB', async () => {
+    const organizationRepository = buildOrganizationRepository({
+      findById: vi.fn().mockResolvedValue({ ...SAMPLE_ORG, isWhiteLabel: true }),
+    })
+    const app = buildTestApp({ organizationRepository })
+
+    const oversizedContent = Buffer.alloc(2 * 1024 * 1024 + 1, 1)
+    const { payload, headers } = buildMultipartUpload('icon.png', 'image/png', oversizedContent)
+    const response = await app.inject({
+      method: 'POST',
+      url: '/organization/icon',
+      headers: { ...AUTH_HEADERS, ...headers },
+      payload,
+    })
+
+    expect(response.statusCode).toBe(400)
+    const body = response.json<{ code: string }>()
+    expect(body.code).toBe('FILE_TOO_LARGE')
   })
 })
