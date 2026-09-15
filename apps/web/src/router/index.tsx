@@ -30,9 +30,6 @@ const ComingSoonPage = lazy(() =>
 const PerfilPage = lazy(() =>
   import('../pages/perfil/PerfilPage').then((m) => ({ default: m.PerfilPage })),
 )
-const UsuariosPage = lazy(() =>
-  import('../pages/usuarios/UsuariosPage').then((m) => ({ default: m.UsuariosPage })),
-)
 const AdminPage = lazy(() =>
   import('../pages/admin/AdminPage').then((m) => ({ default: m.AdminPage })),
 )
@@ -62,7 +59,8 @@ export function AppRouter() {
           <Route path="metas" element={<MetasPage />} />
           <Route path="kanban" element={<KanbanPage />} />
           <Route path="tarefas" element={<TarefasPage />} />
-          <Route path="usuarios" element={<UsuariosPage />} />
+          {/* Equipe (era uma página própria) virou uma aba dentro de Configurações */}
+          <Route path="usuarios" element={<Navigate to="/app/config" replace />} />
           <Route path="fila" element={<ComingSoonPage />} />
           <Route path="config" element={<ConfigPage />} />
           <Route path="admin" element={<AdminPage />} />

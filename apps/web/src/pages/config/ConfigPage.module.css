@@ -453,9 +453,29 @@ button.breadcrumbCurrent:hover {
   width: 34px;
   height: 34px;
   border-radius: 50%;
+  background: #eef2ff;
+  color: #4f46e5;
   font-size: var(--cfg-text-xs);
   font-weight: 700;
   flex-shrink: 0;
+}
+
+.credentialsBox {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.credentialsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: monospace;
+  font-size: 14px;
 }
 
 .userInfo {
@@ -497,6 +517,12 @@ button.breadcrumbCurrent:hover {
   background: #f8fafc;
   border-color: #e2e8f0;
   color: #475569;
+}
+
+.roleSupervisor {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+  color: #6d28d9;
 }
 
 /* Status */

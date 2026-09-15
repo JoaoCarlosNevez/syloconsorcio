@@ -9,7 +9,9 @@ import {
   useUpdateOrganizationSettings,
   useUploadOrganizationSettingsIcon,
 } from '../../hooks/useOrganizationSettings'
+import { useInviteTeamMember, useTeamMembersQuery } from '../../hooks/useTeam'
 import { validateIconFile } from '../../lib/icon-validation'
+import type { InvitableRole, TeamMember } from '../../lib/team-api'
 import styles from './ConfigPage.module.css'
 
 // ── Ícones ──────────────────────────────────────────────────────────────────────
@@ -69,24 +71,6 @@ function SearchIcon() {
   )
 }
 
-function FilterIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-    </svg>
-  )
-}
-
 function PlusIcon() {
   return (
     <svg
@@ -102,26 +86,6 @@ function PlusIcon() {
     >
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  )
-}
-
-function DotsIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="5" r="1" />
-      <circle cx="12" cy="12" r="1" />
-      <circle cx="12" cy="19" r="1" />
     </svg>
   )
 }
@@ -262,62 +226,6 @@ function CreditCardIcon() {
   )
 }
 
-function EditIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-    </svg>
-  )
-}
-
-function KeyIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-    </svg>
-  )
-}
-
-function BanIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
-    </svg>
-  )
-}
-
 function DownloadIcon() {
   return (
     <svg
@@ -369,104 +277,57 @@ type View =
   | 'organizacao'
   | 'atividade'
 
-type UserRole = 'Administrador' | 'Membro' | 'Visualizador'
-type UserStatus = 'Ativo' | 'Convite pendente' | 'Inativo'
-
-interface TeamUser {
-  id: string
-  name: string
-  email: string
-  initials: string
-  initialsColor: string
-  role: UserRole
-  status: UserStatus
-  lastActivity: string
+const ROLE_LABEL: Record<TeamMember['role'], string> = {
+  ADMIN: 'Dono',
+  MANAGER: 'Supervisor',
+  SELLER: 'Vendedor',
 }
 
-// ── Mock data ────────────────────────────────────────────────────────────────────
+const ROLE_DESCRIPTION: Record<InvitableRole, string> = {
+  MANAGER: 'Convida vendedores e gerencia a equipe',
+  SELLER: 'Opera o funil de leads',
+}
 
-const TEAM_USERS: TeamUser[] = [
-  {
-    id: '1',
-    name: 'Carlos Mendes',
-    email: 'carlos@sylo.com',
-    initials: 'CM',
-    initialsColor: '#3b82f6',
-    role: 'Administrador',
-    status: 'Ativo',
-    lastActivity: 'Há 2 min',
-  },
-  {
-    id: '2',
-    name: 'Ana Souza',
-    email: 'ana@sylo.com',
-    initials: 'AS',
-    initialsColor: '#8b5cf6',
-    role: 'Membro',
-    status: 'Ativo',
-    lastActivity: 'Há 15 min',
-  },
-  {
-    id: '3',
-    name: 'Pedro Lima',
-    email: 'pedro@sylo.com',
-    initials: 'PL',
-    initialsColor: '#059669',
-    role: 'Membro',
-    status: 'Ativo',
-    lastActivity: 'Há 1 h',
-  },
-  {
-    id: '4',
-    name: 'Juliana Costa',
-    email: 'juliana@sylo.com',
-    initials: 'JC',
-    initialsColor: '#f59e0b',
-    role: 'Visualizador',
-    status: 'Ativo',
-    lastActivity: 'Há 3 h',
-  },
-  {
-    id: '5',
-    name: 'Rafael Alves',
-    email: 'rafael@sylo.com',
-    initials: 'RA',
-    initialsColor: '#ef4444',
-    role: 'Membro',
-    status: 'Convite pendente',
-    lastActivity: '—',
-  },
-  {
-    id: '6',
-    name: 'Mariana Rocha',
-    email: 'mariana@sylo.com',
-    initials: 'MR',
-    initialsColor: '#ec4899',
-    role: 'Membro',
-    status: 'Convite pendente',
-    lastActivity: '—',
-  },
-  {
-    id: '7',
-    name: 'Lucas Ferreira',
-    email: 'lucas@sylo.com',
-    initials: 'LF',
-    initialsColor: '#64748b',
-    role: 'Visualizador',
-    status: 'Inativo',
-    lastActivity: 'Há 14 dias',
-  },
-  {
-    id: '8',
-    name: 'Camila Nunes',
-    email: 'camila@sylo.com',
-    initials: 'CN',
-    initialsColor: '#64748b',
-    role: 'Membro',
-    status: 'Inativo',
-    lastActivity: 'Há 22 dias',
-  },
-]
+// Um Role só convida papéis estritamente abaixo do seu (AGENTS.md §7,
+// espelhado no backend por canGrantRole).
+const INVITABLE_ROLES_BY_ROLE: Record<string, InvitableRole[]> = {
+  ADMIN: ['MANAGER', 'SELLER'],
+  MANAGER: ['SELLER'],
+  SELLER: [],
+}
+
+function roleBadgeClass(role: TeamMember['role']) {
+  if (role === 'ADMIN') return styles.roleAdmin
+  if (role === 'MANAGER') return styles.roleSupervisor
+  return styles.roleMember
+}
+
+function statusLabel(status: TeamMember['status']) {
+  if (status === 'ACTIVE') return 'Ativo'
+  if (status === 'INVITED') return 'Convidado'
+  return 'Suspenso'
+}
+
+function statusDotClass(status: TeamMember['status']) {
+  if (status === 'ACTIVE') return styles.dotAtivo
+  if (status === 'INVITED') return styles.dotPendente
+  return styles.dotInativo
+}
+
+function statusLabelClass(status: TeamMember['status']) {
+  if (status === 'ACTIVE') return styles.statusAtivo
+  if (status === 'INVITED') return styles.statusPendente
+  return styles.statusInativo
+}
+
+/** "Carlos Mendes" → "CM"; sem nome (convite ainda não aceito), usa o e-mail. */
+function initialsForMember(member: TeamMember): string {
+  const source = member.name?.trim() || member.email
+  const words = source.split(/\s+/).filter(Boolean)
+  if (words.length === 0) return '?'
+  if (words.length === 1) return (words[0]?.[0] ?? '?').toUpperCase()
+  return ((words[0]?.[0] ?? '') + (words[1]?.[0] ?? '')).toUpperCase()
+}
 
 const INVOICES = [
   { id: '#2024-011', date: '01/11/2024', amount: 'R$ 499,00', status: 'Pago' },
@@ -640,35 +501,23 @@ function HubView({ onNavigate }: { onNavigate: (v: View) => void }) {
 const PER_PAGE = 5
 
 function EquipeView() {
+  const { organizationId, membership } = useActiveOrganization()
+  const { data, isLoading } = useTeamMembersQuery(organizationId)
   const [search, setSearch] = useState('')
-  const [contextMenu, setContextMenu] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [inviteOpen, setInviteOpen] = useState(false)
 
-  const filtered = TEAM_USERS.filter(
-    (u) =>
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase()),
+  const invitableRoles = membership ? (INVITABLE_ROLES_BY_ROLE[membership.role] ?? []) : []
+  const canInvite = invitableRoles.length > 0
+
+  const members = data?.members ?? []
+  const filtered = members.filter(
+    (m) =>
+      (m.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
+      m.email.toLowerCase().includes(search.toLowerCase()),
   )
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
-
-  function roleClass(role: UserRole) {
-    if (role === 'Administrador') return styles.roleAdmin
-    return styles.roleMember
-  }
-
-  function statusDotClass(status: UserStatus) {
-    if (status === 'Ativo') return styles.dotAtivo
-    if (status === 'Convite pendente') return styles.dotPendente
-    return styles.dotInativo
-  }
-
-  function statusLabelClass(status: UserStatus) {
-    if (status === 'Ativo') return styles.statusAtivo
-    if (status === 'Convite pendente') return styles.statusPendente
-    return styles.statusInativo
-  }
 
   return (
     <div className={styles.equipeContent}>
@@ -689,16 +538,14 @@ function EquipeView() {
             }}
           />
         </div>
-        <div className={styles.equipeToolbarRight}>
-          <button type="button" className={styles.filterBtn}>
-            <FilterIcon />
-            Filtros
-          </button>
-          <button type="button" className={styles.addUserBtn} onClick={() => setInviteOpen(true)}>
-            <PlusIcon />
-            Adicionar usuário
-          </button>
-        </div>
+        {canInvite && (
+          <div className={styles.equipeToolbarRight}>
+            <button type="button" className={styles.addUserBtn} onClick={() => setInviteOpen(true)}>
+              <PlusIcon />
+              Adicionar usuário
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -709,113 +556,95 @@ function EquipeView() {
               <th className={styles.thUser}>USUÁRIO</th>
               <th className={styles.th}>FUNÇÃO</th>
               <th className={styles.th}>STATUS</th>
-              <th className={styles.th}>ÚLTIMA ATIVIDADE</th>
-              <th className={`${styles.th} ${styles.thActions}`}>AÇÕES</th>
             </tr>
           </thead>
           <tbody>
-            {paged.map((user) => (
-              <tr key={user.id} className={styles.tableRow}>
-                <td className={styles.tdUser}>
-                  <span
-                    className={styles.avatar}
-                    style={{ background: `${user.initialsColor}22`, color: user.initialsColor }}
-                  >
-                    {user.initials}
-                  </span>
-                  <span className={styles.userInfo}>
-                    <span className={styles.userName}>{user.name}</span>
-                    <span className={styles.userEmail}>{user.email}</span>
-                  </span>
-                </td>
-                <td className={styles.td}>
-                  <span className={`${styles.roleBadge} ${roleClass(user.role)}`}>{user.role}</span>
-                </td>
-                <td className={styles.td}>
-                  <span className={styles.statusCell}>
-                    <span className={`${styles.statusDot} ${statusDotClass(user.status)}`} />
-                    <span className={`${styles.statusLabel} ${statusLabelClass(user.status)}`}>
-                      {user.status}
-                    </span>
-                  </span>
-                </td>
-                <td className={styles.td}>
-                  <span className={styles.lastActivity}>{user.lastActivity}</span>
-                </td>
-                <td className={`${styles.td} ${styles.tdActions}`}>
-                  <div className={styles.contextMenuWrap}>
-                    <button
-                      type="button"
-                      className={styles.dotsBtn}
-                      onClick={() => setContextMenu(contextMenu === user.id ? null : user.id)}
-                      aria-label="Ações"
-                    >
-                      <DotsIcon />
-                    </button>
-                    {contextMenu === user.id && (
-                      // biome-ignore lint/a11y/useKeyWithClickEvents: dismiss on backdrop
-                      <div className={styles.contextBackdrop} onClick={() => setContextMenu(null)}>
-                        {/* biome-ignore lint/a11y/useKeyWithClickEvents: menu stops propagation */}
-                        <div className={styles.contextMenu} onClick={(e) => e.stopPropagation()}>
-                          <button type="button" className={styles.contextItem}>
-                            <EditIcon /> Editar permissões
-                          </button>
-                          <button type="button" className={styles.contextItem}>
-                            <KeyIcon /> Redefinir senha
-                          </button>
-                          <button
-                            type="button"
-                            className={`${styles.contextItem} ${styles.contextItemDanger}`}
-                          >
-                            <BanIcon /> Desativar usuário
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+            {isLoading ? (
+              <tr>
+                <td className={styles.td} colSpan={3}>
+                  Carregando…
                 </td>
               </tr>
-            ))}
+            ) : paged.length === 0 ? (
+              <tr>
+                <td className={styles.td} colSpan={3}>
+                  Nenhum membro encontrado.
+                </td>
+              </tr>
+            ) : (
+              paged.map((member) => (
+                <tr key={member.userId} className={styles.tableRow}>
+                  <td className={styles.tdUser}>
+                    <span className={styles.avatar}>{initialsForMember(member)}</span>
+                    <span className={styles.userInfo}>
+                      <span className={styles.userName}>{member.name ?? '—'}</span>
+                      <span className={styles.userEmail}>{member.email}</span>
+                    </span>
+                  </td>
+                  <td className={styles.td}>
+                    <span className={`${styles.roleBadge} ${roleBadgeClass(member.role)}`}>
+                      {ROLE_LABEL[member.role]}
+                    </span>
+                  </td>
+                  <td className={styles.td}>
+                    <span className={styles.statusCell}>
+                      <span className={`${styles.statusDot} ${statusDotClass(member.status)}`} />
+                      <span className={`${styles.statusLabel} ${statusLabelClass(member.status)}`}>
+                        {statusLabel(member.status)}
+                      </span>
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
 
-      {inviteOpen && <InviteModal onClose={() => setInviteOpen(false)} />}
+      {inviteOpen && organizationId && (
+        <InviteModal
+          organizationId={organizationId}
+          invitableRoles={invitableRoles}
+          onClose={() => setInviteOpen(false)}
+        />
+      )}
 
       {/* Pagination */}
-      <div className={styles.pagination}>
-        <span className={styles.paginationInfo}>
-          Mostrando {Math.min(page * PER_PAGE, filtered.length)} de {filtered.length} usuários
-        </span>
-        <div className={styles.paginationControls}>
-          <button
-            type="button"
-            className={styles.pageBtn}
-            disabled={page === 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-          >
-            <ChevronLeftIcon />
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+      {filtered.length > 0 && (
+        <div className={styles.pagination}>
+          <span className={styles.paginationInfo}>
+            Mostrando {Math.min(page * PER_PAGE, filtered.length)} de {filtered.length} usuários
+          </span>
+          <div className={styles.paginationControls}>
             <button
-              key={p}
               type="button"
-              className={`${styles.pageBtn} ${p === page ? styles.pageBtnActive : ''}`}
-              onClick={() => setPage(p)}
+              className={styles.pageBtn}
+              disabled={page === 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
-              {p}
+              <ChevronLeftIcon />
             </button>
-          ))}
-          <button
-            type="button"
-            className={styles.pageBtn}
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          >
-            <ChevronRightIcon />
-          </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                type="button"
+                className={`${styles.pageBtn} ${p === page ? styles.pageBtnActive : ''}`}
+                onClick={() => setPage(p)}
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              type="button"
+              className={styles.pageBtn}
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              <ChevronRightIcon />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
@@ -1993,79 +1822,154 @@ function AtividadeView() {
 
 // ── InviteModal ────────────────────────────────────────────────────────────────────
 
-function InviteModal({ onClose }: { onClose: () => void }) {
+function InviteModal({
+  organizationId,
+  invitableRoles,
+  onClose,
+}: {
+  organizationId: string
+  invitableRoles: InvitableRole[]
+  onClose: () => void
+}) {
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [role, setRole] = useState<UserRole>('Membro')
-  const [toast, setToast] = useState('')
+  const [role, setRole] = useState<InvitableRole>(invitableRoles[0] ?? 'SELLER')
+  const [formError, setFormError] = useState('')
+  const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null)
+  const inviteMember = useInviteTeamMember(organizationId)
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!email.trim()) return
-    setToast(`Convite enviado para ${email}`)
-    setTimeout(onClose, 1800)
+    setFormError('')
+
+    if (!name.trim() || !email.trim()) {
+      setFormError('Preencha nome e e-mail.')
+      return
+    }
+
+    try {
+      const result = await inviteMember.mutateAsync({
+        name: name.trim(),
+        email: email.trim(),
+        role,
+      })
+      setCredentials({ email: email.trim(), password: result.member.temporaryPassword })
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Não foi possível criar o usuário.')
+    }
   }
 
-  return (
-    <>
-      {/* biome-ignore lint/a11y/useKeyWithClickEvents: overlay backdrop */}
+  if (credentials) {
+    return (
+      // biome-ignore lint/a11y/useKeyWithClickEvents: overlay backdrop
       <div className={styles.modalOverlay} onClick={onClose}>
         {/* biome-ignore lint/a11y/useKeyWithClickEvents: modal stops propagation */}
         <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
           <div className={styles.modalHeader}>
-            <div className={styles.modalTitle}>Convidar usuário</div>
+            <div className={styles.modalTitle}>Usuário criado</div>
             <div className={styles.modalDesc}>
-              O convite será enviado por e-mail. O usuário terá 7 dias para aceitar.
+              Compartilhe estas credenciais com a pessoa — elas só aparecem uma vez.
             </div>
           </div>
-          <form onSubmit={handleSubmit}>
-            <div className={styles.modalBody}>
-              <div className={styles.formRow}>
-                <label className={styles.formLabel} htmlFor="invite-email">
-                  E-mail
-                </label>
-                <input
-                  id="invite-email"
-                  type="email"
-                  className={styles.formInput}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="nome@empresa.com"
-                />
+          <div className={styles.modalBody}>
+            <div className={styles.credentialsBox}>
+              <div className={styles.credentialsRow}>
+                <span>{credentials.email}</span>
               </div>
-              <div className={styles.formRow}>
-                <span className={styles.formLabel}>Função</span>
-                <div className={styles.roleSelect}>
-                  {(['Administrador', 'Membro', 'Visualizador'] as UserRole[]).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      className={`${styles.roleOption} ${role === r ? styles.roleOptionActive : ''}`}
-                      onClick={() => setRole(r)}
-                    >
-                      <span className={styles.roleOptionLabel}>{r}</span>
-                      <span className={styles.roleOptionDesc}>
-                        {r === 'Administrador' && 'Acesso total'}
-                        {r === 'Membro' && 'Criar e editar'}
-                        {r === 'Visualizador' && 'Somente leitura'}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+              <div className={styles.credentialsRow}>
+                <span>{credentials.password}</span>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  onClick={() => navigator.clipboard.writeText(credentials.password)}
+                >
+                  Copiar senha
+                </button>
               </div>
             </div>
-            <div className={styles.modalFooter}>
-              <button type="button" className={styles.secondaryBtn} onClick={onClose}>
-                Cancelar
-              </button>
-              <button type="submit" className={styles.primaryBtn}>
-                Enviar convite
-              </button>
-            </div>
-          </form>
+          </div>
+          <div className={styles.modalFooter}>
+            <button type="button" className={styles.primaryBtn} onClick={onClose}>
+              Concluir
+            </button>
+          </div>
         </div>
       </div>
-      {toast && <Toast msg={toast} onDone={() => setToast('')} />}
-    </>
+    )
+  }
+
+  return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: overlay backdrop
+    <div className={styles.modalOverlay} onClick={onClose}>
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: modal stops propagation */}
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <div className={styles.modalTitle}>Adicionar usuário</div>
+          <div className={styles.modalDesc}>
+            Uma conta é criada na hora, com uma senha temporária pra você compartilhar.
+          </div>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className={styles.modalBody}>
+            <div className={styles.formRow}>
+              <label className={styles.formLabel} htmlFor="invite-name">
+                Nome
+              </label>
+              <input
+                id="invite-name"
+                type="text"
+                className={styles.formInput}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Nome completo"
+              />
+            </div>
+            <div className={styles.formRow}>
+              <label className={styles.formLabel} htmlFor="invite-email">
+                E-mail
+              </label>
+              <input
+                id="invite-email"
+                type="email"
+                className={styles.formInput}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="nome@empresa.com"
+              />
+            </div>
+            <div className={styles.formRow}>
+              <span className={styles.formLabel}>Função</span>
+              <div className={styles.roleSelect}>
+                {invitableRoles.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    className={`${styles.roleOption} ${role === r ? styles.roleOptionActive : ''}`}
+                    onClick={() => setRole(r)}
+                  >
+                    <span className={styles.roleOptionLabel}>{ROLE_LABEL[r]}</span>
+                    <span className={styles.roleOptionDesc}>{ROLE_DESCRIPTION[r]}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            {formError && (
+              <span role="alert" className={styles.formError}>
+                {formError}
+              </span>
+            )}
+          </div>
+          <div className={styles.modalFooter}>
+            <button type="button" className={styles.secondaryBtn} onClick={onClose}>
+              Cancelar
+            </button>
+            <button type="submit" className={styles.primaryBtn} disabled={inviteMember.isPending}>
+              {inviteMember.isPending ? 'Criando…' : 'Criar usuário'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   )
 }
 
