@@ -1569,12 +1569,6 @@ button.breadcrumbCurrent:hover {
   box-sizing: border-box;
 }
 
-.logoPreviewImg {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
 .logoUploadActions {
   display: flex;
   flex-direction: column;

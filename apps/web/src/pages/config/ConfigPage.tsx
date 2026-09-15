@@ -1,5 +1,6 @@
 // ConfigPage — Configurações com três sub-páginas: Hub, Equipe, Plano e Cobrança
 
+import { OrganizationAvatar } from '@sylocrm/ui'
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { useActiveOrganization } from '../../hooks/useOrganization'
@@ -10,10 +11,6 @@ import {
 } from '../../hooks/useOrganizationSettings'
 import { validateIconFile } from '../../lib/icon-validation'
 import styles from './ConfigPage.module.css'
-
-// Padrão de identidade visual (AGENTS.md §11): toda organização usa a marca
-// Sylo até virar White Label e definir seu próprio ícone.
-const DEFAULT_ORG_ICON_URL = '/sylo-logo.png'
 
 // ── Ícones ──────────────────────────────────────────────────────────────────────
 
@@ -1703,16 +1700,17 @@ function OrganizacaoView() {
           <div className={styles.settingsCardDesc}>
             {organization.isWhiteLabel
               ? 'Logo e nome público exibidos no sistema'
-              : 'Esta organização usa a marca Sylo por padrão. Só o Super Admin pode ativar o White Label, pela tela de Administração.'}
+              : 'Sem ícone próprio, esta organização mostra um avatar com as iniciais do nome. Só o Super Admin pode ativar o White Label, pela tela de Administração.'}
           </div>
         </div>
         <div className={styles.settingsCardBody}>
           <div className={styles.logoUploadRow}>
             <div className={styles.logoPreview}>
-              <img
-                src={organization.branding?.iconUrl ?? DEFAULT_ORG_ICON_URL}
-                alt=""
-                className={styles.logoPreviewImg}
+              <OrganizationAvatar
+                id={organization.id}
+                name={organization.name}
+                iconUrl={organization.branding?.iconUrl}
+                size={46}
               />
             </div>
             <div className={styles.logoUploadActions}>

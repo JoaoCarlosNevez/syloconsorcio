@@ -1,7 +1,7 @@
 // AppLayout — layout autenticado com sidebar branca.
 // Sidebar: logo, seletor de empresa, nav, Sara IA, status, sair, perfil.
 
-import { Dropdown } from '@sylocrm/ui'
+import { Dropdown, OrganizationAvatar } from '@sylocrm/ui'
 import type { DropdownEntry, Tier } from '@sylocrm/ui'
 import type { ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -9,10 +9,6 @@ import { USER_TIER } from '../../data/kanban-mock'
 import { useAuth } from '../../hooks/useAuth'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import styles from './AppLayout.module.css'
-
-// Padrão de identidade visual (AGENTS.md §11): toda organização usa a marca
-// Sylo até definir seu próprio ícone (ver painel de Administração).
-const DEFAULT_ORG_ICON_URL = '/sylo-logo.png'
 
 function deriveDisplayName(email: string | undefined): string {
   if (!email) return 'Usuário'
@@ -281,9 +277,11 @@ export function AppLayout({ children }: AppLayoutProps) {
     key: m.organizationId,
     label: m.organizationName,
     icon: (
-      <img
-        src={m.organizationIconUrl ?? DEFAULT_ORG_ICON_URL}
-        alt=""
+      <OrganizationAvatar
+        id={m.organizationId}
+        name={m.organizationName}
+        iconUrl={m.organizationIconUrl}
+        size={20}
         className={styles.companyMenuIcon}
       />
     ),
@@ -324,7 +322,14 @@ export function AppLayout({ children }: AppLayoutProps) {
               <button type="button" className={styles.companySelector} aria-label="Trocar empresa">
                 <div className={styles.companySelectorLeft}>
                   <div className={styles.companyIconWrap}>
-                    <img src={membership?.organizationIconUrl ?? DEFAULT_ORG_ICON_URL} alt="" />
+                    {membership && (
+                      <OrganizationAvatar
+                        id={membership.organizationId}
+                        name={membership.organizationName}
+                        iconUrl={membership.organizationIconUrl}
+                        size={26}
+                      />
+                    )}
                   </div>
                   <span className={styles.companyName}>
                     {membership?.organizationName ?? 'Carregando…'}

@@ -3,7 +3,7 @@
 // Restrita a usuários com isPlatformAdmin=true (ver useCurrentUser). Não é
 // um Role de Membership — é uma capacidade de nível plataforma.
 
-import { Badge, Button, DataTable, Skeleton, Tabs } from '@sylocrm/ui'
+import { Badge, Button, DataTable, OrganizationAvatar, Skeleton, Tabs } from '@sylocrm/ui'
 import type { ColumnDef } from '@sylocrm/ui'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -27,10 +27,6 @@ const ROLE_LABEL: Record<PlatformMember['role'], string> = {
   SELLER: 'Vendedor',
 }
 
-// Padrão de identidade visual (AGENTS.md §11): toda Representação usa a marca
-// Sylo até virar White Label e definir seu próprio ícone.
-const DEFAULT_ICON_URL = '/sylo-logo.png'
-
 function RepresentacoesTab() {
   const { data, isLoading } = useOrganizationsQuery()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -42,7 +38,13 @@ function RepresentacoesTab() {
       header: '',
       width: '56px',
       render: (row) => (
-        <img src={row.branding?.iconUrl ?? DEFAULT_ICON_URL} alt="" className={styles.orgIcon} />
+        <OrganizationAvatar
+          id={row.id}
+          name={row.name}
+          iconUrl={row.branding?.iconUrl}
+          size={32}
+          className={styles.orgIcon}
+        />
       ),
     },
     { key: 'name', header: 'Nome', render: (row) => row.name },

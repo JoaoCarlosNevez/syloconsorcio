@@ -25,6 +25,9 @@ export type { TierBadgeProps, Tier } from './components/tier-badge/TierBadge'
 export { Avatar } from './components/avatar/Avatar'
 export type { AvatarProps, AvatarSize } from './components/avatar/Avatar'
 
+export { OrganizationAvatar } from './components/organization-avatar/OrganizationAvatar'
+export type { OrganizationAvatarProps } from './components/organization-avatar/OrganizationAvatar'
+
 export { ProgressBar } from './components/progress-bar/ProgressBar'
 export type { ProgressBarProps, ProgressBarVariant } from './components/progress-bar/ProgressBar'
 

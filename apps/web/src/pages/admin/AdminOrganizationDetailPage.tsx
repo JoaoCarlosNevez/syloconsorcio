@@ -3,7 +3,16 @@
 //
 // Restrita a isPlatformAdmin=true, igual à AdminPage (lista).
 
-import { Badge, Button, DataTable, Input, Skeleton, Switch, useToast } from '@sylocrm/ui'
+import {
+  Badge,
+  Button,
+  DataTable,
+  Input,
+  OrganizationAvatar,
+  Skeleton,
+  Switch,
+  useToast,
+} from '@sylocrm/ui'
 import type { ColumnDef } from '@sylocrm/ui'
 import { type ChangeEvent, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
@@ -24,10 +33,6 @@ const ROLE_LABEL: Record<TeamMember['role'], string> = {
   MANAGER: 'Supervisor',
   SELLER: 'Vendedor',
 }
-
-// Padrão de identidade visual (AGENTS.md §11): toda Representação usa a marca
-// Sylo até virar White Label e definir seu próprio ícone.
-const DEFAULT_ICON_URL = '/sylo-logo.png'
 
 export function AdminOrganizationDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -160,7 +165,12 @@ export function AdminOrganizationDetailPage() {
                 onClick={() => fileInputRef.current?.click()}
                 aria-label="Alterar ícone da representação"
               >
-                <img src={organization.branding?.iconUrl ?? DEFAULT_ICON_URL} alt="" />
+                <OrganizationAvatar
+                  id={organization.id}
+                  name={organization.name}
+                  iconUrl={organization.branding?.iconUrl}
+                  size={54}
+                />
                 <input
                   ref={fileInputRef}
                   type="file"
