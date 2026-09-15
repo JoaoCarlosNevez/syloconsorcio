@@ -385,11 +385,12 @@ Commitlint garante essa convenção via hook.
 
 ### Fluxo
 ```
-Issue → Branch → Implementation → Tests → Pull Request → CI → Review → Merge → Deploy
+Implementation → Tests → Commit direto na main → Deploy
 ```
 
-- Toda alteração significativa está associada a uma GitHub Issue
-- Pull Requests referenciam a Issue: `Closes #123`
+Time é dev solo revisando o próprio código antes de subir — Issue e Pull Request não são
+obrigatórios. Não crie issues nem PRs por conta própria; só abra um quando o usuário pedir
+explicitamente.
 
 ---
 
@@ -408,9 +409,6 @@ Uma funcionalidade só está concluída quando:
 - [ ] Empty state implementado
 - [ ] Error state implementado
 - [ ] Documentação necessária atualizada
-- [ ] PR criado referenciando a Issue
-- [ ] CI passando
-- [ ] Code review aprovado
 
 ---
 

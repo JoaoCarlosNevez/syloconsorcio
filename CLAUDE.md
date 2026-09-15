@@ -20,43 +20,15 @@ Ver também: `docs/architecture.md`, `docs/design-system.md`, `docs/decisions/`
 
 ---
 
-## Workflow obrigatório — GitHub Issues + PRs
+## Workflow — commit direto, sem Issue/PR obrigatório
 
-**Todo trabalho passa por issue e PR. Sem exceção.**
+Time é o próprio dev solo, revisando o código antes de subir. **Issue e PR não são obrigatórios** —
+commitar direto na `main` é o fluxo padrão. Não crie issues nem PRs por conta própria; só abra um PR
+se o usuário pedir explicitamente (ex: pra revisar algo pontual antes de mesclar).
 
-### 1. Antes de começar qualquer tarefa
-
-- Crie uma issue no GitHub descrevendo o que será feito
-- Use labels adequados: `bug`, `enhancement`, `feature`, `design`, `chore`
-- Exemplo de título: `feat: implement Kanban board view` / `fix: profile avatar not loading`
-
-### 2. Ao implementar
-
-- Crie um branch a partir de `main` com o padrão:
-  - `feat/kanban-board` para features
-  - `fix/avatar-loading` para correções
-  - `chore/update-deps` para manutenção
-  - `design/meta-card-redesign` para ajustes de UI/UX
-
-### 3. Ao abrir o PR
-
-- O título deve seguir Conventional Commits: `feat: ...`, `fix: ...`, `design: ...`
-- A descrição **deve mencionar a issue** com `Closes #<número>` ou `Refs #<número>`
-- Exemplo de descrição mínima:
-  ```
-  Closes #12
-
-  ## O que foi feito
-  - Implementado card de Meta Pessoal seguindo Figma (node 219-1084)
-  - Adicionado background com logo 3D Sylo em 10% de opacidade
-  - Barra de progresso com 12px e gradiente azul
-  ```
-
-### 4. Merge
-
-- Nunca fazer push direto para `main`
-- Sempre via PR com ao menos uma revisão (pode ser auto-aprovado em solo)
-- Usar **Squash and Merge** para manter o histórico limpo
+- Commits vão direto pra `main` (ou pra um branch de trabalho, se o usuário pedir), sem passar por PR
+- Nunca dar push sem o usuário ter pedido explicitamente
+- Sem squash artificial de histórico — cada commit já deve ser atômico e ter mensagem clara
 
 ---
 
