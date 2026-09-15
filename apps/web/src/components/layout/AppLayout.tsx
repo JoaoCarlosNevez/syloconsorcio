@@ -252,21 +252,22 @@ export function AppLayout({ children }: AppLayoutProps) {
     navigate('/login', { replace: true })
   }
 
-  const organizationSwitcherItems: DropdownEntry[] = memberships.map((m) => ({
-    key: m.organizationId,
-    label: m.organizationName,
-    icon: (
-      <OrganizationAvatar
-        id={m.organizationId}
-        name={m.organizationName}
-        iconUrl={m.organizationIconUrl}
-        size={20}
-        className={styles.companyMenuIcon}
-      />
-    ),
-    disabled: m.organizationId === membership?.organizationId,
-    onSelect: () => setActiveOrganizationId(m.organizationId),
-  }))
+  const organizationSwitcherItems: DropdownEntry[] = memberships
+    .filter((m) => m.organizationId !== membership?.organizationId)
+    .map((m) => ({
+      key: m.organizationId,
+      label: m.organizationName,
+      icon: (
+        <OrganizationAvatar
+          id={m.organizationId}
+          name={m.organizationName}
+          iconUrl={m.organizationIconUrl}
+          size={20}
+          className={styles.companyMenuIcon}
+        />
+      ),
+      onSelect: () => setActiveOrganizationId(m.organizationId),
+    }))
 
   function navTo(path: string) {
     return (e: React.MouseEvent) => {
