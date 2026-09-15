@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createPlatformUser,
   createRepresentation,
+  deletePlatformUser,
   getOrganizationMembers,
   listOrganizations,
   listPlatformMembers,
@@ -70,6 +71,16 @@ export function useCreatePlatformUser() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: createPlatformUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'platform-members'] })
+    },
+  })
+}
+
+export function useDeletePlatformUser() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deletePlatformUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'platform-members'] })
     },

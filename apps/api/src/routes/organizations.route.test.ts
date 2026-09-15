@@ -50,6 +50,7 @@ function buildAuthProvider(createUserResult?: { id: string; email: string }): IA
     createUser: vi
       .fn()
       .mockResolvedValue(createUserResult ?? { id: 'owner-uuid', email: 'dono@empresa.com' }),
+    deleteUser: vi.fn(),
   }
 }
 
@@ -90,7 +91,12 @@ function buildMembershipRepository(): IMembershipRepository {
     findActiveByOrganizationId: vi.fn().mockResolvedValue([]),
     findAllActive: vi.fn().mockResolvedValue([]),
     create: vi.fn(),
-    remove: vi.fn(),
+    findByUserAndOrganization: vi.fn().mockResolvedValue(null),
+    findByOrganizationId: vi.fn().mockResolvedValue([]),
+    findAll: vi.fn().mockResolvedValue([]),
+    deactivate: vi.fn(),
+    reactivate: vi.fn(),
+    removeAllForUser: vi.fn(),
   }
 }
 
@@ -284,7 +290,7 @@ describe('GET /organizations/members', () => {
 
   it('lists members across every organization for a platform admin', async () => {
     const membershipRepository = buildMembershipRepository()
-    membershipRepository.findAllActive = vi.fn().mockResolvedValue([
+    membershipRepository.findAll = vi.fn().mockResolvedValue([
       {
         userId: 'u1',
         name: 'Dono',
@@ -742,5 +748,86 @@ describe('GET /organizations/:id/members', () => {
     const body = response.json<{ members: unknown[] }>()
     expect(body.members).toHaveLength(1)
     expect(membershipRepository.findActiveByOrganizationId).toHaveBeenCalledWith('org-uuid')
+  })
+})
+
+// ── DELETE /organizations/members/:userId ───────────────────────────────────
+
+describe('DELETE /organizations/members/:userId', () => {
+  it('returns 401 when Authorization header is absent', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      organizationRepository: buildOrganizationRepository(),
+      membershipRepository: buildMembershipRepository(),
+    })
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: '/organizations/members/target-user-uuid',
+    })
+
+    expect(response.statusCode).toBe(401)
+  })
+
+  it('returns 403 when the caller is not a platform admin', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(false),
+      organizationRepository: buildOrganizationRepository(),
+      membershipRepository: buildMembershipRepository(),
+    })
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: '/organizations/members/target-user-uuid',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(403)
+  })
+
+  it('returns 403 when the platform admin tries to delete their own account', async () => {
+    const authProvider = buildAuthProvider()
+    const membershipRepository = buildMembershipRepository()
+    const app = buildApp({
+      authProvider,
+      userRepository: buildUserRepository(true),
+      organizationRepository: buildOrganizationRepository(),
+      membershipRepository,
+    })
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: `/organizations/members/${IDENTITY.id}`,
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(403)
+    const body = response.json<{ code: string }>()
+    expect(body.code).toBe('AUTHORIZATION_ERROR')
+    expect(authProvider.deleteUser).not.toHaveBeenCalled()
+    expect(membershipRepository.removeAllForUser).not.toHaveBeenCalled()
+  })
+
+  it('deletes the auth identity and all memberships, keeping the users row', async () => {
+    const authProvider = buildAuthProvider()
+    const membershipRepository = buildMembershipRepository()
+    const app = buildApp({
+      authProvider,
+      userRepository: buildUserRepository(true),
+      organizationRepository: buildOrganizationRepository(),
+      membershipRepository,
+    })
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: '/organizations/members/target-user-uuid',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(204)
+    expect(membershipRepository.removeAllForUser).toHaveBeenCalledWith('target-user-uuid')
+    expect(authProvider.deleteUser).toHaveBeenCalledWith('target-user-uuid')
   })
 })

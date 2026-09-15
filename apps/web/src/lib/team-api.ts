@@ -37,3 +37,7 @@ export function inviteTeamMember(
 export function removeTeamMember(organizationId: string, userId: string): Promise<void> {
   return apiClient.delete<void>(`/team/members/${userId}`, { organizationId })
 }
+
+export function reactivateTeamMember(organizationId: string, userId: string): Promise<void> {
+  return apiClient.post<void>(`/team/members/${userId}/reactivate`, undefined, { organizationId })
+}

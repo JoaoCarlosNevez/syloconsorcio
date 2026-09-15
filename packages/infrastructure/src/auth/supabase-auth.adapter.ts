@@ -101,4 +101,15 @@ export class SupabaseAuthAdapter implements IAuthProvider {
 
     return { id: data.user.id, email }
   }
+
+  /**
+   * Apaga a identidade no Supabase Auth (exclusão de conta pelo Super Admin).
+   * Idempotente o bastante para o caller não precisar checar existência antes.
+   */
+  async deleteUser(id: string): Promise<void> {
+    const { error } = await this.client.auth.admin.deleteUser(id)
+    if (error) {
+      throw new Error(`Falha ao apagar usuário no Supabase Auth: ${error.message}`)
+    }
+  }
 }

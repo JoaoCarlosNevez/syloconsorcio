@@ -5,6 +5,7 @@ import {
   type InviteTeamMemberPayload,
   inviteTeamMember,
   listTeamMembers,
+  reactivateTeamMember,
   removeTeamMember,
 } from '../lib/team-api'
 
@@ -31,6 +32,16 @@ export function useRemoveTeamMember(organizationId: string | null) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (userId: string) => removeTeamMember(organizationId as string, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team', 'members', organizationId] })
+    },
+  })
+}
+
+export function useReactivateTeamMember(organizationId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (userId: string) => reactivateTeamMember(organizationId as string, userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['team', 'members', organizationId] })
     },

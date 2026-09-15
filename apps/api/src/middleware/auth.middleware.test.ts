@@ -39,6 +39,7 @@ describe('authMiddleware', () => {
       verifyToken: vi.fn(),
       signOut: vi.fn(),
       createUser: vi.fn(),
+      deleteUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -55,6 +56,7 @@ describe('authMiddleware', () => {
       verifyToken: vi.fn(),
       signOut: vi.fn(),
       createUser: vi.fn(),
+      deleteUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -74,6 +76,7 @@ describe('authMiddleware', () => {
       verifyToken: vi.fn().mockResolvedValue(null),
       signOut: vi.fn(),
       createUser: vi.fn(),
+      deleteUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -94,6 +97,7 @@ describe('authMiddleware', () => {
       verifyToken: vi.fn().mockRejectedValue(new Error('Network error')),
       signOut: vi.fn(),
       createUser: vi.fn(),
+      deleteUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -114,6 +118,7 @@ describe('authMiddleware', () => {
       verifyToken: vi.fn().mockResolvedValue(mockIdentity),
       signOut: vi.fn(),
       createUser: vi.fn(),
+      deleteUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -134,6 +139,7 @@ describe('authMiddleware', () => {
       verifyToken: vi.fn().mockResolvedValue({ id: 'u1', email: 'u@e.com' }),
       signOut: vi.fn(),
       createUser: vi.fn(),
+      deleteUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 

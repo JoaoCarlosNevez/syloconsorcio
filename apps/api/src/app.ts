@@ -43,6 +43,9 @@ function createNoOpAuthProvider(): IAuthProvider {
     createUser: async () => {
       throw new Error('Auth provider not configured — cannot create users.')
     },
+    deleteUser: async () => {
+      throw new Error('Auth provider not configured — cannot delete users.')
+    },
   }
 }
 
@@ -51,12 +54,21 @@ function createNoOpMembershipRepository(): IMembershipRepository {
   return {
     findActiveByUserId: async () => [],
     findActiveByUserAndOrganization: async () => null,
+    findByUserAndOrganization: async () => null,
     findActiveByOrganizationId: async () => [],
+    findByOrganizationId: async () => [],
     findAllActive: async () => [],
+    findAll: async () => [],
     create: async () => {
       throw new Error('Database not configured — cannot create memberships.')
     },
-    remove: async () => {
+    deactivate: async () => {
+      throw new Error('Database not configured — cannot deactivate memberships.')
+    },
+    reactivate: async () => {
+      throw new Error('Database not configured — cannot reactivate memberships.')
+    },
+    removeAllForUser: async () => {
       throw new Error('Database not configured — cannot remove memberships.')
     },
   }

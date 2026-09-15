@@ -96,3 +96,12 @@ export function createPlatformUser(
 ): Promise<CreatePlatformUserResult> {
   return apiClient.post<CreatePlatformUserResult>('/organizations/members', payload)
 }
+
+/**
+ * Apaga a conta da pessoa da plataforma inteira: login (Supabase Auth) e
+ * todos os vínculos com organizações. Irreversível. O registro em `users`
+ * (nome/e-mail) não é apagado — ver DeletePlatformUserUseCase pro porquê.
+ */
+export function deletePlatformUser(userId: string): Promise<void> {
+  return apiClient.delete<void>(`/organizations/members/${userId}`)
+}

@@ -1,4 +1,7 @@
-// RemoveTeamMemberUseCase — desvincula um membro da organização.
+// RemoveTeamMemberUseCase — desativa um membro da organização (status vira
+// SUSPENDED). Não apaga o vínculo — ele pode ser reativado depois (ver
+// ReactivateTeamMemberUseCase) sem violar a constraint UNIQUE(user_id,
+// organization_id), e a pessoa some das listas de equipe até lá.
 //
 // Regra de hierarquia (a mesma de InviteTeamMemberUseCase — canGrantRole):
 // ADMIN (Dono) remove MANAGER/SELLER; MANAGER (Supervisor) remove só SELLER.
@@ -35,6 +38,6 @@ export class RemoveTeamMemberUseCase implements UseCase<RemoveTeamMemberInput, v
       )
     }
 
-    await this.membershipRepository.remove(input.targetUserId, input.organizationId)
+    await this.membershipRepository.deactivate(input.targetUserId, input.organizationId)
   }
 }

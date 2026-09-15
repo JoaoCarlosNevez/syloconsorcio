@@ -51,4 +51,11 @@ export interface IAuthProvider {
    * (ver @sylocrm/domain) se o e-mail já estiver cadastrado.
    */
   createUser(input: CreateAuthUserInput): Promise<AuthIdentity>
+
+  /**
+   * Apaga a identidade autenticada — a pessoa nunca mais consegue logar.
+   * Não apaga o registro correspondente em `users` (ver IUserRepository):
+   * esse registro pode ser referenciado por histórico auditável (ex: leads).
+   */
+  deleteUser(id: string): Promise<void>
 }

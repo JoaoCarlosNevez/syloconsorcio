@@ -1,12 +1,15 @@
 // Rotas de organizações — painel de Administração do Super Admin da plataforma.
 //
-// POST  /organizations             — cria uma Representação independente + dono (ADMIN)
-// GET   /organizations             — lista todas as organizações
-// PATCH /organizations/:id         — edita nome
-// POST  /organizations/:id/icon    — envia o ícone (upload para Supabase Storage)
-// GET   /organizations/:id/members — lista a equipe de uma organização qualquer
-// GET   /organizations/members     — lista todos os membros da plataforma (cross-org)
-// POST  /organizations/members     — cria um usuário com qualquer Role em qualquer Representação
+// POST   /organizations             — cria uma Representação independente + dono (ADMIN)
+// GET    /organizations             — lista todas as organizações
+// PATCH  /organizations/:id         — edita nome
+// POST   /organizations/:id/icon    — envia o ícone (upload para Supabase Storage)
+// GET    /organizations/:id/members — lista a equipe ativa de uma organização qualquer
+// GET    /organizations/members     — lista TODOS os membros da plataforma (qualquer status, cross-org)
+// POST   /organizations/members     — cria um usuário com qualquer Role em qualquer Representação
+// DELETE /organizations/members/:userId — apaga a conta da pessoa da plataforma inteira
+//         (login + todos os memberships; ver DeletePlatformUserUseCase pro porquê o registro
+//         em `users` não é apagado)
 //
 // Todas exigem authMiddleware + requirePlatformAdmin — não são escopadas por
 // tenant (o Super Admin não precisa ser membro da organização-alvo).
@@ -18,8 +21,12 @@ import type {
   IStorageProvider,
   IUserRepository,
 } from '@sylocrm/application'
-import { CreatePlatformUserUseCase, CreateRepresentationUseCase } from '@sylocrm/application'
-import { ConflictError, Role } from '@sylocrm/domain'
+import {
+  CreatePlatformUserUseCase,
+  CreateRepresentationUseCase,
+  DeletePlatformUserUseCase,
+} from '@sylocrm/application'
+import { AuthorizationError, ConflictError, Role } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { ICON_EXTENSION_BY_MIME, validateIconUpload } from '../lib/icon-validation'
@@ -82,6 +89,11 @@ export const organizationsRoute: FastifyPluginAsync<OrganizationsRouteOptions> =
     options.membershipRepository,
   )
 
+  const deletePlatformUser = new DeletePlatformUserUseCase(
+    options.authProvider,
+    options.membershipRepository,
+  )
+
   // ── GET /organizations ────────────────────────────────────────────────────
   fastify.get(
     '/organizations',
@@ -97,8 +109,30 @@ export const organizationsRoute: FastifyPluginAsync<OrganizationsRouteOptions> =
     '/organizations/members',
     { preHandler: [authMiddleware, platformAdminMiddleware] },
     async () => {
-      const members = await options.membershipRepository.findAllActive()
+      const members = await options.membershipRepository.findAll()
       return { members }
+    },
+  )
+
+  // ── DELETE /organizations/members/:userId ─────────────────────────────────
+  fastify.delete<{ Params: { userId: string } }>(
+    '/organizations/members/:userId',
+    { preHandler: [authMiddleware, platformAdminMiddleware] },
+    async (request, reply) => {
+      const identity = request.authIdentity as NonNullable<typeof request.authIdentity>
+
+      try {
+        await deletePlatformUser.execute({
+          actorUserId: identity.id,
+          targetUserId: request.params.userId,
+        })
+        return reply.status(204).send()
+      } catch (error) {
+        if (error instanceof AuthorizationError) {
+          return reply.status(403).send({ error: error.message, code: error.code, status: 403 })
+        }
+        throw error
+      }
     },
   )
 

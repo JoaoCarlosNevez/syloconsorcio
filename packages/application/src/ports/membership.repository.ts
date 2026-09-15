@@ -66,14 +66,39 @@ export interface IMembershipRepository {
     organizationId: string,
   ): Promise<UserMembership | null>
 
+  /**
+   * Retorna uma membership específica (usuário + organização), qualquer
+   * status. Retorna null se o vínculo nunca existiu.
+   */
+  findByUserAndOrganization(userId: string, organizationId: string): Promise<UserMembership | null>
+
   /** Lista os membros ativos de uma organização, com dados do usuário. */
   findActiveByOrganizationId(organizationId: string): Promise<TeamMember[]>
+
+  /** Lista todos os membros de uma organização (qualquer status), com dados do usuário. */
+  findByOrganizationId(organizationId: string): Promise<TeamMember[]>
 
   /** Lista os membros ativos de toda a plataforma, com dados da organização. Uso: Super Admin. */
   findAllActive(): Promise<PlatformTeamMember[]>
 
+  /** Lista todos os membros de toda a plataforma (qualquer status). Uso: Super Admin. */
+  findAll(): Promise<PlatformTeamMember[]>
+
   create(input: NewMembershipInput): Promise<void>
 
-  /** Remove (desvincula) um membro de uma organização. */
-  remove(userId: string, organizationId: string): Promise<void>
+  /**
+   * Desativa (status = SUSPENDED) o vínculo de um membro com uma organização.
+   * Não apaga a linha — permite reativar depois sem violar a constraint
+   * UNIQUE(user_id, organization_id).
+   */
+  deactivate(userId: string, organizationId: string): Promise<void>
+
+  /** Reativa (status = ACTIVE) um vínculo previamente desativado. */
+  reactivate(userId: string, organizationId: string): Promise<void>
+
+  /**
+   * Apaga (hard delete) todos os vínculos de um usuário com qualquer
+   * organização. Uso: exclusão completa de conta pelo Super Admin.
+   */
+  removeAllForUser(userId: string): Promise<void>
 }

@@ -10,7 +10,12 @@ import {
   useUpdateOrganizationSettings,
   useUploadOrganizationSettingsIcon,
 } from '../../hooks/useOrganizationSettings'
-import { useInviteTeamMember, useRemoveTeamMember, useTeamMembersQuery } from '../../hooks/useTeam'
+import {
+  useInviteTeamMember,
+  useReactivateTeamMember,
+  useRemoveTeamMember,
+  useTeamMembersQuery,
+} from '../../hooks/useTeam'
 import { validateIconFile } from '../../lib/icon-validation'
 import type { InvitableRole, TeamMember } from '../../lib/team-api'
 import styles from './ConfigPage.module.css'
@@ -300,10 +305,11 @@ const INVITABLE_ROLES_BY_ROLE: Record<string, InvitableRole[]> = {
 const ROLE_RANK: Record<TeamMember['role'], number> = { SELLER: 0, MANAGER: 1, ADMIN: 2 }
 
 // Mesma regra de hierarquia usada pra convidar (canGrantRole no backend) —
-// Dono remove Supervisor/Vendedor, Supervisor remove só Vendedor. Super Admin
-// da plataforma ignora a hierarquia. A checagem real acontece no backend
-// (RemoveTeamMemberUseCase); isto só decide o que mostrar na UI.
-function canRemoveMember(
+// Dono remove/reativa Supervisor/Vendedor, Supervisor remove/reativa só
+// Vendedor. Super Admin da plataforma ignora a hierarquia. A checagem real
+// acontece no backend (RemoveTeamMemberUseCase/ReactivateTeamMemberUseCase);
+// isto só decide o que mostrar na UI.
+function canManageMember(
   viewerRole: TeamMember['role'],
   viewerIsPlatformAdmin: boolean,
   targetRole: TeamMember['role'],
@@ -321,7 +327,7 @@ function roleBadgeClass(role: TeamMember['role']) {
 function statusLabel(status: TeamMember['status']) {
   if (status === 'ACTIVE') return 'Ativo'
   if (status === 'INVITED') return 'Convidado'
-  return 'Suspenso'
+  return 'Desativado'
 }
 
 function statusDotClass(status: TeamMember['status']) {
@@ -521,6 +527,7 @@ function EquipeView() {
   const { data: currentUser } = useCurrentUser()
   const { data, isLoading } = useTeamMembersQuery(organizationId)
   const removeMember = useRemoveTeamMember(organizationId)
+  const reactivateMember = useReactivateTeamMember(organizationId)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [inviteOpen, setInviteOpen] = useState(false)
@@ -535,11 +542,20 @@ function EquipeView() {
     if (!removeTarget) return
     try {
       await removeMember.mutateAsync(removeTarget.userId)
-      setToast(`${removeTarget.name ?? removeTarget.email} removido da equipe.`)
+      setToast(`${removeTarget.name ?? removeTarget.email} desativado da equipe.`)
       setRemoveTarget(null)
     } catch (error) {
       setToast(error instanceof Error ? error.message : 'Não foi possível remover o usuário.')
       setRemoveTarget(null)
+    }
+  }
+
+  async function handleReactivate(member: TeamMember) {
+    try {
+      await reactivateMember.mutateAsync(member.userId)
+      setToast(`${member.name ?? member.email} reativado na equipe.`)
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Não foi possível reativar o usuário.')
     }
   }
 
@@ -607,10 +623,10 @@ function EquipeView() {
               </tr>
             ) : (
               paged.map((member) => {
-                const removable =
+                const manageable =
                   member.userId !== currentUser?.id &&
                   membership !== null &&
-                  canRemoveMember(membership.role, isPlatformAdmin, member.role)
+                  canManageMember(membership.role, isPlatformAdmin, member.role)
                 return (
                   <tr key={member.userId} className={styles.tableRow}>
                     <td className={styles.tdUser}>
@@ -636,7 +652,17 @@ function EquipeView() {
                       </span>
                     </td>
                     <td className={styles.td}>
-                      {removable && (
+                      {manageable && member.status === 'SUSPENDED' && (
+                        <button
+                          type="button"
+                          className={styles.reactivateMemberBtn}
+                          onClick={() => handleReactivate(member)}
+                          disabled={reactivateMember.isPending}
+                        >
+                          Reativar
+                        </button>
+                      )}
+                      {manageable && member.status !== 'SUSPENDED' && (
                         <button
                           type="button"
                           className={styles.removeMemberBtn}

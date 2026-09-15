@@ -85,6 +85,26 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
     return row ? toUserMembership(row) : null
   }
 
+  async findByUserAndOrganization(
+    userId: string,
+    organizationId: string,
+  ): Promise<UserMembership | null> {
+    const rows = await this.db
+      .select(MEMBERSHIP_COLUMNS)
+      .from(organizationMemberships)
+      .innerJoin(organizations, eq(organizationMemberships.organizationId, organizations.id))
+      .where(
+        and(
+          eq(organizationMemberships.userId, userId),
+          eq(organizationMemberships.organizationId, organizationId),
+        ),
+      )
+      .limit(1)
+
+    const row = rows[0]
+    return row ? toUserMembership(row) : null
+  }
+
   async findActiveByOrganizationId(organizationId: string): Promise<TeamMember[]> {
     const rows = await this.db
       .select({
@@ -102,6 +122,22 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
           eq(organizationMemberships.status, 'ACTIVE'),
         ),
       )
+
+    return rows.map((row) => ({ ...row, role: row.role as Role }))
+  }
+
+  async findByOrganizationId(organizationId: string): Promise<TeamMember[]> {
+    const rows = await this.db
+      .select({
+        userId: organizationMemberships.userId,
+        name: users.name,
+        email: users.email,
+        role: organizationMemberships.role,
+        status: organizationMemberships.status,
+      })
+      .from(organizationMemberships)
+      .innerJoin(users, eq(organizationMemberships.userId, users.id))
+      .where(eq(organizationMemberships.organizationId, organizationId))
 
     return rows.map((row) => ({ ...row, role: row.role as Role }))
   }
@@ -125,6 +161,24 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
     return rows.map((row) => ({ ...row, role: row.role as Role }))
   }
 
+  async findAll(): Promise<PlatformTeamMember[]> {
+    const rows = await this.db
+      .select({
+        userId: organizationMemberships.userId,
+        name: users.name,
+        email: users.email,
+        role: organizationMemberships.role,
+        status: organizationMemberships.status,
+        organizationId: organizationMemberships.organizationId,
+        organizationName: organizations.name,
+      })
+      .from(organizationMemberships)
+      .innerJoin(users, eq(organizationMemberships.userId, users.id))
+      .innerJoin(organizations, eq(organizationMemberships.organizationId, organizations.id))
+
+    return rows.map((row) => ({ ...row, role: row.role as Role }))
+  }
+
   async create(input: NewMembershipInput): Promise<void> {
     await this.db.insert(organizationMemberships).values({
       userId: input.userId,
@@ -133,14 +187,31 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
     })
   }
 
-  async remove(userId: string, organizationId: string): Promise<void> {
+  async deactivate(userId: string, organizationId: string): Promise<void> {
     await this.db
-      .delete(organizationMemberships)
+      .update(organizationMemberships)
+      .set({ status: 'SUSPENDED', updatedAt: new Date() })
       .where(
         and(
           eq(organizationMemberships.userId, userId),
           eq(organizationMemberships.organizationId, organizationId),
         ),
       )
+  }
+
+  async reactivate(userId: string, organizationId: string): Promise<void> {
+    await this.db
+      .update(organizationMemberships)
+      .set({ status: 'ACTIVE', updatedAt: new Date() })
+      .where(
+        and(
+          eq(organizationMemberships.userId, userId),
+          eq(organizationMemberships.organizationId, organizationId),
+        ),
+      )
+  }
+
+  async removeAllForUser(userId: string): Promise<void> {
+    await this.db.delete(organizationMemberships).where(eq(organizationMemberships.userId, userId))
   }
 }

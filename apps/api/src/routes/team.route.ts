@@ -1,22 +1,35 @@
-// Rotas de equipe — listar, convidar e remover membros da organização ativa.
+// Rotas de equipe — listar, convidar, remover e reativar membros da
+// organização ativa.
 //
-// GET    /team/members          — lista os membros ativos da organização
-//                                  (qualquer membership ativa pode ver a
-//                                  própria equipe)
-// POST   /team/members          — convida um novo membro (Supervisor ou
-//                                  Vendedor). Exige user.invite; a hierarquia
-//                                  fina (quem pode conceder qual Role) é
-//                                  aplicada em InviteTeamMemberUseCase.
-// DELETE /team/members/:userId  — desvincula um membro. Exige user.remove;
-//                                  a hierarquia fina (quem pode remover qual
-//                                  Role) é aplicada em RemoveTeamMemberUseCase.
-//                                  Super Admin da plataforma ignora a
-//                                  hierarquia (pode remover qualquer papel).
+// GET    /team/members                    — lista TODOS os membros da
+//                                            organização (qualquer status —
+//                                            inclui desativados, pra
+//                                            permitir reativar depois)
+// POST   /team/members                    — convida um novo membro
+//                                            (Supervisor ou Vendedor). Exige
+//                                            user.invite; a hierarquia fina
+//                                            é aplicada em
+//                                            InviteTeamMemberUseCase.
+// DELETE /team/members/:userId            — desativa um membro (status vira
+//                                            SUSPENDED, não apaga). Exige
+//                                            user.remove; a hierarquia fina
+//                                            é aplicada em
+//                                            RemoveTeamMemberUseCase. Super
+//                                            Admin da plataforma ignora a
+//                                            hierarquia.
+// POST   /team/members/:userId/reactivate — reverte a desativação (status
+//                                            volta pra ACTIVE). Mesma
+//                                            permission e hierarquia do
+//                                            DELETE.
 //
 // Todas rodam authMiddleware → tenantMiddleware.
 
 import type { IAuthProvider, IMembershipRepository, IUserRepository } from '@sylocrm/application'
-import { InviteTeamMemberUseCase, RemoveTeamMemberUseCase } from '@sylocrm/application'
+import {
+  InviteTeamMemberUseCase,
+  ReactivateTeamMemberUseCase,
+  RemoveTeamMemberUseCase,
+} from '@sylocrm/application'
 import { AuthorizationError, ConflictError, Permission, Role } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
@@ -49,6 +62,7 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
   )
 
   const removeTeamMember = new RemoveTeamMemberUseCase(options.membershipRepository)
+  const reactivateTeamMember = new ReactivateTeamMemberUseCase(options.membershipRepository)
 
   // ── GET /team/members ─────────────────────────────────────────────────────
   fastify.get(
@@ -56,7 +70,7 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
     { preHandler: [authMiddleware, tenantMiddleware] },
     async (request) => {
       const context = request.authContext as NonNullable<typeof request.authContext>
-      const members = await options.membershipRepository.findActiveByOrganizationId(
+      const members = await options.membershipRepository.findByOrganizationId(
         context.currentMembership.organizationId,
       )
       return { members }
@@ -137,6 +151,46 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
           removerRole: context.currentMembership.role,
           removerIsPlatformAdmin: actor?.isPlatformAdmin ?? false,
           actorUserId: context.userId,
+          targetUserId,
+          targetRole: target.role,
+          organizationId: context.currentMembership.organizationId,
+        })
+        return reply.status(204).send()
+      } catch (error) {
+        if (error instanceof AuthorizationError) {
+          return reply.status(403).send({ error: error.message, code: error.code, status: 403 })
+        }
+        throw error
+      }
+    },
+  )
+
+  // ── POST /team/members/:userId/reactivate ─────────────────────────────────
+  fastify.post<{ Params: { userId: string } }>(
+    '/team/members/:userId/reactivate',
+    {
+      preHandler: [authMiddleware, tenantMiddleware, requirePermission(Permission.USER_REMOVE)],
+    },
+    async (request, reply) => {
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      const targetUserId = request.params.userId
+
+      const target = await options.membershipRepository.findByUserAndOrganization(
+        targetUserId,
+        context.currentMembership.organizationId,
+      )
+      if (!target) {
+        return reply
+          .status(404)
+          .send({ error: 'Membro não encontrado.', code: 'MEMBER_NOT_FOUND', status: 404 })
+      }
+
+      const actor = await options.userRepository.findById(context.userId)
+
+      try {
+        await reactivateTeamMember.execute({
+          reactivatorRole: context.currentMembership.role,
+          reactivatorIsPlatformAdmin: actor?.isPlatformAdmin ?? false,
           targetUserId,
           targetRole: target.role,
           organizationId: context.currentMembership.organizationId,

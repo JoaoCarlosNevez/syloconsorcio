@@ -14,6 +14,7 @@ import type { Organization, PlatformMember } from '../../lib/organizations-api'
 import styles from './AdminPage.module.css'
 import { CreatePlatformUserModal } from './CreatePlatformUserModal'
 import { CreateRepresentationModal } from './CreateRepresentationModal'
+import { DeletePlatformUserModal } from './DeletePlatformUserModal'
 
 const TYPE_LABEL: Record<Organization['type'], string> = {
   INCORPORADORA: 'Incorporadora',
@@ -25,6 +26,12 @@ const ROLE_LABEL: Record<PlatformMember['role'], string> = {
   ADMIN: 'Dono',
   MANAGER: 'Supervisor',
   SELLER: 'Vendedor',
+}
+
+const STATUS_LABEL: Record<PlatformMember['status'], string> = {
+  ACTIVE: 'Ativo',
+  INVITED: 'Convidado',
+  SUSPENDED: 'Desativado',
 }
 
 function RepresentacoesTab() {
@@ -79,7 +86,9 @@ function RepresentacoesTab() {
 
 function UsuariosTab() {
   const { data, isLoading } = usePlatformMembersQuery()
+  const { data: currentUser } = useCurrentUser()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<PlatformMember | null>(null)
 
   const columns: ColumnDef<PlatformMember>[] = [
     { key: 'name', header: 'Nome', render: (row) => row.name ?? '—' },
@@ -90,6 +99,25 @@ function UsuariosTab() {
       render: (row) => <Badge variant="slate">{ROLE_LABEL[row.role]}</Badge>,
     },
     { key: 'organizationName', header: 'Representação', render: (row) => row.organizationName },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (row) => (
+        <Badge variant={row.status === 'ACTIVE' ? 'green' : 'red'}>
+          {STATUS_LABEL[row.status]}
+        </Badge>
+      ),
+    },
+    {
+      key: 'actions',
+      header: '',
+      render: (row) =>
+        row.userId === currentUser?.id ? null : (
+          <Button type="button" variant="danger" size="sm" onClick={() => setDeleteTarget(row)}>
+            Apagar
+          </Button>
+        ),
+    },
   ]
 
   return (
@@ -113,6 +141,7 @@ function UsuariosTab() {
       </div>
 
       <CreatePlatformUserModal open={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+      <DeletePlatformUserModal member={deleteTarget} onClose={() => setDeleteTarget(null)} />
     </div>
   )
 }

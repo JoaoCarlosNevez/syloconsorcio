@@ -34,6 +34,7 @@ describe('GET /auth/me', () => {
       verifyToken: vi.fn(),
       signOut: vi.fn(),
       createUser: vi.fn(),
+      deleteUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -49,6 +50,7 @@ describe('GET /auth/me', () => {
       verifyToken: vi.fn().mockResolvedValue(null),
       signOut: vi.fn(),
       createUser: vi.fn(),
+      deleteUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -68,6 +70,7 @@ describe('GET /auth/me', () => {
       verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
       signOut: vi.fn(),
       createUser: vi.fn(),
+      deleteUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -88,6 +91,7 @@ describe('GET /auth/me', () => {
       verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
       signOut: vi.fn(),
       createUser: vi.fn(),
+      deleteUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -113,6 +117,7 @@ describe('GET /auth/memberships', () => {
       verifyToken: vi.fn(),
       signOut: vi.fn(),
       createUser: vi.fn(),
+      deleteUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -126,6 +131,7 @@ describe('GET /auth/memberships', () => {
       verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
       signOut: vi.fn(),
       createUser: vi.fn(),
+      deleteUser: vi.fn(),
     }
     const mockRepo: IMembershipRepository = {
       findActiveByUserId: vi.fn().mockResolvedValue([
@@ -140,7 +146,12 @@ describe('GET /auth/memberships', () => {
       findActiveByOrganizationId: vi.fn(),
       findAllActive: vi.fn(),
       create: vi.fn(),
-      remove: vi.fn(),
+      findByUserAndOrganization: vi.fn().mockResolvedValue(null),
+      findByOrganizationId: vi.fn().mockResolvedValue([]),
+      findAll: vi.fn().mockResolvedValue([]),
+      deactivate: vi.fn(),
+      reactivate: vi.fn(),
+      removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider, mockRepo)
 
@@ -170,6 +181,7 @@ describe('GET /auth/context', () => {
       verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
       signOut: vi.fn(),
       createUser: vi.fn(),
+      deleteUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -189,6 +201,7 @@ describe('GET /auth/context', () => {
       verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
       signOut: vi.fn(),
       createUser: vi.fn(),
+      deleteUser: vi.fn(),
     }
     const membership = {
       organizationId: 'org-rep-01',
@@ -202,7 +215,12 @@ describe('GET /auth/context', () => {
       findActiveByOrganizationId: vi.fn(),
       findAllActive: vi.fn(),
       create: vi.fn(),
-      remove: vi.fn(),
+      findByUserAndOrganization: vi.fn().mockResolvedValue(null),
+      findByOrganizationId: vi.fn().mockResolvedValue([]),
+      findAll: vi.fn().mockResolvedValue([]),
+      deactivate: vi.fn(),
+      reactivate: vi.fn(),
+      removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider, mockRepo)
 
@@ -231,6 +249,7 @@ describe('POST /auth/logout', () => {
       verifyToken: vi.fn(),
       signOut: vi.fn(),
       createUser: vi.fn(),
+      deleteUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -247,6 +266,7 @@ describe('POST /auth/logout', () => {
       verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
       signOut: vi.fn().mockResolvedValue(undefined),
       createUser: vi.fn(),
+      deleteUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -267,6 +287,7 @@ describe('POST /auth/logout', () => {
       verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
       signOut: vi.fn().mockRejectedValue(new Error('Supabase unreachable')),
       createUser: vi.fn(),
+      deleteUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 
@@ -285,6 +306,7 @@ describe('POST /auth/logout', () => {
       verifyToken: vi.fn().mockResolvedValue(null),
       signOut: vi.fn(),
       createUser: vi.fn(),
+      deleteUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider)
 

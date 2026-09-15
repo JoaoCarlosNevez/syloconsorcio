@@ -64,6 +64,9 @@ export type {
   CreatePlatformUserOutput,
 } from './organizations/create-platform-user.use-case'
 
+export { DeletePlatformUserUseCase } from './organizations/delete-platform-user.use-case'
+export type { DeletePlatformUserInput } from './organizations/delete-platform-user.use-case'
+
 export { InviteTeamMemberUseCase } from './team/invite-team-member.use-case'
 export type {
   InviteTeamMemberInput,
@@ -72,3 +75,6 @@ export type {
 
 export { RemoveTeamMemberUseCase } from './team/remove-team-member.use-case'
 export type { RemoveTeamMemberInput } from './team/remove-team-member.use-case'
+
+export { ReactivateTeamMemberUseCase } from './team/reactivate-team-member.use-case'
+export type { ReactivateTeamMemberInput } from './team/reactivate-team-member.use-case'

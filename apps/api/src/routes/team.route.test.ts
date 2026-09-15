@@ -51,6 +51,7 @@ function buildAuthProvider(): IAuthProvider {
     verifyToken: vi.fn().mockResolvedValue(IDENTITY),
     signOut: vi.fn(),
     createUser: vi.fn().mockResolvedValue({ id: 'new-user-uuid', email: 'novo@empresa.com' }),
+    deleteUser: vi.fn(),
   }
 }
 
@@ -86,7 +87,20 @@ function buildMembershipRepository(membership: UserMembership): IMembershipRepos
     ]),
     findAllActive: vi.fn().mockResolvedValue([]),
     create: vi.fn(),
-    remove: vi.fn(),
+    findByUserAndOrganization: vi.fn().mockResolvedValue(null),
+    findByOrganizationId: vi.fn().mockResolvedValue([
+      {
+        userId: IDENTITY.id,
+        name: null,
+        email: IDENTITY.email,
+        role: membership.role,
+        status: 'ACTIVE',
+      },
+    ]),
+    findAll: vi.fn().mockResolvedValue([]),
+    deactivate: vi.fn(),
+    reactivate: vi.fn(),
+    removeAllForUser: vi.fn(),
   }
 }
 
@@ -217,7 +231,12 @@ describe('DELETE /team/members/:userId', () => {
       findActiveByOrganizationId: vi.fn().mockResolvedValue([]),
       findAllActive: vi.fn().mockResolvedValue([]),
       create: vi.fn(),
-      remove: vi.fn(),
+      findByUserAndOrganization: vi.fn().mockResolvedValue(null),
+      findByOrganizationId: vi.fn().mockResolvedValue([]),
+      findAll: vi.fn().mockResolvedValue([]),
+      deactivate: vi.fn(),
+      reactivate: vi.fn(),
+      removeAllForUser: vi.fn(),
     }
   }
 
@@ -284,7 +303,7 @@ describe('DELETE /team/members/:userId', () => {
     expect(response.statusCode).toBe(403)
     const body = response.json<{ code: string }>()
     expect(body.code).toBe('AUTHORIZATION_ERROR')
-    expect(membershipRepository.remove).not.toHaveBeenCalled()
+    expect(membershipRepository.deactivate).not.toHaveBeenCalled()
   })
 
   it('returns 403 when a MANAGER tries to remove an ADMIN', async () => {
@@ -305,7 +324,7 @@ describe('DELETE /team/members/:userId', () => {
     })
 
     expect(response.statusCode).toBe(403)
-    expect(membershipRepository.remove).not.toHaveBeenCalled()
+    expect(membershipRepository.deactivate).not.toHaveBeenCalled()
   })
 
   it('allows a MANAGER to remove a SELLER', async () => {
@@ -326,7 +345,7 @@ describe('DELETE /team/members/:userId', () => {
     })
 
     expect(response.statusCode).toBe(204)
-    expect(membershipRepository.remove).toHaveBeenCalledWith(TARGET_ID, ORG_ID)
+    expect(membershipRepository.deactivate).toHaveBeenCalledWith(TARGET_ID, ORG_ID)
   })
 
   it('allows an ADMIN to remove a MANAGER', async () => {
@@ -364,7 +383,7 @@ describe('DELETE /team/members/:userId', () => {
     })
 
     expect(response.statusCode).toBe(403)
-    expect(membershipRepository.remove).not.toHaveBeenCalled()
+    expect(membershipRepository.deactivate).not.toHaveBeenCalled()
   })
 
   it('allows a platform admin to remove another ADMIN, bypassing the hierarchy', async () => {
@@ -382,6 +401,151 @@ describe('DELETE /team/members/:userId', () => {
     })
 
     expect(response.statusCode).toBe(204)
-    expect(membershipRepository.remove).toHaveBeenCalledWith(TARGET_ID, ORG_ID)
+    expect(membershipRepository.deactivate).toHaveBeenCalledWith(TARGET_ID, ORG_ID)
+  })
+})
+
+describe('POST /team/members/:userId/reactivate', () => {
+  const TARGET_ID = 'target-user-uuid'
+
+  function buildReactivateMembershipRepository(
+    actorMembership: UserMembership,
+    targetMembership: UserMembership | null,
+  ): IMembershipRepository {
+    return {
+      findActiveByUserId: vi.fn().mockResolvedValue([actorMembership]),
+      findActiveByUserAndOrganization: vi.fn().mockResolvedValue(actorMembership),
+      findByUserAndOrganization: vi
+        .fn()
+        .mockImplementation((userId: string) =>
+          Promise.resolve(userId === TARGET_ID ? targetMembership : actorMembership),
+        ),
+      findActiveByOrganizationId: vi.fn().mockResolvedValue([]),
+      findByOrganizationId: vi.fn().mockResolvedValue([]),
+      findAllActive: vi.fn().mockResolvedValue([]),
+      findAll: vi.fn().mockResolvedValue([]),
+      create: vi.fn(),
+      deactivate: vi.fn(),
+      reactivate: vi.fn(),
+      removeAllForUser: vi.fn(),
+    }
+  }
+
+  it('returns 401 when Authorization header is absent', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository: buildReactivateMembershipRepository(
+        SELLER_MEMBERSHIP,
+        SELLER_MEMBERSHIP,
+      ),
+    })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/team/members/${TARGET_ID}/reactivate`,
+    })
+
+    expect(response.statusCode).toBe(401)
+  })
+
+  it('returns 403 when a SELLER tries to reactivate someone (missing user.remove)', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository: buildReactivateMembershipRepository(
+        SELLER_MEMBERSHIP,
+        SELLER_MEMBERSHIP,
+      ),
+    })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/team/members/${TARGET_ID}/reactivate`,
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(403)
+    const body = response.json<{ code: string }>()
+    expect(body.code).toBe(AuthErrorCode.PERMISSION_DENIED)
+  })
+
+  it('returns 404 when the target member never existed', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository: buildReactivateMembershipRepository(ADMIN_MEMBERSHIP, null),
+    })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/team/members/${TARGET_ID}/reactivate`,
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(404)
+  })
+
+  it('returns 403 when a MANAGER tries to reactivate a deactivated ADMIN', async () => {
+    const membershipRepository = buildReactivateMembershipRepository(
+      MANAGER_MEMBERSHIP,
+      ADMIN_MEMBERSHIP,
+    )
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository,
+    })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/team/members/${TARGET_ID}/reactivate`,
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(403)
+    expect(membershipRepository.reactivate).not.toHaveBeenCalled()
+  })
+
+  it('allows an ADMIN to reactivate a deactivated SELLER', async () => {
+    const membershipRepository = buildReactivateMembershipRepository(
+      ADMIN_MEMBERSHIP,
+      SELLER_MEMBERSHIP,
+    )
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository,
+    })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/team/members/${TARGET_ID}/reactivate`,
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(204)
+    expect(membershipRepository.reactivate).toHaveBeenCalledWith(TARGET_ID, ORG_ID)
+  })
+
+  it('allows a platform admin to reactivate a deactivated ADMIN, bypassing the hierarchy', async () => {
+    const membershipRepository = buildReactivateMembershipRepository(
+      ADMIN_MEMBERSHIP,
+      ADMIN_MEMBERSHIP,
+    )
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      membershipRepository,
+    })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/team/members/${TARGET_ID}/reactivate`,
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(204)
+    expect(membershipRepository.reactivate).toHaveBeenCalledWith(TARGET_ID, ORG_ID)
   })
 })

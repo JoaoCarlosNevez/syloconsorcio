@@ -82,6 +82,7 @@ function buildAuthProvider(): IAuthProvider {
     verifyToken: vi.fn().mockResolvedValue(IDENTITY),
     signOut: vi.fn(),
     createUser: vi.fn(),
+    deleteUser: vi.fn(),
   }
 }
 
@@ -94,7 +95,12 @@ function buildMembershipRepository(
     findActiveByOrganizationId: vi.fn().mockResolvedValue([]),
     findAllActive: vi.fn().mockResolvedValue([]),
     create: vi.fn(),
-    remove: vi.fn(),
+    findByUserAndOrganization: vi.fn().mockResolvedValue(null),
+    findByOrganizationId: vi.fn().mockResolvedValue([]),
+    findAll: vi.fn().mockResolvedValue([]),
+    deactivate: vi.fn(),
+    reactivate: vi.fn(),
+    removeAllForUser: vi.fn(),
   }
 }
 
