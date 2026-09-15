@@ -73,4 +73,7 @@ export interface IMembershipRepository {
   findAllActive(): Promise<PlatformTeamMember[]>
 
   create(input: NewMembershipInput): Promise<void>
+
+  /** Remove (desvincula) um membro de uma organização. */
+  remove(userId: string, organizationId: string): Promise<void>
 }

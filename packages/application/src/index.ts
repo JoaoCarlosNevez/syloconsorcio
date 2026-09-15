@@ -69,3 +69,6 @@ export type {
   InviteTeamMemberInput,
   InviteTeamMemberOutput,
 } from './team/invite-team-member.use-case'
+
+export { RemoveTeamMemberUseCase } from './team/remove-team-member.use-case'
+export type { RemoveTeamMemberInput } from './team/remove-team-member.use-case'

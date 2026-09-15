@@ -115,6 +115,7 @@ describe('tenantMiddleware', () => {
       findActiveByOrganizationId: vi.fn(),
       findAllActive: vi.fn(),
       create: vi.fn(),
+      remove: vi.fn(),
     }
     const app = buildTestAppWithoutAuth(mockRepo)
 
@@ -137,6 +138,7 @@ describe('tenantMiddleware', () => {
       findActiveByOrganizationId: vi.fn(),
       findAllActive: vi.fn(),
       create: vi.fn(),
+      remove: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
 
@@ -155,6 +157,7 @@ describe('tenantMiddleware', () => {
       findActiveByOrganizationId: vi.fn(),
       findAllActive: vi.fn(),
       create: vi.fn(),
+      remove: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
 
@@ -176,6 +179,7 @@ describe('tenantMiddleware', () => {
       findActiveByOrganizationId: vi.fn(),
       findAllActive: vi.fn(),
       create: vi.fn(),
+      remove: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
 
@@ -197,6 +201,7 @@ describe('tenantMiddleware', () => {
       findActiveByOrganizationId: vi.fn(),
       findAllActive: vi.fn(),
       create: vi.fn(),
+      remove: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
 
@@ -223,6 +228,7 @@ describe('tenantMiddleware', () => {
       findActiveByOrganizationId: vi.fn(),
       findAllActive: vi.fn(),
       create: vi.fn(),
+      remove: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
 
@@ -244,6 +250,7 @@ describe('tenantMiddleware', () => {
         findActiveByOrganizationId: vi.fn(),
         findAllActive: vi.fn(),
         create: vi.fn(),
+        remove: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
 
@@ -264,6 +271,7 @@ describe('tenantMiddleware', () => {
         findActiveByOrganizationId: vi.fn(),
         findAllActive: vi.fn(),
         create: vi.fn(),
+        remove: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
 
@@ -284,6 +292,7 @@ describe('tenantMiddleware', () => {
         findActiveByOrganizationId: vi.fn(),
         findAllActive: vi.fn(),
         create: vi.fn(),
+        remove: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
 
@@ -306,6 +315,7 @@ describe('tenantMiddleware', () => {
         findActiveByOrganizationId: vi.fn(),
         findAllActive: vi.fn(),
         create: vi.fn(),
+        remove: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
 
@@ -330,6 +340,7 @@ describe('tenantMiddleware', () => {
         findActiveByOrganizationId: vi.fn(),
         findAllActive: vi.fn(),
         create: vi.fn(),
+        remove: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
 
@@ -352,6 +363,7 @@ describe('tenantMiddleware', () => {
       findActiveByOrganizationId: vi.fn(),
       findAllActive: vi.fn(),
       create: vi.fn(),
+      remove: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
 

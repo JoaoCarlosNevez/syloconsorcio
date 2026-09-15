@@ -20,6 +20,9 @@ const MANAGER_PERMISSIONS: readonly Permission[] = [
   // Supervisor pode convidar Vendedores — a hierarquia fina (não pode
   // conceder ADMIN/MANAGER) é aplicada em InviteTeamMemberUseCase.
   Permission.USER_INVITE,
+  // Supervisor pode remover só Vendedores — a hierarquia fina é aplicada
+  // em RemoveTeamMemberUseCase.
+  Permission.USER_REMOVE,
 ]
 
 const SELLER_PERMISSIONS: readonly Permission[] = [

@@ -132,4 +132,15 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
       role: input.role,
     })
   }
+
+  async remove(userId: string, organizationId: string): Promise<void> {
+    await this.db
+      .delete(organizationMemberships)
+      .where(
+        and(
+          eq(organizationMemberships.userId, userId),
+          eq(organizationMemberships.organizationId, organizationId),
+        ),
+      )
+  }
 }

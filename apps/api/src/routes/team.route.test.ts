@@ -54,9 +54,14 @@ function buildAuthProvider(): IAuthProvider {
   }
 }
 
-function buildUserRepository(): IUserRepository {
+function buildUserRepository(isPlatformAdmin = false): IUserRepository {
   return {
-    findById: vi.fn().mockResolvedValue(null),
+    findById: vi.fn().mockResolvedValue({
+      id: IDENTITY.id,
+      email: IDENTITY.email,
+      name: null,
+      isPlatformAdmin,
+    }),
     upsert: vi.fn().mockResolvedValue({
       id: 'new-user-uuid',
       email: 'novo@empresa.com',
@@ -81,6 +86,7 @@ function buildMembershipRepository(membership: UserMembership): IMembershipRepos
     ]),
     findAllActive: vi.fn().mockResolvedValue([]),
     create: vi.fn(),
+    remove: vi.fn(),
   }
 }
 
@@ -191,5 +197,191 @@ describe('POST /team/members', () => {
     })
 
     expect(response.statusCode).toBe(400)
+  })
+})
+
+describe('DELETE /team/members/:userId', () => {
+  const TARGET_ID = 'target-user-uuid'
+
+  function buildDeleteMembershipRepository(
+    actorMembership: UserMembership,
+    targetMembership: UserMembership | null,
+  ): IMembershipRepository {
+    return {
+      findActiveByUserId: vi.fn().mockResolvedValue([actorMembership]),
+      findActiveByUserAndOrganization: vi
+        .fn()
+        .mockImplementation((userId: string) =>
+          Promise.resolve(userId === TARGET_ID ? targetMembership : actorMembership),
+        ),
+      findActiveByOrganizationId: vi.fn().mockResolvedValue([]),
+      findAllActive: vi.fn().mockResolvedValue([]),
+      create: vi.fn(),
+      remove: vi.fn(),
+    }
+  }
+
+  it('returns 401 when Authorization header is absent', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository: buildDeleteMembershipRepository(SELLER_MEMBERSHIP, SELLER_MEMBERSHIP),
+    })
+
+    const response = await app.inject({ method: 'DELETE', url: `/team/members/${TARGET_ID}` })
+
+    expect(response.statusCode).toBe(401)
+  })
+
+  it('returns 403 when a SELLER tries to remove someone (missing user.remove)', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository: buildDeleteMembershipRepository(SELLER_MEMBERSHIP, SELLER_MEMBERSHIP),
+    })
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: `/team/members/${TARGET_ID}`,
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(403)
+    const body = response.json<{ code: string }>()
+    expect(body.code).toBe(AuthErrorCode.PERMISSION_DENIED)
+  })
+
+  it('returns 404 when the target member does not exist', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository: buildDeleteMembershipRepository(ADMIN_MEMBERSHIP, null),
+    })
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: `/team/members/${TARGET_ID}`,
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(404)
+  })
+
+  it('returns 403 when trying to remove yourself', async () => {
+    const membershipRepository = buildDeleteMembershipRepository(ADMIN_MEMBERSHIP, ADMIN_MEMBERSHIP)
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository,
+    })
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: `/team/members/${IDENTITY.id}`,
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(403)
+    const body = response.json<{ code: string }>()
+    expect(body.code).toBe('AUTHORIZATION_ERROR')
+    expect(membershipRepository.remove).not.toHaveBeenCalled()
+  })
+
+  it('returns 403 when a MANAGER tries to remove an ADMIN', async () => {
+    const membershipRepository = buildDeleteMembershipRepository(
+      MANAGER_MEMBERSHIP,
+      ADMIN_MEMBERSHIP,
+    )
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository,
+    })
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: `/team/members/${TARGET_ID}`,
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(403)
+    expect(membershipRepository.remove).not.toHaveBeenCalled()
+  })
+
+  it('allows a MANAGER to remove a SELLER', async () => {
+    const membershipRepository = buildDeleteMembershipRepository(
+      MANAGER_MEMBERSHIP,
+      SELLER_MEMBERSHIP,
+    )
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository,
+    })
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: `/team/members/${TARGET_ID}`,
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(204)
+    expect(membershipRepository.remove).toHaveBeenCalledWith(TARGET_ID, ORG_ID)
+  })
+
+  it('allows an ADMIN to remove a MANAGER', async () => {
+    const membershipRepository = buildDeleteMembershipRepository(
+      ADMIN_MEMBERSHIP,
+      MANAGER_MEMBERSHIP,
+    )
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository,
+    })
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: `/team/members/${TARGET_ID}`,
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(204)
+  })
+
+  it('returns 403 when an ADMIN (not a platform admin) tries to remove another ADMIN', async () => {
+    const membershipRepository = buildDeleteMembershipRepository(ADMIN_MEMBERSHIP, ADMIN_MEMBERSHIP)
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(false),
+      membershipRepository,
+    })
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: `/team/members/${TARGET_ID}`,
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(403)
+    expect(membershipRepository.remove).not.toHaveBeenCalled()
+  })
+
+  it('allows a platform admin to remove another ADMIN, bypassing the hierarchy', async () => {
+    const membershipRepository = buildDeleteMembershipRepository(ADMIN_MEMBERSHIP, ADMIN_MEMBERSHIP)
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      membershipRepository,
+    })
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: `/team/members/${TARGET_ID}`,
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(204)
+    expect(membershipRepository.remove).toHaveBeenCalledWith(TARGET_ID, ORG_ID)
   })
 })

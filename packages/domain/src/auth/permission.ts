@@ -15,6 +15,7 @@ export const Permission = {
   LEAD_ASSIGN: 'lead.assign',
   LEAD_DELETE: 'lead.delete',
   USER_INVITE: 'user.invite',
+  USER_REMOVE: 'user.remove',
   REPORTS_READ: 'reports.read',
   ORGANIZATION_UPDATE: 'organization.update',
 } as const

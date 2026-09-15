@@ -3,13 +3,14 @@
 import { OrganizationAvatar } from '@sylocrm/ui'
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
+import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import {
   useOrganizationSettingsQuery,
   useUpdateOrganizationSettings,
   useUploadOrganizationSettingsIcon,
 } from '../../hooks/useOrganizationSettings'
-import { useInviteTeamMember, useTeamMembersQuery } from '../../hooks/useTeam'
+import { useInviteTeamMember, useRemoveTeamMember, useTeamMembersQuery } from '../../hooks/useTeam'
 import { validateIconFile } from '../../lib/icon-validation'
 import type { InvitableRole, TeamMember } from '../../lib/team-api'
 import styles from './ConfigPage.module.css'
@@ -296,6 +297,21 @@ const INVITABLE_ROLES_BY_ROLE: Record<string, InvitableRole[]> = {
   SELLER: [],
 }
 
+const ROLE_RANK: Record<TeamMember['role'], number> = { SELLER: 0, MANAGER: 1, ADMIN: 2 }
+
+// Mesma regra de hierarquia usada pra convidar (canGrantRole no backend) —
+// Dono remove Supervisor/Vendedor, Supervisor remove só Vendedor. Super Admin
+// da plataforma ignora a hierarquia. A checagem real acontece no backend
+// (RemoveTeamMemberUseCase); isto só decide o que mostrar na UI.
+function canRemoveMember(
+  viewerRole: TeamMember['role'],
+  viewerIsPlatformAdmin: boolean,
+  targetRole: TeamMember['role'],
+): boolean {
+  if (viewerIsPlatformAdmin) return true
+  return ROLE_RANK[viewerRole] > ROLE_RANK[targetRole]
+}
+
 function roleBadgeClass(role: TeamMember['role']) {
   if (role === 'ADMIN') return styles.roleAdmin
   if (role === 'MANAGER') return styles.roleSupervisor
@@ -502,13 +518,30 @@ const PER_PAGE = 5
 
 function EquipeView() {
   const { organizationId, membership } = useActiveOrganization()
+  const { data: currentUser } = useCurrentUser()
   const { data, isLoading } = useTeamMembersQuery(organizationId)
+  const removeMember = useRemoveTeamMember(organizationId)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [inviteOpen, setInviteOpen] = useState(false)
+  const [removeTarget, setRemoveTarget] = useState<TeamMember | null>(null)
+  const [toast, setToast] = useState('')
 
   const invitableRoles = membership ? (INVITABLE_ROLES_BY_ROLE[membership.role] ?? []) : []
   const canInvite = invitableRoles.length > 0
+  const isPlatformAdmin = currentUser?.isPlatformAdmin ?? false
+
+  async function handleConfirmRemove() {
+    if (!removeTarget) return
+    try {
+      await removeMember.mutateAsync(removeTarget.userId)
+      setToast(`${removeTarget.name ?? removeTarget.email} removido da equipe.`)
+      setRemoveTarget(null)
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Não foi possível remover o usuário.')
+      setRemoveTarget(null)
+    }
+  }
 
   const members = data?.members ?? []
   const filtered = members.filter(
@@ -556,46 +589,66 @@ function EquipeView() {
               <th className={styles.thUser}>USUÁRIO</th>
               <th className={styles.th}>FUNÇÃO</th>
               <th className={styles.th}>STATUS</th>
+              <th className={styles.th} />
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
-                <td className={styles.td} colSpan={3}>
+                <td className={styles.td} colSpan={4}>
                   Carregando…
                 </td>
               </tr>
             ) : paged.length === 0 ? (
               <tr>
-                <td className={styles.td} colSpan={3}>
+                <td className={styles.td} colSpan={4}>
                   Nenhum membro encontrado.
                 </td>
               </tr>
             ) : (
-              paged.map((member) => (
-                <tr key={member.userId} className={styles.tableRow}>
-                  <td className={styles.tdUser}>
-                    <span className={styles.avatar}>{initialsForMember(member)}</span>
-                    <span className={styles.userInfo}>
-                      <span className={styles.userName}>{member.name ?? '—'}</span>
-                      <span className={styles.userEmail}>{member.email}</span>
-                    </span>
-                  </td>
-                  <td className={styles.td}>
-                    <span className={`${styles.roleBadge} ${roleBadgeClass(member.role)}`}>
-                      {ROLE_LABEL[member.role]}
-                    </span>
-                  </td>
-                  <td className={styles.td}>
-                    <span className={styles.statusCell}>
-                      <span className={`${styles.statusDot} ${statusDotClass(member.status)}`} />
-                      <span className={`${styles.statusLabel} ${statusLabelClass(member.status)}`}>
-                        {statusLabel(member.status)}
+              paged.map((member) => {
+                const removable =
+                  member.userId !== currentUser?.id &&
+                  membership !== null &&
+                  canRemoveMember(membership.role, isPlatformAdmin, member.role)
+                return (
+                  <tr key={member.userId} className={styles.tableRow}>
+                    <td className={styles.tdUser}>
+                      <span className={styles.avatar}>{initialsForMember(member)}</span>
+                      <span className={styles.userInfo}>
+                        <span className={styles.userName}>{member.name ?? '—'}</span>
+                        <span className={styles.userEmail}>{member.email}</span>
                       </span>
-                    </span>
-                  </td>
-                </tr>
-              ))
+                    </td>
+                    <td className={styles.td}>
+                      <span className={`${styles.roleBadge} ${roleBadgeClass(member.role)}`}>
+                        {ROLE_LABEL[member.role]}
+                      </span>
+                    </td>
+                    <td className={styles.td}>
+                      <span className={styles.statusCell}>
+                        <span className={`${styles.statusDot} ${statusDotClass(member.status)}`} />
+                        <span
+                          className={`${styles.statusLabel} ${statusLabelClass(member.status)}`}
+                        >
+                          {statusLabel(member.status)}
+                        </span>
+                      </span>
+                    </td>
+                    <td className={styles.td}>
+                      {removable && (
+                        <button
+                          type="button"
+                          className={styles.removeMemberBtn}
+                          onClick={() => setRemoveTarget(member)}
+                        >
+                          Remover
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })
             )}
           </tbody>
         </table>
@@ -608,6 +661,17 @@ function EquipeView() {
           onClose={() => setInviteOpen(false)}
         />
       )}
+
+      {removeTarget && (
+        <RemoveMemberModal
+          member={removeTarget}
+          isPending={removeMember.isPending}
+          onConfirm={handleConfirmRemove}
+          onClose={() => setRemoveTarget(null)}
+        />
+      )}
+
+      {toast && <Toast msg={toast} onDone={() => setToast('')} />}
 
       {/* Pagination */}
       {filtered.length > 0 && (
@@ -1968,6 +2032,47 @@ function InviteModal({
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+
+function RemoveMemberModal({
+  member,
+  isPending,
+  onConfirm,
+  onClose,
+}: {
+  member: TeamMember
+  isPending: boolean
+  onConfirm: () => void
+  onClose: () => void
+}) {
+  return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: overlay backdrop
+    <div className={styles.modalOverlay} onClick={onClose}>
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: modal stops propagation */}
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <div className={styles.modalTitle}>Remover usuário</div>
+          <div className={styles.modalDesc}>
+            Tem certeza que deseja remover <strong>{member.name ?? member.email}</strong> da equipe?
+            Essa ação não pode ser desfeita.
+          </div>
+        </div>
+        <div className={styles.modalFooter}>
+          <button type="button" className={styles.secondaryBtn} onClick={onClose}>
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className={styles.dangerOutlineBtn}
+            onClick={onConfirm}
+            disabled={isPending}
+          >
+            {isPending ? 'Removendo…' : 'Remover'}
+          </button>
+        </div>
       </div>
     </div>
   )

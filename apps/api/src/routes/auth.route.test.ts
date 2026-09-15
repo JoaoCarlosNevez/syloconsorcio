@@ -140,6 +140,7 @@ describe('GET /auth/memberships', () => {
       findActiveByOrganizationId: vi.fn(),
       findAllActive: vi.fn(),
       create: vi.fn(),
+      remove: vi.fn(),
     }
     const app = buildTestApp(mockProvider, mockRepo)
 
@@ -201,6 +202,7 @@ describe('GET /auth/context', () => {
       findActiveByOrganizationId: vi.fn(),
       findAllActive: vi.fn(),
       create: vi.fn(),
+      remove: vi.fn(),
     }
     const app = buildTestApp(mockProvider, mockRepo)
 

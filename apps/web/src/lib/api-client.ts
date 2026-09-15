@@ -41,7 +41,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const isFormData = body instanceof FormData
 
   const headers: Record<string, string> = {
-    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+    // Sem body (ex: DELETE), não declarar Content-Type: application/json —
+    // o parser do Fastify rejeita corpo vazio com esse header (FST_ERR_CTP_EMPTY_JSON_BODY).
+    ...(isFormData || body === undefined ? {} : { 'Content-Type': 'application/json' }),
     ...(fetchOptions.headers as Record<string, string>),
   }
 
@@ -70,6 +72,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       errorData.code ?? 'UNKNOWN_ERROR',
       errorData.error ?? `Request failed with status ${String(response.status)}`,
     )
+  }
+
+  // 204 No Content (ex: DELETE) não tem corpo — response.json() rejeitaria.
+  if (response.status === 204) {
+    return undefined as T
   }
 
   return response.json() as Promise<T>

@@ -1,16 +1,22 @@
-// Rotas de equipe — listar e convidar membros da organização ativa.
+// Rotas de equipe — listar, convidar e remover membros da organização ativa.
 //
-// GET  /team/members — lista os membros ativos da organização (qualquer
-//                       membership ativa pode ver a própria equipe)
-// POST /team/members — convida um novo membro (Supervisor ou Vendedor).
-//                       Exige lead.invite (user.invite); a hierarquia fina
-//                       (quem pode conceder qual Role) é aplicada em
-//                       InviteTeamMemberUseCase.
+// GET    /team/members          — lista os membros ativos da organização
+//                                  (qualquer membership ativa pode ver a
+//                                  própria equipe)
+// POST   /team/members          — convida um novo membro (Supervisor ou
+//                                  Vendedor). Exige user.invite; a hierarquia
+//                                  fina (quem pode conceder qual Role) é
+//                                  aplicada em InviteTeamMemberUseCase.
+// DELETE /team/members/:userId  — desvincula um membro. Exige user.remove;
+//                                  a hierarquia fina (quem pode remover qual
+//                                  Role) é aplicada em RemoveTeamMemberUseCase.
+//                                  Super Admin da plataforma ignora a
+//                                  hierarquia (pode remover qualquer papel).
 //
 // Todas rodam authMiddleware → tenantMiddleware.
 
 import type { IAuthProvider, IMembershipRepository, IUserRepository } from '@sylocrm/application'
-import { InviteTeamMemberUseCase } from '@sylocrm/application'
+import { InviteTeamMemberUseCase, RemoveTeamMemberUseCase } from '@sylocrm/application'
 import { AuthorizationError, ConflictError, Permission, Role } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
@@ -41,6 +47,8 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
     options.userRepository,
     options.membershipRepository,
   )
+
+  const removeTeamMember = new RemoveTeamMemberUseCase(options.membershipRepository)
 
   // ── GET /team/members ─────────────────────────────────────────────────────
   fastify.get(
@@ -96,6 +104,47 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
         }
         if (error instanceof ConflictError) {
           return reply.status(409).send({ error: error.message, code: error.code, status: 409 })
+        }
+        throw error
+      }
+    },
+  )
+
+  // ── DELETE /team/members/:userId ──────────────────────────────────────────
+  fastify.delete<{ Params: { userId: string } }>(
+    '/team/members/:userId',
+    {
+      preHandler: [authMiddleware, tenantMiddleware, requirePermission(Permission.USER_REMOVE)],
+    },
+    async (request, reply) => {
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      const targetUserId = request.params.userId
+
+      const target = await options.membershipRepository.findActiveByUserAndOrganization(
+        targetUserId,
+        context.currentMembership.organizationId,
+      )
+      if (!target) {
+        return reply
+          .status(404)
+          .send({ error: 'Membro não encontrado.', code: 'MEMBER_NOT_FOUND', status: 404 })
+      }
+
+      const actor = await options.userRepository.findById(context.userId)
+
+      try {
+        await removeTeamMember.execute({
+          removerRole: context.currentMembership.role,
+          removerIsPlatformAdmin: actor?.isPlatformAdmin ?? false,
+          actorUserId: context.userId,
+          targetUserId,
+          targetRole: target.role,
+          organizationId: context.currentMembership.organizationId,
+        })
+        return reply.status(204).send()
+      } catch (error) {
+        if (error instanceof AuthorizationError) {
+          return reply.status(403).send({ error: error.message, code: error.code, status: 403 })
         }
         throw error
       }

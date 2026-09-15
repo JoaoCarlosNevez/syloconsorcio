@@ -33,3 +33,7 @@ export function inviteTeamMember(
 ): Promise<InviteTeamMemberResult> {
   return apiClient.post<InviteTeamMemberResult>('/team/members', payload, { organizationId })
 }
+
+export function removeTeamMember(organizationId: string, userId: string): Promise<void> {
+  return apiClient.delete<void>(`/team/members/${userId}`, { organizationId })
+}

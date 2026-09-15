@@ -1,7 +1,12 @@
 // useTeam — server state da equipe da organização ativa (ADR-09).
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { type InviteTeamMemberPayload, inviteTeamMember, listTeamMembers } from '../lib/team-api'
+import {
+  type InviteTeamMemberPayload,
+  inviteTeamMember,
+  listTeamMembers,
+  removeTeamMember,
+} from '../lib/team-api'
 
 export function useTeamMembersQuery(organizationId: string | null) {
   return useQuery({
@@ -16,6 +21,16 @@ export function useInviteTeamMember(organizationId: string | null) {
   return useMutation({
     mutationFn: (payload: InviteTeamMemberPayload) =>
       inviteTeamMember(organizationId as string, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team', 'members', organizationId] })
+    },
+  })
+}
+
+export function useRemoveTeamMember(organizationId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (userId: string) => removeTeamMember(organizationId as string, userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['team', 'members', organizationId] })
     },

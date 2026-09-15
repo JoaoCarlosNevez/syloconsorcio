@@ -56,6 +56,9 @@ function createNoOpMembershipRepository(): IMembershipRepository {
     create: async () => {
       throw new Error('Database not configured — cannot create memberships.')
     },
+    remove: async () => {
+      throw new Error('Database not configured — cannot remove memberships.')
+    },
   }
 }
 
