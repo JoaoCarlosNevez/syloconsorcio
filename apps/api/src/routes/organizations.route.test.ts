@@ -378,7 +378,7 @@ describe('POST /organizations/members', () => {
     expect(response.statusCode).toBe(404)
   })
 
-  it('creates a user with any Role — including ADMIN — for an existing organization', async () => {
+  it('creates an ADMIN for an existing organization that has none yet', async () => {
     const organizationRepository = buildOrganizationRepository()
     organizationRepository.findById = vi.fn().mockResolvedValue({
       id: 'org-uuid',
@@ -439,6 +439,44 @@ describe('POST /organizations/members', () => {
     })
 
     expect(response.statusCode).toBe(409)
+  })
+
+  it('returns 409 when the organization already has an ADMIN', async () => {
+    const organizationRepository = buildOrganizationRepository()
+    organizationRepository.findById = vi.fn().mockResolvedValue({
+      id: 'org-uuid',
+      name: 'Representação',
+      type: 'REPRESENTACAO',
+      parentOrganizationId: null,
+      isWhiteLabel: false,
+      branding: null,
+    })
+    const membershipRepository = buildMembershipRepository()
+    membershipRepository.findActiveByOrganizationId = vi.fn().mockResolvedValue([
+      {
+        userId: 'existing-admin-uuid',
+        name: 'Dono Existente',
+        email: 'dono@empresa.com',
+        role: 'ADMIN',
+        status: 'ACTIVE',
+      },
+    ])
+    const app = buildApp({
+      authProvider: buildAuthProvider({ id: 'new-user-uuid', email: 'segundo-admin@empresa.com' }),
+      userRepository: buildUserRepository(true),
+      organizationRepository,
+      membershipRepository,
+    })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/organizations/members',
+      headers: AUTH_HEADERS,
+      payload: { ...validMemberPayload, email: 'segundo-admin@empresa.com', role: 'ADMIN' },
+    })
+
+    expect(response.statusCode).toBe(409)
+    expect(membershipRepository.create).not.toHaveBeenCalled()
   })
 })
 

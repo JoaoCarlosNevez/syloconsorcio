@@ -3,13 +3,15 @@
 //
 // Diferente de InviteTeamMemberUseCase, não aplica canGrantRole: o Super
 // Admin está acima de toda a hierarquia de Role (já cria o ADMIN inicial em
-// CreateRepresentationUseCase), então pode conceder qualquer papel, incluindo
-// um segundo ADMIN para a mesma Representação.
+// CreateRepresentationUseCase), então pode conceder qualquer papel.
+//
+// Uma Representação só pode ter um ADMIN (Dono) por vez — mesmo o Super
+// Admin não pode criar um segundo.
 //
 // A checagem de "é Super Admin" e de existência da organização acontecem na
 // camada HTTP — este use case assume que a chamada já foi autorizada.
 
-import type { Role } from '@sylocrm/domain'
+import { ConflictError, Role } from '@sylocrm/domain'
 import { generateTemporaryPassword } from '../auth/generate-temporary-password'
 import type { AuthIdentity, IAuthProvider } from '../ports/auth.provider'
 import type { IMembershipRepository } from '../ports/membership.repository'
@@ -37,6 +39,15 @@ export class CreatePlatformUserUseCase
   ) {}
 
   async execute(input: CreatePlatformUserInput): Promise<CreatePlatformUserOutput> {
+    if (input.role === Role.ADMIN) {
+      const members = await this.membershipRepository.findActiveByOrganizationId(
+        input.organizationId,
+      )
+      if (members.some((member) => member.role === Role.ADMIN)) {
+        throw new ConflictError('Esta Representação já tem um Dono (ADMIN).')
+      }
+    }
+
     const temporaryPassword = generateTemporaryPassword()
 
     const identity = await this.authProvider.createUser({
