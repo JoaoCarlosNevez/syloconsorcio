@@ -162,6 +162,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     authProvider: resolvedDeps.authProvider,
     membershipRepository: resolvedDeps.membershipRepository,
     userRepository: resolvedDeps.userRepository,
+    organizationRepository: resolvedDeps.organizationRepository,
   })
 
   app.register(leadsRoute, {
@@ -169,6 +170,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     membershipRepository: resolvedDeps.membershipRepository,
     leadRepository: resolvedDeps.leadRepository,
     organizationRepository: resolvedDeps.organizationRepository,
+    userRepository: resolvedDeps.userRepository,
   })
 
   app.register(organizationsRoute, {
@@ -183,6 +185,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     authProvider: resolvedDeps.authProvider,
     userRepository: resolvedDeps.userRepository,
     membershipRepository: resolvedDeps.membershipRepository,
+    organizationRepository: resolvedDeps.organizationRepository,
   })
 
   app.register(organizationSettingsRoute, {
@@ -190,6 +193,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     organizationRepository: resolvedDeps.organizationRepository,
     membershipRepository: resolvedDeps.membershipRepository,
     storageProvider: resolvedDeps.storageProvider,
+    userRepository: resolvedDeps.userRepository,
   })
 
   return app

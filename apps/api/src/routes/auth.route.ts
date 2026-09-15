@@ -12,7 +12,14 @@
 //
 // Login acontece diretamente no Supabase via SDK no frontend (ADR-13).
 
-import type { IAuthProvider, IMembershipRepository, IUserRepository } from '@sylocrm/application'
+import type {
+  IAuthProvider,
+  IMembershipRepository,
+  IOrganizationRepository,
+  IUserRepository,
+  UserMembership,
+} from '@sylocrm/application'
+import { Role } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { buildMembershipContext } from '../auth/membership-context'
 import { createAuthMiddleware } from '../middleware/auth.middleware'
@@ -22,11 +29,16 @@ interface AuthRouteOptions {
   authProvider: IAuthProvider
   membershipRepository: IMembershipRepository
   userRepository: IUserRepository
+  organizationRepository: IOrganizationRepository
 }
 
 export const authRoute: FastifyPluginAsync<AuthRouteOptions> = async (fastify, options) => {
   const authMiddleware = createAuthMiddleware(options.authProvider)
-  const tenantMiddleware = createTenantMiddleware(options.membershipRepository)
+  const tenantMiddleware = createTenantMiddleware(
+    options.membershipRepository,
+    options.userRepository,
+    options.organizationRepository,
+  )
 
   // ── GET /auth/me ──────────────────────────────────────────────────────────
   // Retorna a identidade do usuário autenticado.
@@ -67,11 +79,38 @@ export const authRoute: FastifyPluginAsync<AuthRouteOptions> = async (fastify, o
   // Lista todas as organizações ativas do usuário, com role/dataScope/permissions
   // já calculados. O frontend usa isto para montar o seletor de organização
   // (ou auto-selecionar quando há apenas uma) antes de enviar X-Organization-Id.
+  //
+  // Super Admin da plataforma (isPlatformAdmin) enxerga TODAS as organizações
+  // aqui, não só as que tem membership real — as demais entram com um ADMIN
+  // sintético (nunca persistido; mesma lógica de tenantMiddleware), pra que o
+  // seletor de organização sempre tenha algo pra mostrar e o Super Admin
+  // consiga navegar pra qualquer Representação a partir dele.
   fastify.get('/auth/memberships', { preHandler: [authMiddleware] }, async (request) => {
     // authMiddleware garante que authIdentity está presente
     const identity = request.authIdentity
     const memberships = await options.membershipRepository.findActiveByUserId(identity?.id ?? '')
-    return { memberships: memberships.map(buildMembershipContext) }
+
+    const user = await options.userRepository.findById(identity?.id ?? '')
+    if (!user?.isPlatformAdmin) {
+      return { memberships: memberships.map(buildMembershipContext) }
+    }
+
+    const allOrganizations = await options.organizationRepository.list()
+    const membershipOrgIds = new Set(memberships.map((m) => m.organizationId))
+    const syntheticMemberships: UserMembership[] = allOrganizations
+      .filter((organization) => !membershipOrgIds.has(organization.id))
+      .map((organization) => ({
+        organizationId: organization.id,
+        organizationType: organization.type,
+        organizationName: organization.name,
+        organizationIconUrl: organization.branding?.iconUrl ?? null,
+        role: Role.ADMIN,
+        status: 'ACTIVE',
+      }))
+
+    return {
+      memberships: [...memberships, ...syntheticMemberships].map(buildMembershipContext),
+    }
   })
 
   // ── GET /auth/context ─────────────────────────────────────────────────────

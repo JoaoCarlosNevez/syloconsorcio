@@ -13,6 +13,7 @@ import type {
   IMembershipRepository,
   IOrganizationRepository,
   IStorageProvider,
+  IUserRepository,
 } from '@sylocrm/application'
 import type { IAuthProvider } from '@sylocrm/application'
 import { Permission } from '@sylocrm/domain'
@@ -28,6 +29,7 @@ interface OrganizationSettingsRouteOptions {
   organizationRepository: IOrganizationRepository
   membershipRepository: IMembershipRepository
   storageProvider: IStorageProvider
+  userRepository: IUserRepository
 }
 
 const ICON_BUCKET = 'organization-icons'
@@ -47,7 +49,11 @@ export const organizationSettingsRoute: FastifyPluginAsync<
   OrganizationSettingsRouteOptions
 > = async (fastify, options) => {
   const authMiddleware = createAuthMiddleware(options.authProvider)
-  const tenantMiddleware = createTenantMiddleware(options.membershipRepository)
+  const tenantMiddleware = createTenantMiddleware(
+    options.membershipRepository,
+    options.userRepository,
+    options.organizationRepository,
+  )
   const requireOrganizationUpdate = requirePermission(Permission.ORGANIZATION_UPDATE)
 
   // ── GET /organization ──────────────────────────────────────────────────────

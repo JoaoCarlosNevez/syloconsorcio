@@ -9,26 +9,42 @@
 //   - Calcula DataScope e Permissions
 //   - Constrói e injeta request.authContext
 //
+// Super Admin da plataforma (users.isPlatformAdmin) enxerga qualquer
+// organização mesmo sem membership real nela — nesse caso a organização é
+// buscada direto e uma membership ADMIN é sintetizada (nunca persistida).
+// Quando o Super Admin TEM uma membership real na organização, o Role real
+// prevalece — a sintética é só um fallback pra quando não há vínculo algum.
+//
 // Erros:
 //   400 — X-Organization-Id ausente (TENANT_HEADER_MISSING)
-//   403 — membership não encontrada (MEMBERSHIP_NOT_FOUND)
+//   403 — membership não encontrada nem sintetizável (MEMBERSHIP_NOT_FOUND)
 //   403 — membership inativa/suspensa (MEMBERSHIP_INACTIVE)
 
-import type { IMembershipRepository } from '@sylocrm/application'
-import type { AuthenticatedContext } from '@sylocrm/application'
+import type {
+  AuthenticatedContext,
+  IMembershipRepository,
+  IOrganizationRepository,
+  IUserRepository,
+  UserMembership,
+} from '@sylocrm/application'
+import { Role } from '@sylocrm/domain'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { AuthErrorCode } from '../auth/errors'
 import { buildMembershipContext } from '../auth/membership-context'
 
 /**
- * Cria o preHandler de tenant com o repositório de memberships injetado.
+ * Cria o preHandler de tenant com os repositórios necessários injetados.
  *
  * Deve ser registrado APÓS createAuthMiddleware na chain de preHandlers.
  *
  * @example
- * const tenantHandler = createTenantMiddleware(drizzleMembershipRepo)
+ * const tenantHandler = createTenantMiddleware(membershipRepo, userRepo, organizationRepo)
  */
-export function createTenantMiddleware(membershipRepository: IMembershipRepository) {
+export function createTenantMiddleware(
+  membershipRepository: IMembershipRepository,
+  userRepository: IUserRepository,
+  organizationRepository: IOrganizationRepository,
+) {
   return async function tenantMiddleware(
     request: FastifyRequest,
     reply: FastifyReply,
@@ -53,10 +69,28 @@ export function createTenantMiddleware(membershipRepository: IMembershipReposito
     }
 
     // Busca membership específica — valida que o usuário pertence à organização
-    const currentMembershipData = await membershipRepository.findActiveByUserAndOrganization(
+    let currentMembershipData = await membershipRepository.findActiveByUserAndOrganization(
       identity.id,
       organizationId,
     )
+
+    // Sem membership real: Super Admin ainda assim acessa, com ADMIN sintético
+    if (!currentMembershipData) {
+      const user = await userRepository.findById(identity.id)
+      if (user?.isPlatformAdmin) {
+        const organization = await organizationRepository.findById(organizationId)
+        if (organization) {
+          currentMembershipData = {
+            organizationId: organization.id,
+            organizationType: organization.type,
+            organizationName: organization.name,
+            organizationIconUrl: organization.branding?.iconUrl ?? null,
+            role: Role.ADMIN,
+            status: 'ACTIVE',
+          } satisfies UserMembership
+        }
+      }
+    }
 
     if (!currentMembershipData) {
       return reply.status(403).send({

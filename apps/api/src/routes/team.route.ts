@@ -24,7 +24,12 @@
 //
 // Todas rodam authMiddleware → tenantMiddleware.
 
-import type { IAuthProvider, IMembershipRepository, IUserRepository } from '@sylocrm/application'
+import type {
+  IAuthProvider,
+  IMembershipRepository,
+  IOrganizationRepository,
+  IUserRepository,
+} from '@sylocrm/application'
 import {
   InviteTeamMemberUseCase,
   ReactivateTeamMemberUseCase,
@@ -41,6 +46,7 @@ interface TeamRouteOptions {
   authProvider: IAuthProvider
   userRepository: IUserRepository
   membershipRepository: IMembershipRepository
+  organizationRepository: IOrganizationRepository
 }
 
 const INVITABLE_ROLES = [Role.MANAGER, Role.SELLER] as const
@@ -53,7 +59,11 @@ const inviteMemberSchema = z.object({
 
 export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, options) => {
   const authMiddleware = createAuthMiddleware(options.authProvider)
-  const tenantMiddleware = createTenantMiddleware(options.membershipRepository)
+  const tenantMiddleware = createTenantMiddleware(
+    options.membershipRepository,
+    options.userRepository,
+    options.organizationRepository,
+  )
 
   const inviteTeamMember = new InviteTeamMemberUseCase(
     options.authProvider,

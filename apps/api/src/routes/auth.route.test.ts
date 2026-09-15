@@ -167,6 +167,98 @@ describe('GET /auth/memberships', () => {
     expect(body.memberships[0]?.organizationId).toBe('org-rep-01')
     expect(mockRepo.findActiveByUserId).toHaveBeenCalledWith(MOCK_IDENTITY.id)
   })
+
+  it('includes every organization for a platform admin, synthesizing ADMIN where there is no real membership', async () => {
+    const mockProvider: IAuthProvider = {
+      verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
+      signOut: vi.fn(),
+      createUser: vi.fn(),
+      deleteUser: vi.fn(),
+    }
+    const mockRepo: IMembershipRepository = {
+      findActiveByUserId: vi.fn().mockResolvedValue([
+        {
+          organizationId: 'org-rep-01',
+          organizationType: OrganizationType.REPRESENTACAO,
+          organizationName: 'Representação Um',
+          organizationIconUrl: null,
+          role: Role.SELLER,
+          status: 'ACTIVE',
+        },
+      ]),
+      findActiveByUserAndOrganization: vi.fn(),
+      findActiveByOrganizationId: vi.fn(),
+      findAllActive: vi.fn(),
+      create: vi.fn(),
+      findByUserAndOrganization: vi.fn().mockResolvedValue(null),
+      findByOrganizationId: vi.fn().mockResolvedValue([]),
+      findAll: vi.fn().mockResolvedValue([]),
+      deactivate: vi.fn(),
+      reactivate: vi.fn(),
+      removeAllForUser: vi.fn(),
+    }
+    const app = buildApp({
+      authProvider: mockProvider,
+      membershipRepository: mockRepo,
+      userRepository: {
+        findById: vi
+          .fn()
+          .mockResolvedValue({
+            id: MOCK_IDENTITY.id,
+            email: MOCK_IDENTITY.email,
+            name: null,
+            isPlatformAdmin: true,
+          }),
+        upsert: vi.fn(),
+      },
+      organizationRepository: {
+        findChildOrganizationIds: vi.fn().mockResolvedValue([]),
+        create: vi.fn(),
+        findById: vi.fn().mockResolvedValue(null),
+        update: vi.fn(),
+        list: vi.fn().mockResolvedValue([
+          {
+            id: 'org-rep-01',
+            name: 'Representação Um',
+            type: 'REPRESENTACAO',
+            parentOrganizationId: null,
+            isWhiteLabel: false,
+            branding: null,
+            cnpj: null,
+            phone: null,
+            website: null,
+          },
+          {
+            id: 'org-rep-02',
+            name: 'Representação Dois',
+            type: 'REPRESENTACAO',
+            parentOrganizationId: null,
+            isWhiteLabel: false,
+            branding: null,
+            cnpj: null,
+            phone: null,
+            website: null,
+          },
+        ]),
+      },
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/auth/memberships',
+      headers: { authorization: 'Bearer valid-token' },
+    })
+
+    expect(response.statusCode).toBe(200)
+    const body = response.json<{ memberships: { organizationId: string; role: string }[] }>()
+    expect(body.memberships).toHaveLength(2)
+    const org1 = body.memberships.find((m) => m.organizationId === 'org-rep-01')
+    const org2 = body.memberships.find((m) => m.organizationId === 'org-rep-02')
+    // Real membership role wins for the org they actually belong to
+    expect(org1?.role).toBe('SELLER')
+    // No real membership — synthesized as ADMIN
+    expect(org2?.role).toBe('ADMIN')
+  })
 })
 
 // ── GET /auth/context ─────────────────────────────────────────────────────────

@@ -12,7 +12,13 @@
 // Usa Fastify inject() — sem binding de porta real.
 // O membershipRepository é mockado via DI — sem dependência do banco.
 
-import type { AuthIdentity, IMembershipRepository, UserMembership } from '@sylocrm/application'
+import type {
+  AuthIdentity,
+  IMembershipRepository,
+  IOrganizationRepository,
+  IUserRepository,
+  UserMembership,
+} from '@sylocrm/application'
 import { DataScope, OrganizationType, Permission, Role } from '@sylocrm/domain'
 import Fastify from 'fastify'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -61,17 +67,42 @@ const SUSPENDED_MEMBERSHIP: UserMembership = {
 
 // ── Test app builder ───────────────────────────────────────────────────────────
 
+/** Por padrão, não é Super Admin — não afeta os testes que já existiam. */
+function buildUserRepository(isPlatformAdmin = false): IUserRepository {
+  return {
+    findById: vi
+      .fn()
+      .mockResolvedValue({ id: IDENTITY.id, email: IDENTITY.email, name: null, isPlatformAdmin }),
+    upsert: vi.fn(),
+  }
+}
+
+function buildOrganizationRepository(
+  overrides: Partial<IOrganizationRepository> = {},
+): IOrganizationRepository {
+  return {
+    findChildOrganizationIds: vi.fn().mockResolvedValue([]),
+    create: vi.fn(),
+    list: vi.fn().mockResolvedValue([]),
+    findById: vi.fn().mockResolvedValue(null),
+    update: vi.fn(),
+    ...overrides,
+  }
+}
+
 function buildTestApp(
   mockRepo: IMembershipRepository,
   /** Pre-set authIdentity on every request (simulates authMiddleware having run). */
   identity: AuthIdentity | undefined = IDENTITY,
+  userRepo: IUserRepository = buildUserRepository(),
+  organizationRepo: IOrganizationRepository = buildOrganizationRepository(),
 ) {
   const app = Fastify({ logger: false })
 
   app.decorateRequest('authIdentity', undefined)
   app.decorateRequest('authContext', undefined)
 
-  const tenantMiddleware = createTenantMiddleware(mockRepo)
+  const tenantMiddleware = createTenantMiddleware(mockRepo, userRepo, organizationRepo)
 
   // Simulate authMiddleware by setting authIdentity before preHandler
   app.addHook('preHandler', async (request) => {
@@ -92,7 +123,11 @@ function buildTestAppWithoutAuth(mockRepo: IMembershipRepository) {
   app.decorateRequest('authIdentity', undefined)
   app.decorateRequest('authContext', undefined)
 
-  const tenantMiddleware = createTenantMiddleware(mockRepo)
+  const tenantMiddleware = createTenantMiddleware(
+    mockRepo,
+    buildUserRepository(),
+    buildOrganizationRepository(),
+  )
 
   app.get('/business', { preHandler: [tenantMiddleware] }, async (request) => {
     return request.authContext
@@ -185,6 +220,106 @@ describe('tenantMiddleware', () => {
     expect(response.statusCode).toBe(403)
     const body = response.json<{ code: string }>()
     expect(body.code).toBe(AuthErrorCode.MEMBERSHIP_NOT_FOUND)
+  })
+
+  it('returns 403 for a platform admin when the requested organization does not exist', async () => {
+    const mockRepo: IMembershipRepository = {
+      findActiveByUserId: vi.fn(),
+      findActiveByUserAndOrganization: vi.fn().mockResolvedValue(null),
+      findActiveByOrganizationId: vi.fn(),
+      findAllActive: vi.fn(),
+      create: vi.fn(),
+      findByUserAndOrganization: vi.fn().mockResolvedValue(null),
+      findByOrganizationId: vi.fn().mockResolvedValue([]),
+      findAll: vi.fn().mockResolvedValue([]),
+      deactivate: vi.fn(),
+      reactivate: vi.fn(),
+      removeAllForUser: vi.fn(),
+    }
+    const app = buildTestApp(
+      mockRepo,
+      IDENTITY,
+      buildUserRepository(true),
+      buildOrganizationRepository(),
+    )
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/business',
+      headers: { 'x-organization-id': 'org-unknown' },
+    })
+
+    expect(response.statusCode).toBe(403)
+    const body = response.json<{ code: string }>()
+    expect(body.code).toBe(AuthErrorCode.MEMBERSHIP_NOT_FOUND)
+  })
+
+  it('synthesizes an ADMIN membership for a platform admin with no real membership in an existing organization', async () => {
+    const mockRepo: IMembershipRepository = {
+      findActiveByUserId: vi.fn().mockResolvedValue([]),
+      findActiveByUserAndOrganization: vi.fn().mockResolvedValue(null),
+      findActiveByOrganizationId: vi.fn(),
+      findAllActive: vi.fn(),
+      create: vi.fn(),
+      findByUserAndOrganization: vi.fn().mockResolvedValue(null),
+      findByOrganizationId: vi.fn().mockResolvedValue([]),
+      findAll: vi.fn().mockResolvedValue([]),
+      deactivate: vi.fn(),
+      reactivate: vi.fn(),
+      removeAllForUser: vi.fn(),
+    }
+    const organizationRepo = buildOrganizationRepository({
+      findById: vi.fn().mockResolvedValue({
+        id: 'org-rep-01',
+        name: 'Representação Teste',
+        type: OrganizationType.REPRESENTACAO,
+        parentOrganizationId: null,
+        isWhiteLabel: false,
+        branding: null,
+        cnpj: null,
+        phone: null,
+        website: null,
+      }),
+    })
+    const app = buildTestApp(mockRepo, IDENTITY, buildUserRepository(true), organizationRepo)
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/business',
+      headers: { 'x-organization-id': 'org-rep-01' },
+    })
+
+    expect(response.statusCode).toBe(200)
+    const ctx = response.json<{ currentMembership: { role: string; organizationId: string } }>()
+    expect(ctx.currentMembership.role).toBe('ADMIN')
+    expect(ctx.currentMembership.organizationId).toBe('org-rep-01')
+  })
+
+  it('uses the real membership role for a platform admin who is also a real member', async () => {
+    const mockRepo: IMembershipRepository = {
+      findActiveByUserId: vi.fn().mockResolvedValue([ACTIVE_REPRESENTACAO_SELLER]),
+      findActiveByUserAndOrganization: vi.fn().mockResolvedValue(ACTIVE_REPRESENTACAO_SELLER),
+      findActiveByOrganizationId: vi.fn(),
+      findAllActive: vi.fn(),
+      create: vi.fn(),
+      findByUserAndOrganization: vi.fn().mockResolvedValue(null),
+      findByOrganizationId: vi.fn().mockResolvedValue([]),
+      findAll: vi.fn().mockResolvedValue([]),
+      deactivate: vi.fn(),
+      reactivate: vi.fn(),
+      removeAllForUser: vi.fn(),
+    }
+    const app = buildTestApp(mockRepo, IDENTITY, buildUserRepository(true))
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/business',
+      headers: { 'x-organization-id': 'org-rep-01' },
+    })
+
+    expect(response.statusCode).toBe(200)
+    const ctx = response.json<{ currentMembership: { role: string } }>()
+    expect(ctx.currentMembership.role).toBe('SELLER')
   })
 
   it('returns 403 when membership exists but is suspended', async () => {

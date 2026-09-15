@@ -15,6 +15,7 @@ import type {
   ILeadRepository,
   IMembershipRepository,
   IOrganizationRepository,
+  IUserRepository,
 } from '@sylocrm/application'
 import {
   CreateLeadUseCase,
@@ -36,6 +37,7 @@ interface LeadsRouteOptions {
   membershipRepository: IMembershipRepository
   leadRepository: ILeadRepository
   organizationRepository: IOrganizationRepository
+  userRepository: IUserRepository
 }
 
 const LEAD_STAGE_VALUES = Object.values(LeadStage) as [string, ...string[]]
@@ -81,7 +83,11 @@ function validationErrorResponse(fieldErrors: Record<string, string[] | undefine
 
 export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify, options) => {
   const authMiddleware = createAuthMiddleware(options.authProvider)
-  const tenantMiddleware = createTenantMiddleware(options.membershipRepository)
+  const tenantMiddleware = createTenantMiddleware(
+    options.membershipRepository,
+    options.userRepository,
+    options.organizationRepository,
+  )
 
   const listLeads = new ListLeadsUseCase(options.leadRepository, options.organizationRepository)
   const getLead = new GetLeadUseCase(options.leadRepository, options.organizationRepository)
