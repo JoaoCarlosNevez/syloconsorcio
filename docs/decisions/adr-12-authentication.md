@@ -153,6 +153,17 @@ na camada Application:
 
 RLS pode ser configurado como defesa em profundidade, mas nunca como única barreira.
 
+**Atualização (2026-09-15):** essa defesa em profundidade estava faltando — todas as tabelas
+do schema `public` ficaram sem RLS ativado desde a criação do banco. Como o Supabase expõe
+toda tabela via PostgREST independente do backend, e a `anon key` (pública por design, usada
+pelo Supabase Auth no frontend) também autentica contra essa API REST, qualquer pessoa de
+posse da anon key conseguia ler `organizations`, `users` (incluindo `is_platform_admin`),
+`organization_memberships` (roles) e `leads` direto do banco, pulando authMiddleware,
+tenantMiddleware e todo o resto da camada Application. Confirmado por teste manual antes da
+correção. RLS foi ativado (sem nenhuma policy — `service key` continua ignorando RLS via
+`BYPASSRLS`, então o backend não é afetado) em todas as tabelas — ver
+`packages/infrastructure/src/database/migrations/0005_enable_rls.sql`.
+
 ### 9. Logout
 
 O fluxo de logout invalida a sessão no Supabase Auth via `IAuthProvider.signOut(token)`.
