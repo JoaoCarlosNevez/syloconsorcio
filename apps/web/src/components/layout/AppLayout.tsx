@@ -221,16 +221,18 @@ const TIER_PALETTE: Record<Tier, { accent: string; subtle: string; muted: string
   diamante: { accent: '#7c3aed', subtle: 'rgba(124,58,237,0.10)', muted: 'rgba(124,58,237,0.06)' },
 }
 
-// Itens de navegação principal
+// Itens de navegação principal. `hiddenForRoles` restringe o item a quem não
+// tem esse Role na organização ativa — Vendedor só opera o funil (Início,
+// Kanban, Tarefas) e Ajuda; Fila/Configurações/Administração ficam de fora.
 const NAV_ITEMS = [
   { label: 'Início', path: '/app/home', icon: InicioIcon },
   { label: 'Kanban', path: '/app/kanban', icon: KanbanIcon },
   { label: 'Tarefas', path: '/app/tarefas', icon: TarefasIcon },
-  { label: 'Fila', path: '/app/fila', icon: FilaIcon },
-  { label: 'Configurações', path: '/app/config', icon: ConfigIcon },
-  { label: 'Administração', path: '/app/admin', icon: AdminIcon },
+  { label: 'Fila', path: '/app/fila', icon: FilaIcon, hiddenForRoles: ['SELLER'] },
+  { label: 'Configurações', path: '/app/config', icon: ConfigIcon, hiddenForRoles: ['SELLER'] },
+  { label: 'Administração', path: '/app/admin', icon: AdminIcon, hiddenForRoles: ['SELLER'] },
   { label: 'Ajuda', path: '/app/ajuda', icon: AjudaIcon },
-]
+] as const
 
 // ── AppLayout ─────────────────────────────────────────────────────────────────
 
@@ -329,7 +331,12 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {/* Navegação */}
         <nav className={styles.nav} aria-label="Navegação principal">
-          {NAV_ITEMS.map(({ label, path, icon: Icon }) => (
+          {NAV_ITEMS.filter(
+            (item) =>
+              !('hiddenForRoles' in item) ||
+              !membership ||
+              !(item.hiddenForRoles as readonly string[]).includes(membership.role),
+          ).map(({ label, path, icon: Icon }) => (
             <a
               key={path}
               href={path}
