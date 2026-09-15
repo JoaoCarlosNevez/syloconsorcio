@@ -1112,6 +1112,13 @@ button.breadcrumbCurrent:hover {
   box-shadow: 0 0 0 3px rgba(255, 167, 5, 0.09);
 }
 
+.formInput:disabled,
+.formSelect:disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
 .formInput::placeholder {
   color: #94a3b8;
 }
@@ -1169,6 +1176,11 @@ button.breadcrumbCurrent:hover {
   opacity: 0.86;
 }
 
+.primaryBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .secondaryBtn {
   display: inline-flex;
   align-items: center;
@@ -1189,6 +1201,13 @@ button.breadcrumbCurrent:hover {
 .secondaryBtn:hover {
   background: #f8fafc;
   color: #0b1c30;
+}
+
+.secondaryBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #ffffff;
+  color: #565e74;
 }
 
 .dangerOutlineBtn {
@@ -1540,15 +1559,20 @@ button.breadcrumbCurrent:hover {
   width: 64px;
   height: 64px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #0b1c30, #1a2e42);
+  background: #ffffff;
+  border: 1px solid rgba(216, 195, 173, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
-  font-size: 20px;
-  font-weight: 700;
   flex-shrink: 0;
-  letter-spacing: -0.5px;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.logoPreviewImg {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 .logoUploadActions {

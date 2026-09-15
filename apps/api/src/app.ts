@@ -22,6 +22,7 @@ import { env } from './config/env'
 import { authRoute } from './routes/auth.route'
 import { healthRoute } from './routes/health.route'
 import { leadsRoute } from './routes/leads.route'
+import { organizationSettingsRoute } from './routes/organization-settings.route'
 import { organizationsRoute } from './routes/organizations.route'
 import { teamRoute } from './routes/team.route'
 
@@ -163,6 +164,13 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     authProvider: resolvedDeps.authProvider,
     userRepository: resolvedDeps.userRepository,
     membershipRepository: resolvedDeps.membershipRepository,
+  })
+
+  app.register(organizationSettingsRoute, {
+    authProvider: resolvedDeps.authProvider,
+    organizationRepository: resolvedDeps.organizationRepository,
+    membershipRepository: resolvedDeps.membershipRepository,
+    storageProvider: resolvedDeps.storageProvider,
   })
 
   return app

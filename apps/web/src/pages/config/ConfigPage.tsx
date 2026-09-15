@@ -1,8 +1,18 @@
 // ConfigPage — Configurações com três sub-páginas: Hub, Equipe, Plano e Cobrança
 
-import { type FormEvent, useEffect, useState } from 'react'
+import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
+import { useActiveOrganization } from '../../hooks/useOrganization'
+import {
+  useOrganizationSettingsQuery,
+  useUpdateOrganizationSettings,
+  useUploadOrganizationSettingsIcon,
+} from '../../hooks/useOrganizationSettings'
 import styles from './ConfigPage.module.css'
+
+// Padrão de identidade visual (AGENTS.md §11): toda organização usa a marca
+// Sylo até virar White Label e definir seu próprio ícone.
+const DEFAULT_ORG_ICON_URL = '/sylo-logo.png'
 
 // ── Ícones ──────────────────────────────────────────────────────────────────────
 
@@ -1615,16 +1625,66 @@ function NotificacoesView() {
 // ── Organização view ───────────────────────────────────────────────────────────────
 
 function OrganizacaoView() {
-  const [orgName, setOrgName] = useState('Sylo Consultoria')
-  const [cnpj, setCnpj] = useState('12.345.678/0001-90')
-  const [website, setWebsite] = useState('https://sylocrm.com')
-  const [phone, setPhone] = useState('(11) 99999-0000')
-  const [sector, setSector] = useState('financeiro')
+  const { organizationId, membership } = useActiveOrganization()
+  const { data, isLoading } = useOrganizationSettingsQuery(organizationId)
+  const updateSettings = useUpdateOrganizationSettings(organizationId)
+  const uploadIcon = useUploadOrganizationSettingsIcon(organizationId)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const [orgName, setOrgName] = useState('')
+  const [cnpj, setCnpj] = useState('')
+  const [website, setWebsite] = useState('')
+  const [phone, setPhone] = useState('')
   const [toast, setToast] = useState('')
 
-  function handleSave(e: FormEvent) {
+  const organization = data?.organization
+  const isAdmin = membership?.role === 'ADMIN'
+  const canChangeLogo = isAdmin && organization?.isWhiteLabel === true
+
+  // Sincroniza o formulário sempre que os dados reais chegam (ou mudam via refetch).
+  useEffect(() => {
+    if (!organization) return
+    setOrgName(organization.name)
+    setCnpj(organization.cnpj ?? '')
+    setWebsite(organization.website ?? '')
+    setPhone(organization.phone ?? '')
+  }, [organization])
+
+  async function handleSave(e: FormEvent) {
     e.preventDefault()
-    setToast('Dados da organização salvos com sucesso!')
+    try {
+      await updateSettings.mutateAsync({
+        name: orgName.trim(),
+        cnpj: cnpj.trim() || null,
+        phone: phone.trim() || null,
+        website: website.trim() || null,
+      })
+      setToast('Dados da organização salvos com sucesso!')
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Erro ao salvar organização.')
+    }
+  }
+
+  async function handleIconChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    try {
+      await uploadIcon.mutateAsync(file)
+      setToast('Ícone atualizado com sucesso!')
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Erro ao enviar ícone.')
+    }
+  }
+
+  if (isLoading || !organization) {
+    return (
+      <div className={styles.settingsContent}>
+        <div className={styles.settingsCard}>
+          <div className={styles.settingsCardBody}>Carregando…</div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -1632,16 +1692,42 @@ function OrganizacaoView() {
       <div className={styles.settingsCard}>
         <div className={styles.settingsCardHeader}>
           <div className={styles.settingsCardTitle}>Identidade da organização</div>
-          <div className={styles.settingsCardDesc}>Logo e nome público exibidos no sistema</div>
+          <div className={styles.settingsCardDesc}>
+            {organization.isWhiteLabel
+              ? 'Logo e nome público exibidos no sistema'
+              : 'Esta organização usa a marca Sylo por padrão. Só o Super Admin pode ativar o White Label, pela tela de Administração.'}
+          </div>
         </div>
         <div className={styles.settingsCardBody}>
           <div className={styles.logoUploadRow}>
-            <div className={styles.logoPreview}>SC</div>
+            <div className={styles.logoPreview}>
+              <img
+                src={organization.branding?.iconUrl ?? DEFAULT_ORG_ICON_URL}
+                alt=""
+                className={styles.logoPreviewImg}
+              />
+            </div>
             <div className={styles.logoUploadActions}>
-              <button type="button" className={styles.secondaryBtn}>
+              <button
+                type="button"
+                className={styles.secondaryBtn}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={!canChangeLogo}
+              >
                 Alterar logo
               </button>
-              <span className={styles.formHint}>PNG ou SVG · Máx. 1MB · 256×256px</span>
+              <span className={styles.formHint}>
+                {canChangeLogo
+                  ? 'PNG, JPEG, WEBP ou SVG · Máx. 2MB'
+                  : 'Disponível apenas para organizações White Label'}
+              </span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                style={{ display: 'none' }}
+                onChange={handleIconChange}
+              />
             </div>
           </div>
         </div>
@@ -1650,7 +1736,11 @@ function OrganizacaoView() {
       <div className={styles.settingsCard}>
         <div className={styles.settingsCardHeader}>
           <div className={styles.settingsCardTitle}>Dados da empresa</div>
-          <div className={styles.settingsCardDesc}>Informações cadastrais da organização</div>
+          <div className={styles.settingsCardDesc}>
+            {isAdmin
+              ? 'Informações cadastrais da organização'
+              : 'Apenas o dono da representação pode editar estes dados.'}
+          </div>
         </div>
         <div className={styles.settingsCardBody}>
           <form onSubmit={handleSave} style={{ display: 'contents' }}>
@@ -1664,6 +1754,7 @@ function OrganizacaoView() {
                 value={orgName}
                 onChange={(e) => setOrgName(e.target.value)}
                 placeholder="Razão social ou nome fantasia"
+                disabled={!isAdmin}
               />
             </div>
             <div className={styles.formRowHalf}>
@@ -1677,6 +1768,7 @@ function OrganizacaoView() {
                   value={cnpj}
                   onChange={(e) => setCnpj(e.target.value)}
                   placeholder="00.000.000/0001-00"
+                  disabled={!isAdmin}
                 />
               </div>
               <div className={styles.formRow}>
@@ -1689,45 +1781,34 @@ function OrganizacaoView() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="(11) 00000-0000"
+                  disabled={!isAdmin}
                 />
               </div>
             </div>
-            <div className={styles.formRowHalf}>
-              <div className={styles.formRow}>
-                <label className={styles.formLabel} htmlFor="org-website">
-                  Website
-                </label>
-                <input
-                  id="org-website"
-                  className={styles.formInput}
-                  value={website}
-                  onChange={(e) => setWebsite(e.target.value)}
-                  placeholder="https://..."
-                />
-              </div>
-              <div className={styles.formRow}>
-                <label className={styles.formLabel} htmlFor="org-sector">
-                  Setor
-                </label>
-                <select
-                  id="org-sector"
-                  className={styles.formSelect}
-                  value={sector}
-                  onChange={(e) => setSector(e.target.value)}
+            <div className={styles.formRow}>
+              <label className={styles.formLabel} htmlFor="org-website">
+                Website
+              </label>
+              <input
+                id="org-website"
+                className={styles.formInput}
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                placeholder="https://..."
+                disabled={!isAdmin}
+              />
+            </div>
+            {isAdmin && (
+              <div className={styles.saveRow}>
+                <button
+                  type="submit"
+                  className={styles.primaryBtn}
+                  disabled={updateSettings.isPending}
                 >
-                  <option value="financeiro">Financeiro / Bancário</option>
-                  <option value="seguros">Seguros</option>
-                  <option value="imobiliario">Imobiliário</option>
-                  <option value="consorcio">Consórcio</option>
-                  <option value="outro">Outro</option>
-                </select>
+                  {updateSettings.isPending ? 'Salvando…' : 'Salvar organização'}
+                </button>
               </div>
-            </div>
-            <div className={styles.saveRow}>
-              <button type="submit" className={styles.primaryBtn}>
-                Salvar organização
-              </button>
-            </div>
+            )}
           </form>
         </div>
       </div>

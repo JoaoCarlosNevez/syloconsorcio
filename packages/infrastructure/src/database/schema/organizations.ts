@@ -25,6 +25,11 @@ export const organizations = pgTable('organizations', {
   // ver branding.iconUrl, só respeitado pelo frontend quando isWhiteLabel=true.
   isWhiteLabel: boolean('is_white_label').notNull().default(false),
   branding: jsonb('branding'),
+  // Dados cadastrais — editáveis pelo ADMIN da própria Representação em
+  // Configurações > Organização (ver apps/api/src/routes/organization-settings.route.ts).
+  cnpj: text('cnpj'),
+  phone: text('phone'),
+  website: text('website'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })

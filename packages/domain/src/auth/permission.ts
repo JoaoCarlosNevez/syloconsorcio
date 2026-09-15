@@ -16,6 +16,7 @@ export const Permission = {
   LEAD_DELETE: 'lead.delete',
   USER_INVITE: 'user.invite',
   REPORTS_READ: 'reports.read',
+  ORGANIZATION_UPDATE: 'organization.update',
 } as const
 
 export type Permission = (typeof Permission)[keyof typeof Permission]

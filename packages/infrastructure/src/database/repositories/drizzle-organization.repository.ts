@@ -21,6 +21,9 @@ const ORGANIZATION_COLUMNS = {
   parentOrganizationId: organizations.parentOrganizationId,
   isWhiteLabel: organizations.isWhiteLabel,
   branding: organizations.branding,
+  cnpj: organizations.cnpj,
+  phone: organizations.phone,
+  website: organizations.website,
 } as const
 
 function toOrganizationRecord(row: {
@@ -30,6 +33,9 @@ function toOrganizationRecord(row: {
   parentOrganizationId: string | null
   isWhiteLabel: boolean
   branding: unknown
+  cnpj: string | null
+  phone: string | null
+  website: string | null
 }): OrganizationRecord {
   return {
     id: row.id,
@@ -38,6 +44,9 @@ function toOrganizationRecord(row: {
     parentOrganizationId: row.parentOrganizationId,
     isWhiteLabel: row.isWhiteLabel,
     branding: (row.branding as OrganizationBranding | null) ?? null,
+    cnpj: row.cnpj,
+    phone: row.phone,
+    website: row.website,
   }
 }
 
@@ -95,6 +104,9 @@ export class DrizzleOrganizationRepository implements IOrganizationRepository {
         ...(input.name !== undefined ? { name: input.name } : {}),
         ...(input.isWhiteLabel !== undefined ? { isWhiteLabel: input.isWhiteLabel } : {}),
         ...(input.branding !== undefined ? { branding: input.branding } : {}),
+        ...(input.cnpj !== undefined ? { cnpj: input.cnpj } : {}),
+        ...(input.phone !== undefined ? { phone: input.phone } : {}),
+        ...(input.website !== undefined ? { website: input.website } : {}),
         updatedAt: new Date(),
       })
       .where(eq(organizations.id, id))

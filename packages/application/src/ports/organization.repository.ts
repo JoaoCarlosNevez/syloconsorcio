@@ -20,6 +20,9 @@ export interface OrganizationRecord {
   /** Só organizações White Label podem definir branding.iconUrl (AGENTS.md §11). */
   isWhiteLabel: boolean
   branding: OrganizationBranding | null
+  cnpj: string | null
+  phone: string | null
+  website: string | null
 }
 
 export interface NewOrganizationInput {
@@ -32,6 +35,9 @@ export interface UpdateOrganizationInput {
   name?: string
   isWhiteLabel?: boolean
   branding?: OrganizationBranding
+  cnpj?: string | null
+  phone?: string | null
+  website?: string | null
 }
 
 export interface IOrganizationRepository {

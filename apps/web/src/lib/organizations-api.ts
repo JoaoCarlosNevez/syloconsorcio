@@ -16,6 +16,9 @@ export interface Organization {
   /** Só organizações White Label podem definir um ícone próprio (branding.iconUrl). */
   isWhiteLabel: boolean
   branding: OrganizationBranding | null
+  cnpj: string | null
+  phone: string | null
+  website: string | null
 }
 
 export interface CreateRepresentationPayload {
