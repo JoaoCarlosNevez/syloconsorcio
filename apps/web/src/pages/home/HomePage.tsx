@@ -203,7 +203,7 @@ const TIER_BG: Record<Tier, string> = {
 export function HomePage() {
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(true)
-  const { organizationId } = useActiveOrganization()
+  const { organizationId, membership } = useActiveOrganization()
   const { data: leadsPage } = useLeadsQuery(organizationId, { pageSize: 100 })
   const { user } = useAuth()
   const { data: currentUser } = useCurrentUser()
@@ -297,7 +297,9 @@ export function HomePage() {
                   </span>
                   <span className={styles.profileHandle}>{handle}</span>
                 </div>
-                <p className={styles.profileMeta}>Equipe de Porthis, {displayLocation}</p>
+                <p className={styles.profileMeta}>
+                  Equipe de {membership?.organizationName ?? 'Sylo'}, {displayLocation}
+                </p>
                 <div className={styles.heroActions}>
                   <button type="button" className={styles.notifBtn} aria-label="Notificações">
                     <BellIcon />
