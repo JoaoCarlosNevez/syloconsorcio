@@ -43,6 +43,13 @@
       "when": 1789501741673,
       "tag": "0005_open_zeigeist",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789657662949,
+      "tag": "0006_keen_roxanne_simpson",
+      "breakpoints": true
     }
   ]
 }

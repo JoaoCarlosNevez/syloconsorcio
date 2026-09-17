@@ -1,12 +1,18 @@
 // PerfilPage — Perfil completo do consultor: nível, XP, ofensiva e conquistas.
 
 import { OrganizationAvatar } from '@sylocrm/ui'
-import { useState } from 'react'
+import { type ChangeEvent, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { useAuth } from '../../hooks/useAuth'
-import { useCurrentUser, useUpdateMyProfile } from '../../hooks/useCurrentUser'
+import {
+  useCurrentUser,
+  useRemoveMyAvatar,
+  useUpdateMyProfile,
+  useUploadMyAvatar,
+} from '../../hooks/useCurrentUser'
 import { useActiveOrganization } from '../../hooks/useOrganization'
+import { validateIconFile } from '../../lib/icon-validation'
 import { supabase } from '../../lib/supabase'
 import styles from './PerfilPage.module.css'
 
@@ -401,12 +407,16 @@ function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
   const { data: currentUser } = useCurrentUser()
   const { membership } = useActiveOrganization()
   const updateProfile = useUpdateMyProfile()
+  const uploadAvatar = useUploadMyAvatar()
+  const removeAvatar = useRemoveMyAvatar()
   const navigate = useNavigate()
+  const avatarInputRef = useRef<HTMLInputElement>(null)
 
   const [name, setName] = useState(currentUser?.name ?? '')
   const [instagramHandle, setInstagramHandle] = useState(currentUser?.instagramHandle ?? '')
   const [location, setLocation] = useState(currentUser?.location ?? '')
   const [formError, setFormError] = useState('')
+  const [avatarError, setAvatarError] = useState('')
 
   const [changingPassword, setChangingPassword] = useState(false)
   const [newPassword, setNewPassword] = useState('')
@@ -433,6 +443,35 @@ function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
       onClose()
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'Não foi possível salvar o perfil.')
+    }
+  }
+
+  async function handleAvatarChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    setAvatarError('')
+    const validationError = await validateIconFile(file)
+    if (validationError) {
+      setAvatarError(validationError)
+      return
+    }
+
+    try {
+      await uploadAvatar.mutateAsync(file)
+      onSaved('Foto de perfil atualizada!')
+    } catch (error) {
+      setAvatarError(error instanceof Error ? error.message : 'Não foi possível enviar a foto.')
+    }
+  }
+
+  async function handleRemoveAvatar() {
+    try {
+      await removeAvatar.mutateAsync()
+      onSaved('Foto de perfil removida.')
+    } catch (error) {
+      setAvatarError(error instanceof Error ? error.message : 'Não foi possível remover a foto.')
     }
   }
 
@@ -475,30 +514,51 @@ function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
           {/* Foto de perfil */}
           <section className={styles.editSection}>
             <div className={styles.editPhotoRow}>
-              <span className={styles.editPhotoAvatar}>{initials}</span>
+              {currentUser?.avatarUrl ? (
+                <img src={currentUser.avatarUrl} alt="" className={styles.editPhotoAvatarImg} />
+              ) : (
+                <span className={styles.editPhotoAvatar}>{initials}</span>
+              )}
               <div className={styles.editPhotoInfo}>
                 <span className={styles.editPhotoTitle}>Foto de perfil</span>
                 <span className={styles.editHint}>
-                  JPG, PNG ou WEBP. Tamanho máximo 5 MB. 256×256 px recomendado.
+                  JPG, PNG ou WEBP. Tamanho máximo 2 MB. Precisa ser quadrada (recomendado
+                  256×256px).
                 </span>
               </div>
               <div className={styles.editPhotoActions}>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  hidden
+                  onChange={handleAvatarChange}
+                />
                 <button
                   type="button"
                   className={styles.secondaryBtn}
-                  onClick={() => onSaved('Upload de foto ainda não está disponível.')}
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={uploadAvatar.isPending}
                 >
-                  Alterar foto
+                  {uploadAvatar.isPending ? 'Enviando…' : 'Alterar foto'}
                 </button>
-                <button
-                  type="button"
-                  className={styles.dangerLinkBtn}
-                  onClick={() => onSaved('Upload de foto ainda não está disponível.')}
-                >
-                  Remover
-                </button>
+                {currentUser?.avatarUrl && (
+                  <button
+                    type="button"
+                    className={styles.dangerLinkBtn}
+                    onClick={handleRemoveAvatar}
+                    disabled={removeAvatar.isPending}
+                  >
+                    Remover
+                  </button>
+                )}
               </div>
             </div>
+            {avatarError && (
+              <span role="alert" className={styles.editFormError}>
+                {avatarError}
+              </span>
+            )}
           </section>
 
           {/* Informações pessoais */}
@@ -850,7 +910,15 @@ export function PerfilPage() {
               <SettingsIcon />
             </button>
             <span className={styles.topBarDivider} aria-hidden="true" />
-            <button type="button" className={styles.shareBtn}>
+            <button
+              type="button"
+              className={styles.shareBtn}
+              onClick={async () => {
+                await navigator.clipboard.writeText(window.location.href)
+                setActivityToast('Link do perfil copiado!')
+                setTimeout(() => setActivityToast(''), 3000)
+              }}
+            >
               <ShareIcon />
               Compartilhar Perfil
             </button>
@@ -876,7 +944,11 @@ export function PerfilPage() {
           <div className={styles.profileBody}>
             <div className={styles.profileMain}>
               <div className={styles.avatarWrap}>
-                <img src="/sara-profile.png" alt={emailPrefix} className={styles.avatar} />
+                <img
+                  src={currentUser?.avatarUrl ?? '/sara-profile.png'}
+                  alt={emailPrefix}
+                  className={styles.avatar}
+                />
               </div>
               <div className={styles.profileInfo}>
                 <div className={styles.profileNameRow}>

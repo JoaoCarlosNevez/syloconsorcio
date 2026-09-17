@@ -387,7 +387,11 @@ export function AppLayout({ children }: AppLayoutProps) {
               className={styles.userCardAvatarWrap}
               style={{ borderColor: TIER_BORDER_COLOR[USER_TIER] }}
             >
-              <img src="/sara-profile.png" alt={displayName} className={styles.userCardAvatar} />
+              <img
+                src={currentUser?.avatarUrl ?? '/sara-profile.png'}
+                alt={displayName}
+                className={styles.userCardAvatar}
+              />
             </div>
             <div className={styles.userCardInfo}>
               <p className={styles.userCardName}>{displayName}</p>

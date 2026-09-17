@@ -15,6 +15,8 @@ export const users = pgTable('users', {
   instagramHandle: text('instagram_handle'),
   /** Cidade/região livre (ex: "São Paulo, SP") — não normalizado, só exibição. */
   location: text('location'),
+  /** URL pública da foto de perfil no bucket user-avatars. Null = usa o avatar padrão. */
+  avatarUrl: text('avatar_url'),
   // Super Admin da plataforma — só quem tem esta flag pode criar novas
   // Representações (tenants). Não é um Role de Membership: é uma
   // capacidade de nível plataforma, independente de qualquer organização.

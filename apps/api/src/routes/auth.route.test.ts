@@ -8,11 +8,12 @@
 //
 // Usa buildApp() com authProvider/membershipRepository mockados via DI — sem Supabase real.
 
-import type { IAuthProvider, IMembershipRepository } from '@sylocrm/application'
+import type { IAuthProvider, IMembershipRepository, IStorageProvider } from '@sylocrm/application'
 import { OrganizationType, Role } from '@sylocrm/domain'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { buildApp } from '../app'
 import { AuthErrorCode } from '../auth/errors'
+import { buildTestPng } from '../test-utils/png'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -20,6 +21,27 @@ const MOCK_IDENTITY = { id: 'user-uuid', email: 'user@empresa.com' }
 
 function buildTestApp(authProvider: IAuthProvider, membershipRepository?: IMembershipRepository) {
   return buildApp({ authProvider, membershipRepository })
+}
+
+function buildStorageProvider(): IStorageProvider {
+  return {
+    uploadPublicFile: vi.fn().mockResolvedValue({
+      url: 'https://xvzsobntyhvxrbdfboax.supabase.co/storage/v1/object/public/user-avatars/user-uuid/avatar.png',
+    }),
+  }
+}
+
+/** Monta um corpo multipart/form-data mínimo com um único arquivo. */
+function buildMultipartUpload(filename: string, contentType: string, content: Buffer | string) {
+  const boundary = '----sylocrmTestBoundary'
+  const contentBuffer = typeof content === 'string' ? Buffer.from(content) : content
+  const header = Buffer.from(
+    `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${contentType}\r\n\r\n`,
+  )
+  const footer = Buffer.from(`\r\n--${boundary}--\r\n`)
+  const payload = Buffer.concat([header, contentBuffer, footer])
+
+  return { payload, headers: { 'content-type': `multipart/form-data; boundary=${boundary}` } }
 }
 
 // ── GET /auth/me ──────────────────────────────────────────────────────────────
@@ -187,6 +209,169 @@ describe('PATCH /auth/me', () => {
       instagramHandle: 'sara.sylo',
       location: 'São Paulo, SP',
     })
+  })
+})
+
+// ── POST /auth/me/avatar ─────────────────────────────────────────────────────
+
+describe('POST /auth/me/avatar', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('returns 401 when Authorization header is absent', async () => {
+    const mockProvider: IAuthProvider = {
+      verifyToken: vi.fn(),
+      signOut: vi.fn(),
+      createUser: vi.fn(),
+      deleteUser: vi.fn(),
+    }
+    const app = buildApp({ authProvider: mockProvider, storageProvider: buildStorageProvider() })
+
+    const { payload, headers } = buildMultipartUpload(
+      'avatar.png',
+      'image/png',
+      buildTestPng(64, 64),
+    )
+    const response = await app.inject({
+      method: 'POST',
+      url: '/auth/me/avatar',
+      headers,
+      payload,
+    })
+
+    expect(response.statusCode).toBe(401)
+  })
+
+  it('returns 400 when the image is not square', async () => {
+    const mockProvider: IAuthProvider = {
+      verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
+      signOut: vi.fn(),
+      createUser: vi.fn(),
+      deleteUser: vi.fn(),
+    }
+    const app = buildApp({ authProvider: mockProvider, storageProvider: buildStorageProvider() })
+
+    const { payload, headers } = buildMultipartUpload(
+      'avatar.png',
+      'image/png',
+      buildTestPng(600, 300),
+    )
+    const response = await app.inject({
+      method: 'POST',
+      url: '/auth/me/avatar',
+      headers: { ...headers, authorization: 'Bearer valid-token' },
+      payload,
+    })
+
+    expect(response.statusCode).toBe(400)
+    const body = response.json<{ code: string }>()
+    expect(body.code).toBe('NOT_SQUARE')
+  })
+
+  it('uploads the avatar and updates the profile', async () => {
+    const mockProvider: IAuthProvider = {
+      verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
+      signOut: vi.fn(),
+      createUser: vi.fn(),
+      deleteUser: vi.fn(),
+    }
+    const storageProvider = buildStorageProvider()
+    const updateProfile = vi.fn().mockResolvedValue({
+      id: MOCK_IDENTITY.id,
+      email: MOCK_IDENTITY.email,
+      name: null,
+      instagramHandle: null,
+      location: null,
+      avatarUrl:
+        'https://xvzsobntyhvxrbdfboax.supabase.co/storage/v1/object/public/user-avatars/user-uuid/avatar.png',
+      isPlatformAdmin: false,
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+    })
+    const app = buildApp({
+      authProvider: mockProvider,
+      storageProvider,
+      userRepository: { findById: vi.fn(), upsert: vi.fn(), updateProfile },
+    })
+
+    const { payload, headers } = buildMultipartUpload(
+      'avatar.png',
+      'image/png',
+      buildTestPng(64, 64),
+    )
+    const response = await app.inject({
+      method: 'POST',
+      url: '/auth/me/avatar',
+      headers: { ...headers, authorization: 'Bearer valid-token' },
+      payload,
+    })
+
+    expect(response.statusCode).toBe(200)
+    const body = response.json<{ avatarUrl: string }>()
+    expect(body.avatarUrl).toContain('user-avatars')
+    expect(storageProvider.uploadPublicFile).toHaveBeenCalledWith(
+      expect.objectContaining({ bucket: 'user-avatars', path: `${MOCK_IDENTITY.id}/avatar.png` }),
+    )
+    expect(updateProfile).toHaveBeenCalledWith(
+      MOCK_IDENTITY.id,
+      expect.objectContaining({ avatarUrl: expect.stringContaining('user-avatars') }),
+    )
+  })
+})
+
+// ── DELETE /auth/me/avatar ───────────────────────────────────────────────────
+
+describe('DELETE /auth/me/avatar', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('returns 401 when Authorization header is absent', async () => {
+    const mockProvider: IAuthProvider = {
+      verifyToken: vi.fn(),
+      signOut: vi.fn(),
+      createUser: vi.fn(),
+      deleteUser: vi.fn(),
+    }
+    const app = buildTestApp(mockProvider)
+
+    const response = await app.inject({ method: 'DELETE', url: '/auth/me/avatar' })
+
+    expect(response.statusCode).toBe(401)
+  })
+
+  it('clears the avatar', async () => {
+    const mockProvider: IAuthProvider = {
+      verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
+      signOut: vi.fn(),
+      createUser: vi.fn(),
+      deleteUser: vi.fn(),
+    }
+    const updateProfile = vi.fn().mockResolvedValue({
+      id: MOCK_IDENTITY.id,
+      email: MOCK_IDENTITY.email,
+      name: null,
+      instagramHandle: null,
+      location: null,
+      avatarUrl: null,
+      isPlatformAdmin: false,
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+    })
+    const app = buildApp({
+      authProvider: mockProvider,
+      userRepository: { findById: vi.fn(), upsert: vi.fn(), updateProfile },
+    })
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: '/auth/me/avatar',
+      headers: { authorization: 'Bearer valid-token' },
+    })
+
+    expect(response.statusCode).toBe(200)
+    const body = response.json<{ avatarUrl: string | null }>()
+    expect(body.avatarUrl).toBeNull()
+    expect(updateProfile).toHaveBeenCalledWith(MOCK_IDENTITY.id, { avatarUrl: null })
   })
 })
 

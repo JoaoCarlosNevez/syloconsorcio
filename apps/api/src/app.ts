@@ -166,6 +166,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     membershipRepository: resolvedDeps.membershipRepository,
     userRepository: resolvedDeps.userRepository,
     organizationRepository: resolvedDeps.organizationRepository,
+    storageProvider: resolvedDeps.storageProvider,
   })
 
   app.register(leadsRoute, {

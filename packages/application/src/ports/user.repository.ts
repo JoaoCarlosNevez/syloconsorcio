@@ -12,6 +12,8 @@ export interface UserRecord {
   instagramHandle: string | null
   /** Cidade/região livre (ex: "São Paulo, SP"). */
   location: string | null
+  /** URL pública da foto de perfil (bucket user-avatars). Null = avatar padrão. */
+  avatarUrl: string | null
   isPlatformAdmin: boolean
   createdAt: Date
 }
@@ -26,6 +28,7 @@ export interface UpdateProfileInput {
   name?: string
   instagramHandle?: string | null
   location?: string | null
+  avatarUrl?: string | null
 }
 
 export interface IUserRepository {

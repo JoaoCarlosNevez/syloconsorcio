@@ -1,4 +1,5 @@
-// useCurrentUser — perfil do usuário no domínio SyloCRM (GET/PATCH /auth/me).
+// useCurrentUser — perfil do usuário no domínio SyloCRM (GET/PATCH /auth/me,
+// POST/DELETE /auth/me/avatar).
 //
 // Diferente de useAuth (sessão do Supabase): este hook expõe dados que só
 // existem no nosso backend, como isPlatformAdmin — usado para decidir se a
@@ -16,6 +17,8 @@ export interface CurrentUser {
   instagramHandle: string | null
   /** Cidade/região livre (ex: "São Paulo, SP"). */
   location: string | null
+  /** URL pública da foto de perfil. Null = usa o avatar padrão. */
+  avatarUrl: string | null
   isPlatformAdmin: boolean
   /** ISO 8601 — quando a conta foi criada. */
   createdAt: string | null
@@ -45,6 +48,30 @@ export function useUpdateMyProfile() {
   return useMutation({
     mutationFn: (payload: UpdateProfilePayload) =>
       apiClient.patch<CurrentUser>('/auth/me', payload),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(CURRENT_USER_QUERY_KEY, updated)
+    },
+  })
+}
+
+export function useUploadMyAvatar() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (file: File) => {
+      const formData = new FormData()
+      formData.append('file', file)
+      return apiClient.post<CurrentUser>('/auth/me/avatar', formData)
+    },
+    onSuccess: (updated) => {
+      queryClient.setQueryData(CURRENT_USER_QUERY_KEY, updated)
+    },
+  })
+}
+
+export function useRemoveMyAvatar() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => apiClient.delete<CurrentUser>('/auth/me/avatar'),
     onSuccess: (updated) => {
       queryClient.setQueryData(CURRENT_USER_QUERY_KEY, updated)
     },

@@ -1,10 +1,12 @@
 // Rotas de autenticação.
 //
-// POST  /auth/logout      — invalida a sessão do usuário autenticado
-// GET   /auth/me          — retorna a identidade e o perfil do usuário autenticado
-// PATCH /auth/me          — autoatualização de perfil (nome, Instagram, cidade/região)
-// GET   /auth/memberships — lista as organizações às quais o usuário pertence
-// GET   /auth/context     — resolve o contexto multi-tenant para a organização ativa
+// POST   /auth/logout      — invalida a sessão do usuário autenticado
+// GET    /auth/me          — retorna a identidade e o perfil do usuário autenticado
+// PATCH  /auth/me          — autoatualização de perfil (nome, Instagram, cidade/região)
+// POST   /auth/me/avatar   — envia a foto de perfil
+// DELETE /auth/me/avatar   — remove a foto de perfil (volta pro avatar padrão)
+// GET    /auth/memberships — lista as organizações às quais o usuário pertence
+// GET    /auth/context     — resolve o contexto multi-tenant para a organização ativa
 //
 // Todas requerem authMiddleware (Bearer token válido).
 // Apenas /auth/context requer tenantMiddleware — as demais não dependem de
@@ -19,15 +21,20 @@ import type {
   IAuthProvider,
   IMembershipRepository,
   IOrganizationRepository,
+  IStorageProvider,
   IUserRepository,
   UserMembership,
+  UserRecord,
 } from '@sylocrm/application'
 import { Role } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { buildMembershipContext } from '../auth/membership-context'
+import { ICON_EXTENSION_BY_MIME, validateIconUpload } from '../lib/icon-validation'
 import { createAuthMiddleware } from '../middleware/auth.middleware'
 import { createTenantMiddleware } from '../middleware/tenant.middleware'
+
+const AVATAR_BUCKET = 'user-avatars'
 
 const updateProfileSchema = z.object({
   name: z.string().min(1).optional(),
@@ -45,6 +52,20 @@ interface AuthRouteOptions {
   membershipRepository: IMembershipRepository
   userRepository: IUserRepository
   organizationRepository: IOrganizationRepository
+  storageProvider: IStorageProvider
+}
+
+function serializeUser(identity: { id: string; email: string }, user: UserRecord | null) {
+  return {
+    id: identity.id,
+    email: identity.email,
+    name: user?.name ?? null,
+    instagramHandle: user?.instagramHandle ?? null,
+    location: user?.location ?? null,
+    avatarUrl: user?.avatarUrl ?? null,
+    isPlatformAdmin: user?.isPlatformAdmin ?? false,
+    createdAt: user?.createdAt ?? null,
+  }
 }
 
 export const authRoute: FastifyPluginAsync<AuthRouteOptions> = async (fastify, options) => {
@@ -63,15 +84,7 @@ export const authRoute: FastifyPluginAsync<AuthRouteOptions> = async (fastify, o
     // authMiddleware garante que authIdentity está presente
     const identity = request.authIdentity as NonNullable<typeof request.authIdentity>
     const user = await options.userRepository.findById(identity.id)
-    return {
-      id: identity.id,
-      email: identity.email,
-      name: user?.name ?? null,
-      instagramHandle: user?.instagramHandle ?? null,
-      location: user?.location ?? null,
-      isPlatformAdmin: user?.isPlatformAdmin ?? false,
-      createdAt: user?.createdAt ?? null,
-    }
+    return serializeUser(identity, user)
   })
 
   // ── PATCH /auth/me ────────────────────────────────────────────────────────
@@ -91,15 +104,45 @@ export const authRoute: FastifyPluginAsync<AuthRouteOptions> = async (fastify, o
     const identity = request.authIdentity as NonNullable<typeof request.authIdentity>
     const user = await options.userRepository.updateProfile(identity.id, parsed.data)
 
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      instagramHandle: user.instagramHandle,
-      location: user.location,
-      isPlatformAdmin: user.isPlatformAdmin,
-      createdAt: user.createdAt,
+    return serializeUser(identity, user)
+  })
+
+  // ── POST /auth/me/avatar ──────────────────────────────────────────────────
+  fastify.post('/auth/me/avatar', { preHandler: [authMiddleware] }, async (request, reply) => {
+    const identity = request.authIdentity as NonNullable<typeof request.authIdentity>
+
+    const file = await request.file()
+    if (!file) {
+      return reply
+        .status(400)
+        .send({ error: 'Nenhum arquivo enviado.', code: 'VALIDATION_ERROR', status: 400 })
     }
+
+    const buffer = await file.toBuffer()
+    const validationError = validateIconUpload(buffer, file.mimetype)
+    if (validationError) {
+      return reply
+        .status(400)
+        .send({ error: validationError.message, code: validationError.code, status: 400 })
+    }
+
+    const extension = ICON_EXTENSION_BY_MIME[file.mimetype] as string
+    const { url } = await options.storageProvider.uploadPublicFile({
+      bucket: AVATAR_BUCKET,
+      path: `${identity.id}/avatar.${extension}`,
+      data: buffer,
+      contentType: file.mimetype,
+    })
+
+    const user = await options.userRepository.updateProfile(identity.id, { avatarUrl: url })
+    return serializeUser(identity, user)
+  })
+
+  // ── DELETE /auth/me/avatar ────────────────────────────────────────────────
+  fastify.delete('/auth/me/avatar', { preHandler: [authMiddleware] }, async (request) => {
+    const identity = request.authIdentity as NonNullable<typeof request.authIdentity>
+    const user = await options.userRepository.updateProfile(identity.id, { avatarUrl: null })
+    return serializeUser(identity, user)
   })
 
   // ── GET /auth/memberships ─────────────────────────────────────────────────
