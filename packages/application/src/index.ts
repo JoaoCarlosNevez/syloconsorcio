@@ -25,7 +25,12 @@ export type {
   NewOrganizationInput,
   UpdateOrganizationInput,
 } from './ports/organization.repository'
-export type { IUserRepository, UserRecord, UpsertUserInput } from './ports/user.repository'
+export type {
+  IUserRepository,
+  UserRecord,
+  UpsertUserInput,
+  UpdateProfileInput,
+} from './ports/user.repository'
 export type { IStorageProvider, UploadFileInput } from './ports/storage.provider'
 export type {
   ILeadRepository,

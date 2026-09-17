@@ -1,6 +1,6 @@
 // Schema: users
 //
-// ADR-12 (decisão 2): auth.users.id == users.id
+// ADR-06 (decisão 2): auth.users.id == users.id
 // O ID do Supabase Auth é reutilizado como PK desta tabela.
 // Não há mapeamento separado — o mesmo UUID serve os dois domínios.
 
@@ -11,6 +11,10 @@ export const users = pgTable('users', {
   id: uuid('id').primaryKey(),
   email: text('email').notNull().unique(),
   name: text('name'),
+  /** Handle do Instagram, sem o "@" (ex: "sara.sylo") — exibido com prefixo na UI. */
+  instagramHandle: text('instagram_handle'),
+  /** Cidade/região livre (ex: "São Paulo, SP") — não normalizado, só exibição. */
+  location: text('location'),
   // Super Admin da plataforma — só quem tem esta flag pode criar novas
   // Representações (tenants). Não é um Role de Membership: é uma
   // capacidade de nível plataforma, independente de qualquer organização.

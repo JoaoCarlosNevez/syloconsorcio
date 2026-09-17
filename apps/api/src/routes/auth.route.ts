@@ -1,16 +1,19 @@
 // Rotas de autenticação.
 //
-// POST /auth/logout      — invalida a sessão do usuário autenticado
-// GET  /auth/me          — retorna a identidade do usuário autenticado
-// GET  /auth/memberships — lista as organizações às quais o usuário pertence
-// GET  /auth/context     — resolve o contexto multi-tenant para a organização ativa
+// POST  /auth/logout      — invalida a sessão do usuário autenticado
+// GET   /auth/me          — retorna a identidade e o perfil do usuário autenticado
+// PATCH /auth/me          — autoatualização de perfil (nome, Instagram, cidade/região)
+// GET   /auth/memberships — lista as organizações às quais o usuário pertence
+// GET   /auth/context     — resolve o contexto multi-tenant para a organização ativa
 //
 // Todas requerem authMiddleware (Bearer token válido).
 // Apenas /auth/context requer tenantMiddleware — as demais não dependem de
 // um X-Organization-Id já escolhido (o frontend usa /auth/memberships
 // justamente para decidir qual organização selecionar).
 //
-// Login acontece diretamente no Supabase via SDK no frontend (ADR-13).
+// Login acontece diretamente no Supabase via SDK no frontend (ADR-06).
+// Troca de senha também é direta no Supabase via SDK no frontend — não há
+// rota aqui pra isso (o backend nunca vê a senha).
 
 import type {
   IAuthProvider,
@@ -21,9 +24,21 @@ import type {
 } from '@sylocrm/application'
 import { Role } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
+import { z } from 'zod'
 import { buildMembershipContext } from '../auth/membership-context'
 import { createAuthMiddleware } from '../middleware/auth.middleware'
 import { createTenantMiddleware } from '../middleware/tenant.middleware'
+
+const updateProfileSchema = z.object({
+  name: z.string().min(1).optional(),
+  instagramHandle: z
+    .string()
+    .trim()
+    .transform((v) => v.replace(/^@/, ''))
+    .nullable()
+    .optional(),
+  location: z.string().min(1).nullable().optional(),
+})
 
 interface AuthRouteOptions {
   authProvider: IAuthProvider
@@ -41,39 +56,51 @@ export const authRoute: FastifyPluginAsync<AuthRouteOptions> = async (fastify, o
   )
 
   // ── GET /auth/me ──────────────────────────────────────────────────────────
-  // Retorna a identidade do usuário autenticado.
-  // Usado pelo frontend para verificar se a sessão ainda é válida no carregamento.
-  fastify.get(
-    '/auth/me',
-    {
-      preHandler: [authMiddleware],
-      schema: {
-        response: {
-          200: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              email: { type: 'string' },
-              name: { type: ['string', 'null'] },
-              isPlatformAdmin: { type: 'boolean' },
-            },
-            required: ['id', 'email', 'name', 'isPlatformAdmin'],
-          },
-        },
-      },
-    },
-    async (request) => {
-      // authMiddleware garante que authIdentity está presente
-      const identity = request.authIdentity as NonNullable<typeof request.authIdentity>
-      const user = await options.userRepository.findById(identity.id)
-      return {
-        id: identity.id,
-        email: identity.email,
-        name: user?.name ?? null,
-        isPlatformAdmin: user?.isPlatformAdmin ?? false,
-      }
-    },
-  )
+  // Retorna a identidade e o perfil do usuário autenticado.
+  // Usado pelo frontend para verificar se a sessão ainda é válida no carregamento,
+  // e pra pré-preencher a tela de Editar Perfil.
+  fastify.get('/auth/me', { preHandler: [authMiddleware] }, async (request) => {
+    // authMiddleware garante que authIdentity está presente
+    const identity = request.authIdentity as NonNullable<typeof request.authIdentity>
+    const user = await options.userRepository.findById(identity.id)
+    return {
+      id: identity.id,
+      email: identity.email,
+      name: user?.name ?? null,
+      instagramHandle: user?.instagramHandle ?? null,
+      location: user?.location ?? null,
+      isPlatformAdmin: user?.isPlatformAdmin ?? false,
+      createdAt: user?.createdAt ?? null,
+    }
+  })
+
+  // ── PATCH /auth/me ────────────────────────────────────────────────────────
+  // Autoatualização de perfil pelo próprio usuário. Nunca toca em email
+  // (gerenciado pelo administrador da organização) nem isPlatformAdmin.
+  fastify.patch('/auth/me', { preHandler: [authMiddleware] }, async (request, reply) => {
+    const parsed = updateProfileSchema.safeParse(request.body)
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: 'Dados inválidos.',
+        code: 'VALIDATION_ERROR',
+        status: 400,
+        details: parsed.error.flatten().fieldErrors,
+      })
+    }
+
+    const identity = request.authIdentity as NonNullable<typeof request.authIdentity>
+    const user = await options.userRepository.updateProfile(identity.id, parsed.data)
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      instagramHandle: user.instagramHandle,
+      location: user.location,
+      isPlatformAdmin: user.isPlatformAdmin,
+      createdAt: user.createdAt,
+    }
+  })
 
   // ── GET /auth/memberships ─────────────────────────────────────────────────
   // Lista todas as organizações ativas do usuário, com role/dataScope/permissions

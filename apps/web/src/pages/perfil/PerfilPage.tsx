@@ -1,10 +1,30 @@
 // PerfilPage — Perfil completo do consultor: nível, XP, ofensiva e conquistas.
 
-import { type CSSProperties, type FormEvent, useEffect, useRef, useState } from 'react'
+import { OrganizationAvatar } from '@sylocrm/ui'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { useAuth } from '../../hooks/useAuth'
-import { useCurrentUser } from '../../hooks/useCurrentUser'
+import { useCurrentUser, useUpdateMyProfile } from '../../hooks/useCurrentUser'
+import { useActiveOrganization } from '../../hooks/useOrganization'
+import { supabase } from '../../lib/supabase'
 import styles from './PerfilPage.module.css'
+
+const ROLE_LABEL: Record<'ADMIN' | 'MANAGER' | 'SELLER', string> = {
+  ADMIN: 'Dono',
+  MANAGER: 'Supervisor',
+  SELLER: 'Vendedor',
+}
+
+/** "2026-01-15T..." → "janeiro de 2026" (capitalizado). */
+function formatMemberSince(createdAt: string | null): string | null {
+  if (!createdAt) return null
+  const formatted = new Date(createdAt).toLocaleDateString('pt-BR', {
+    month: 'long',
+    year: 'numeric',
+  })
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1)
+}
 
 // ── Ícones ────────────────────────────────────────────────────────────────────
 
@@ -102,6 +122,25 @@ function LocationIcon() {
     >
       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
       <circle cx="12" cy="10" r="3" />
+    </svg>
+  )
+}
+
+function LockIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="11" width="18" height="11" rx="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
     </svg>
   )
 }
@@ -353,185 +392,309 @@ function BadgeModal({ badge, onClose }: { badge: BadgeData; onClose: () => void 
 
 // ── EditProfileModal ──────────────────────────────────────────────────────────
 
-interface ProfileData {
-  name: string
-  handle: string
-  location: string
+interface EditProfileModalProps {
+  onClose: () => void
+  onSaved: (message: string) => void
 }
 
-function EditProfileModal({
-  initial,
-  onClose,
-  onSave,
-}: { initial: ProfileData; onClose: () => void; onSave: (d: ProfileData) => void }) {
-  const [name, setName] = useState(initial.name)
-  const [handle, setHandle] = useState(initial.handle)
-  const [location, setLocation] = useState(initial.location)
+function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
+  const { data: currentUser } = useCurrentUser()
+  const { membership } = useActiveOrganization()
+  const updateProfile = useUpdateMyProfile()
+  const navigate = useNavigate()
 
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    onSave({
-      name: name.trim() || initial.name,
-      handle: handle.trim() || initial.handle,
-      location: location.trim() || initial.location,
-    })
+  const [name, setName] = useState(currentUser?.name ?? '')
+  const [instagramHandle, setInstagramHandle] = useState(currentUser?.instagramHandle ?? '')
+  const [location, setLocation] = useState(currentUser?.location ?? '')
+  const [formError, setFormError] = useState('')
+
+  const [changingPassword, setChangingPassword] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordSaving, setPasswordSaving] = useState(false)
+
+  const memberSince = formatMemberSince(currentUser?.createdAt ?? null)
+  const initials = (name || currentUser?.email || '?').trim().charAt(0).toUpperCase()
+
+  async function handleSave() {
+    setFormError('')
+    if (!name.trim()) {
+      setFormError('Nome completo é obrigatório.')
+      return
+    }
+    try {
+      await updateProfile.mutateAsync({
+        name: name.trim(),
+        instagramHandle: instagramHandle.trim() || null,
+        location: location.trim() || null,
+      })
+      onSaved('Perfil atualizado com sucesso!')
+      onClose()
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Não foi possível salvar o perfil.')
+    }
   }
 
-  const inp: CSSProperties = {
-    height: 38,
-    border: '1px solid rgba(216,195,173,0.4)',
-    borderRadius: 8,
-    padding: '0 12px',
-    fontFamily: 'inherit',
-    fontSize: 14,
-    color: '#0b1c30',
-    background: '#f8f9ff',
-    outline: 'none',
-    width: '100%',
-    boxSizing: 'border-box',
-  }
-  const lbl: CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 6,
-    fontSize: 12,
-    fontWeight: 600,
-    color: '#565e74',
-    textTransform: 'uppercase',
-    letterSpacing: '0.02em',
+  async function handleChangePassword() {
+    setPasswordError('')
+    if (newPassword.length < 6) {
+      setPasswordError('A senha precisa ter pelo menos 6 caracteres.')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('As senhas não coincidem.')
+      return
+    }
+    setPasswordSaving(true)
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    setPasswordSaving(false)
+    if (error) {
+      setPasswordError(error.message)
+      return
+    }
+    setChangingPassword(false)
+    setNewPassword('')
+    setConfirmPassword('')
+    onSaved('Senha alterada com sucesso!')
   }
 
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: overlay backdrop dismiss
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 400,
-        background: 'rgba(11,28,48,0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-      onClick={onClose}
-    >
+    <div className={styles.editOverlay} onClick={onClose}>
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: modal stops propagation */}
-      <div
-        style={{
-          background: '#fff',
-          borderRadius: 14,
-          width: '100%',
-          maxWidth: 440,
-          boxShadow: '0 8px 40px rgba(11,28,48,0.18)',
-          overflow: 'hidden',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '18px 22px',
-            borderBottom: '1px solid rgba(216,195,173,0.3)',
-          }}
-        >
-          <span style={{ fontSize: 16, fontWeight: 700, color: '#0b1c30' }}>Editar Perfil</span>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 30,
-              height: 30,
-              borderRadius: 8,
-              border: 'none',
-              background: 'none',
-              color: '#94a3b8',
-              cursor: 'pointer',
-            }}
-            aria-label="Fechar"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.5}
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+      <div className={styles.editPanel} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.editHeader}>
+          <h2 className={styles.editTitle}>Editar perfil</h2>
+          <p className={styles.editSubtitle}>
+            Atualize suas informações pessoais e credenciais de acesso corporativo.
+          </p>
         </div>
-        <form
-          style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: 22 }}
-          onSubmit={handleSubmit}
-        >
-          <label style={lbl}>
-            Nome
-            <input style={inp} type="text" value={name} onChange={(e) => setName(e.target.value)} />
-          </label>
-          <label style={lbl}>
-            Handle
-            <input
-              style={inp}
-              type="text"
-              value={handle}
-              onChange={(e) => setHandle(e.target.value)}
-              placeholder="@handle"
-            />
-          </label>
-          <label style={lbl}>
-            Localização
-            <input
-              style={inp}
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            />
-          </label>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 4 }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                padding: '8px 16px',
-                background: 'none',
-                border: '1px solid rgba(216,195,173,0.5)',
-                borderRadius: 8,
-                fontFamily: 'inherit',
-                fontSize: 13,
-                fontWeight: 500,
-                color: '#565e74',
-                cursor: 'pointer',
-              }}
-            >
+
+        <div className={styles.editBody}>
+          {/* Foto de perfil */}
+          <section className={styles.editSection}>
+            <div className={styles.editPhotoRow}>
+              <span className={styles.editPhotoAvatar}>{initials}</span>
+              <div className={styles.editPhotoInfo}>
+                <span className={styles.editPhotoTitle}>Foto de perfil</span>
+                <span className={styles.editHint}>
+                  JPG, PNG ou WEBP. Tamanho máximo 5 MB. 256×256 px recomendado.
+                </span>
+              </div>
+              <div className={styles.editPhotoActions}>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  onClick={() => onSaved('Upload de foto ainda não está disponível.')}
+                >
+                  Alterar foto
+                </button>
+                <button
+                  type="button"
+                  className={styles.dangerLinkBtn}
+                  onClick={() => onSaved('Upload de foto ainda não está disponível.')}
+                >
+                  Remover
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Informações pessoais */}
+          <section className={styles.editSection}>
+            <h3 className={styles.editSectionTitle}>Informações pessoais</h3>
+            <p className={styles.editSectionSubtitle}>
+              Seus dados de identificação na plataforma Sylo CRM.
+              {memberSince && ` Membro desde ${memberSince}.`}
+            </p>
+            <div className={styles.editGrid}>
+              <label className={styles.editField}>
+                <span className={styles.editLabel}>
+                  Nome completo <span className={styles.editRequired}>obrigatório</span>
+                </span>
+                <input
+                  className={styles.editInput}
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </label>
+              <label className={styles.editField}>
+                <span className={styles.editLabel}>Instagram</span>
+                <div className={styles.editInputPrefixed}>
+                  <span className={styles.editInputPrefix}>@</span>
+                  <input
+                    className={styles.editInputWithPrefix}
+                    type="text"
+                    value={instagramHandle}
+                    onChange={(e) => setInstagramHandle(e.target.value.replace(/^@/, ''))}
+                    placeholder="seu.instagram"
+                  />
+                </div>
+                <span className={styles.editHint}>
+                  @ prefixo visível na menção em cards e tarefas da equipe.
+                </span>
+              </label>
+              <label className={styles.editField}>
+                <span className={styles.editLabel}>E-mail</span>
+                <div className={styles.editInputPrefixed}>
+                  <input
+                    className={styles.editInputWithPrefix}
+                    type="email"
+                    value={currentUser?.email ?? ''}
+                    disabled
+                  />
+                  <span className={styles.editInputSuffix}>
+                    <LockIcon />
+                  </span>
+                </div>
+                <span className={styles.editHint}>
+                  Gerenciado pelo administrador da organização.
+                </span>
+              </label>
+              <label className={styles.editField}>
+                <span className={styles.editLabel}>Cidade / Região</span>
+                <input
+                  className={styles.editInput}
+                  type="text"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="São Paulo, SP"
+                />
+              </label>
+            </div>
+            {formError && (
+              <span role="alert" className={styles.editFormError}>
+                {formError}
+              </span>
+            )}
+          </section>
+
+          {/* Representação */}
+          {membership && (
+            <section className={styles.editSection}>
+              <h3 className={styles.editSectionTitle}>Representação</h3>
+              <p className={styles.editSectionSubtitle}>
+                Unidade vinculada à sua conta operacional.
+              </p>
+              <div className={styles.editOrgCard}>
+                <OrganizationAvatar
+                  id={membership.organizationId}
+                  name={membership.organizationName}
+                  iconUrl={membership.organizationIconUrl}
+                  size={40}
+                />
+                <div className={styles.editOrgInfo}>
+                  <span className={styles.editOrgName}>{membership.organizationName}</span>
+                  <span className={styles.editOrgMeta}>{ROLE_LABEL[membership.role]}</span>
+                </div>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  onClick={() => navigate('/app/config')}
+                >
+                  Ver representação
+                </button>
+              </div>
+              <span className={styles.editHint}>
+                Para alterar sua vinculação de representação, contate o administrador da equipe.
+              </span>
+            </section>
+          )}
+
+          {/* Segurança */}
+          <section className={styles.editSection}>
+            <h3 className={styles.editSectionTitle}>Segurança</h3>
+            <p className={styles.editSectionSubtitle}>
+              Credenciais de autenticação e proteção da conta.
+            </p>
+            {!changingPassword ? (
+              <div className={styles.editSecurityRow}>
+                <span className={styles.editSecurityLabel}>
+                  <LockIcon />
+                  SENHA DE ACESSO
+                </span>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  onClick={() => setChangingPassword(true)}
+                >
+                  Alterar senha
+                </button>
+              </div>
+            ) : (
+              <div className={styles.editPasswordForm}>
+                <div className={styles.editGrid}>
+                  <label className={styles.editField}>
+                    <span className={styles.editLabel}>Nova senha</span>
+                    <input
+                      className={styles.editInput}
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
+                  </label>
+                  <label className={styles.editField}>
+                    <span className={styles.editLabel}>Confirmar nova senha</span>
+                    <input
+                      className={styles.editInput}
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
+                  </label>
+                </div>
+                {passwordError && (
+                  <span role="alert" className={styles.editFormError}>
+                    {passwordError}
+                  </span>
+                )}
+                <div className={styles.editPasswordActions}>
+                  <button
+                    type="button"
+                    className={styles.secondaryBtn}
+                    onClick={() => {
+                      setChangingPassword(false)
+                      setNewPassword('')
+                      setConfirmPassword('')
+                      setPasswordError('')
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.primaryBtnSmall}
+                    onClick={handleChangePassword}
+                    disabled={passwordSaving}
+                  >
+                    {passwordSaving ? 'Salvando…' : 'Salvar senha'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
+
+        <div className={styles.editFooter}>
+          <span className={styles.editFooterHint}>
+            Alterações não salvas serão perdidas ao fechar.
+          </span>
+          <div className={styles.editFooterActions}>
+            <button type="button" className={styles.secondaryBtn} onClick={onClose}>
               Cancelar
             </button>
             <button
-              type="submit"
-              style={{
-                padding: '8px 18px',
-                background: 'linear-gradient(to right,#ffeab1,#ffa705)',
-                border: 'none',
-                borderRadius: 8,
-                fontFamily: 'inherit',
-                fontSize: 13,
-                fontWeight: 600,
-                color: '#0b1c30',
-                cursor: 'pointer',
-              }}
+              type="button"
+              className={styles.primaryBtn}
+              onClick={handleSave}
+              disabled={updateProfile.isPending}
             >
-              Salvar
+              {updateProfile.isPending ? 'Salvando…' : 'Salvar alterações'}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   )
@@ -557,29 +720,23 @@ export function PerfilPage() {
   const [editingProfile, setEditingProfile] = useState(false)
   const [activityOpen, setActivityOpen] = useState(false)
   const [activityToast, setActivityToast] = useState('')
-  const [profile, setProfile] = useState({
-    name: currentUser?.name ?? fallbackName,
-    handle: `@${emailPrefix}`,
-    location: 'São Paulo, SP',
-  })
-  const hasManualNameEdit = useRef(false)
 
-  useEffect(() => {
-    if (hasManualNameEdit.current || !currentUser?.name) return
-    setProfile((prev) => ({ ...prev, name: currentUser.name as string }))
-  }, [currentUser?.name])
+  const displayName = currentUser?.name ?? fallbackName
+  const displayHandle = currentUser?.instagramHandle
+    ? `@${currentUser.instagramHandle}`
+    : `@${emailPrefix}`
+  const displayLocation = currentUser?.location ?? 'São Paulo, SP'
+  const memberSince = formatMemberSince(currentUser?.createdAt ?? null)
 
   return (
     <AppLayout>
       {selectedBadge && <BadgeModal badge={selectedBadge} onClose={() => setSelectedBadge(null)} />}
       {editingProfile && (
         <EditProfileModal
-          initial={profile}
           onClose={() => setEditingProfile(false)}
-          onSave={(d) => {
-            hasManualNameEdit.current = true
-            setProfile(d)
-            setEditingProfile(false)
+          onSaved={(message) => {
+            setActivityToast(message)
+            setTimeout(() => setActivityToast(''), 3000)
           }}
         />
       )}
@@ -684,7 +841,12 @@ export function PerfilPage() {
               <BellIcon />
               <span className={styles.notifDot} aria-hidden="true" />
             </button>
-            <button type="button" className={styles.iconBtn} aria-label="Configurações">
+            <button
+              type="button"
+              className={styles.iconBtn}
+              aria-label="Editar perfil"
+              onClick={() => setEditingProfile(true)}
+            >
               <SettingsIcon />
             </button>
             <span className={styles.topBarDivider} aria-hidden="true" />
@@ -718,17 +880,21 @@ export function PerfilPage() {
               </div>
               <div className={styles.profileInfo}>
                 <div className={styles.profileNameRow}>
-                  <h1 className={styles.profileName}>{profile.name}</h1>
+                  <h1 className={styles.profileName}>{displayName}</h1>
                   <span className={styles.tierBadge}>Diamante</span>
-                  <span className={styles.profileHandle}>{profile.handle}</span>
+                  <span className={styles.profileHandle}>{displayHandle}</span>
                 </div>
                 <div className={styles.profileMetaRow}>
-                  <span className={styles.profileMeta}>Equipe de Porthis, {profile.location}</span>
-                  <span className={styles.profileMetaDot} aria-hidden="true" />
-                  <span className={styles.profileMeta}>
-                    <LocationIcon />
-                    Membro desde Janeiro de 2024
-                  </span>
+                  <span className={styles.profileMeta}>Equipe de Porthis, {displayLocation}</span>
+                  {memberSince && (
+                    <>
+                      <span className={styles.profileMetaDot} aria-hidden="true" />
+                      <span className={styles.profileMeta}>
+                        <LocationIcon />
+                        Membro desde {memberSince}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

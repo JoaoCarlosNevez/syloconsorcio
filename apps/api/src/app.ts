@@ -108,6 +108,9 @@ function createNoOpUserRepository(): IUserRepository {
     upsert: async () => {
       throw new Error('Database not configured — cannot upsert users.')
     },
+    updateProfile: async () => {
+      throw new Error('Database not configured — cannot update user profile.')
+    },
   }
 }
 

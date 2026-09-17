@@ -105,6 +105,91 @@ describe('GET /auth/me', () => {
   })
 })
 
+// ── PATCH /auth/me ───────────────────────────────────────────────────────────
+
+describe('PATCH /auth/me', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('returns 401 when Authorization header is absent', async () => {
+    const mockProvider: IAuthProvider = {
+      verifyToken: vi.fn(),
+      signOut: vi.fn(),
+      createUser: vi.fn(),
+      deleteUser: vi.fn(),
+    }
+    const app = buildTestApp(mockProvider)
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/auth/me',
+      payload: { name: 'Novo Nome' },
+    })
+
+    expect(response.statusCode).toBe(401)
+  })
+
+  it('returns 400 for an empty payload field', async () => {
+    const mockProvider: IAuthProvider = {
+      verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
+      signOut: vi.fn(),
+      createUser: vi.fn(),
+      deleteUser: vi.fn(),
+    }
+    const app = buildTestApp(mockProvider)
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/auth/me',
+      headers: { authorization: 'Bearer valid-token' },
+      payload: { name: '' },
+    })
+
+    expect(response.statusCode).toBe(400)
+  })
+
+  it('updates name, instagramHandle (stripping a leading @) and location', async () => {
+    const mockProvider: IAuthProvider = {
+      verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
+      signOut: vi.fn(),
+      createUser: vi.fn(),
+      deleteUser: vi.fn(),
+    }
+    const updateProfile = vi.fn().mockResolvedValue({
+      id: MOCK_IDENTITY.id,
+      email: MOCK_IDENTITY.email,
+      name: 'Sara Sylo',
+      instagramHandle: 'sara.sylo',
+      location: 'São Paulo, SP',
+      isPlatformAdmin: false,
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+    })
+    const app = buildApp({
+      authProvider: mockProvider,
+      userRepository: { findById: vi.fn(), upsert: vi.fn(), updateProfile },
+    })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/auth/me',
+      headers: { authorization: 'Bearer valid-token' },
+      payload: { name: 'Sara Sylo', instagramHandle: '@sara.sylo', location: 'São Paulo, SP' },
+    })
+
+    expect(response.statusCode).toBe(200)
+    const body = response.json<{ name: string; instagramHandle: string; location: string }>()
+    expect(body.name).toBe('Sara Sylo')
+    expect(body.instagramHandle).toBe('sara.sylo')
+    expect(body.location).toBe('São Paulo, SP')
+    expect(updateProfile).toHaveBeenCalledWith(MOCK_IDENTITY.id, {
+      name: 'Sara Sylo',
+      instagramHandle: 'sara.sylo',
+      location: 'São Paulo, SP',
+    })
+  })
+})
+
 // ── GET /auth/memberships ────────────────────────────────────────────────────
 
 describe('GET /auth/memberships', () => {
@@ -201,15 +286,14 @@ describe('GET /auth/memberships', () => {
       authProvider: mockProvider,
       membershipRepository: mockRepo,
       userRepository: {
-        findById: vi
-          .fn()
-          .mockResolvedValue({
-            id: MOCK_IDENTITY.id,
-            email: MOCK_IDENTITY.email,
-            name: null,
-            isPlatformAdmin: true,
-          }),
+        findById: vi.fn().mockResolvedValue({
+          id: MOCK_IDENTITY.id,
+          email: MOCK_IDENTITY.email,
+          name: null,
+          isPlatformAdmin: true,
+        }),
         upsert: vi.fn(),
+        updateProfile: vi.fn(),
       },
       organizationRepository: {
         findChildOrganizationIds: vi.fn().mockResolvedValue([]),
