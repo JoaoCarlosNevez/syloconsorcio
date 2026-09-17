@@ -1,4 +1,4 @@
-// resolveLeadScope — traduz o Membership ativo (ADR-04) em filtros concretos
+// resolveLeadScope — traduz o Membership ativo (ADR-05) em filtros concretos
 // de organização/responsável para as queries de leads.
 //
 // Hierarquia (AGENTS.md §8):

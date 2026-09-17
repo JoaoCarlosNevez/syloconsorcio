@@ -1,6 +1,6 @@
 // Auth error codes — taxonomia de erros de autenticação/autorização.
 //
-// ADR-12: define a separação clara entre 401 e 403.
+// ADR-06: define a separação clara entre 401 e 403.
 //
 // 401 Unauthorized — requisição sem autenticação válida
 // 400 Bad Request  — header obrigatório ausente

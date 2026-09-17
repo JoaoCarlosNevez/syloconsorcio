@@ -1,6 +1,6 @@
 // Schema: organization_memberships
 //
-// Entidade central de autorização (ADR-04).
+// Entidade central de autorização (ADR-05).
 // Role está no membership — não no usuário global.
 // O mesmo usuário pode ter roles diferentes em organizações diferentes.
 //

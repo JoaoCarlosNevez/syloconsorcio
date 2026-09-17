@@ -65,6 +65,7 @@ function buildUserRepository(isPlatformAdmin: boolean): IUserRepository {
       name: 'Dono',
       isPlatformAdmin: false,
     }),
+    updateProfile: vi.fn(),
   }
 }
 

@@ -3,7 +3,7 @@
 // Acessa organization_memberships com JOIN em organizations/users quando
 // necessário para obter o tipo/nome/ícone da organização ou os dados do usuário.
 // Usa queries explícitas com seleção de colunas (sem SELECT *).
-// ADR-08: Drizzle é o único ORM. Queries passam sempre por este client.
+// ADR-02: Drizzle é o único ORM. Queries passam sempre por este client.
 
 import type {
   IMembershipRepository,

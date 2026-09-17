@@ -2,7 +2,7 @@
 //
 // Deve rodar DEPOIS do authMiddleware (depende de request.authIdentity).
 //
-// ADR-12 (seção 5):
+// ADR-06 (seção 5):
 //   - Lê X-Organization-Id header
 //   - Busca membership do usuário no banco
 //   - Valida que a organização pertence ao usuário autenticado

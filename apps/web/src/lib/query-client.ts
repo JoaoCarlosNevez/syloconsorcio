@@ -1,6 +1,6 @@
 // TanStack Query client — the sole manager of server state in the frontend.
 //
-// ADR-09: all API data flows through this client.
+// ADR-04: all API data flows through this client.
 // Never store API responses in useState, useReducer, or global stores (Zustand, Context).
 //
 // Default configuration rationale:

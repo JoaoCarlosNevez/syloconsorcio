@@ -1,6 +1,6 @@
 // DrizzleLeadRepository — implementação concreta de ILeadRepository.
 //
-// ADR-08: Drizzle é o único ORM. Queries passam sempre por este client.
+// ADR-02: Drizzle é o único ORM. Queries passam sempre por este client.
 // Seleção explícita de colunas em toda query (nunca SELECT *) — AGENTS.md §10.
 // `organizationIds` vazio nunca deve virar "SELECT * FROM leads" — retorna
 // vazio imediatamente em vez de emitir um `IN ()` inválido.

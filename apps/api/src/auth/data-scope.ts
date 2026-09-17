@@ -1,6 +1,6 @@
 // Cálculo de DataScope — alcance de dados por OrganizationType + Role
 //
-// ADR-04: DataScope é calculado a partir do tipo da organização + role do Membership ativo.
+// ADR-05: DataScope é calculado a partir do tipo da organização + role do Membership ativo.
 // O frontend NUNCA determina o DataScope.
 //
 // Hierarquia:

@@ -2,7 +2,7 @@
 // em MembershipContext (com DataScope e Permissions calculados).
 //
 // Compartilhado entre tenantMiddleware e as rotas de auth para que o cálculo
-// de DataScope/Permissions exista em um único lugar (ADR-04).
+// de DataScope/Permissions exista em um único lugar (ADR-05).
 
 import type { MembershipContext, UserMembership } from '@sylocrm/application'
 import { calculateDataScope } from './data-scope'

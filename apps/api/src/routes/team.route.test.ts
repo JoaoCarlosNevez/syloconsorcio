@@ -69,6 +69,7 @@ function buildUserRepository(isPlatformAdmin = false): IUserRepository {
       name: 'Novo Membro',
       isPlatformAdmin: false,
     }),
+    updateProfile: vi.fn(),
   }
 }
 

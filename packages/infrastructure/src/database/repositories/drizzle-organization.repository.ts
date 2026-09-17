@@ -1,6 +1,6 @@
 // DrizzleOrganizationRepository — implementação concreta de IOrganizationRepository.
 //
-// ADR-08: Drizzle é o único ORM. Queries passam sempre por este client.
+// ADR-02: Drizzle é o único ORM. Queries passam sempre por este client.
 
 import type {
   IOrganizationRepository,

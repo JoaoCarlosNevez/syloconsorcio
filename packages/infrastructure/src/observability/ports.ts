@@ -5,7 +5,7 @@
 // touching business logic.
 //
 // Concrete implementations are initialized in apps/api/src/observability/.
-// ADR-06: OpenTelemetry as the instrumentation abstraction; Sentry as first provider.
+// OpenTelemetry as the instrumentation abstraction; Sentry as first provider (decisão ainda não documentada em ADR).
 
 export type ObservabilityConfig = {
   sentryDsn?: string

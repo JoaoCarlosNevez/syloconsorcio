@@ -1,6 +1,6 @@
 // Drizzle client factory — the single entry point to the database.
 //
-// ADR-08: Drizzle is the sole ORM. All database queries go through this client.
+// ADR-02: Drizzle is the sole ORM. All database queries go through this client.
 // Never import drizzle-orm outside of packages/infrastructure.
 //
 // No top-level side effects. The database connection is established

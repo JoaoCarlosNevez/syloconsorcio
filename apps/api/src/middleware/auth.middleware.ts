@@ -2,7 +2,7 @@
 //
 // Pipeline: authMiddleware → tenantMiddleware → Use Case
 //
-// ADR-12 (seção 5):
+// ADR-06 (seção 5):
 //   - Verifica Authorization: Bearer <token>
 //   - Retorna 401 se token ausente (AUTH_TOKEN_MISSING)
 //   - Retorna 401 se token inválido/expirado (AUTH_TOKEN_INVALID)

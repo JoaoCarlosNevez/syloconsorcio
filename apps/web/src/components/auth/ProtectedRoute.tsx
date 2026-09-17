@@ -3,8 +3,8 @@
 // Se o usuário não estiver autenticado, redireciona para /login.
 // Se a sessão ainda está carregando, exibe um loading mínimo.
 //
-// ADR-09: sessão verificada via TanStack Query (server state).
-// ADR-12: autenticação verificada antes de renderizar qualquer área protegida.
+// ADR-04: sessão verificada via TanStack Query (server state).
+// ADR-06: autenticação verificada antes de renderizar qualquer área protegida.
 
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'

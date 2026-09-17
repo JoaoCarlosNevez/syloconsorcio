@@ -1,7 +1,7 @@
 // useAuth — hook de autenticação do frontend.
 //
-// ADR-13: autenticação via Supabase JS SDK.
-// ADR-09: server state via TanStack Query — sessão é server state.
+// ADR-06: autenticação via Supabase JS SDK.
+// ADR-04: server state via TanStack Query — sessão é server state.
 //
 // Expõe:
 //   session      — sessão Supabase ativa (null se não autenticado)

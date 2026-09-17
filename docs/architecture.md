@@ -267,7 +267,8 @@ interface MembershipContext {
 ### RLS
 
 O backend usa a Supabase service key — ela ignora Row Level Security. A segurança reside
-na camada Application (middleware + use cases), não no RLS. Ver ADR-12.
+na camada Application (middleware + use cases), não no RLS. RLS está ativado em todas as
+tabelas como defesa em profundidade contra acesso direto via PostgREST — ver ADR-03.
 
 ---
 
@@ -632,18 +633,14 @@ Pull Requests referenciam a Issue: `Closes #123`
 
 | ID     | Decisão                                                         | Status | ADR                           |
 |--------|-----------------------------------------------------------------|--------|-------------------------------|
-| ADR-01 | Supabase como infra inicial, isolado via ports                  | Aceito | —                             |
-| ADR-02 | Domain package sem dependências externas                        | Aceito | —                             |
-| ADR-03 | Biome em lugar de ESLint + Prettier                             | Aceito | —                             |
-| ADR-04 | Membership como entidade central de autorização                 | Aceito | decisions/adr-04-auth-model.md|
-| ADR-05 | Paginação sempre server-side para listas com volume             | Aceito | —                             |
-| ADR-06 | OpenTelemetry como abstração de observabilidade                 | Aceito | —                             |
-| ADR-07 | pnpm + Turborepo como monorepo toolchain                        | Aceito | decisions/adr-07-monorepo.md  |
-| ADR-08 | Drizzle ORM + Supabase Migrations para acesso ao banco          | Aceito | decisions/adr-08-database.md  |
-| ADR-09 | TanStack Query para server state no frontend                    | Aceito | decisions/adr-09-server-state.md |
-| ADR-10 | Conventional Commits em inglês                                  | Aceito | —                             |
-| ADR-11 | Role != Permission != Scope != Data Visibility                  | Aceito | decisions/adr-04-auth-model.md|
-| ADR-12 | Arquitetura de autenticação: Supabase Auth isolado via port     | Aceito | decisions/adr-12-authentication.md |
+| ADR-01 | pnpm + Turborepo como monorepo toolchain                        | Aceito | decisions/adr-01-monorepo.md  |
+| ADR-02 | Drizzle ORM + migrations versionadas para acesso ao banco       | Aceito | decisions/adr-02-database.md  |
+| ADR-03 | Row Level Security como defesa em profundidade                  | Aceito | decisions/adr-03-row-level-security.md |
+| ADR-04 | TanStack Query para server state no frontend                    | Aceito | decisions/adr-04-server-state.md |
+| ADR-05 | Modelo de autorização: Role, Permission, Data Scope, Visibility | Aceito | decisions/adr-05-authorization-model.md |
+| ADR-06 | Autenticação e sessão: Supabase Auth + Bearer token             | Aceito | decisions/adr-06-authentication.md |
+| ADR-07 | Super Admin da plataforma e acesso cross-tenant                 | Aceito | decisions/adr-07-platform-super-admin.md |
+| ADR-08 | Ciclo de vida de membros: convite, desativação, reativação, exclusão | Aceito | decisions/adr-08-team-lifecycle.md |
 
 Novas decisões relevantes devem ser adicionadas aqui e detalhadas em `docs/decisions/`.
 

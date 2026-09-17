@@ -1,6 +1,6 @@
 // Mapeamento de Role → Permission[]
 //
-// ADR-04: Permissions são derivadas do Role no contexto do Membership ativo.
+// ADR-05: Permissions são derivadas do Role no contexto do Membership ativo.
 // Nunca verificar Role diretamente — verificar Permission.
 //
 // Esta lógica é calculada a cada requisição no tenantMiddleware.

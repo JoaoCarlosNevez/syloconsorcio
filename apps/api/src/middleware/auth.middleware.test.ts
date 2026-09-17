@@ -1,6 +1,6 @@
 // Tests: authMiddleware
 //
-// Verifica os contratos de autenticação definidos no ADR-12:
+// Verifica os contratos de autenticação definidos no ADR-06:
 //   - 401 quando token ausente
 //   - 401 quando token inválido/expirado
 //   - Request decorado com authIdentity quando token válido

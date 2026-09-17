@@ -3,8 +3,8 @@
 // Isola o Supabase Auth SDK na camada Infrastructure.
 // O restante da aplicação não importa @supabase/supabase-js.
 //
-// ADR-12: Supabase Auth isolado via port IAuthProvider.
-// ADR-13: Validação de Bearer token via Admin SDK.
+// ADR-06: Supabase Auth isolado via port IAuthProvider.
+// ADR-06: Validação de Bearer token via Admin SDK.
 
 import { createClient } from '@supabase/supabase-js'
 import type { AuthIdentity, CreateAuthUserInput, IAuthProvider } from '@sylocrm/application'

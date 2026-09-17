@@ -1,6 +1,6 @@
 // Supabase browser client — autenticação do lado do frontend.
 //
-// ADR-13: O frontend usa @supabase/supabase-js diretamente para auth.
+// ADR-06: O frontend usa @supabase/supabase-js diretamente para auth.
 // O access token resultante é enviado como Bearer para a API.
 //
 // Configuração de storage: sessionStorage em vez de localStorage.

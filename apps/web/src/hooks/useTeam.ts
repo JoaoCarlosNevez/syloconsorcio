@@ -1,4 +1,4 @@
-// useTeam — server state da equipe da organização ativa (ADR-09).
+// useTeam — server state da equipe da organização ativa (ADR-04).
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {

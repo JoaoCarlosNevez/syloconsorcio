@@ -1,12 +1,12 @@
 // Tests: tenantMiddleware
 //
-// Verifica os contratos de autorização multi-tenant definidos no ADR-12:
+// Verifica os contratos de autorização multi-tenant definidos no ADR-06:
 //   - 401 quando authIdentity não está presente (authMiddleware não rodou)
 //   - 400 quando X-Organization-Id ausente
 //   - 403 quando membership não encontrada
 //   - 403 quando membership inativa/suspensa
 //   - authContext preenchido corretamente quando membership válida
-//   - DataScope e Permissions calculados conforme ADR-04
+//   - DataScope e Permissions calculados conforme ADR-05
 //   - availableMemberships inclui todas as orgs ativas do usuário
 //
 // Usa Fastify inject() — sem binding de porta real.
@@ -74,6 +74,7 @@ function buildUserRepository(isPlatformAdmin = false): IUserRepository {
       .fn()
       .mockResolvedValue({ id: IDENTITY.id, email: IDENTITY.email, name: null, isPlatformAdmin }),
     upsert: vi.fn(),
+    updateProfile: vi.fn(),
   }
 }
 

@@ -1,4 +1,4 @@
-// useLeads — server state do módulo de Leads via TanStack Query (ADR-09).
+// useLeads — server state do módulo de Leads via TanStack Query (ADR-04).
 // Nunca guardar leads em useState — o board do Kanban sincroniza a partir daqui.
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'

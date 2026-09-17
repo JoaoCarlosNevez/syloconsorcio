@@ -1,6 +1,6 @@
 // Drizzle Kit configuration — generates and manages database migrations.
 //
-// Migration workflow (ADR-08):
+// Migration workflow (ADR-02):
 //   1. Edit schema files in src/database/schema/
 //   2. pnpm --filter @sylocrm/infrastructure db:generate
 //   3. Review the generated SQL in src/database/migrations/

@@ -30,7 +30,11 @@ const IDENTITY: AuthIdentity = { id: 'user-uuid', email: 'admin@sylo.app' }
 
 describe('requirePlatformAdmin', () => {
   it('returns 401 when authIdentity is not set', async () => {
-    const userRepository: IUserRepository = { findById: vi.fn(), upsert: vi.fn() }
+    const userRepository: IUserRepository = {
+      findById: vi.fn(),
+      upsert: vi.fn(),
+      updateProfile: vi.fn(),
+    }
     const app = buildTestApp(userRepository, undefined)
 
     const response = await app.inject({ method: 'GET', url: '/organizations' })
@@ -48,6 +52,7 @@ describe('requirePlatformAdmin', () => {
         isPlatformAdmin: false,
       }),
       upsert: vi.fn(),
+      updateProfile: vi.fn(),
     }
     const app = buildTestApp(userRepository, IDENTITY)
 
@@ -62,6 +67,7 @@ describe('requirePlatformAdmin', () => {
     const userRepository: IUserRepository = {
       findById: vi.fn().mockResolvedValue(null),
       upsert: vi.fn(),
+      updateProfile: vi.fn(),
     }
     const app = buildTestApp(userRepository, IDENTITY)
 
@@ -79,6 +85,7 @@ describe('requirePlatformAdmin', () => {
         isPlatformAdmin: true,
       }),
       upsert: vi.fn(),
+      updateProfile: vi.fn(),
     }
     const app = buildTestApp(userRepository, IDENTITY)
 

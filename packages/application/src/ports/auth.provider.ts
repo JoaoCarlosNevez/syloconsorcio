@@ -11,7 +11,7 @@
 /**
  * Identidade autenticada conforme o provedor de auth.
  *
- * Por decisão arquitetural (ver ADR-12), o ID do Supabase Auth é reutilizado
+ * Por decisão arquitetural (ver ADR-06), o ID do Supabase Auth é reutilizado
  * como ID do usuário no domínio (users.id = auth.users.id).
  * Portanto, identityId e userId são o mesmo valor.
  */
