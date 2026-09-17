@@ -425,7 +425,6 @@ function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
   const [passwordSaving, setPasswordSaving] = useState(false)
 
   const memberSince = formatMemberSince(currentUser?.createdAt ?? null)
-  const initials = (name || currentUser?.email || '?').trim().charAt(0).toUpperCase()
 
   async function handleSave() {
     setFormError('')
@@ -514,11 +513,11 @@ function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
           {/* Foto de perfil */}
           <section className={styles.editSection}>
             <div className={styles.editPhotoRow}>
-              {currentUser?.avatarUrl ? (
-                <img src={currentUser.avatarUrl} alt="" className={styles.editPhotoAvatarImg} />
-              ) : (
-                <span className={styles.editPhotoAvatar}>{initials}</span>
-              )}
+              <img
+                src={currentUser?.avatarUrl ?? '/default-avatar.svg'}
+                alt=""
+                className={styles.editPhotoAvatarImg}
+              />
               <div className={styles.editPhotoInfo}>
                 <span className={styles.editPhotoTitle}>Foto de perfil</span>
                 <span className={styles.editHint}>JPG, PNG ou WEBP. Tamanho máximo 2 MB.</span>
@@ -942,7 +941,7 @@ export function PerfilPage() {
             <div className={styles.profileMain}>
               <div className={styles.avatarWrap}>
                 <img
-                  src={currentUser?.avatarUrl ?? '/sara-profile.png'}
+                  src={currentUser?.avatarUrl ?? '/default-avatar.svg'}
                   alt={emailPrefix}
                   className={styles.avatar}
                 />

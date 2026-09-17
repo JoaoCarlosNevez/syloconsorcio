@@ -279,7 +279,7 @@ export function HomePage() {
               >
                 <div className={styles.profileAvatarInner}>
                   <img
-                    src={currentUser?.avatarUrl ?? '/sara-profile.png'}
+                    src={currentUser?.avatarUrl ?? '/default-avatar.svg'}
                     alt={displayName}
                     className={styles.profileAvatarImg}
                   />

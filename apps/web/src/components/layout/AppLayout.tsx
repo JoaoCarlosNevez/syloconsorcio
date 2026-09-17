@@ -388,7 +388,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               style={{ borderColor: TIER_BORDER_COLOR[USER_TIER] }}
             >
               <img
-                src={currentUser?.avatarUrl ?? '/sara-profile.png'}
+                src={currentUser?.avatarUrl ?? '/default-avatar.svg'}
                 alt={displayName}
                 className={styles.userCardAvatar}
               />
