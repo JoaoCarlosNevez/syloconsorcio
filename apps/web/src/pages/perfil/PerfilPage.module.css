@@ -168,7 +168,11 @@
 
 .editBannerBtn {
   position: relative;
-  z-index: 1;
+  /* precisa vencer o .profileBody (z-index: 1), que fica por cima do banner
+     e cobria a maior parte deste botão — só sobrava uma fresta na direita
+     clicável, já que ambos empatavam em z-index e .profileBody vem depois
+     no DOM. */
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 5px;
