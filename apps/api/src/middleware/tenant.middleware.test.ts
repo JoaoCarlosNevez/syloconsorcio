@@ -198,7 +198,7 @@ describe('tenantMiddleware', () => {
 
   it('returns 403 when user has no membership in the requested organization', async () => {
     const mockRepo: IMembershipRepository = {
-      findActiveByUserId: vi.fn(),
+      findActiveByUserId: vi.fn().mockResolvedValue([]),
       findActiveByUserAndOrganization: vi.fn().mockResolvedValue(null),
       findActiveByOrganizationId: vi.fn(),
       findAllActive: vi.fn(),
@@ -225,7 +225,7 @@ describe('tenantMiddleware', () => {
 
   it('returns 403 for a platform admin when the requested organization does not exist', async () => {
     const mockRepo: IMembershipRepository = {
-      findActiveByUserId: vi.fn(),
+      findActiveByUserId: vi.fn().mockResolvedValue([]),
       findActiveByUserAndOrganization: vi.fn().mockResolvedValue(null),
       findActiveByOrganizationId: vi.fn(),
       findAllActive: vi.fn(),
@@ -325,7 +325,7 @@ describe('tenantMiddleware', () => {
 
   it('returns 403 when membership exists but is suspended', async () => {
     const mockRepo: IMembershipRepository = {
-      findActiveByUserId: vi.fn(),
+      findActiveByUserId: vi.fn().mockResolvedValue([]),
       findActiveByUserAndOrganization: vi.fn().mockResolvedValue(SUSPENDED_MEMBERSHIP),
       findActiveByOrganizationId: vi.fn(),
       findAllActive: vi.fn(),

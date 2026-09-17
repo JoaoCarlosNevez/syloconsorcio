@@ -68,6 +68,15 @@ export function createTenantMiddleware(
       })
     }
 
+    // Disparada em paralelo com a busca abaixo — não depende do resultado dela,
+    // e cada query paga uma rodada de rede inteira até o banco (ADR-02: Supabase
+    // fica longe do ambiente de dev), então evitar serializar as duas economiza
+    // uma rodada inteira em toda rota de negócio.
+    const allMembershipsPromise = membershipRepository.findActiveByUserId(identity.id)
+    // Os returns 403 abaixo não aguardam essa promise — sem isto, uma rejeição
+    // dela viraria unhandledRejection nesses caminhos.
+    allMembershipsPromise.catch(() => {})
+
     // Busca membership específica — valida que o usuário pertence à organização
     let currentMembershipData = await membershipRepository.findActiveByUserAndOrganization(
       identity.id,
@@ -109,7 +118,8 @@ export function createTenantMiddleware(
     }
 
     // Busca todas as memberships para disponibilizar troca de contexto no frontend
-    const allMemberships = await membershipRepository.findActiveByUserId(identity.id)
+    // (disparada em paralelo lá em cima — só aguarda aqui)
+    const allMemberships = await allMembershipsPromise
 
     const authContext: AuthenticatedContext = {
       identityId: identity.id,
