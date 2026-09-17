@@ -8,6 +8,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { COLUMN_STATUS_LABEL, COLUMN_TAREFA_LABEL, USER_TIER } from '../../data/kanban-mock'
+import { useAuth } from '../../hooks/useAuth'
+import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { useLeadsQuery } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { STAGE_TO_COLUMN_ID, daysSince, formatCota } from '../../lib/lead-adapters'
@@ -203,10 +205,16 @@ export function HomePage() {
   const [isLoading, setIsLoading] = useState(true)
   const { organizationId } = useActiveOrganization()
   const { data: leadsPage } = useLeadsQuery(organizationId, { pageSize: 100 })
+  const { user } = useAuth()
+  const { data: currentUser } = useCurrentUser()
 
-  // TODO: buscar nome real do perfil via API
-  const displayName = 'Ennyo Café'
-  const handle = '@ennyocafe'
+  const emailPrefix = user?.email?.split('@')[0] ?? 'consultor'
+  const fallbackName = emailPrefix.replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  const displayName = currentUser?.name ?? fallbackName
+  const handle = currentUser?.instagramHandle
+    ? `@${currentUser.instagramHandle}`
+    : `@${emailPrefix}`
+  const displayLocation = currentUser?.location ?? 'São Paulo'
 
   useEffect(() => {
     const t = setTimeout(() => setIsLoading(false), 1500)
@@ -271,7 +279,7 @@ export function HomePage() {
               >
                 <div className={styles.profileAvatarInner}>
                   <img
-                    src="/sara-profile.png"
+                    src={currentUser?.avatarUrl ?? '/sara-profile.png'}
                     alt={displayName}
                     className={styles.profileAvatarImg}
                   />
@@ -289,12 +297,16 @@ export function HomePage() {
                   </span>
                   <span className={styles.profileHandle}>{handle}</span>
                 </div>
-                <p className={styles.profileMeta}>Equipe de Porthis, São Paulo</p>
+                <p className={styles.profileMeta}>Equipe de Porthis, {displayLocation}</p>
                 <div className={styles.heroActions}>
                   <button type="button" className={styles.notifBtn} aria-label="Notificações">
                     <BellIcon />
                   </button>
-                  <button type="button" className={styles.chamaSaraBtn}>
+                  <button
+                    type="button"
+                    className={styles.chamaSaraBtn}
+                    onClick={() => navigate('/app/sara')}
+                  >
                     <img
                       src="/sara-ia.png"
                       alt=""
