@@ -23,8 +23,19 @@ function readImageDimensions(file: File): Promise<{ width: number; height: numbe
   })
 }
 
+export interface IconFileValidationOptions {
+  /** Ícones de organização precisam ser quadrados; avatares de usuário não
+   * (a foto é recortada visualmente com object-fit: cover + border-radius). */
+  requireSquare?: boolean
+}
+
 /** Retorna uma mensagem de erro se o arquivo não servir como ícone, ou null se for válido. */
-export async function validateIconFile(file: File): Promise<string | null> {
+export async function validateIconFile(
+  file: File,
+  options: IconFileValidationOptions = {},
+): Promise<string | null> {
+  const { requireSquare = true } = options
+
   if (file.size > MAX_ICON_SIZE_BYTES) {
     return 'Imagem muito grande. Limite de 2MB.'
   }
@@ -42,7 +53,7 @@ export async function validateIconFile(file: File): Promise<string | null> {
   }
 
   const ratio = width / height
-  if (Math.abs(ratio - 1) > ASPECT_RATIO_TOLERANCE) {
+  if (requireSquare && Math.abs(ratio - 1) > ASPECT_RATIO_TOLERANCE) {
     return `A imagem precisa ser quadrada (proporção 1:1). Recebido: ${width}×${height}px.`
   }
 

@@ -243,14 +243,30 @@ describe('POST /auth/me/avatar', () => {
     expect(response.statusCode).toBe(401)
   })
 
-  it('returns 400 when the image is not square', async () => {
+  it('accepts a non-square image (avatars are cropped visually, not rejected)', async () => {
     const mockProvider: IAuthProvider = {
       verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
       signOut: vi.fn(),
       createUser: vi.fn(),
       deleteUser: vi.fn(),
     }
-    const app = buildApp({ authProvider: mockProvider, storageProvider: buildStorageProvider() })
+    const storageProvider = buildStorageProvider()
+    const updateProfile = vi.fn().mockResolvedValue({
+      id: MOCK_IDENTITY.id,
+      email: MOCK_IDENTITY.email,
+      name: null,
+      instagramHandle: null,
+      location: null,
+      avatarUrl:
+        'https://xvzsobntyhvxrbdfboax.supabase.co/storage/v1/object/public/user-avatars/user-uuid/avatar.png',
+      isPlatformAdmin: false,
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+    })
+    const app = buildApp({
+      authProvider: mockProvider,
+      storageProvider,
+      userRepository: { findById: vi.fn(), upsert: vi.fn(), updateProfile },
+    })
 
     const { payload, headers } = buildMultipartUpload(
       'avatar.png',
@@ -264,9 +280,7 @@ describe('POST /auth/me/avatar', () => {
       payload,
     })
 
-    expect(response.statusCode).toBe(400)
-    const body = response.json<{ code: string }>()
-    expect(body.code).toBe('NOT_SQUARE')
+    expect(response.statusCode).toBe(200)
   })
 
   it('uploads the avatar and updates the profile', async () => {

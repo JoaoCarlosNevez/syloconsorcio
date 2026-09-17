@@ -452,7 +452,7 @@ function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
     if (!file) return
 
     setAvatarError('')
-    const validationError = await validateIconFile(file)
+    const validationError = await validateIconFile(file, { requireSquare: false })
     if (validationError) {
       setAvatarError(validationError)
       return
@@ -521,10 +521,7 @@ function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
               )}
               <div className={styles.editPhotoInfo}>
                 <span className={styles.editPhotoTitle}>Foto de perfil</span>
-                <span className={styles.editHint}>
-                  JPG, PNG ou WEBP. Tamanho máximo 2 MB. Precisa ser quadrada (recomendado
-                  256×256px).
-                </span>
+                <span className={styles.editHint}>JPG, PNG ou WEBP. Tamanho máximo 2 MB.</span>
               </div>
               <div className={styles.editPhotoActions}>
                 <input

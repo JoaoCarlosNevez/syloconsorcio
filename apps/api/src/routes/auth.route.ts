@@ -119,7 +119,7 @@ export const authRoute: FastifyPluginAsync<AuthRouteOptions> = async (fastify, o
     }
 
     const buffer = await file.toBuffer()
-    const validationError = validateIconUpload(buffer, file.mimetype)
+    const validationError = validateIconUpload(buffer, file.mimetype, { requireSquare: false })
     if (validationError) {
       return reply
         .status(400)

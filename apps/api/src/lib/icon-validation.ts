@@ -33,11 +33,22 @@ export interface IconValidationError {
   message: string
 }
 
+export interface IconValidationOptions {
+  /** Ícones de organização precisam ser quadrados; avatares de usuário não
+   * (a foto é recortada visualmente com object-fit: cover + border-radius). */
+  requireSquare?: boolean
+}
+
 /**
  * Valida um upload de ícone de organização. Retorna null quando válido,
  * ou o primeiro erro encontrado (formato → tamanho → dimensões → proporção).
  */
-export function validateIconUpload(buffer: Buffer, mimetype: string): IconValidationError | null {
+export function validateIconUpload(
+  buffer: Buffer,
+  mimetype: string,
+  options: IconValidationOptions = {},
+): IconValidationError | null {
+  const { requireSquare = true } = options
   const extension = ICON_EXTENSION_BY_MIME[mimetype]
   if (!extension) {
     return {
@@ -68,7 +79,7 @@ export function validateIconUpload(buffer: Buffer, mimetype: string): IconValida
   }
 
   const ratio = width / height
-  if (Math.abs(ratio - 1) > ASPECT_RATIO_TOLERANCE) {
+  if (requireSquare && Math.abs(ratio - 1) > ASPECT_RATIO_TOLERANCE) {
     return {
       code: 'NOT_SQUARE',
       message: `A imagem precisa ser quadrada (proporção 1:1). Recebido: ${width}×${height}px.`,
