@@ -5,6 +5,8 @@
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
+import type { LeadStage } from '../lib/leads-api'
+
 export interface CardData {
   id: string
   name: string
@@ -12,6 +14,7 @@ export interface CardData {
   cota: string
   date: string
   assignedUserId: string | null
+  stage: LeadStage
   source: string
   sourceBg: string
   sourceText: string

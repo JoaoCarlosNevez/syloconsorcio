@@ -67,6 +67,7 @@ export function toCardData(lead: Lead): CardData {
     cota: formatCota(lead.valueCents, lead.segment, lead.quotaCount),
     date: formatDate(lead.createdAt),
     assignedUserId: lead.assignedUserId,
+    stage: lead.stage,
     source: lead.source,
     sourceBg: colors.bg,
     sourceText: colors.text,

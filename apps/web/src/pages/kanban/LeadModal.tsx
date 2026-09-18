@@ -3,11 +3,11 @@
 
 import { Skeleton, useToast } from '@sylocrm/ui'
 import { useEffect, useState } from 'react'
-import type { CardData } from '../../data/kanban-mock'
+import { COLUMN_META, type CardData } from '../../data/kanban-mock'
 import { useDeleteLead, useUpdateLead } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { useTeamMembersQuery } from '../../hooks/useTeam'
-import { resolveAgent } from '../../lib/lead-adapters'
+import { COLUMN_ID_TO_STAGE, STAGE_TO_COLUMN_ID, resolveAgent } from '../../lib/lead-adapters'
 import styles from './LeadModal.module.css'
 
 // ── Ícones (SVG inline — padrão do projeto) ────────────────────────────────────
@@ -474,14 +474,10 @@ function LinkIcon() {
 
 // ── Dados estáticos (mock) ─────────────────────────────────────────────────────
 
-const FUNNEL_STAGES = [
-  '1. Lead',
-  '2. Em Atendimento',
-  '3. Agendamento',
-  '4. Visita / Simulação',
-  '5. Proposta',
-  '6. Venda Fechada',
-]
+// Mesmas 6 etapas e ordem do board (COLUMN_META) — nunca hardcoded aqui de
+// novo, senão volta a divergir do funil real (bug: essa lista tinha nomes
+// que nem existem nas colunas de verdade, tipo "Agendamento").
+const FUNNEL_STAGES = COLUMN_META.map((column) => column.name)
 
 const MOCK_TASKS = [
   {
@@ -612,6 +608,23 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
     )
   }
 
+  function handleStageClick(columnId: string) {
+    const stage = COLUMN_ID_TO_STAGE[columnId]
+    if (!stage || stage === card.stage) return
+    updateLead.mutate(
+      { id: card.id, payload: { stage } },
+      {
+        onError: (error) => {
+          toast({
+            type: 'error',
+            title: 'Não foi possível mover o lead',
+            description: error instanceof Error ? error.message : undefined,
+          })
+        },
+      },
+    )
+  }
+
   function handleConfirmDelete() {
     deleteLead.mutate(card.id, {
       onSuccess: () => {
@@ -648,7 +661,12 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
     'qualificacao',
   )
   const cota = parseCota(card.cota)
-  const activeStage = 0 // Lead = índice 0
+  // Índice real da etapa do lead — antes ficava travado em "Lead" (0)
+  // independente da etapa de verdade.
+  const activeStageIndex = COLUMN_META.findIndex(
+    (column) => column.id === STAGE_TO_COLUMN_ID[card.stage],
+  )
+  const activeStage = activeStageIndex === -1 ? 0 : activeStageIndex
   const responsible = resolveAgent(card.assignedUserId, members)
 
   return (
@@ -730,9 +748,14 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
             <span className={styles.funnelLabel}>Etapas do Funil:</span>
             {FUNNEL_STAGES.map((stage, i) => (
               <span key={stage} className={styles.funnelGroup}>
-                <span className={i === activeStage ? styles.funnelStageActive : styles.funnelStage}>
+                <button
+                  type="button"
+                  className={i === activeStage ? styles.funnelStageActive : styles.funnelStage}
+                  onClick={() => handleStageClick(COLUMN_META[i]?.id ?? '')}
+                  disabled={updateLead.isPending}
+                >
                   {stage}
-                </span>
+                </button>
                 {i < FUNNEL_STAGES.length - 1 && (
                   <span className={styles.funnelArrow}>
                     <ChevronRightIcon />
