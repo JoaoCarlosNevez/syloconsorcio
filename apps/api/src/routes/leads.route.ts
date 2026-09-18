@@ -25,7 +25,7 @@ import {
   ListLeadsUseCase,
   UpdateLeadUseCase,
 } from '@sylocrm/application'
-import { LeadStage, Permission } from '@sylocrm/domain'
+import { LeadStage, Permission, ValidationError } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { AuthErrorCode } from '../auth/errors'
@@ -196,19 +196,26 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
         })
       }
 
-      const lead = await updateLead.execute({
-        id: request.params.id,
-        userId: context.userId,
-        membership: context.currentMembership,
-        changes: { ...parsed.data, stage: parsed.data.stage as LeadStage | undefined },
-      })
+      try {
+        const lead = await updateLead.execute({
+          id: request.params.id,
+          userId: context.userId,
+          membership: context.currentMembership,
+          changes: { ...parsed.data, stage: parsed.data.stage as LeadStage | undefined },
+        })
 
-      if (!lead) {
-        return reply
-          .status(404)
-          .send({ error: 'Lead não encontrado.', code: 'LEAD_NOT_FOUND', status: 404 })
+        if (!lead) {
+          return reply
+            .status(404)
+            .send({ error: 'Lead não encontrado.', code: 'LEAD_NOT_FOUND', status: 404 })
+        }
+        return lead
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          return reply.status(400).send({ error: error.message, code: error.code, status: 400 })
+        }
+        throw error
       }
-      return lead
     },
   )
 

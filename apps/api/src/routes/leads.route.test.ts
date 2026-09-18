@@ -329,6 +329,40 @@ describe('PATCH /leads/:id', () => {
     expect(response.statusCode).toBe(404)
   })
 
+  it('returns 400 when marking as won from any stage other than Fechado', async () => {
+    const update = vi.fn()
+    // SAMPLE_LEAD.stage is 'LEAD', not 'FECHADO'
+    const leadRepository = buildLeadRepository({ update })
+    const app = buildTestApp({ leadRepository })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/leads/lead-01',
+      headers: AUTH_HEADERS,
+      payload: { stage: 'VENDA' },
+    })
+
+    expect(response.statusCode).toBe(400)
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  it('allows marking as won when the lead is at Fechado', async () => {
+    const findById = vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, stage: 'FECHADO' })
+    const update = vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, stage: 'VENDA' })
+    const leadRepository = buildLeadRepository({ findById, update })
+    const app = buildTestApp({ leadRepository })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/leads/lead-01',
+      headers: AUTH_HEADERS,
+      payload: { stage: 'VENDA' },
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json<{ stage: string }>().stage).toBe('VENDA')
+  })
+
   it('marks a lead as lost without requiring lead.assign', async () => {
     const update = vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, lostAt: new Date() })
     const leadRepository = buildLeadRepository({ update })
@@ -351,7 +385,7 @@ describe('PATCH /leads/:id', () => {
   })
 
   it('reopens a lost lead with lost: false', async () => {
-    const update = vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, lostAt: null })
+    const update = vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, stage: 'ATENDIMENTO', lostAt: null })
     const leadRepository = buildLeadRepository({ update })
     const app = buildTestApp({ leadRepository })
 
@@ -359,14 +393,14 @@ describe('PATCH /leads/:id', () => {
       method: 'PATCH',
       url: '/leads/lead-01',
       headers: AUTH_HEADERS,
-      payload: { stage: 'VENDA', lost: false },
+      payload: { stage: 'ATENDIMENTO', lost: false },
     })
 
     expect(response.statusCode).toBe(200)
     expect(update).toHaveBeenCalledWith(
       'lead-01',
       expect.anything(),
-      expect.objectContaining({ stage: 'VENDA', lost: false }),
+      expect.objectContaining({ stage: 'ATENDIMENTO', lost: false }),
     )
   })
 })

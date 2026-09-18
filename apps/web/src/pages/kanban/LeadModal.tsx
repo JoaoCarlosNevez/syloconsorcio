@@ -761,7 +761,12 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                 type="button"
                 className={styles.btnGanho}
                 onClick={handleMarkWon}
-                disabled={updateLead.isPending}
+                disabled={updateLead.isPending || card.stage !== 'FECHADO'}
+                title={
+                  card.stage !== 'FECHADO'
+                    ? 'Só é possível marcar como Ganho a partir da etapa Fechado.'
+                    : undefined
+                }
               >
                 <TrophyIcon />
                 Marcar como Ganho
@@ -791,23 +796,33 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
           {/* Barra de progresso do funil */}
           <div className={styles.funnelBar}>
             <span className={styles.funnelLabel}>Etapas do Funil:</span>
-            {FUNNEL_STAGES.map((stage, i) => (
-              <span key={stage} className={styles.funnelGroup}>
-                <button
-                  type="button"
-                  className={i === activeStage ? styles.funnelStageActive : styles.funnelStage}
-                  onClick={() => handleStageClick(COLUMN_META[i]?.id ?? '')}
-                  disabled={updateLead.isPending}
-                >
-                  {stage}
-                </button>
-                {i < FUNNEL_STAGES.length - 1 && (
-                  <span className={styles.funnelArrow}>
-                    <ChevronRightIcon />
-                  </span>
-                )}
-              </span>
-            ))}
+            {FUNNEL_STAGES.map((stage, i) => {
+              // "Venda Concluída" só é alcançável a partir de Fechado — mesma
+              // regra que o backend aplica (UpdateLeadUseCase).
+              const isUnreachableVenda = COLUMN_META[i]?.id === 'venda' && card.stage !== 'FECHADO'
+              return (
+                <span key={stage} className={styles.funnelGroup}>
+                  <button
+                    type="button"
+                    className={i === activeStage ? styles.funnelStageActive : styles.funnelStage}
+                    onClick={() => handleStageClick(COLUMN_META[i]?.id ?? '')}
+                    disabled={updateLead.isPending || isUnreachableVenda}
+                    title={
+                      isUnreachableVenda
+                        ? 'Só é possível marcar como Ganho a partir da etapa Fechado.'
+                        : undefined
+                    }
+                  >
+                    {stage}
+                  </button>
+                  {i < FUNNEL_STAGES.length - 1 && (
+                    <span className={styles.funnelArrow}>
+                      <ChevronRightIcon />
+                    </span>
+                  )}
+                </span>
+              )
+            })}
           </div>
         </header>
 

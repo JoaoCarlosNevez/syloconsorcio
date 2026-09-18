@@ -3,7 +3,11 @@
 // Quando `assignedUserId` muda, registra a mudança em lead_assignment_history
 // (AGENTS.md §10 — "o modelo deve permitir histórico de atribuição").
 // A checagem de Permission (lead.update / lead.assign) acontece na camada HTTP.
+//
+// Marcar como Ganho (stage: VENDA) só é permitido a partir de FECHADO — não dá
+// pra "ganhar" um lead que ainda não passou pelas etapas anteriores do funil.
 
+import { ValidationError } from '@sylocrm/domain'
 import type { MembershipContext } from '../auth/auth-context'
 import type { ILeadRepository, LeadRecord, UpdateLeadInput } from '../ports/lead.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
@@ -31,7 +35,18 @@ export class UpdateLeadUseCase implements UseCase<UpdateLeadUseCaseInput, LeadRe
     )
 
     const isReassigning = input.changes.assignedUserId !== undefined
-    const before = isReassigning ? await this.leadRepository.findById(input.id, scope) : null
+    const isMarkingWon = input.changes.stage === 'VENDA'
+    const before =
+      isReassigning || isMarkingWon ? await this.leadRepository.findById(input.id, scope) : null
+
+    if (isMarkingWon && before && before.stage !== 'FECHADO') {
+      throw new ValidationError([
+        {
+          field: 'stage',
+          message: 'Só é possível marcar como Ganho a partir da etapa Fechado.',
+        },
+      ])
+    }
 
     const updated = await this.leadRepository.update(input.id, scope, input.changes)
     if (!updated) return null
