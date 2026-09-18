@@ -14,6 +14,8 @@ export const Permission = {
   LEAD_UPDATE: 'lead.update',
   LEAD_ASSIGN: 'lead.assign',
   LEAD_DELETE: 'lead.delete',
+  /** Ver leads marcados como Perdido (filtro "Perdido" no Kanban) — Vendedor não tem. */
+  LEAD_READ_LOST: 'lead.read_lost',
   USER_INVITE: 'user.invite',
   USER_REMOVE: 'user.remove',
   REPORTS_READ: 'reports.read',

@@ -28,7 +28,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { EmptyState, Skeleton, useToast } from '@sylocrm/ui'
+import { Dropdown, EmptyState, Skeleton, useToast } from '@sylocrm/ui'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { COLUMN_META, type CardData, type ColumnMeta } from '../../data/kanban-mock'
@@ -41,6 +41,7 @@ import {
   groupLeadsByColumn,
   resolveAgent,
 } from '../../lib/lead-adapters'
+import type { OutcomeFilter } from '../../lib/leads-api'
 import type { TeamMember } from '../../lib/team-api'
 import { CreateLeadModal } from './CreateLeadModal'
 import styles from './KanbanPage.module.css'
@@ -420,15 +421,16 @@ interface ListViewProps {
   board: Record<string, CardData[]>
   members: TeamMember[]
   onCardClick: (card: CardData) => void
-  hideVenda?: boolean
 }
 
-function ListView({ board, members, onCardClick, hideVenda }: ListViewProps) {
+function ListView({ board, members, onCardClick }: ListViewProps) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
   const toggle = (colId: string) => setCollapsed((prev) => ({ ...prev, [colId]: !prev[colId] }))
 
-  const visibleMeta = hideVenda ? COLUMN_META.filter((m) => m.id !== 'venda') : COLUMN_META
+  // Colunas visíveis refletem os leads que a API já retornou filtrados por
+  // outcome (aberto/ganho/perdido) — não precisa esconder coluna aqui.
+  const visibleMeta = COLUMN_META
   const totalVisible = visibleMeta.reduce((sum, m) => sum + (board[m.id]?.length ?? 0), 0)
 
   return (
@@ -569,12 +571,23 @@ function ListView({ board, members, onCardClick, hideVenda }: ListViewProps) {
 
 // ── KanbanPage ────────────────────────────────────────────────────────────────
 
+const OUTCOME_LABEL: Record<OutcomeFilter, string> = {
+  aberto: 'Em Aberto',
+  ganho: 'Ganho',
+  perdido: 'Perdido',
+}
+
 export function KanbanPage() {
-  const { organizationId } = useActiveOrganization()
+  const { organizationId, membership } = useActiveOrganization()
+  const canViewLost = membership?.permissions.includes('lead.read_lost') ?? false
+  const [outcomeFilter, setOutcomeFilter] = useState<OutcomeFilter>('aberto')
   // pageSize=100: suficiente para o volume inicial do MVP. Lazy loading por
   // coluna (AGENTS.md §12) fica para quando o volume real exigir — ver nota
   // de status do projeto.
-  const { data, isLoading: isLoadingLeads } = useLeadsQuery(organizationId, { pageSize: 100 })
+  const { data, isLoading: isLoadingLeads } = useLeadsQuery(organizationId, {
+    pageSize: 100,
+    outcome: outcomeFilter,
+  })
   const updateLead = useUpdateLead(organizationId)
   const { data: teamData } = useTeamMembersQuery(organizationId)
   const members = teamData?.members ?? []
@@ -586,7 +599,6 @@ export function KanbanPage() {
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [overColId, setOverColId] = useState<string | null>(null)
-  const [statusFilter, setStatusFilter] = useState<'todos' | 'aberto'>('aberto')
   const boardRef = useRef<HTMLDivElement>(null)
   // Coluna de onde o card saiu no início do drag — usada para saber se o
   // estágio realmente mudou quando o drag termina (handleDragEnd).
@@ -773,13 +785,20 @@ export function KanbanPage() {
               </button>
             </div>
             <span className={styles.headerDivider} />
-            <button
-              type="button"
-              className={`${styles.filterBtn} ${statusFilter === 'aberto' ? styles.filterBtnActive : ''}`}
-              onClick={() => setStatusFilter((f) => (f === 'aberto' ? 'todos' : 'aberto'))}
-            >
-              {statusFilter === 'aberto' ? 'Em Aberto' : 'Todos'} <ChevronDownIcon />
-            </button>
+            <Dropdown
+              trigger={
+                <span className={`${styles.filterBtn} ${styles.filterBtnActive}`}>
+                  {OUTCOME_LABEL[outcomeFilter]} <ChevronDownIcon />
+                </span>
+              }
+              items={(['aberto', 'ganho', 'perdido'] as const)
+                .filter((outcome) => outcome !== 'perdido' || canViewLost)
+                .map((outcome) => ({
+                  key: outcome,
+                  label: OUTCOME_LABEL[outcome],
+                  onSelect: () => setOutcomeFilter(outcome),
+                }))}
+            />
             <button type="button" className={styles.filterBtn}>
               <TagIcon /> Todas as tags <ChevronDownIcon />
             </button>
@@ -901,12 +920,7 @@ export function KanbanPage() {
 
         {/* ── Lista ────────────────────────────────────────────────────── */}
         {!isLoading && totalLeads > 0 && viewMode === 'list' && (
-          <ListView
-            board={board}
-            members={members}
-            onCardClick={setSelectedCard}
-            hideVenda={statusFilter === 'aberto'}
-          />
+          <ListView board={board} members={members} onCardClick={setSelectedCard} />
         )}
 
         {/* ── Board ────────────────────────────────────────────────────── */}

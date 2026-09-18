@@ -15,7 +15,7 @@ import type {
   NewLeadInput,
   UpdateLeadInput,
 } from '@sylocrm/application'
-import { and, desc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm'
+import { and, desc, eq, ilike, inArray, isNotNull, isNull, ne, or, sql } from 'drizzle-orm'
 import type { Database } from '../client'
 import { type DbLead, leadAssignmentHistory, leads } from '../schema'
 
@@ -57,10 +57,17 @@ export class DrizzleLeadRepository implements ILeadRepository {
       return { items: [], total: 0, page, pageSize }
     }
 
-    // Leads perdidos somem do board — não existe ainda uma tela de "Perdidos"
-    // pra revisitá-los, então list() sempre os exclui (findById/update/delete
-    // continuam alcançando-os normalmente, pra permitir reabrir no futuro).
-    const conditions = [...buildScopeConditions(filter), isNull(leads.lostAt)]
+    // outcome particiona o funil em 3 buckets mutuamente exclusivos — aberto é
+    // o padrão. findById/update/delete não filtram por outcome (alcançam um
+    // lead perdido normalmente, pra permitir reabrir via lost: false).
+    const conditions = [...buildScopeConditions(filter)]
+    const outcome = filter.outcome ?? 'aberto'
+    if (outcome === 'perdido') {
+      conditions.push(isNotNull(leads.lostAt))
+    } else {
+      conditions.push(isNull(leads.lostAt))
+      conditions.push(outcome === 'ganho' ? eq(leads.stage, 'VENDA') : ne(leads.stage, 'VENDA'))
+    }
     if (filter.stage) {
       conditions.push(eq(leads.stage, filter.stage))
     }

@@ -1,13 +1,14 @@
 // ListLeadsUseCase — lista leads paginados, filtrados pelo DataScope ativo.
 //
-// A checagem de Permission (lead.read) acontece na camada HTTP (requirePermission
-// middleware), antes deste use case ser chamado — ver apps/api/src/routes/leads.route.ts.
+// A checagem de Permission (lead.read; lead.read_lost quando outcome=perdido)
+// acontece na camada HTTP (requirePermission middleware / checagem inline),
+// antes deste use case ser chamado — ver apps/api/src/routes/leads.route.ts.
 // Este use case assume que a chamada já foi autorizada e cuida apenas da
 // resolução de escopo de dados e da paginação server-side (regra P0).
 
 import type { LeadStage } from '@sylocrm/domain'
 import type { MembershipContext } from '../auth/auth-context'
-import type { ILeadRepository, LeadListPage } from '../ports/lead.repository'
+import type { ILeadRepository, LeadListPage, LeadOutcomeFilter } from '../ports/lead.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
 import type { UseCase } from '../ports/use-case'
 import { resolveLeadScope } from './lead-scope'
@@ -23,6 +24,7 @@ export interface ListLeadsInput {
   search?: string
   page?: number
   pageSize?: number
+  outcome?: LeadOutcomeFilter
 }
 
 export class ListLeadsUseCase implements UseCase<ListLeadsInput, LeadListPage> {
@@ -42,7 +44,7 @@ export class ListLeadsUseCase implements UseCase<ListLeadsInput, LeadListPage> {
     )
 
     const result = await this.leadRepository.list(
-      { ...scope, stage: input.stage, search: input.search },
+      { ...scope, stage: input.stage, search: input.search, outcome: input.outcome },
       page,
       pageSize,
     )

@@ -1,6 +1,8 @@
 // Rotas de leads — primeiro módulo de negócio vertical do CRM.
 //
-// GET    /leads      — lista paginada e filtrada por DataScope (lead.read)
+// GET    /leads      — lista paginada e filtrada por DataScope (lead.read).
+//                      `outcome` (aberto/ganho/perdido) filtra por resultado;
+//                      "perdido" exige lead.read_lost (Vendedor não tem).
 // POST   /leads      — cria um lead na organização ativa (lead.create)
 // GET    /leads/:id  — detalhe de um lead dentro do escopo (lead.read)
 // PATCH  /leads/:id  — atualiza um lead (lead.update; reatribuir exige lead.assign).
@@ -72,6 +74,7 @@ const listQuerySchema = z.object({
   search: z.string().optional(),
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().optional(),
+  outcome: z.enum(['aberto', 'ganho', 'perdido']).optional(),
 })
 
 function validationErrorResponse(fieldErrors: Record<string, string[] | undefined>) {
@@ -112,6 +115,19 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
       // preHandlers garantem que authContext está presente neste ponto.
       const context = request.authContext as NonNullable<typeof request.authContext>
 
+      // Ver leads perdidos exige uma permission adicional — Vendedor não a
+      // possui (ver apps/api/src/auth/permissions.ts).
+      if (
+        parsed.data.outcome === 'perdido' &&
+        !context.currentMembership.permissions.includes(Permission.LEAD_READ_LOST)
+      ) {
+        return reply.status(403).send({
+          error: 'Ação não autorizada. Permissão necessária: lead.read_lost.',
+          code: AuthErrorCode.PERMISSION_DENIED,
+          status: 403,
+        })
+      }
+
       return listLeads.execute({
         userId: context.userId,
         membership: context.currentMembership,
@@ -119,6 +135,7 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
         search: parsed.data.search,
         page: parsed.data.page,
         pageSize: parsed.data.pageSize,
+        outcome: parsed.data.outcome,
       })
     },
   )

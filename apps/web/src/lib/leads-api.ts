@@ -5,6 +5,10 @@ import { apiClient } from './api-client'
 
 export type LeadStage = 'LEAD' | 'ATENDIMENTO' | 'SIMULACAO' | 'PROPOSTA' | 'FECHADO' | 'VENDA'
 
+/** aberto: pipeline ativo (nem ganho, nem perdido) — padrão. ganho: stage VENDA.
+ * perdido: lostAt setado — exige a permission lead.read_lost (Vendedor não tem). */
+export type OutcomeFilter = 'aberto' | 'ganho' | 'perdido'
+
 export interface Lead {
   id: string
   organizationId: string
@@ -35,6 +39,7 @@ export interface ListLeadsParams {
   search?: string
   page?: number
   pageSize?: number
+  outcome?: OutcomeFilter
 }
 
 export interface CreateLeadPayload {
@@ -68,6 +73,7 @@ function toQueryString(params: ListLeadsParams): string {
   if (params.search) search.set('search', params.search)
   if (params.page) search.set('page', String(params.page))
   if (params.pageSize) search.set('pageSize', String(params.pageSize))
+  if (params.outcome) search.set('outcome', params.outcome)
   const qs = search.toString()
   return qs ? `?${qs}` : ''
 }
