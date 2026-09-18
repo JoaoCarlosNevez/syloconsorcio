@@ -1,0 +1,1 @@
+ALTER TABLE "leads" ADD COLUMN "lost_at" timestamp with time zone;

@@ -18,6 +18,7 @@ export interface Lead {
   stage: LeadStage
   assignedUserId: string | null
   stageChangedAt: string
+  lostAt: string | null
   createdAt: string
   updatedAt: string
 }
@@ -57,6 +58,8 @@ export interface UpdateLeadPayload {
   source?: string
   stage?: LeadStage
   assignedUserId?: string | null
+  /** true marca como Perdido; false reabre um lead perdido. */
+  lost?: boolean
 }
 
 function toQueryString(params: ListLeadsParams): string {

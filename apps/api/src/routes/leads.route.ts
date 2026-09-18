@@ -3,7 +3,8 @@
 // GET    /leads      — lista paginada e filtrada por DataScope (lead.read)
 // POST   /leads      — cria um lead na organização ativa (lead.create)
 // GET    /leads/:id  — detalhe de um lead dentro do escopo (lead.read)
-// PATCH  /leads/:id  — atualiza um lead (lead.update; reatribuir exige lead.assign)
+// PATCH  /leads/:id  — atualiza um lead (lead.update; reatribuir exige lead.assign).
+//                      `lost: true` marca como Perdido (some do board); `lost: false` reabre.
 // DELETE /leads/:id  — remove um lead dentro do escopo (lead.delete)
 //
 // Todas as rotas rodam authMiddleware → tenantMiddleware → requirePermission,
@@ -63,6 +64,7 @@ const updateLeadSchema = z.object({
   source: z.string().min(1).optional(),
   stage: z.enum(LEAD_STAGE_VALUES).optional(),
   assignedUserId: z.string().uuid().nullable().optional(),
+  lost: z.boolean().optional(),
 })
 
 const listQuerySchema = z.object({

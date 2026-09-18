@@ -22,6 +22,8 @@ export interface LeadRecord {
   stage: LeadStage
   assignedUserId: string | null
   stageChangedAt: Date
+  /** Null enquanto o lead está ativo no funil; setado ao marcar como Perdido. */
+  lostAt: Date | null
   createdAt: Date
   updatedAt: Date
 }
@@ -48,6 +50,8 @@ export interface UpdateLeadInput {
   source?: string
   stage?: LeadStage
   assignedUserId?: string | null
+  /** true marca como Perdido (lostAt = agora); false reabre (lostAt = null). */
+  lost?: boolean
 }
 
 export interface LeadScopeFilter {

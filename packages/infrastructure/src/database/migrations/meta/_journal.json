@@ -50,6 +50,13 @@
       "when": 1789657662949,
       "tag": "0006_keen_roxanne_simpson",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789703007650,
+      "tag": "0007_peaceful_sage",
+      "breakpoints": true
     }
   ]
 }

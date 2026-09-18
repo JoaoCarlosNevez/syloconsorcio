@@ -4,6 +4,9 @@
 // valueCents guarda o valor da cota em centavos — nunca ponto flutuante para dinheiro.
 // stageChangedAt é atualizado sempre que `stage` muda, e alimenta métricas de
 // tempo-na-etapa; o histórico de responsável fica em lead_assignment_history.
+// lostAt marca "Perdido": null enquanto o lead está ativo no funil. Ao ser
+// marcado, o lead some do board (list() filtra lostAt IS NOT NULL) mas
+// mantém o último stage alcançado — não existe stage "PERDIDO" separado.
 
 import { integer, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { organizations } from './organizations'
@@ -33,6 +36,7 @@ export const leads = pgTable('leads', {
   stage: leadStageEnum('stage').notNull().default('LEAD'),
   assignedUserId: uuid('assigned_user_id').references(() => users.id),
   stageChangedAt: timestamp('stage_changed_at', { withTimezone: true }).defaultNow().notNull(),
+  lostAt: timestamp('lost_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })

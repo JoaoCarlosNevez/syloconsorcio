@@ -71,6 +71,7 @@ const SAMPLE_LEAD: LeadRecord = {
   stage: 'LEAD',
   assignedUserId: null,
   stageChangedAt: new Date('2026-01-01T00:00:00Z'),
+  lostAt: null,
   createdAt: new Date('2026-01-01T00:00:00Z'),
   updatedAt: new Date('2026-01-01T00:00:00Z'),
 }
@@ -326,6 +327,47 @@ describe('PATCH /leads/:id', () => {
     })
 
     expect(response.statusCode).toBe(404)
+  })
+
+  it('marks a lead as lost without requiring lead.assign', async () => {
+    const update = vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, lostAt: new Date() })
+    const leadRepository = buildLeadRepository({ update })
+    const app = buildTestApp({ membership: SELLER_MEMBERSHIP, leadRepository })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/leads/lead-01',
+      headers: AUTH_HEADERS,
+      payload: { lost: true },
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(update).toHaveBeenCalledWith(
+      'lead-01',
+      expect.anything(),
+      expect.objectContaining({ lost: true }),
+    )
+    expect(response.json<{ lostAt: string | null }>().lostAt).not.toBeNull()
+  })
+
+  it('reopens a lost lead with lost: false', async () => {
+    const update = vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, lostAt: null })
+    const leadRepository = buildLeadRepository({ update })
+    const app = buildTestApp({ leadRepository })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/leads/lead-01',
+      headers: AUTH_HEADERS,
+      payload: { stage: 'VENDA', lost: false },
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(update).toHaveBeenCalledWith(
+      'lead-01',
+      expect.anything(),
+      expect.objectContaining({ stage: 'VENDA', lost: false }),
+    )
   })
 })
 

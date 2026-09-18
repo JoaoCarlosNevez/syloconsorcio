@@ -15,7 +15,7 @@ import type {
   NewLeadInput,
   UpdateLeadInput,
 } from '@sylocrm/application'
-import { and, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
+import { and, desc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm'
 import type { Database } from '../client'
 import { type DbLead, leadAssignmentHistory, leads } from '../schema'
 
@@ -32,6 +32,7 @@ const LEAD_COLUMNS = {
   stage: leads.stage,
   assignedUserId: leads.assignedUserId,
   stageChangedAt: leads.stageChangedAt,
+  lostAt: leads.lostAt,
   createdAt: leads.createdAt,
   updatedAt: leads.updatedAt,
 } as const
@@ -56,7 +57,10 @@ export class DrizzleLeadRepository implements ILeadRepository {
       return { items: [], total: 0, page, pageSize }
     }
 
-    const conditions = buildScopeConditions(filter)
+    // Leads perdidos somem do board — não existe ainda uma tela de "Perdidos"
+    // pra revisitá-los, então list() sempre os exclui (findById/update/delete
+    // continuam alcançando-os normalmente, pra permitir reabrir no futuro).
+    const conditions = [...buildScopeConditions(filter), isNull(leads.lostAt)]
     if (filter.stage) {
       conditions.push(eq(leads.stage, filter.stage))
     }
@@ -127,12 +131,15 @@ export class DrizzleLeadRepository implements ILeadRepository {
   ): Promise<LeadRecord | null> {
     if (scope.organizationIds.length === 0) return null
 
+    const { lost, ...rest } = input
+
     const rows = await this.db
       .update(leads)
       .set({
-        ...input,
+        ...rest,
         updatedAt: new Date(),
         ...(input.stage ? { stageChangedAt: new Date() } : {}),
+        ...(lost !== undefined ? { lostAt: lost ? new Date() : null } : {}),
       })
       .where(and(eq(leads.id, id), ...buildScopeConditions(scope)))
       .returning(LEAD_COLUMNS)

@@ -625,6 +625,41 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
     )
   }
 
+  function handleMarkWon() {
+    updateLead.mutate(
+      { id: card.id, payload: { stage: 'VENDA' } },
+      {
+        onSuccess: () => toast({ type: 'success', title: 'Lead marcado como ganho!' }),
+        onError: (error) => {
+          toast({
+            type: 'error',
+            title: 'Não foi possível marcar como ganho',
+            description: error instanceof Error ? error.message : undefined,
+          })
+        },
+      },
+    )
+  }
+
+  function handleMarkLost() {
+    updateLead.mutate(
+      { id: card.id, payload: { lost: true } },
+      {
+        onSuccess: () => {
+          toast({ type: 'success', title: 'Lead marcado como perdido' })
+          onClose()
+        },
+        onError: (error) => {
+          toast({
+            type: 'error',
+            title: 'Não foi possível marcar como perdido',
+            description: error instanceof Error ? error.message : undefined,
+          })
+        },
+      },
+    )
+  }
+
   function handleConfirmDelete() {
     deleteLead.mutate(card.id, {
       onSuccess: () => {
@@ -713,11 +748,21 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                 <TransferIcon />
                 Transferir
               </button>
-              <button type="button" className={styles.btnDanger}>
+              <button
+                type="button"
+                className={styles.btnDanger}
+                onClick={handleMarkLost}
+                disabled={updateLead.isPending}
+              >
                 <ThumbsDownIcon />
                 Marcar como Perdido
               </button>
-              <button type="button" className={styles.btnGanho}>
+              <button
+                type="button"
+                className={styles.btnGanho}
+                onClick={handleMarkWon}
+                disabled={updateLead.isPending}
+              >
                 <TrophyIcon />
                 Marcar como Ganho
               </button>
