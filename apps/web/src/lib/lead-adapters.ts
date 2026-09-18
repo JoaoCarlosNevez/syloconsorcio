@@ -4,6 +4,7 @@
 
 import type { CardData } from '../data/kanban-mock'
 import type { Lead, LeadStage } from './leads-api'
+import type { TeamMember } from './team-api'
 
 export const STAGE_TO_COLUMN_ID: Record<LeadStage, string> = {
   LEAD: 'lead',
@@ -65,10 +66,7 @@ export function toCardData(lead: Lead): CardData {
     phone: lead.phone,
     cota: formatCota(lead.valueCents, lead.segment, lead.quotaCount),
     date: formatDate(lead.createdAt),
-    // TODO: resolver nome real via um futuro endpoint de usuários da organização.
-    // getAgentProfile (kanban-mock.ts) ainda ignora este valor e sempre mostra
-    // o usuário placeholder — mantido assim até essa API existir.
-    agent: lead.assignedUserId ?? 'Não atribuído',
+    assignedUserId: lead.assignedUserId,
     source: lead.source,
     sourceBg: colors.bg,
     sourceText: colors.text,
@@ -88,4 +86,39 @@ export function groupLeadsByColumn(leads: Lead[]): Record<string, CardData[]> {
     board[columnId]?.push(toCardData(lead))
   }
   return board
+}
+
+// ── Resolução do responsável (assignedUserId → nome/foto reais) ────────────────
+
+export interface ResolvedAgent {
+  name: string
+  photo: string
+  roleLabel: string | null
+}
+
+const ROLE_LABEL: Record<TeamMember['role'], string> = {
+  ADMIN: 'Dono',
+  MANAGER: 'Supervisor',
+  SELLER: 'Vendedor',
+}
+
+const UNASSIGNED_AGENT: ResolvedAgent = {
+  name: 'Não atribuído',
+  photo: '/default-avatar.svg',
+  roleLabel: null,
+}
+
+/** Resolve o responsável real de um lead a partir da lista de membros da equipe. */
+export function resolveAgent(
+  assignedUserId: string | null,
+  members: TeamMember[] | undefined,
+): ResolvedAgent {
+  const member = assignedUserId ? members?.find((m) => m.userId === assignedUserId) : undefined
+  if (!member) return UNASSIGNED_AGENT
+
+  return {
+    name: member.name ?? member.email,
+    photo: member.avatarUrl ?? '/default-avatar.svg',
+    roleLabel: ROLE_LABEL[member.role],
+  }
 }

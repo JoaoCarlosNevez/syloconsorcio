@@ -8,6 +8,7 @@ import {
   type ListLeadsParams,
   type UpdateLeadPayload,
   createLead,
+  deleteLead,
   listLeads,
   updateLead,
 } from '../lib/leads-api'
@@ -40,6 +41,16 @@ export function useUpdateLead(organizationId: string | null) {
     mutationFn: ({ id, payload }: { id: string; payload: UpdateLeadPayload }) =>
       updateLead(organizationId as string, id, payload),
     onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads', organizationId] })
+    },
+  })
+}
+
+export function useDeleteLead(organizationId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteLead(organizationId as string, id),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads', organizationId] })
     },
   })

@@ -5,6 +5,7 @@
 import { Button, Input, Modal, useToast } from '@sylocrm/ui'
 import { type FormEvent, useState } from 'react'
 import { useCreateLead } from '../../hooks/useLeads'
+import { useTeamMembersQuery } from '../../hooks/useTeam'
 
 export interface CreateLeadModalProps {
   open: boolean
@@ -21,6 +22,7 @@ const initialForm = {
   value: '',
   quotaCount: '1',
   source: SOURCE_OPTIONS[0] as string,
+  assignedUserId: '',
 }
 
 function parseValueToCents(value: string): number | null {
@@ -35,6 +37,8 @@ export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadMod
   const [form, setForm] = useState(initialForm)
   const [formError, setFormError] = useState<string | null>(null)
   const createLead = useCreateLead(organizationId)
+  const { data: teamData } = useTeamMembersQuery(organizationId)
+  const members = teamData?.members ?? []
   const { toast } = useToast()
 
   function updateField<K extends keyof typeof initialForm>(key: K, value: (typeof form)[K]) {
@@ -65,6 +69,7 @@ export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadMod
         valueCents,
         quotaCount: Math.max(1, Number.parseInt(form.quotaCount, 10) || 1),
         source: form.source,
+        assignedUserId: form.assignedUserId || null,
       })
       toast({ type: 'success', title: 'Lead criado com sucesso' })
       handleClose()
@@ -134,6 +139,25 @@ export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadMod
           {SOURCE_OPTIONS.map((option) => (
             <option key={option} value={option}>
               {option}
+            </option>
+          ))}
+        </select>
+        <label
+          htmlFor="lead-assignee"
+          style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.6 }}
+        >
+          Atribuir a
+        </label>
+        <select
+          id="lead-assignee"
+          value={form.assignedUserId}
+          onChange={(e) => updateField('assignedUserId', e.target.value)}
+          style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border, #ccc)' }}
+        >
+          <option value="">Não atribuído</option>
+          {members.map((member) => (
+            <option key={member.userId} value={member.userId}>
+              {member.name ?? member.email}
             </option>
           ))}
         </select>

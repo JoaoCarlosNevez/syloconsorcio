@@ -116,6 +116,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         userId: organizationMemberships.userId,
         name: users.name,
         email: users.email,
+        avatarUrl: users.avatarUrl,
         role: organizationMemberships.role,
         status: organizationMemberships.status,
       })
@@ -137,6 +138,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         userId: organizationMemberships.userId,
         name: users.name,
         email: users.email,
+        avatarUrl: users.avatarUrl,
         role: organizationMemberships.role,
         status: organizationMemberships.status,
       })
@@ -153,6 +155,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         userId: organizationMemberships.userId,
         name: users.name,
         email: users.email,
+        avatarUrl: users.avatarUrl,
         role: organizationMemberships.role,
         status: organizationMemberships.status,
         organizationId: organizationMemberships.organizationId,
@@ -172,6 +175,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         userId: organizationMemberships.userId,
         name: users.name,
         email: users.email,
+        avatarUrl: users.avatarUrl,
         role: organizationMemberships.role,
         status: organizationMemberships.status,
         organizationId: organizationMemberships.organizationId,

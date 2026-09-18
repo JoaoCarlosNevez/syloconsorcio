@@ -11,7 +11,7 @@ export interface CardData {
   phone: string
   cota: string
   date: string
-  agent: string
+  assignedUserId: string | null
   source: string
   sourceBg: string
   sourceText: string
@@ -28,20 +28,8 @@ export interface ColumnMeta {
   countText: string
 }
 
-// ── Usuário admin (placeholder até integração com API) ────────────────────────
-
 // Tier do usuário autenticado — fonte única de verdade para toda a UI
 export const USER_TIER = 'diamante' as const
-
-export const ADMIN_USER = {
-  name: 'Ennyo Café',
-  team: 'Porthis',
-  photo: '/sara-profile.png',
-}
-
-export function getAgentProfile(_name: string) {
-  return ADMIN_USER
-}
 
 // ── Metadados das colunas ─────────────────────────────────────────────────────
 

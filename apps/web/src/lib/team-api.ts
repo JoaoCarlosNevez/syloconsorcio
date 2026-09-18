@@ -9,6 +9,7 @@ export interface TeamMember {
   userId: string
   name: string | null
   email: string
+  avatarUrl: string | null
   role: 'ADMIN' | 'MANAGER' | 'SELLER'
   status: 'ACTIVE' | 'INVITED' | 'SUSPENDED'
 }

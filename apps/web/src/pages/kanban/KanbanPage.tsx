@@ -30,15 +30,17 @@ import { CSS } from '@dnd-kit/utilities'
 import { EmptyState, Skeleton, useToast } from '@sylocrm/ui'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
-import {
-  COLUMN_META,
-  type CardData,
-  type ColumnMeta,
-  getAgentProfile,
-} from '../../data/kanban-mock'
+import { COLUMN_META, type CardData, type ColumnMeta } from '../../data/kanban-mock'
 import { useLeadsQuery, useUpdateLead } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
-import { COLUMN_ID_TO_STAGE, formatBRL, groupLeadsByColumn } from '../../lib/lead-adapters'
+import { useTeamMembersQuery } from '../../hooks/useTeam'
+import {
+  COLUMN_ID_TO_STAGE,
+  formatBRL,
+  groupLeadsByColumn,
+  resolveAgent,
+} from '../../lib/lead-adapters'
+import type { TeamMember } from '../../lib/team-api'
 import { CreateLeadModal } from './CreateLeadModal'
 import styles from './KanbanPage.module.css'
 import { LeadModal } from './LeadModal'
@@ -286,11 +288,12 @@ function findColumnOfCard(board: Record<string, CardData[]>, cardId: string): st
 
 interface CardViewProps {
   card: CardData
+  members: TeamMember[]
   isDragging?: boolean
 }
 
-function CardView({ card, isDragging }: CardViewProps) {
-  const agent = getAgentProfile(card.agent)
+function CardView({ card, members, isDragging }: CardViewProps) {
+  const agent = resolveAgent(card.assignedUserId, members)
   return (
     <div className={`${styles.card} ${isDragging ? styles.cardDragging : ''}`}>
       <div className={styles.cardTop}>
@@ -334,8 +337,13 @@ function CardView({ card, isDragging }: CardViewProps) {
 
 function SortableCard({
   card,
+  members,
   onCardClick,
-}: { card: CardData; onCardClick: (card: CardData) => void }) {
+}: {
+  card: CardData
+  members: TeamMember[]
+  onCardClick: (card: CardData) => void
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
   })
@@ -358,7 +366,7 @@ function SortableCard({
         if (!isDragging) onCardClick(card)
       }}
     >
-      <CardView card={card} />
+      <CardView card={card} members={members} />
     </div>
   )
 }
@@ -368,11 +376,12 @@ function SortableCard({
 interface KanbanColumnProps {
   meta: ColumnMeta
   cards: CardData[]
+  members: TeamMember[]
   onCardClick: (card: CardData) => void
   isOver?: boolean
 }
 
-function KanbanColumn({ meta, cards, onCardClick, isOver }: KanbanColumnProps) {
+function KanbanColumn({ meta, cards, members, onCardClick, isOver }: KanbanColumnProps) {
   const cardIds = useMemo(() => cards.map((c) => c.id), [cards])
 
   return (
@@ -392,7 +401,7 @@ function KanbanColumn({ meta, cards, onCardClick, isOver }: KanbanColumnProps) {
       <div className={styles.cardList} data-scroll="column">
         <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
           {cards.map((card) => (
-            <SortableCard key={card.id} card={card} onCardClick={onCardClick} />
+            <SortableCard key={card.id} card={card} members={members} onCardClick={onCardClick} />
           ))}
         </SortableContext>
       </div>
@@ -404,11 +413,12 @@ function KanbanColumn({ meta, cards, onCardClick, isOver }: KanbanColumnProps) {
 
 interface ListViewProps {
   board: Record<string, CardData[]>
+  members: TeamMember[]
   onCardClick: (card: CardData) => void
   hideVenda?: boolean
 }
 
-function ListView({ board, onCardClick, hideVenda }: ListViewProps) {
+function ListView({ board, members, onCardClick, hideVenda }: ListViewProps) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
   const toggle = (colId: string) => setCollapsed((prev) => ({ ...prev, [colId]: !prev[colId] }))
@@ -480,7 +490,7 @@ function ListView({ board, onCardClick, hideVenda }: ListViewProps) {
                 </tr>
                 {!isCollapsed &&
                   cards.map((card, i) => {
-                    const agent = getAgentProfile(card.agent)
+                    const agent = resolveAgent(card.assignedUserId, members)
                     return (
                       <tr
                         key={card.id}
@@ -561,6 +571,8 @@ export function KanbanPage() {
   // de status do projeto.
   const { data, isLoading: isLoadingLeads } = useLeadsQuery(organizationId, { pageSize: 100 })
   const updateLead = useUpdateLead(organizationId)
+  const { data: teamData } = useTeamMembersQuery(organizationId)
+  const members = teamData?.members ?? []
   const { toast } = useToast()
 
   const [board, setBoard] = useState<Record<string, CardData[]>>({})
@@ -708,9 +720,20 @@ export function KanbanPage() {
     [board, updateLead, toast],
   )
 
+  // Reconsulta o card mais recente do board a cada render — evita que o modal
+  // mostre dados obsoletos (ex: responsável antigo) depois de uma mutação,
+  // já que selectedCard guarda a referência capturada no momento do clique.
+  const freshSelectedCard = selectedCard
+    ? (Object.values(board)
+        .flat()
+        .find((c) => c.id === selectedCard.id) ?? selectedCard)
+    : null
+
   return (
     <AppLayout>
-      {selectedCard && <LeadModal card={selectedCard} onClose={() => setSelectedCard(null)} />}
+      {freshSelectedCard && (
+        <LeadModal card={freshSelectedCard} onClose={() => setSelectedCard(null)} />
+      )}
       <div className={styles.page}>
         {/* ── Header ──────────────────────────────────────────────────── */}
         <header className={styles.header}>
@@ -875,6 +898,7 @@ export function KanbanPage() {
         {!isLoading && totalLeads > 0 && viewMode === 'list' && (
           <ListView
             board={board}
+            members={members}
             onCardClick={setSelectedCard}
             hideVenda={statusFilter === 'aberto'}
           />
@@ -896,6 +920,7 @@ export function KanbanPage() {
                     key={meta.id}
                     meta={meta}
                     cards={board[meta.id] ?? []}
+                    members={members}
                     onCardClick={setSelectedCard}
                     isOver={overColId === meta.id}
                   />
@@ -905,7 +930,7 @@ export function KanbanPage() {
 
             {/* Card fantasma renderizado fora do DOM do board — sem reflow */}
             <DragOverlay dropAnimation={{ duration: 180, easing: 'ease' }}>
-              {activeCard ? <CardView card={activeCard} isDragging /> : null}
+              {activeCard ? <CardView card={activeCard} members={members} isDragging /> : null}
             </DragOverlay>
           </DndContext>
         )}

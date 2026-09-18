@@ -87,3 +87,7 @@ export function updateLead(
 ): Promise<Lead> {
   return apiClient.patch<Lead>(`/leads/${id}`, payload, { organizationId })
 }
+
+export function deleteLead(organizationId: string, id: string): Promise<void> {
+  return apiClient.delete<void>(`/leads/${id}`, { organizationId })
+}

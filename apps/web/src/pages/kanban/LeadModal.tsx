@@ -1,10 +1,13 @@
 // LeadModal — ficha completa do lead, aberta ao clicar em um card do Kanban.
 // Design: Figma SYLOAPP node 276:590
 
-import { Skeleton } from '@sylocrm/ui'
+import { Skeleton, useToast } from '@sylocrm/ui'
 import { useEffect, useState } from 'react'
 import type { CardData } from '../../data/kanban-mock'
-import { getAgentProfile } from '../../data/kanban-mock'
+import { useDeleteLead, useUpdateLead } from '../../hooks/useLeads'
+import { useActiveOrganization } from '../../hooks/useOrganization'
+import { useTeamMembersQuery } from '../../hooks/useTeam'
+import { resolveAgent } from '../../lib/lead-adapters'
 import styles from './LeadModal.module.css'
 
 // ── Ícones (SVG inline — padrão do projeto) ────────────────────────────────────
@@ -312,6 +315,25 @@ function ThumbsDownIcon() {
   )
 }
 
+function TrashIcon() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 6h18" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+  )
+}
+
 function TrophyIcon() {
   return (
     <svg
@@ -563,6 +585,49 @@ export interface LeadModalProps {
 export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) {
   const [comment, setComment] = useState('')
   const [localComments, setLocalComments] = useState<{ id: string; text: string }[]>([])
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+
+  const { organizationId, membership } = useActiveOrganization()
+  const { data: teamData } = useTeamMembersQuery(organizationId)
+  const members = teamData?.members ?? []
+  const updateLead = useUpdateLead(organizationId)
+  const deleteLead = useDeleteLead(organizationId)
+  const { toast } = useToast()
+
+  const canAssign = membership?.permissions.includes('lead.assign') ?? false
+  const canDelete = membership?.permissions.includes('lead.delete') ?? false
+
+  function handleReassign(userId: string) {
+    updateLead.mutate(
+      { id: card.id, payload: { assignedUserId: userId || null } },
+      {
+        onError: (error) => {
+          toast({
+            type: 'error',
+            title: 'Não foi possível reatribuir o lead',
+            description: error instanceof Error ? error.message : undefined,
+          })
+        },
+      },
+    )
+  }
+
+  function handleConfirmDelete() {
+    deleteLead.mutate(card.id, {
+      onSuccess: () => {
+        toast({ type: 'success', title: 'Lead excluído' })
+        onClose()
+      },
+      onError: (error) => {
+        toast({
+          type: 'error',
+          title: 'Não foi possível excluir o lead',
+          description: error instanceof Error ? error.message : undefined,
+        })
+        setConfirmingDelete(false)
+      },
+    })
+  }
 
   function submitComment() {
     const trimmed = comment.trim()
@@ -584,7 +649,7 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
   )
   const cota = parseCota(card.cota)
   const activeStage = 0 // Lead = índice 0
-  const responsible = getAgentProfile(card.agent)
+  const responsible = resolveAgent(card.assignedUserId, members)
 
   return (
     <div
@@ -638,6 +703,16 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                 <TrophyIcon />
                 Marcar como Ganho
               </button>
+              {canDelete && (
+                <button
+                  type="button"
+                  className={styles.btnDanger}
+                  onClick={() => setConfirmingDelete(true)}
+                >
+                  <TrashIcon />
+                  Excluir Lead
+                </button>
+              )}
               <div className={styles.headerDivider} />
               <button
                 type="button"
@@ -1098,8 +1173,36 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                             alt={responsible.name}
                             className={styles.agentAvatar}
                           />
-                          <span className={styles.attrValueText}>{responsible.name}</span>
-                          <span className={styles.attrValueMuted}>({responsible.team})</span>
+                          {canAssign ? (
+                            <select
+                              value={card.assignedUserId ?? ''}
+                              onChange={(e) => handleReassign(e.target.value)}
+                              disabled={updateLead.isPending}
+                              style={{
+                                fontSize: 13,
+                                fontWeight: 500,
+                                padding: '4px 8px',
+                                borderRadius: 6,
+                                border: '1px solid var(--color-border, #e2e8f0)',
+                              }}
+                            >
+                              <option value="">Não atribuído</option>
+                              {members.map((member) => (
+                                <option key={member.userId} value={member.userId}>
+                                  {member.name ?? member.email}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <>
+                              <span className={styles.attrValueText}>{responsible.name}</span>
+                              {responsible.roleLabel && (
+                                <span className={styles.attrValueMuted}>
+                                  ({responsible.roleLabel})
+                                </span>
+                              )}
+                            </>
+                          )}
                         </div>
                       </div>
 
@@ -1442,6 +1545,74 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
           </div>
         )}
       </div>
+
+      {confirmingDelete && (
+        // biome-ignore lint/a11y/useKeyWithClickEvents: overlay backdrop dismiss
+        <div
+          onClick={() => setConfirmingDelete(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: modal stops propagation */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#fff',
+              borderRadius: 12,
+              padding: 24,
+              maxWidth: 360,
+              boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+            }}
+          >
+            <h2 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 8px' }}>Excluir lead</h2>
+            <p style={{ fontSize: 14, color: '#475569', margin: '0 0 20px' }}>
+              Tem certeza que deseja excluir <strong>{card.name}</strong>? Essa ação não pode ser
+              desfeita.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 8,
+                  border: '1px solid #e2e8f0',
+                  background: '#fff',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={deleteLead.isPending}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: '#dc2626',
+                  color: '#fff',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                {deleteLead.isPending ? 'Excluindo…' : 'Excluir'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
