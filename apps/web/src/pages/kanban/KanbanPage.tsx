@@ -16,6 +16,7 @@ import {
   KeyboardSensor,
   PointerSensor,
   closestCorners,
+  useDroppable,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
@@ -383,6 +384,10 @@ interface KanbanColumnProps {
 
 function KanbanColumn({ meta, cards, members, onCardClick, isOver }: KanbanColumnProps) {
   const cardIds = useMemo(() => cards.map((c) => c.id), [cards])
+  // Torna a própria coluna um alvo de drop — sem isto, uma coluna vazia não
+  // tem nenhum item sortable pra servir de "over" e um card solto nela nunca
+  // resolve destino (handleDragEnd nunca dispara o PATCH de stage).
+  const { setNodeRef: setDroppableRef } = useDroppable({ id: meta.id })
 
   return (
     <section className={`${styles.column} ${isOver ? styles.columnOver : ''}`}>
@@ -398,7 +403,7 @@ function KanbanColumn({ meta, cards, members, onCardClick, isOver }: KanbanColum
         </span>
       </div>
 
-      <div className={styles.cardList} data-scroll="column">
+      <div ref={setDroppableRef} className={styles.cardList} data-scroll="column">
         <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
           {cards.map((card) => (
             <SortableCard key={card.id} card={card} members={members} onCardClick={onCardClick} />
