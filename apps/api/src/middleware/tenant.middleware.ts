@@ -93,7 +93,9 @@ export function createTenantMiddleware(
             organizationId: organization.id,
             organizationType: organization.type,
             organizationName: organization.name,
-            organizationIconUrl: organization.branding?.iconUrl ?? null,
+            organizationIconUrl: organization.isWhiteLabel
+              ? (organization.branding?.iconUrl ?? null)
+              : null,
             role: Role.ADMIN,
             status: 'ACTIVE',
           } satisfies UserMembership

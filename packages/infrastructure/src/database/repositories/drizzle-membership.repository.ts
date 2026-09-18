@@ -23,6 +23,7 @@ const MEMBERSHIP_COLUMNS = {
   organizationType: organizations.type,
   organizationName: organizations.name,
   organizationBranding: organizations.branding,
+  organizationIsWhiteLabel: organizations.isWhiteLabel,
   role: organizationMemberships.role,
   status: organizationMemberships.status,
 } as const
@@ -32,6 +33,7 @@ function toUserMembership(row: {
   organizationType: string
   organizationName: string
   organizationBranding: unknown
+  organizationIsWhiteLabel: boolean
   role: string
   status: string
 }): UserMembership {
@@ -40,7 +42,10 @@ function toUserMembership(row: {
     organizationId: row.organizationId,
     organizationType: row.organizationType as OrganizationType,
     organizationName: row.organizationName,
-    organizationIconUrl: branding?.iconUrl ?? null,
+    // Ícone só é exibido quando White Label está ativo — o valor continua
+    // salvo em branding.iconUrl caso a organização reative depois, mas não
+    // deve "vazar" pra fora enquanto White Label estiver desligado.
+    organizationIconUrl: row.organizationIsWhiteLabel ? (branding?.iconUrl ?? null) : null,
     role: row.role as Role,
     status: row.status as UserMembership['status'],
   }

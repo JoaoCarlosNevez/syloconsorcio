@@ -1628,7 +1628,7 @@ function OrganizacaoView() {
               <OrganizationAvatar
                 id={organization.id}
                 name={organization.name}
-                iconUrl={organization.branding?.iconUrl}
+                iconUrl={organization.isWhiteLabel ? organization.branding?.iconUrl : null}
                 size={46}
               />
             </div>

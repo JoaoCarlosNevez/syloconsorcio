@@ -48,7 +48,7 @@ function RepresentacoesTab() {
         <OrganizationAvatar
           id={row.id}
           name={row.name}
-          iconUrl={row.branding?.iconUrl}
+          iconUrl={row.isWhiteLabel ? row.branding?.iconUrl : null}
           size={32}
           className={styles.orgIcon}
         />

@@ -542,6 +542,91 @@ describe('GET /auth/memberships', () => {
     // No real membership — synthesized as ADMIN
     expect(org2?.role).toBe('ADMIN')
   })
+
+  it('hides organizationIconUrl for synthesized memberships when White Label is off', async () => {
+    const mockProvider: IAuthProvider = {
+      verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
+      signOut: vi.fn(),
+      createUser: vi.fn(),
+      deleteUser: vi.fn(),
+    }
+    const mockRepo: IMembershipRepository = {
+      findActiveByUserId: vi.fn().mockResolvedValue([]),
+      findActiveByUserAndOrganization: vi.fn(),
+      findActiveByOrganizationId: vi.fn(),
+      findAllActive: vi.fn(),
+      create: vi.fn(),
+      findByUserAndOrganization: vi.fn().mockResolvedValue(null),
+      findByOrganizationId: vi.fn().mockResolvedValue([]),
+      findAll: vi.fn().mockResolvedValue([]),
+      deactivate: vi.fn(),
+      reactivate: vi.fn(),
+      removeAllForUser: vi.fn(),
+    }
+    const app = buildApp({
+      authProvider: mockProvider,
+      membershipRepository: mockRepo,
+      userRepository: {
+        findById: vi.fn().mockResolvedValue({
+          id: MOCK_IDENTITY.id,
+          email: MOCK_IDENTITY.email,
+          name: null,
+          isPlatformAdmin: true,
+        }),
+        upsert: vi.fn(),
+        updateProfile: vi.fn(),
+      },
+      organizationRepository: {
+        findChildOrganizationIds: vi.fn().mockResolvedValue([]),
+        create: vi.fn(),
+        findById: vi.fn().mockResolvedValue(null),
+        update: vi.fn(),
+        list: vi.fn().mockResolvedValue([
+          {
+            id: 'org-formerly-white-label',
+            name: 'Ex White Label',
+            type: 'REPRESENTACAO',
+            parentOrganizationId: null,
+            // White Label desligado, mas o ícone antigo ainda está salvo em
+            // branding — não deve mais aparecer (bug real que motivou este teste).
+            isWhiteLabel: false,
+            branding: { iconUrl: 'https://old-icon.example.com/logo.png' },
+            cnpj: null,
+            phone: null,
+            website: null,
+          },
+          {
+            id: 'org-white-label',
+            name: 'White Label Ativo',
+            type: 'REPRESENTACAO',
+            parentOrganizationId: null,
+            isWhiteLabel: true,
+            branding: { iconUrl: 'https://active-icon.example.com/logo.png' },
+            cnpj: null,
+            phone: null,
+            website: null,
+          },
+        ]),
+      },
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/auth/memberships',
+      headers: { authorization: 'Bearer valid-token' },
+    })
+
+    expect(response.statusCode).toBe(200)
+    const body = response.json<{
+      memberships: { organizationId: string; organizationIconUrl: string | null }[]
+    }>()
+    const formerlyWhiteLabel = body.memberships.find(
+      (m) => m.organizationId === 'org-formerly-white-label',
+    )
+    const stillWhiteLabel = body.memberships.find((m) => m.organizationId === 'org-white-label')
+    expect(formerlyWhiteLabel?.organizationIconUrl).toBeNull()
+    expect(stillWhiteLabel?.organizationIconUrl).toBe('https://active-icon.example.com/logo.png')
+  })
 })
 
 // ── GET /auth/context ─────────────────────────────────────────────────────────

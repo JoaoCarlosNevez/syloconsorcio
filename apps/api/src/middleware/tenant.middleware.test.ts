@@ -296,6 +296,48 @@ describe('tenantMiddleware', () => {
     expect(ctx.currentMembership.organizationId).toBe('org-rep-01')
   })
 
+  it('hides organizationIconUrl in the synthesized membership when White Label is off', async () => {
+    const mockRepo: IMembershipRepository = {
+      findActiveByUserId: vi.fn().mockResolvedValue([]),
+      findActiveByUserAndOrganization: vi.fn().mockResolvedValue(null),
+      findActiveByOrganizationId: vi.fn(),
+      findAllActive: vi.fn(),
+      create: vi.fn(),
+      findByUserAndOrganization: vi.fn().mockResolvedValue(null),
+      findByOrganizationId: vi.fn().mockResolvedValue([]),
+      findAll: vi.fn().mockResolvedValue([]),
+      deactivate: vi.fn(),
+      reactivate: vi.fn(),
+      removeAllForUser: vi.fn(),
+    }
+    const organizationRepo = buildOrganizationRepository({
+      findById: vi.fn().mockResolvedValue({
+        id: 'org-formerly-white-label',
+        name: 'Ex White Label',
+        type: OrganizationType.REPRESENTACAO,
+        parentOrganizationId: null,
+        // White Label desligado, mas o ícone antigo ainda está salvo em
+        // branding — não deve mais aparecer (bug real que motivou este teste).
+        isWhiteLabel: false,
+        branding: { iconUrl: 'https://old-icon.example.com/logo.png' },
+        cnpj: null,
+        phone: null,
+        website: null,
+      }),
+    })
+    const app = buildTestApp(mockRepo, IDENTITY, buildUserRepository(true), organizationRepo)
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/business',
+      headers: { 'x-organization-id': 'org-formerly-white-label' },
+    })
+
+    expect(response.statusCode).toBe(200)
+    const ctx = response.json<{ currentMembership: { organizationIconUrl: string | null } }>()
+    expect(ctx.currentMembership.organizationIconUrl).toBeNull()
+  })
+
   it('uses the real membership role for a platform admin who is also a real member', async () => {
     const mockRepo: IMembershipRepository = {
       findActiveByUserId: vi.fn().mockResolvedValue([ACTIVE_REPRESENTACAO_SELLER]),
