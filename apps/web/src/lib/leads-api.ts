@@ -6,7 +6,7 @@ import { apiClient } from './api-client'
 export type LeadStage = 'LEAD' | 'ATENDIMENTO' | 'SIMULACAO' | 'PROPOSTA' | 'FECHADO' | 'VENDA'
 
 /** aberto: pipeline ativo (nem ganho, nem perdido) — padrão. ganho: stage VENDA.
- * perdido: lostAt setado — exige a permission lead.read_lost (Vendedor não tem). */
+ * perdido: lostAt setado — exige a permission lead.manage_lost (Vendedor não tem). */
 export type OutcomeFilter = 'aberto' | 'ganho' | 'perdido'
 
 export interface Lead {

@@ -1,6 +1,6 @@
 // ListLeadsUseCase — lista leads paginados, filtrados pelo DataScope ativo.
 //
-// A checagem de Permission (lead.read; lead.read_lost quando outcome=perdido)
+// A checagem de Permission (lead.read; lead.manage_lost quando outcome=perdido)
 // acontece na camada HTTP (requirePermission middleware / checagem inline),
 // antes deste use case ser chamado — ver apps/api/src/routes/leads.route.ts.
 // Este use case assume que a chamada já foi autorizada e cuida apenas da

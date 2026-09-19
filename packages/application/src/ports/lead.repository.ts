@@ -11,7 +11,7 @@ import type { LeadStage } from '@sylocrm/domain'
 
 /**
  * aberto: pipeline ativo (stage != VENDA e lostAt null) — padrão.
- * ganho: stage VENDA. perdido: lostAt setado (exige Permission.LEAD_READ_LOST,
+ * ganho: stage VENDA. perdido: lostAt setado (exige Permission.LEAD_MANAGE_LOST,
  * checado na camada HTTP — ver apps/api/src/routes/leads.route.ts).
  */
 export type LeadOutcomeFilter = 'aberto' | 'ganho' | 'perdido'

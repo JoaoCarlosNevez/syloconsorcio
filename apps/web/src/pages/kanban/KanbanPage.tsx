@@ -598,7 +598,7 @@ const OUTCOME_LABEL: Record<OutcomeFilter, string> = {
 
 export function KanbanPage() {
   const { organizationId, membership } = useActiveOrganization()
-  const canViewLost = membership?.permissions.includes('lead.read_lost') ?? false
+  const canViewLost = membership?.permissions.includes('lead.manage_lost') ?? false
   const [outcomeFilter, setOutcomeFilter] = useState<OutcomeFilter>('aberto')
   // pageSize=100: suficiente para o volume inicial do MVP. Lazy loading por
   // coluna (AGENTS.md §12) fica para quando o volume real exigir — ver nota
@@ -768,7 +768,11 @@ export function KanbanPage() {
   return (
     <AppLayout>
       {freshSelectedCard && (
-        <LeadModal card={freshSelectedCard} onClose={() => setSelectedCard(null)} />
+        <LeadModal
+          card={freshSelectedCard}
+          outcome={outcomeFilter}
+          onClose={() => setSelectedCard(null)}
+        />
       )}
       <div className={styles.page}>
         {/* ── Header ──────────────────────────────────────────────────── */}

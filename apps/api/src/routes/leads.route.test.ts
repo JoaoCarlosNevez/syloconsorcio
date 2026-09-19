@@ -188,7 +188,7 @@ describe('GET /leads', () => {
     expect(response.statusCode).toBe(400)
   })
 
-  it('returns 403 when a SELLER requests outcome=perdido (missing lead.read_lost)', async () => {
+  it('returns 403 when a SELLER requests outcome=perdido (missing lead.manage_lost)', async () => {
     const leadRepository = buildLeadRepository()
     const app = buildTestApp({ membership: SELLER_MEMBERSHIP, leadRepository })
 
@@ -429,10 +429,26 @@ describe('PATCH /leads/:id', () => {
     expect(response.json<{ lostAt: string | null }>().lostAt).not.toBeNull()
   })
 
-  it('reopens a lost lead with lost: false', async () => {
+  it('returns 403 when a SELLER tries to reopen a lost lead (missing lead.manage_lost)', async () => {
+    const update = vi.fn()
+    const leadRepository = buildLeadRepository({ update })
+    const app = buildTestApp({ membership: SELLER_MEMBERSHIP, leadRepository })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/leads/lead-01',
+      headers: AUTH_HEADERS,
+      payload: { lost: false },
+    })
+
+    expect(response.statusCode).toBe(403)
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  it('allows a MANAGER to reopen a lost lead with lost: false', async () => {
     const update = vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, stage: 'ATENDIMENTO', lostAt: null })
     const leadRepository = buildLeadRepository({ update })
-    const app = buildTestApp({ leadRepository })
+    const app = buildTestApp({ membership: MANAGER_MEMBERSHIP, leadRepository })
 
     const response = await app.inject({
       method: 'PATCH',
@@ -447,6 +463,21 @@ describe('PATCH /leads/:id', () => {
       expect.anything(),
       expect.objectContaining({ stage: 'ATENDIMENTO', lost: false }),
     )
+  })
+
+  it('allows a SELLER to mark a lead as lost (lost: true, no extra permission needed)', async () => {
+    const update = vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, lostAt: new Date() })
+    const leadRepository = buildLeadRepository({ update })
+    const app = buildTestApp({ membership: SELLER_MEMBERSHIP, leadRepository })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/leads/lead-01',
+      headers: AUTH_HEADERS,
+      payload: { lost: true },
+    })
+
+    expect(response.statusCode).toBe(200)
   })
 })
 

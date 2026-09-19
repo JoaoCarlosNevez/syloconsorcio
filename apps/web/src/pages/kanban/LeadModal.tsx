@@ -8,6 +8,7 @@ import { useDeleteLead, useUpdateLead } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { useTeamMembersQuery } from '../../hooks/useTeam'
 import { COLUMN_ID_TO_STAGE, STAGE_TO_COLUMN_ID, resolveAgent } from '../../lib/lead-adapters'
+import type { OutcomeFilter } from '../../lib/leads-api'
 import styles from './LeadModal.module.css'
 
 // ── Ícones (SVG inline — padrão do projeto) ────────────────────────────────────
@@ -334,6 +335,27 @@ function TrashIcon() {
   )
 }
 
+function RefreshIcon() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 12a9 9 0 0 1 15.36-6.36L21 8" />
+      <path d="M21 3v5h-5" />
+      <path d="M21 12a9 9 0 0 1-15.36 6.36L3 16" />
+      <path d="M3 21v-5h5" />
+    </svg>
+  )
+}
+
 function TrophyIcon() {
   return (
     <svg
@@ -573,12 +595,13 @@ function parseCota(cota: string): { type: string; value: string } {
 
 export interface LeadModalProps {
   card: CardData
+  outcome: OutcomeFilter
   onClose: () => void
   /** Quando true, exibe skeleton no workspace — para quando os dados vierem de API real */
   isLoading?: boolean
 }
 
-export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) {
+export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadModalProps) {
   const [comment, setComment] = useState('')
   const [localComments, setLocalComments] = useState<{ id: string; text: string }[]>([])
   const [confirmingDelete, setConfirmingDelete] = useState(false)
@@ -591,6 +614,8 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
   const { toast } = useToast()
 
   const canAssign = membership?.permissions.includes('lead.assign') ?? false
+  const canManageLost = membership?.permissions.includes('lead.manage_lost') ?? false
+  const isViewingLost = outcome === 'perdido'
   const canDelete = membership?.permissions.includes('lead.delete') ?? false
 
   function handleReassign(userId: string) {
@@ -653,6 +678,25 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
           toast({
             type: 'error',
             title: 'Não foi possível marcar como perdido',
+            description: error instanceof Error ? error.message : undefined,
+          })
+        },
+      },
+    )
+  }
+
+  function handleReopenLead() {
+    updateLead.mutate(
+      { id: card.id, payload: { lost: false } },
+      {
+        onSuccess: () => {
+          toast({ type: 'success', title: 'Lead reaberto' })
+          onClose()
+        },
+        onError: (error) => {
+          toast({
+            type: 'error',
+            title: 'Não foi possível reabrir o lead',
             description: error instanceof Error ? error.message : undefined,
           })
         },
@@ -744,33 +788,49 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
 
             {/* Ações */}
             <div className={styles.headerActions}>
-              <button type="button" className={styles.btnSecondary}>
-                <TransferIcon />
-                Transferir
-              </button>
-              <button
-                type="button"
-                className={styles.btnDanger}
-                onClick={handleMarkLost}
-                disabled={updateLead.isPending}
-              >
-                <ThumbsDownIcon />
-                Marcar como Perdido
-              </button>
-              <button
-                type="button"
-                className={styles.btnGanho}
-                onClick={handleMarkWon}
-                disabled={updateLead.isPending || card.stage !== 'FECHADO'}
-                title={
-                  card.stage !== 'FECHADO'
-                    ? 'Só é possível marcar como Ganho a partir da etapa Fechado.'
-                    : undefined
-                }
-              >
-                <TrophyIcon />
-                Marcar como Ganho
-              </button>
+              {isViewingLost ? (
+                canManageLost && (
+                  <button
+                    type="button"
+                    className={styles.btnGanho}
+                    onClick={handleReopenLead}
+                    disabled={updateLead.isPending}
+                  >
+                    <RefreshIcon />
+                    Reabrir Lead
+                  </button>
+                )
+              ) : (
+                <>
+                  <button type="button" className={styles.btnSecondary}>
+                    <TransferIcon />
+                    Transferir
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.btnDanger}
+                    onClick={handleMarkLost}
+                    disabled={updateLead.isPending}
+                  >
+                    <ThumbsDownIcon />
+                    Marcar como Perdido
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.btnGanho}
+                    onClick={handleMarkWon}
+                    disabled={updateLead.isPending || card.stage !== 'FECHADO'}
+                    title={
+                      card.stage !== 'FECHADO'
+                        ? 'Só é possível marcar como Ganho a partir da etapa Fechado.'
+                        : undefined
+                    }
+                  >
+                    <TrophyIcon />
+                    Marcar como Ganho
+                  </button>
+                </>
+              )}
               {canDelete && (
                 <button
                   type="button"

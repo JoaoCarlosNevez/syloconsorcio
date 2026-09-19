@@ -2,11 +2,12 @@
 //
 // GET    /leads      — lista paginada e filtrada por DataScope (lead.read).
 //                      `outcome` (aberto/ganho/perdido) filtra por resultado;
-//                      "perdido" exige lead.read_lost (Vendedor não tem).
+//                      "perdido" exige lead.manage_lost (Vendedor não tem).
 // POST   /leads      — cria um lead na organização ativa (lead.create)
 // GET    /leads/:id  — detalhe de um lead dentro do escopo (lead.read)
 // PATCH  /leads/:id  — atualiza um lead (lead.update; reatribuir exige lead.assign).
-//                      `lost: true` marca como Perdido (some do board); `lost: false` reabre.
+//                      `lost: true` marca como Perdido (some do board); `lost: false`
+//                      reabre e exige lead.manage_lost (Vendedor não tem).
 // DELETE /leads/:id  — remove um lead dentro do escopo (lead.delete)
 //
 // Todas as rotas rodam authMiddleware → tenantMiddleware → requirePermission,
@@ -119,10 +120,10 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
       // possui (ver apps/api/src/auth/permissions.ts).
       if (
         parsed.data.outcome === 'perdido' &&
-        !context.currentMembership.permissions.includes(Permission.LEAD_READ_LOST)
+        !context.currentMembership.permissions.includes(Permission.LEAD_MANAGE_LOST)
       ) {
         return reply.status(403).send({
-          error: 'Ação não autorizada. Permissão necessária: lead.read_lost.',
+          error: 'Ação não autorizada. Permissão necessária: lead.manage_lost.',
           code: AuthErrorCode.PERMISSION_DENIED,
           status: 403,
         })
@@ -208,6 +209,19 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
       ) {
         return reply.status(403).send({
           error: 'Ação não autorizada. Permissão necessária: lead.assign.',
+          code: AuthErrorCode.PERMISSION_DENIED,
+          status: 403,
+        })
+      }
+
+      // Marcar como Perdido (lost: true) qualquer um com lead.update pode —
+      // reabrir (lost: false) exige lead.manage_lost. SELLER não tem.
+      if (
+        parsed.data.lost === false &&
+        !context.currentMembership.permissions.includes(Permission.LEAD_MANAGE_LOST)
+      ) {
+        return reply.status(403).send({
+          error: 'Ação não autorizada. Permissão necessária: lead.manage_lost.',
           code: AuthErrorCode.PERMISSION_DENIED,
           status: 403,
         })
