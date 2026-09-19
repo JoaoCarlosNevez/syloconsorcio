@@ -23,6 +23,9 @@ export interface Organization {
   leadSegments: string[]
   /** Origens de lead configuradas — usado pra popular a Origem na criação de lead. */
   leadSources: string[]
+  /** Tags configuradas (ex: "Quente", "Frio") — usadas no editor de tags do
+   * lead e no filtro "Todas as tags" do Kanban. */
+  leadTags: string[]
 }
 
 export interface CreateRepresentationPayload {

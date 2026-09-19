@@ -25,6 +25,7 @@ export interface ListLeadsInput {
   page?: number
   pageSize?: number
   outcome?: LeadOutcomeFilter
+  tags?: string[]
 }
 
 export class ListLeadsUseCase implements UseCase<ListLeadsInput, LeadListPage> {
@@ -44,7 +45,13 @@ export class ListLeadsUseCase implements UseCase<ListLeadsInput, LeadListPage> {
     )
 
     const result = await this.leadRepository.list(
-      { ...scope, stage: input.stage, search: input.search, outcome: input.outcome },
+      {
+        ...scope,
+        stage: input.stage,
+        search: input.search,
+        outcome: input.outcome,
+        tags: input.tags,
+      },
       page,
       pageSize,
     )

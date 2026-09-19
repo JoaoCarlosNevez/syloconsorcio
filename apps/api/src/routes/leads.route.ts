@@ -3,6 +3,7 @@
 // GET    /leads      — lista paginada e filtrada por DataScope (lead.read).
 //                      `outcome` (aberto/ganho/perdido) filtra por resultado;
 //                      "perdido" exige lead.manage_lost (Vendedor não tem).
+//                      `tags` (lista separada por vírgula) filtra por overlap (OR).
 // POST   /leads      — cria um lead na organização ativa (lead.create)
 // GET    /leads/:id  — detalhe de um lead dentro do escopo (lead.read)
 // PATCH  /leads/:id  — atualiza um lead (lead.update; reatribuir exige lead.assign).
@@ -68,6 +69,7 @@ const updateLeadSchema = z.object({
   stage: z.enum(LEAD_STAGE_VALUES).optional(),
   assignedUserId: z.string().uuid().nullable().optional(),
   lost: z.boolean().optional(),
+  tags: z.array(z.string().min(1)).optional(),
 })
 
 const listQuerySchema = z.object({
@@ -76,6 +78,9 @@ const listQuerySchema = z.object({
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().optional(),
   outcome: z.enum(['aberto', 'ganho', 'perdido']).optional(),
+  // Lista separada por vírgula (?tags=Quente,Frio) — mais simples de montar
+  // no client e de parsear aqui do que depender do parser de query arrays.
+  tags: z.string().optional(),
 })
 
 function validationErrorResponse(fieldErrors: Record<string, string[] | undefined>) {
@@ -137,6 +142,10 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
         page: parsed.data.page,
         pageSize: parsed.data.pageSize,
         outcome: parsed.data.outcome,
+        tags: parsed.data.tags
+          ?.split(',')
+          .map((t) => t.trim())
+          .filter(Boolean),
       })
     },
   )

@@ -1573,6 +1573,7 @@ function OrganizacaoView() {
   const [phone, setPhone] = useState('')
   const [newSegment, setNewSegment] = useState('')
   const [newSource, setNewSource] = useState('')
+  const [newTag, setNewTag] = useState('')
   const [toast, setToast] = useState('')
 
   const organization = data?.organization
@@ -1654,6 +1655,33 @@ function OrganizacaoView() {
       })
     } catch (error) {
       setToast(error instanceof Error ? error.message : 'Erro ao remover origem.')
+    }
+  }
+
+  async function handleAddTag(e: FormEvent) {
+    e.preventDefault()
+    const value = newTag.trim()
+    if (!value || !organization) return
+    if (organization.leadTags.some((t) => t.toLowerCase() === value.toLowerCase())) {
+      setToast('Essa tag já está na lista.')
+      return
+    }
+    try {
+      await updateSettings.mutateAsync({ leadTags: [...organization.leadTags, value] })
+      setNewTag('')
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Erro ao adicionar tag.')
+    }
+  }
+
+  async function handleRemoveTag(tag: string) {
+    if (!organization) return
+    try {
+      await updateSettings.mutateAsync({
+        leadTags: organization.leadTags.filter((t) => t !== tag),
+      })
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Erro ao remover tag.')
     }
   }
 
@@ -1906,6 +1934,58 @@ function OrganizacaoView() {
                       onClick={() => handleRemoveSource(source)}
                       disabled={updateSettings.isPending}
                       aria-label={`Remover ${source}`}
+                    >
+                      <XIcon />
+                    </button>
+                  )}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className={styles.settingsCard}>
+        <div className={styles.settingsCardHeader}>
+          <div className={styles.settingsCardTitle}>Tags</div>
+          <div className={styles.settingsCardDesc}>
+            {isAdmin
+              ? 'Classificam leads (ex: Quente, Frio) — usadas no filtro do Kanban e na ficha do lead.'
+              : 'Apenas o dono da representação pode editar estes dados.'}
+          </div>
+        </div>
+        <div className={styles.settingsCardBody}>
+          {isAdmin && (
+            <form onSubmit={handleAddTag} className={styles.segmentInputRow}>
+              <input
+                className={styles.formInput}
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                placeholder="Ex: Quente, Frio…"
+              />
+              <button
+                type="submit"
+                className={styles.secondaryBtn}
+                disabled={!newTag.trim() || updateSettings.isPending}
+              >
+                <PlusIcon /> Adicionar
+              </button>
+            </form>
+          )}
+          {organization.leadTags.length === 0 ? (
+            <p className={styles.segmentEmpty}>Nenhuma tag cadastrada ainda.</p>
+          ) : (
+            <div className={styles.segmentTagList}>
+              {organization.leadTags.map((tag) => (
+                <span key={tag} className={styles.segmentTag}>
+                  {tag}
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      className={styles.segmentTagRemove}
+                      onClick={() => handleRemoveTag(tag)}
+                      disabled={updateSettings.isPending}
+                      aria-label={`Remover ${tag}`}
                     >
                       <XIcon />
                     </button>

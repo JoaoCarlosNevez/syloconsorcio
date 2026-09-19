@@ -15,6 +15,7 @@ export interface UpdateOrganizationSettingsPayload {
   website?: string | null
   leadSegments?: string[]
   leadSources?: string[]
+  leadTags?: string[]
 }
 
 export function getOrganizationSettings(

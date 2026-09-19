@@ -29,6 +29,9 @@ export interface OrganizationRecord {
   /** Origens de lead (ex: "Facebook", "Indicação") — usado pra popular o
    * campo Origem na criação de lead. */
   leadSources: string[]
+  /** Tags livres (ex: "Quente", "Frio") — um lead pode ter várias ao mesmo
+   * tempo. Usado pra popular o filtro de tags e o editor de tags no Kanban. */
+  leadTags: string[]
 }
 
 export interface NewOrganizationInput {
@@ -46,6 +49,7 @@ export interface UpdateOrganizationInput {
   website?: string | null
   leadSegments?: string[]
   leadSources?: string[]
+  leadTags?: string[]
 }
 
 export interface IOrganizationRepository {

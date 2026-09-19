@@ -37,6 +37,10 @@ export const leads = pgTable('leads', {
   assignedUserId: uuid('assigned_user_id').references(() => users.id),
   stageChangedAt: timestamp('stage_changed_at', { withTimezone: true }).defaultNow().notNull(),
   lostAt: timestamp('lost_at', { withTimezone: true }),
+  // Tags livres (ex: "Quente", "Frio") — um lead pode ter várias ao mesmo
+  // tempo, diferente de segment/source. Vêm de organizations.leadTags, mas
+  // não são validadas contra essa lista no banco (só sugeridas na UI).
+  tags: text('tags').array().notNull().default([]),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })

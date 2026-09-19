@@ -15,7 +15,19 @@ import type {
   NewLeadInput,
   UpdateLeadInput,
 } from '@sylocrm/application'
-import { and, desc, eq, ilike, inArray, isNotNull, isNull, ne, or, sql } from 'drizzle-orm'
+import {
+  and,
+  arrayOverlaps,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  isNotNull,
+  isNull,
+  ne,
+  or,
+  sql,
+} from 'drizzle-orm'
 import type { Database } from '../client'
 import { type DbLead, leadAssignmentHistory, leads } from '../schema'
 
@@ -33,6 +45,7 @@ const LEAD_COLUMNS = {
   assignedUserId: leads.assignedUserId,
   stageChangedAt: leads.stageChangedAt,
   lostAt: leads.lostAt,
+  tags: leads.tags,
   createdAt: leads.createdAt,
   updatedAt: leads.updatedAt,
 } as const
@@ -70,6 +83,10 @@ export class DrizzleLeadRepository implements ILeadRepository {
     }
     if (filter.stage) {
       conditions.push(eq(leads.stage, filter.stage))
+    }
+    if (filter.tags && filter.tags.length > 0) {
+      // Overlap (OR): retorna leads que tenham QUALQUER uma das tags pedidas.
+      conditions.push(arrayOverlaps(leads.tags, filter.tags))
     }
     if (filter.search) {
       const pattern = `%${filter.search}%`
@@ -123,6 +140,7 @@ export class DrizzleLeadRepository implements ILeadRepository {
         quotaCount: input.quotaCount ?? 1,
         source: input.source,
         assignedUserId: input.assignedUserId ?? null,
+        tags: input.tags ?? [],
       })
       .returning(LEAD_COLUMNS)
 

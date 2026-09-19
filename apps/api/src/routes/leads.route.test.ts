@@ -72,6 +72,7 @@ const SAMPLE_LEAD: LeadRecord = {
   assignedUserId: null,
   stageChangedAt: new Date('2026-01-01T00:00:00Z'),
   lostAt: null,
+  tags: [],
   createdAt: new Date('2026-01-01T00:00:00Z'),
   updatedAt: new Date('2026-01-01T00:00:00Z'),
 }
@@ -231,6 +232,24 @@ describe('GET /leads', () => {
     })
 
     expect(response.statusCode).toBe(200)
+  })
+
+  it('parses the comma-separated tags filter and passes it through', async () => {
+    const leadRepository = buildLeadRepository()
+    const app = buildTestApp({ leadRepository })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/leads?tags=Quente,Frio',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(leadRepository.list).toHaveBeenCalledWith(
+      expect.objectContaining({ tags: ['Quente', 'Frio'] }),
+      expect.anything(),
+      expect.anything(),
+    )
   })
 })
 
@@ -478,6 +497,26 @@ describe('PATCH /leads/:id', () => {
     })
 
     expect(response.statusCode).toBe(200)
+  })
+
+  it('allows a SELLER to update tags (no extra permission needed)', async () => {
+    const update = vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, tags: ['Quente'] })
+    const leadRepository = buildLeadRepository({ update })
+    const app = buildTestApp({ membership: SELLER_MEMBERSHIP, leadRepository })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/leads/lead-01',
+      headers: AUTH_HEADERS,
+      payload: { tags: ['Quente'] },
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(update).toHaveBeenCalledWith(
+      'lead-01',
+      expect.anything(),
+      expect.objectContaining({ tags: ['Quente'] }),
+    )
   })
 })
 

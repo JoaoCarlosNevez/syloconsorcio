@@ -42,6 +42,11 @@ export const organizations = pgTable('organizations', {
     .array()
     .notNull()
     .default(['Facebook', 'Prospecção Ativa', 'Indicação']),
+  // Tags livres pra classificar leads (ex: "Quente", "Frio") — diferente de
+  // segment/source (um valor só por lead), um lead pode ter várias tags ao
+  // mesmo tempo. Ver leads.tags. Usado pra popular o filtro "Todas as tags"
+  // e o editor de tags no Kanban.
+  leadTags: text('lead_tags').array().notNull().default(['Quente', 'Frio']),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })

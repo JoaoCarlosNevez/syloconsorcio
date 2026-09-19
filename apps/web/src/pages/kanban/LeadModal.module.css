@@ -586,6 +586,8 @@
 
 .tag {
   display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 4px 10px;
   border-radius: 6px;
   background: #e5eeff;
@@ -594,6 +596,69 @@
   color: #0b1c30;
   letter-spacing: 0.22px;
   white-space: nowrap;
+}
+
+.tagRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: #0b1c30;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.tagRemove:hover {
+  opacity: 1;
+  background: rgba(11, 28, 48, 0.1);
+}
+
+.tagPickerWrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.tagPickerPanel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 160px;
+  background: #ffffff;
+  border: 1px solid rgba(216, 195, 173, 0.5);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  padding: 4px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tagPickerItem {
+  padding: 6px 8px;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: #334155;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tagPickerItem:hover {
+  background: #f8fafc;
+}
+
+.tagPickerEmpty {
+  padding: 6px 8px;
+  font-size: 12px;
+  color: #94a3b8;
+  max-width: 180px;
 }
 
 .addTagBtn {

@@ -23,6 +23,7 @@ export interface Lead {
   assignedUserId: string | null
   stageChangedAt: string
   lostAt: string | null
+  tags: string[]
   createdAt: string
   updatedAt: string
 }
@@ -40,6 +41,8 @@ export interface ListLeadsParams {
   page?: number
   pageSize?: number
   outcome?: OutcomeFilter
+  /** Retorna leads que tenham QUALQUER uma destas tags (overlap, não AND). */
+  tags?: string[]
 }
 
 export interface CreateLeadPayload {
@@ -65,6 +68,7 @@ export interface UpdateLeadPayload {
   assignedUserId?: string | null
   /** true marca como Perdido; false reabre um lead perdido. */
   lost?: boolean
+  tags?: string[]
 }
 
 function toQueryString(params: ListLeadsParams): string {
@@ -74,6 +78,7 @@ function toQueryString(params: ListLeadsParams): string {
   if (params.page) search.set('page', String(params.page))
   if (params.pageSize) search.set('pageSize', String(params.pageSize))
   if (params.outcome) search.set('outcome', params.outcome)
+  if (params.tags && params.tags.length > 0) search.set('tags', params.tags.join(','))
   const qs = search.toString()
   return qs ? `?${qs}` : ''
 }

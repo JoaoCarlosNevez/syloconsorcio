@@ -109,6 +109,69 @@
   border-color: #0b1c30;
 }
 
+/* ── Filtro de tags (multi-select) ───────────────────────────────────────── */
+
+.tagFilterWrapper {
+  position: relative;
+}
+
+.tagFilterPanel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 200px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  padding: 8px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tagFilterItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  cursor: pointer;
+}
+
+.tagFilterItem:hover {
+  background: #f8fafc;
+}
+
+.tagFilterClear {
+  margin-top: 4px;
+  padding: 7px 8px;
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0;
+  background: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #dc2626;
+  cursor: pointer;
+  text-align: left;
+}
+
+.tagFilterClear:hover {
+  background: #fef2f2;
+}
+
+.tagFilterEmpty {
+  padding: 8px;
+  font-size: 12px;
+  color: #94a3b8;
+  max-width: 220px;
+}
+
 .newLeadBtn {
   display: flex;
   align-items: center;

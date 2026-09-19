@@ -34,6 +34,7 @@ import { AppLayout } from '../../components/layout/AppLayout'
 import { COLUMN_META, type CardData, type ColumnMeta } from '../../data/kanban-mock'
 import { useLeadsQuery, useUpdateLead } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
+import { useOrganizationSettingsQuery } from '../../hooks/useOrganizationSettings'
 import { useTeamMembersQuery } from '../../hooks/useTeam'
 import {
   COLUMN_ID_TO_STAGE,
@@ -600,17 +601,38 @@ export function KanbanPage() {
   const { organizationId, membership } = useActiveOrganization()
   const canViewLost = membership?.permissions.includes('lead.manage_lost') ?? false
   const [outcomeFilter, setOutcomeFilter] = useState<OutcomeFilter>('aberto')
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [tagFilterOpen, setTagFilterOpen] = useState(false)
+  const tagFilterRef = useRef<HTMLDivElement>(null)
   // pageSize=100: suficiente para o volume inicial do MVP. Lazy loading por
   // coluna (AGENTS.md §12) fica para quando o volume real exigir — ver nota
   // de status do projeto.
   const { data, isLoading: isLoadingLeads } = useLeadsQuery(organizationId, {
     pageSize: 100,
     outcome: outcomeFilter,
+    tags: selectedTags,
   })
   const updateLead = useUpdateLead(organizationId)
   const { data: teamData } = useTeamMembersQuery(organizationId)
   const members = teamData?.members ?? []
+  const { data: settingsData } = useOrganizationSettingsQuery(organizationId)
+  const leadTags = settingsData?.organization.leadTags ?? []
   const { toast } = useToast()
+
+  // Fecha o painel de tags ao clicar fora — mesmo padrão do Dropdown
+  // compartilhado, mas sem fechar a cada seleção (é multi-select).
+  useEffect(() => {
+    if (!tagFilterOpen) return
+    function handler(e: MouseEvent) {
+      if (!tagFilterRef.current?.contains(e.target as Node)) setTagFilterOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [tagFilterOpen])
+
+  function toggleTag(tag: string) {
+    setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
+  }
 
   const [board, setBoard] = useState<Record<string, CardData[]>>({})
   const [activeCard, setActiveCard] = useState<CardData | null>(null)
@@ -822,9 +844,48 @@ export function KanbanPage() {
                   onSelect: () => setOutcomeFilter(outcome),
                 }))}
             />
-            <button type="button" className={styles.filterBtn}>
-              <TagIcon /> Todas as tags <ChevronDownIcon />
-            </button>
+            <div className={styles.tagFilterWrapper} ref={tagFilterRef}>
+              <button
+                type="button"
+                className={`${styles.filterBtn} ${selectedTags.length > 0 ? styles.filterBtnActive : ''}`}
+                onClick={() => setTagFilterOpen((v) => !v)}
+              >
+                <TagIcon />
+                {selectedTags.length > 0 ? `${selectedTags.length} tag(s)` : 'Todas as tags'}
+                <ChevronDownIcon />
+              </button>
+              {tagFilterOpen && (
+                <div className={styles.tagFilterPanel}>
+                  {leadTags.length === 0 ? (
+                    <p className={styles.tagFilterEmpty}>
+                      Nenhuma tag cadastrada. Configure em Configurações → Organização.
+                    </p>
+                  ) : (
+                    <>
+                      {leadTags.map((tag) => (
+                        <label key={tag} className={styles.tagFilterItem}>
+                          <input
+                            type="checkbox"
+                            checked={selectedTags.includes(tag)}
+                            onChange={() => toggleTag(tag)}
+                          />
+                          {tag}
+                        </label>
+                      ))}
+                      {selectedTags.length > 0 && (
+                        <button
+                          type="button"
+                          className={styles.tagFilterClear}
+                          onClick={() => setSelectedTags([])}
+                        >
+                          Limpar seleção
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
             <button type="button" className={styles.filterBtn}>
               <TransferIcon /> Transferência
             </button>

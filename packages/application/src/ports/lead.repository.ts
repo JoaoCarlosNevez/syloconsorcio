@@ -31,6 +31,8 @@ export interface LeadRecord {
   stageChangedAt: Date
   /** Null enquanto o lead está ativo no funil; setado ao marcar como Perdido. */
   lostAt: Date | null
+  /** Tags livres (ex: "Quente", "Frio") — um lead pode ter várias ao mesmo tempo. */
+  tags: string[]
   createdAt: Date
   updatedAt: Date
 }
@@ -45,6 +47,7 @@ export interface NewLeadInput {
   quotaCount?: number
   source: string
   assignedUserId?: string | null
+  tags?: string[]
 }
 
 export interface UpdateLeadInput {
@@ -59,6 +62,7 @@ export interface UpdateLeadInput {
   assignedUserId?: string | null
   /** true marca como Perdido (lostAt = agora); false reabre (lostAt = null). */
   lost?: boolean
+  tags?: string[]
 }
 
 export interface LeadScopeFilter {
@@ -74,6 +78,8 @@ export interface LeadListFilter extends LeadScopeFilter {
   search?: string
   /** Padrão 'aberto' quando ausente — ver LeadOutcomeFilter. */
   outcome?: LeadOutcomeFilter
+  /** Retorna leads que tenham QUALQUER uma destas tags (overlap, não AND). */
+  tags?: string[]
 }
 
 export interface LeadListPage {

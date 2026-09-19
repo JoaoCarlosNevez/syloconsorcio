@@ -2,10 +2,11 @@
 // Design: Figma SYLOAPP node 276:590
 
 import { Skeleton, useToast } from '@sylocrm/ui'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { COLUMN_META, type CardData } from '../../data/kanban-mock'
 import { useDeleteLead, useUpdateLead } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
+import { useOrganizationSettingsQuery } from '../../hooks/useOrganizationSettings'
 import { useTeamMembersQuery } from '../../hooks/useTeam'
 import { COLUMN_ID_TO_STAGE, STAGE_TO_COLUMN_ID, resolveAgent } from '../../lib/lead-adapters'
 import type { OutcomeFilter } from '../../lib/leads-api'
@@ -605,10 +606,16 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
   const [comment, setComment] = useState('')
   const [localComments, setLocalComments] = useState<{ id: string; text: string }[]>([])
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [addingTag, setAddingTag] = useState(false)
+  const tagPickerRef = useRef<HTMLDivElement>(null)
 
   const { organizationId, membership } = useActiveOrganization()
   const { data: teamData } = useTeamMembersQuery(organizationId)
   const members = teamData?.members ?? []
+  const { data: settingsData } = useOrganizationSettingsQuery(organizationId)
+  const availableTags = (settingsData?.organization.leadTags ?? []).filter(
+    (tag) => !card.tags.includes(tag),
+  )
   const updateLead = useUpdateLead(organizationId)
   const deleteLead = useDeleteLead(organizationId)
   const { toast } = useToast()
@@ -685,6 +692,37 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
     )
   }
 
+  function handleAddTag(tag: string) {
+    setAddingTag(false)
+    updateLead.mutate(
+      { id: card.id, payload: { tags: [...card.tags, tag] } },
+      {
+        onError: (error) => {
+          toast({
+            type: 'error',
+            title: 'Não foi possível adicionar a tag',
+            description: error instanceof Error ? error.message : undefined,
+          })
+        },
+      },
+    )
+  }
+
+  function handleRemoveTag(tag: string) {
+    updateLead.mutate(
+      { id: card.id, payload: { tags: card.tags.filter((t) => t !== tag) } },
+      {
+        onError: (error) => {
+          toast({
+            type: 'error',
+            title: 'Não foi possível remover a tag',
+            description: error instanceof Error ? error.message : undefined,
+          })
+        },
+      },
+    )
+  }
+
   function handleReopenLead() {
     updateLead.mutate(
       { id: card.id, payload: { lost: false } },
@@ -735,6 +773,15 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
+
+  useEffect(() => {
+    if (!addingTag) return
+    function handler(e: MouseEvent) {
+      if (!tagPickerRef.current?.contains(e.target as Node)) setAddingTag(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [addingTag])
 
   const [activeTab, setActiveTab] = useState<'qualificacao' | 'simulacoes' | 'anexos'>(
     'qualificacao',
@@ -1419,13 +1466,52 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
                         <TagIcon />
                         Tags:
                       </div>
-                      <span className={styles.tag}>#ConsorcioImobiliario</span>
-                      <span className={styles.tag}>#LeadQuente</span>
-                      <span className={styles.tag}>#Itapevi</span>
-                      <button type="button" className={styles.addTagBtn}>
-                        <PlusIcon />
-                        Adicionar Tag
-                      </button>
+                      {card.tags.map((tag) => (
+                        <span key={tag} className={styles.tag}>
+                          {tag}
+                          <button
+                            type="button"
+                            className={styles.tagRemove}
+                            onClick={() => handleRemoveTag(tag)}
+                            disabled={updateLead.isPending}
+                            aria-label={`Remover tag ${tag}`}
+                          >
+                            <XIcon size={9} />
+                          </button>
+                        </span>
+                      ))}
+                      <div className={styles.tagPickerWrapper} ref={tagPickerRef}>
+                        <button
+                          type="button"
+                          className={styles.addTagBtn}
+                          onClick={() => setAddingTag((v) => !v)}
+                        >
+                          <PlusIcon />
+                          Adicionar Tag
+                        </button>
+                        {addingTag && (
+                          <div className={styles.tagPickerPanel}>
+                            {availableTags.length === 0 ? (
+                              <p className={styles.tagPickerEmpty}>
+                                {settingsData?.organization.leadTags.length
+                                  ? 'Todas as tags já foram adicionadas.'
+                                  : 'Nenhuma tag cadastrada. Configure em Configurações → Organização.'}
+                              </p>
+                            ) : (
+                              availableTags.map((tag) => (
+                                <button
+                                  key={tag}
+                                  type="button"
+                                  className={styles.tagPickerItem}
+                                  onClick={() => handleAddTag(tag)}
+                                >
+                                  {tag}
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </>
                 )}
