@@ -862,20 +862,17 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
                     <ThumbsDownIcon />
                     Marcar como Perdido
                   </button>
-                  <button
-                    type="button"
-                    className={styles.btnGanho}
-                    onClick={handleMarkWon}
-                    disabled={updateLead.isPending || card.stage !== 'FECHADO'}
-                    title={
-                      card.stage !== 'FECHADO'
-                        ? 'Só é possível marcar como Ganho a partir da etapa Fechado.'
-                        : undefined
-                    }
-                  >
-                    <TrophyIcon />
-                    Marcar como Ganho
-                  </button>
+                  {card.stage === 'FECHADO' && (
+                    <button
+                      type="button"
+                      className={styles.btnGanho}
+                      onClick={handleMarkWon}
+                      disabled={updateLead.isPending}
+                    >
+                      <TrophyIcon />
+                      Marcar como Ganho
+                    </button>
+                  )}
                 </>
               )}
               {canDelete && (
