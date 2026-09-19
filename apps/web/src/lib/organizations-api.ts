@@ -19,6 +19,8 @@ export interface Organization {
   cnpj: string | null
   phone: string | null
   website: string | null
+  /** Tipos de crédito/segmento configurados — usado pra popular o Segmento na criação de lead. */
+  leadSegments: string[]
 }
 
 export interface CreateRepresentationPayload {

@@ -30,6 +30,10 @@ export const organizations = pgTable('organizations', {
   cnpj: text('cnpj'),
   phone: text('phone'),
   website: text('website'),
+  // Tipos de crédito/segmento que esta organização trabalha (ex: "Imobiliário",
+  // "Auto", "Pesado") — configurados em Configurações > Organização e usados
+  // pra popular o campo Segmento na criação de lead (não é mais texto livre).
+  leadSegments: text('lead_segments').array().notNull().default([]),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })

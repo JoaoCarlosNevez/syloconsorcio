@@ -24,6 +24,7 @@ const ORGANIZATION_COLUMNS = {
   cnpj: organizations.cnpj,
   phone: organizations.phone,
   website: organizations.website,
+  leadSegments: organizations.leadSegments,
 } as const
 
 function toOrganizationRecord(row: {
@@ -36,6 +37,7 @@ function toOrganizationRecord(row: {
   cnpj: string | null
   phone: string | null
   website: string | null
+  leadSegments: string[]
 }): OrganizationRecord {
   return {
     id: row.id,
@@ -47,6 +49,7 @@ function toOrganizationRecord(row: {
     cnpj: row.cnpj,
     phone: row.phone,
     website: row.website,
+    leadSegments: row.leadSegments,
   }
 }
 
@@ -107,6 +110,7 @@ export class DrizzleOrganizationRepository implements IOrganizationRepository {
         ...(input.cnpj !== undefined ? { cnpj: input.cnpj } : {}),
         ...(input.phone !== undefined ? { phone: input.phone } : {}),
         ...(input.website !== undefined ? { website: input.website } : {}),
+        ...(input.leadSegments !== undefined ? { leadSegments: input.leadSegments } : {}),
         updatedAt: new Date(),
       })
       .where(eq(organizations.id, id))

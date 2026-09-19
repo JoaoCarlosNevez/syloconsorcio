@@ -13,6 +13,7 @@ export interface UpdateOrganizationSettingsPayload {
   cnpj?: string | null
   phone?: string | null
   website?: string | null
+  leadSegments?: string[]
 }
 
 export function getOrganizationSettings(

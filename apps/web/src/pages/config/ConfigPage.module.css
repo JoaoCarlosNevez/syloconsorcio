@@ -1299,6 +1299,61 @@ button.breadcrumbCurrent:hover {
   padding-top: 4px;
 }
 
+/* ── Tipos de crédito (segmentos de lead) ── */
+
+.segmentInputRow {
+  display: flex;
+  gap: 10px;
+}
+
+.segmentInputRow .formInput {
+  flex: 1;
+}
+
+.segmentTagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.segmentTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 6px 12px;
+  background: rgba(255, 167, 5, 0.1);
+  border: 1px solid rgba(255, 167, 5, 0.3);
+  border-radius: 9999px;
+  font-size: var(--cfg-text-sm);
+  font-weight: 500;
+  color: #7c4a03;
+}
+
+.segmentTagRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #7c4a03;
+  cursor: pointer;
+  transition: background var(--duration-fast);
+}
+
+.segmentTagRemove:hover {
+  background: rgba(255, 167, 5, 0.2);
+}
+
+.segmentEmpty {
+  font-size: var(--cfg-text-sm);
+  color: #94a3b8;
+  margin-top: 12px;
+}
+
 /* ── Theme toggle */
 
 .themeGrid {

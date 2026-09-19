@@ -71,13 +71,13 @@ aquele fluxo precisa — não antes.
   opcional
 - Migrations de schema (Drizzle) e RLS são coisas independentes: `db:push` reflete o schema
   TypeScript, mas RLS foi ativado fora desse fluxo (SQL direto, já que Drizzle não modela RLS
-  nas tabelas deste projeto) — ver `packages/infrastructure/src/database/migrations/0008_enable_rls.sql`
+  nas tabelas deste projeto) — ver `packages/infrastructure/src/database/migrations-notes/enable_rls.sql`
   para o registro histórico dessa mudança
 
 ---
 
 ## Referências
 
-- `packages/infrastructure/src/database/migrations/0008_enable_rls.sql`
+- `packages/infrastructure/src/database/migrations-notes/enable_rls.sql`
 - ADR-02 — Database (service key vs. RLS)
 - ADR-06 — Autenticação e sessão

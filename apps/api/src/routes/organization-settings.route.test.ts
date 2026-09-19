@@ -221,6 +221,31 @@ describe('PATCH /organization', () => {
 
     expect(response.statusCode).toBe(400)
   })
+
+  it('allows an ADMIN to update leadSegments', async () => {
+    const organizationRepository = buildOrganizationRepository({
+      update: vi.fn().mockResolvedValue({
+        ...SAMPLE_ORG,
+        leadSegments: ['Imobiliário', 'Auto'],
+      }),
+    })
+    const app = buildTestApp({ organizationRepository })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/organization',
+      headers: AUTH_HEADERS,
+      payload: { leadSegments: ['Imobiliário', 'Auto'] },
+    })
+
+    expect(response.statusCode).toBe(200)
+    const body = response.json<{ organization: { leadSegments: string[] } }>()
+    expect(body.organization.leadSegments).toEqual(['Imobiliário', 'Auto'])
+    expect(organizationRepository.update).toHaveBeenCalledWith(
+      ORG_ID,
+      expect.objectContaining({ leadSegments: ['Imobiliário', 'Auto'] }),
+    )
+  })
 })
 
 describe('POST /organization/icon', () => {

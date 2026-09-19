@@ -96,6 +96,25 @@ function PlusIcon() {
   )
 }
 
+function XIcon() {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  )
+}
+
 function ShieldIcon() {
   return (
     <svg
@@ -1552,6 +1571,7 @@ function OrganizacaoView() {
   const [cnpj, setCnpj] = useState('')
   const [website, setWebsite] = useState('')
   const [phone, setPhone] = useState('')
+  const [newSegment, setNewSegment] = useState('')
   const [toast, setToast] = useState('')
 
   const organization = data?.organization
@@ -1579,6 +1599,33 @@ function OrganizacaoView() {
       setToast('Dados da organização salvos com sucesso!')
     } catch (error) {
       setToast(error instanceof Error ? error.message : 'Erro ao salvar organização.')
+    }
+  }
+
+  async function handleAddSegment(e: FormEvent) {
+    e.preventDefault()
+    const value = newSegment.trim()
+    if (!value || !organization) return
+    if (organization.leadSegments.some((s) => s.toLowerCase() === value.toLowerCase())) {
+      setToast('Esse tipo de crédito já está na lista.')
+      return
+    }
+    try {
+      await updateSettings.mutateAsync({ leadSegments: [...organization.leadSegments, value] })
+      setNewSegment('')
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Erro ao adicionar tipo de crédito.')
+    }
+  }
+
+  async function handleRemoveSegment(segment: string) {
+    if (!organization) return
+    try {
+      await updateSettings.mutateAsync({
+        leadSegments: organization.leadSegments.filter((s) => s !== segment),
+      })
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Erro ao remover tipo de crédito.')
     }
   }
 
@@ -1735,6 +1782,58 @@ function OrganizacaoView() {
               </div>
             )}
           </form>
+        </div>
+      </div>
+
+      <div className={styles.settingsCard}>
+        <div className={styles.settingsCardHeader}>
+          <div className={styles.settingsCardTitle}>Tipos de crédito</div>
+          <div className={styles.settingsCardDesc}>
+            {isAdmin
+              ? 'Os segmentos que esta representação trabalha — aparecem como opções ao criar um lead.'
+              : 'Apenas o dono da representação pode editar estes dados.'}
+          </div>
+        </div>
+        <div className={styles.settingsCardBody}>
+          {isAdmin && (
+            <form onSubmit={handleAddSegment} className={styles.segmentInputRow}>
+              <input
+                className={styles.formInput}
+                value={newSegment}
+                onChange={(e) => setNewSegment(e.target.value)}
+                placeholder="Ex: Imobiliário, Auto, Pesado…"
+              />
+              <button
+                type="submit"
+                className={styles.secondaryBtn}
+                disabled={!newSegment.trim() || updateSettings.isPending}
+              >
+                <PlusIcon /> Adicionar
+              </button>
+            </form>
+          )}
+          {organization.leadSegments.length === 0 ? (
+            <p className={styles.segmentEmpty}>Nenhum tipo de crédito cadastrado ainda.</p>
+          ) : (
+            <div className={styles.segmentTagList}>
+              {organization.leadSegments.map((segment) => (
+                <span key={segment} className={styles.segmentTag}>
+                  {segment}
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      className={styles.segmentTagRemove}
+                      onClick={() => handleRemoveSegment(segment)}
+                      disabled={updateSettings.isPending}
+                      aria-label={`Remover ${segment}`}
+                    >
+                      <XIcon />
+                    </button>
+                  )}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

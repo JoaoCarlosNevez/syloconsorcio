@@ -5,6 +5,7 @@
 import { Button, Input, Modal, useToast } from '@sylocrm/ui'
 import { type FormEvent, useState } from 'react'
 import { useCreateLead } from '../../hooks/useLeads'
+import { useOrganizationSettingsQuery } from '../../hooks/useOrganizationSettings'
 import { useTeamMembersQuery } from '../../hooks/useTeam'
 
 export interface CreateLeadModalProps {
@@ -39,6 +40,8 @@ export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadMod
   const createLead = useCreateLead(organizationId)
   const { data: teamData } = useTeamMembersQuery(organizationId)
   const members = teamData?.members ?? []
+  const { data: settingsData } = useOrganizationSettingsQuery(organizationId)
+  const leadSegments = settingsData?.organization.leadSegments ?? []
   const { toast } = useToast()
 
   function updateField<K extends keyof typeof initialForm>(key: K, value: (typeof form)[K]) {
@@ -102,13 +105,39 @@ export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadMod
           onChange={(e) => updateField('phone', e.target.value)}
           required
         />
-        <Input
-          label="Segmento"
-          placeholder="Imobiliário, Auto, Pesado…"
-          value={form.segment}
-          onChange={(e) => updateField('segment', e.target.value)}
-          required
-        />
+        <label
+          htmlFor="lead-segment"
+          style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.6 }}
+        >
+          Segmento
+        </label>
+        {leadSegments.length > 0 ? (
+          <select
+            id="lead-segment"
+            value={form.segment}
+            onChange={(e) => updateField('segment', e.target.value)}
+            required
+            style={{
+              padding: '10px 12px',
+              borderRadius: 8,
+              border: '1px solid var(--border, #ccc)',
+            }}
+          >
+            <option value="" disabled>
+              Selecione…
+            </option>
+            {leadSegments.map((segment) => (
+              <option key={segment} value={segment}>
+                {segment}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span style={{ fontSize: 13, color: 'var(--color-text-muted, #64748b)' }}>
+            Nenhum tipo de crédito cadastrado. Configure em Configurações → Organização antes de
+            criar um lead.
+          </span>
+        )}
         <Input
           label="Valor da cota (R$)"
           placeholder="350000"
@@ -171,7 +200,12 @@ export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadMod
         <Button type="button" variant="secondary" onClick={handleClose}>
           Cancelar
         </Button>
-        <Button type="submit" form="create-lead-form" loading={createLead.isPending}>
+        <Button
+          type="submit"
+          form="create-lead-form"
+          loading={createLead.isPending}
+          disabled={leadSegments.length === 0}
+        >
           Criar lead
         </Button>
       </div>

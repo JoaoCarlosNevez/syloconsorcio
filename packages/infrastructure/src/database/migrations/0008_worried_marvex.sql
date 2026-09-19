@@ -1,0 +1,1 @@
+ALTER TABLE "organizations" ADD COLUMN "lead_segments" text[] DEFAULT '{}' NOT NULL;

@@ -23,6 +23,9 @@ export interface OrganizationRecord {
   cnpj: string | null
   phone: string | null
   website: string | null
+  /** Tipos de crédito/segmento que a organização trabalha — usado pra popular
+   * o campo Segmento na criação de lead. */
+  leadSegments: string[]
 }
 
 export interface NewOrganizationInput {
@@ -38,6 +41,7 @@ export interface UpdateOrganizationInput {
   cnpj?: string | null
   phone?: string | null
   website?: string | null
+  leadSegments?: string[]
 }
 
 export interface IOrganizationRepository {
