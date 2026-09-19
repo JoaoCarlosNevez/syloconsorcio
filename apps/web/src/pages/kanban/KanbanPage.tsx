@@ -291,13 +291,16 @@ function findColumnOfCard(board: Record<string, CardData[]>, cardId: string): st
 interface CardViewProps {
   card: CardData
   members: TeamMember[]
+  outcome: OutcomeFilter
   isDragging?: boolean
 }
 
-function CardView({ card, members, isDragging }: CardViewProps) {
+function CardView({ card, members, outcome, isDragging }: CardViewProps) {
   const agent = resolveAgent(card.assignedUserId, members)
+  const outcomeClass =
+    outcome === 'ganho' ? styles.cardWon : outcome === 'perdido' ? styles.cardLost : ''
   return (
-    <div className={`${styles.card} ${isDragging ? styles.cardDragging : ''}`}>
+    <div className={`${styles.card} ${outcomeClass} ${isDragging ? styles.cardDragging : ''}`}>
       <div className={styles.cardTop}>
         <span className={styles.cardName}>{card.name}</span>
         <button type="button" className={styles.whatsappBtn} aria-label={`WhatsApp ${card.name}`}>
@@ -340,10 +343,12 @@ function CardView({ card, members, isDragging }: CardViewProps) {
 function SortableCard({
   card,
   members,
+  outcome,
   onCardClick,
 }: {
   card: CardData
   members: TeamMember[]
+  outcome: OutcomeFilter
   onCardClick: (card: CardData) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -368,7 +373,7 @@ function SortableCard({
         if (!isDragging) onCardClick(card)
       }}
     >
-      <CardView card={card} members={members} />
+      <CardView card={card} members={members} outcome={outcome} />
     </div>
   )
 }
@@ -379,11 +384,12 @@ interface KanbanColumnProps {
   meta: ColumnMeta
   cards: CardData[]
   members: TeamMember[]
+  outcome: OutcomeFilter
   onCardClick: (card: CardData) => void
   isOver?: boolean
 }
 
-function KanbanColumn({ meta, cards, members, onCardClick, isOver }: KanbanColumnProps) {
+function KanbanColumn({ meta, cards, members, outcome, onCardClick, isOver }: KanbanColumnProps) {
   const cardIds = useMemo(() => cards.map((c) => c.id), [cards])
   // Torna a própria coluna um alvo de drop — sem isto, uma coluna vazia não
   // tem nenhum item sortable pra servir de "over" e um card solto nela nunca
@@ -407,7 +413,13 @@ function KanbanColumn({ meta, cards, members, onCardClick, isOver }: KanbanColum
       <div ref={setDroppableRef} className={styles.cardList} data-scroll="column">
         <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
           {cards.map((card) => (
-            <SortableCard key={card.id} card={card} members={members} onCardClick={onCardClick} />
+            <SortableCard
+              key={card.id}
+              card={card}
+              members={members}
+              outcome={outcome}
+              onCardClick={onCardClick}
+            />
           ))}
         </SortableContext>
       </div>
@@ -420,10 +432,11 @@ function KanbanColumn({ meta, cards, members, onCardClick, isOver }: KanbanColum
 interface ListViewProps {
   board: Record<string, CardData[]>
   members: TeamMember[]
+  outcome: OutcomeFilter
   onCardClick: (card: CardData) => void
 }
 
-function ListView({ board, members, onCardClick }: ListViewProps) {
+function ListView({ board, members, outcome, onCardClick }: ListViewProps) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
   const toggle = (colId: string) => setCollapsed((prev) => ({ ...prev, [colId]: !prev[colId] }))
@@ -498,10 +511,16 @@ function ListView({ board, members, onCardClick }: ListViewProps) {
                 {!isCollapsed &&
                   cards.map((card, i) => {
                     const agent = resolveAgent(card.assignedUserId, members)
+                    const outcomeClass =
+                      outcome === 'ganho'
+                        ? styles.listRowWon
+                        : outcome === 'perdido'
+                          ? styles.listRowLost
+                          : ''
                     return (
                       <tr
                         key={card.id}
-                        className={i % 2 === 0 ? styles.listRow : styles.listRowAlt}
+                        className={`${i % 2 === 0 ? styles.listRow : styles.listRowAlt} ${outcomeClass}`}
                         onClick={() => onCardClick(card)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') onCardClick(card)
@@ -920,7 +939,12 @@ export function KanbanPage() {
 
         {/* ── Lista ────────────────────────────────────────────────────── */}
         {!isLoading && totalLeads > 0 && viewMode === 'list' && (
-          <ListView board={board} members={members} onCardClick={setSelectedCard} />
+          <ListView
+            board={board}
+            members={members}
+            outcome={outcomeFilter}
+            onCardClick={setSelectedCard}
+          />
         )}
 
         {/* ── Board ────────────────────────────────────────────────────── */}
@@ -940,6 +964,7 @@ export function KanbanPage() {
                     meta={meta}
                     cards={board[meta.id] ?? []}
                     members={members}
+                    outcome={outcomeFilter}
                     onCardClick={setSelectedCard}
                     isOver={overColId === meta.id}
                   />
@@ -949,7 +974,9 @@ export function KanbanPage() {
 
             {/* Card fantasma renderizado fora do DOM do board — sem reflow */}
             <DragOverlay dropAnimation={{ duration: 180, easing: 'ease' }}>
-              {activeCard ? <CardView card={activeCard} members={members} isDragging /> : null}
+              {activeCard ? (
+                <CardView card={activeCard} members={members} outcome={outcomeFilter} isDragging />
+              ) : null}
             </DragOverlay>
           </DndContext>
         )}

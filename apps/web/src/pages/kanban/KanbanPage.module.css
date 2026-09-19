@@ -354,6 +354,21 @@
   cursor: grabbing;
 }
 
+/* Card no filtro "Ganho"/"Perdido" — todo card visível nesses filtros já É
+ * ganho/perdido (list() no backend filtra por outcome), então a cor se
+ * aplica pelo filtro ativo, não por campo individual do card. */
+.cardWon {
+  background: rgba(220, 252, 231, 0.85);
+  border-color: rgba(22, 163, 74, 0.4);
+  border-left: 3px solid #16a34a;
+}
+
+.cardLost {
+  background: rgba(254, 226, 226, 0.85);
+  border-color: rgba(220, 38, 38, 0.4);
+  border-left: 3px solid #dc2626;
+}
+
 .cardTop {
   display: flex;
   align-items: flex-start;
@@ -628,6 +643,16 @@
 
 .listRowAlt:hover {
   background: #f1f5f9;
+}
+
+.listRowWon {
+  background: rgba(220, 252, 231, 0.5) !important;
+  border-left: 3px solid #16a34a;
+}
+
+.listRowLost {
+  background: rgba(254, 226, 226, 0.5) !important;
+  border-left: 3px solid #dc2626;
 }
 
 .listCell {
