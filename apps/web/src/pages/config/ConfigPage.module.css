@@ -1064,7 +1064,11 @@ button.breadcrumbCurrent:hover {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  max-width: 720px;
+  /* Antes travava em 720px, deixando metade da tela vazia em telas largas —
+     o cabeçalho (.pageHeader) já ocupa a largura inteira, então o conteúdo
+     ficava visivelmente mais estreito que ele. Mesmo padrão de .planoContent
+     e .equipeContent (sem cap), que já preenchem a largura disponível. */
+  max-width: 100%;
 }
 
 .settingsCard {
