@@ -144,7 +144,7 @@ export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadMod
           </span>
         )}
         <Input
-          label="Valor da cota (R$)"
+          label="Valor do crédito (R$)"
           placeholder="350000"
           inputMode="decimal"
           value={form.value}
