@@ -1055,6 +1055,10 @@ button.breadcrumbCurrent:hover {
 
 .settingsContent {
   flex: 1;
+  /* Sem isto, o item flex nunca encolhe abaixo da altura do conteúdo (default
+     min-height:auto), então overflow-y:auto nunca ativa — a página só "parece"
+     rolável, mas empurra tudo pra fora da viewport em vez de mostrar scroll. */
+  min-height: 0;
   overflow-y: auto;
   padding: clamp(20px, 2.2vw, 36px) clamp(20px, 2.2vw, 36px);
   display: flex;
@@ -1068,6 +1072,10 @@ button.breadcrumbCurrent:hover {
   border: 1px solid rgba(216, 195, 173, 0.3);
   border-radius: 12px;
   overflow: hidden;
+  /* Sem isto, o flexbox espreme os cards pra caber na altura disponível em
+     vez de deixar o container rolar — era isso que estava deixando tudo
+     "reduzido" numa tela de laptop normal (~900px de altura). */
+  flex-shrink: 0;
 }
 
 .settingsCardHeader {
