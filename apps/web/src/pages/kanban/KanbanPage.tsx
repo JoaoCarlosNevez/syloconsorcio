@@ -392,6 +392,7 @@ interface KanbanColumnProps {
 
 function KanbanColumn({ meta, cards, members, outcome, onCardClick, isOver }: KanbanColumnProps) {
   const cardIds = useMemo(() => cards.map((c) => c.id), [cards])
+  const totalCents = useMemo(() => cards.reduce((sum, card) => sum + card.valueCents, 0), [cards])
   // Torna a própria coluna um alvo de drop — sem isto, uma coluna vazia não
   // tem nenhum item sortable pra servir de "over" e um card solto nela nunca
   // resolve destino (handleDragEnd nunca dispara o PATCH de stage).
@@ -403,11 +404,16 @@ function KanbanColumn({ meta, cards, members, outcome, onCardClick, isOver }: Ka
         className={styles.columnHeader}
         style={{ background: meta.headerBg, borderColor: meta.headerBorder }}
       >
-        <span className={styles.columnName} style={{ color: meta.headerText }}>
-          {meta.name}
-        </span>
-        <span className={styles.columnCount} style={{ color: meta.countText }}>
-          {cards.length}
+        <div className={styles.columnHeaderTop}>
+          <span className={styles.columnName} style={{ color: meta.headerText }}>
+            {meta.name}
+          </span>
+          <span className={styles.columnCount} style={{ color: meta.countText }}>
+            {cards.length}
+          </span>
+        </div>
+        <span className={styles.columnSum} style={{ color: meta.countText }}>
+          R$ {formatBRL(totalCents)}
         </span>
       </div>
 

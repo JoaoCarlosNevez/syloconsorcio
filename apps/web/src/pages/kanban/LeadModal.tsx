@@ -1414,7 +1414,7 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
                               card.daysUrgent ? styles.daysTagUrgent : styles.daysTagNormal
                             }
                           >
-                            {card.days} no funil
+                            {card.days} no estágio
                           </span>
                         </div>
                       </div>

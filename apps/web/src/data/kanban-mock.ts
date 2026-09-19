@@ -12,6 +12,7 @@ export interface CardData {
   name: string
   phone: string
   cota: string
+  valueCents: number
   date: string
   assignedUserId: string | null
   stage: LeadStage

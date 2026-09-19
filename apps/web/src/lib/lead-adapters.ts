@@ -77,13 +77,16 @@ function formatDate(iso: string): string {
 
 export function toCardData(lead: Lead): CardData {
   const colors = getSourceColors(lead.source)
-  const days = daysSince(lead.createdAt)
+  // Dias no estágio atual (não dias desde a criação) — é isso que indica se
+  // um lead está empacado, não a idade total dele.
+  const days = daysSince(lead.stageChangedAt)
 
   return {
     id: lead.id,
     name: lead.name,
     phone: lead.phone,
     cota: formatCota(lead.valueCents, lead.segment, lead.quotaCount),
+    valueCents: lead.valueCents,
     date: formatDate(lead.createdAt),
     assignedUserId: lead.assignedUserId,
     stage: lead.stage,

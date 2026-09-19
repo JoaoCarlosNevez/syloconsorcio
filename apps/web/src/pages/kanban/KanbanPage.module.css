@@ -335,12 +335,18 @@
 
 .columnHeader {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 4px;
   padding: 9px 13px;
   border-radius: 12px;
   border: 1px solid;
   flex-shrink: 0;
+}
+
+.columnHeaderTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .columnName {
@@ -356,6 +362,13 @@
   font-size: 12px;
   font-weight: 700;
   line-height: 1.33;
+}
+
+.columnSum {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  opacity: 0.75;
 }
 
 .cardList {
