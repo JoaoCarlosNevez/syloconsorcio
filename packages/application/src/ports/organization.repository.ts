@@ -26,6 +26,9 @@ export interface OrganizationRecord {
   /** Tipos de crédito/segmento que a organização trabalha — usado pra popular
    * o campo Segmento na criação de lead. */
   leadSegments: string[]
+  /** Origens de lead (ex: "Facebook", "Indicação") — usado pra popular o
+   * campo Origem na criação de lead. */
+  leadSources: string[]
 }
 
 export interface NewOrganizationInput {
@@ -42,6 +45,7 @@ export interface UpdateOrganizationInput {
   phone?: string | null
   website?: string | null
   leadSegments?: string[]
+  leadSources?: string[]
 }
 
 export interface IOrganizationRepository {

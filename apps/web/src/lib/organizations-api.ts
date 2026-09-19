@@ -21,6 +21,8 @@ export interface Organization {
   website: string | null
   /** Tipos de crédito/segmento configurados — usado pra popular o Segmento na criação de lead. */
   leadSegments: string[]
+  /** Origens de lead configuradas — usado pra popular a Origem na criação de lead. */
+  leadSources: string[]
 }
 
 export interface CreateRepresentationPayload {

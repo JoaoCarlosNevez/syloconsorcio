@@ -246,6 +246,31 @@ describe('PATCH /organization', () => {
       expect.objectContaining({ leadSegments: ['Imobiliário', 'Auto'] }),
     )
   })
+
+  it('allows an ADMIN to update leadSources', async () => {
+    const organizationRepository = buildOrganizationRepository({
+      update: vi.fn().mockResolvedValue({
+        ...SAMPLE_ORG,
+        leadSources: ['Facebook', 'Indicação'],
+      }),
+    })
+    const app = buildTestApp({ organizationRepository })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/organization',
+      headers: AUTH_HEADERS,
+      payload: { leadSources: ['Facebook', 'Indicação'] },
+    })
+
+    expect(response.statusCode).toBe(200)
+    const body = response.json<{ organization: { leadSources: string[] } }>()
+    expect(body.organization.leadSources).toEqual(['Facebook', 'Indicação'])
+    expect(organizationRepository.update).toHaveBeenCalledWith(
+      ORG_ID,
+      expect.objectContaining({ leadSources: ['Facebook', 'Indicação'] }),
+    )
+  })
 })
 
 describe('POST /organization/icon', () => {

@@ -1,8 +1,8 @@
 // Rotas de configurações da própria organização — tela Configurações > Organização.
 //
 // GET   /organization       — dados da organização ativa (qualquer membership ativa)
-// PATCH /organization       — edita nome/CNPJ/telefone/site/leadSegments; exige
-//                             organization.update (só ADMIN — ver auth/permissions.ts)
+// PATCH /organization       — edita nome/CNPJ/telefone/site/leadSegments/leadSources;
+//                             exige organization.update (só ADMIN — ver auth/permissions.ts)
 // POST  /organization/icon  — envia o ícone; exige organization.update E isWhiteLabel=true
 //                             (organizações sem White Label usam a marca Sylo por padrão)
 //
@@ -40,6 +40,7 @@ const updateOrganizationSettingsSchema = z.object({
   phone: z.string().min(1).nullable().optional(),
   website: z.string().min(1).nullable().optional(),
   leadSegments: z.array(z.string().min(1)).optional(),
+  leadSources: z.array(z.string().min(1)).optional(),
 })
 
 function validationErrorResponse(fieldErrors: Record<string, string[] | undefined>) {

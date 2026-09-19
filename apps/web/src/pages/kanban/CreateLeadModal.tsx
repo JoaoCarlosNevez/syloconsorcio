@@ -14,15 +14,13 @@ export interface CreateLeadModalProps {
   onClose: () => void
 }
 
-const SOURCE_OPTIONS = ['FACEBOOK', 'INSTAGRAM', 'INDICAÇÃO', 'SITE'] as const
-
 const initialForm = {
   name: '',
   phone: '',
   segment: '',
   value: '',
   quotaCount: '1',
-  source: SOURCE_OPTIONS[0] as string,
+  source: '',
   assignedUserId: '',
 }
 
@@ -42,6 +40,7 @@ export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadMod
   const members = teamData?.members ?? []
   const { data: settingsData } = useOrganizationSettingsQuery(organizationId)
   const leadSegments = settingsData?.organization.leadSegments ?? []
+  const leadSources = settingsData?.organization.leadSources ?? []
   const { toast } = useToast()
 
   function updateField<K extends keyof typeof initialForm>(key: K, value: (typeof form)[K]) {
@@ -59,8 +58,14 @@ export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadMod
     setFormError(null)
 
     const valueCents = parseValueToCents(form.value)
-    if (!form.name.trim() || !form.phone.trim() || !form.segment.trim() || valueCents === null) {
-      setFormError('Preencha nome, telefone, segmento e um valor de cota válido.')
+    if (
+      !form.name.trim() ||
+      !form.phone.trim() ||
+      !form.segment.trim() ||
+      !form.source.trim() ||
+      valueCents === null
+    ) {
+      setFormError('Preencha nome, telefone, segmento, origem e um valor de cota válido.')
       return
     }
 
@@ -159,18 +164,33 @@ export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadMod
         >
           Origem
         </label>
-        <select
-          id="lead-source"
-          value={form.source}
-          onChange={(e) => updateField('source', e.target.value)}
-          style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border, #ccc)' }}
-        >
-          {SOURCE_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option}
+        {leadSources.length > 0 ? (
+          <select
+            id="lead-source"
+            value={form.source}
+            onChange={(e) => updateField('source', e.target.value)}
+            required
+            style={{
+              padding: '10px 12px',
+              borderRadius: 8,
+              border: '1px solid var(--border, #ccc)',
+            }}
+          >
+            <option value="" disabled>
+              Selecione…
             </option>
-          ))}
-        </select>
+            {leadSources.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span style={{ fontSize: 13, color: 'var(--color-text-muted, #64748b)' }}>
+            Nenhuma origem cadastrada. Configure em Configurações → Organização antes de criar um
+            lead.
+          </span>
+        )}
         <label
           htmlFor="lead-assignee"
           style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.6 }}
@@ -204,7 +224,7 @@ export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadMod
           type="submit"
           form="create-lead-form"
           loading={createLead.isPending}
-          disabled={leadSegments.length === 0}
+          disabled={leadSegments.length === 0 || leadSources.length === 0}
         >
           Criar lead
         </Button>

@@ -1,0 +1,2 @@
+ALTER TABLE "organizations" ALTER COLUMN "lead_segments" SET DEFAULT '{"Imobiliário","Auto","Pesado"}';--> statement-breakpoint
+ALTER TABLE "organizations" ALTER COLUMN "lead_sources" SET DEFAULT '{"Facebook","Prospecção Ativa","Indicação"}';

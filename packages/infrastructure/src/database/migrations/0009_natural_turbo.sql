@@ -1,0 +1,1 @@
+ALTER TABLE "organizations" ADD COLUMN "lead_sources" text[] DEFAULT '{"FACEBOOK","INSTAGRAM","INDICAÇÃO","SITE"}' NOT NULL;

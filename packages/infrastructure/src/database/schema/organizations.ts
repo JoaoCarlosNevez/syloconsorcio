@@ -33,7 +33,15 @@ export const organizations = pgTable('organizations', {
   // Tipos de crédito/segmento que esta organização trabalha (ex: "Imobiliário",
   // "Auto", "Pesado") — configurados em Configurações > Organização e usados
   // pra popular o campo Segmento na criação de lead (não é mais texto livre).
-  leadSegments: text('lead_segments').array().notNull().default([]),
+  // Toda organização nova já nasce com estes 3 — decisão de produto, editável
+  // depois pelo ADMIN.
+  leadSegments: text('lead_segments').array().notNull().default(['Imobiliário', 'Auto', 'Pesado']),
+  // Origens de lead — mesmo mecanismo do leadSegments, populando o campo
+  // Origem na criação de lead. Toda organização nova já nasce com estas 3.
+  leadSources: text('lead_sources')
+    .array()
+    .notNull()
+    .default(['Facebook', 'Prospecção Ativa', 'Indicação']),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })

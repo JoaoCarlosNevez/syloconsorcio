@@ -25,6 +25,7 @@ const ORGANIZATION_COLUMNS = {
   phone: organizations.phone,
   website: organizations.website,
   leadSegments: organizations.leadSegments,
+  leadSources: organizations.leadSources,
 } as const
 
 function toOrganizationRecord(row: {
@@ -38,6 +39,7 @@ function toOrganizationRecord(row: {
   phone: string | null
   website: string | null
   leadSegments: string[]
+  leadSources: string[]
 }): OrganizationRecord {
   return {
     id: row.id,
@@ -50,6 +52,7 @@ function toOrganizationRecord(row: {
     phone: row.phone,
     website: row.website,
     leadSegments: row.leadSegments,
+    leadSources: row.leadSources,
   }
 }
 
@@ -111,6 +114,7 @@ export class DrizzleOrganizationRepository implements IOrganizationRepository {
         ...(input.phone !== undefined ? { phone: input.phone } : {}),
         ...(input.website !== undefined ? { website: input.website } : {}),
         ...(input.leadSegments !== undefined ? { leadSegments: input.leadSegments } : {}),
+        ...(input.leadSources !== undefined ? { leadSources: input.leadSources } : {}),
         updatedAt: new Date(),
       })
       .where(eq(organizations.id, id))

@@ -1572,6 +1572,7 @@ function OrganizacaoView() {
   const [website, setWebsite] = useState('')
   const [phone, setPhone] = useState('')
   const [newSegment, setNewSegment] = useState('')
+  const [newSource, setNewSource] = useState('')
   const [toast, setToast] = useState('')
 
   const organization = data?.organization
@@ -1626,6 +1627,33 @@ function OrganizacaoView() {
       })
     } catch (error) {
       setToast(error instanceof Error ? error.message : 'Erro ao remover tipo de crédito.')
+    }
+  }
+
+  async function handleAddSource(e: FormEvent) {
+    e.preventDefault()
+    const value = newSource.trim()
+    if (!value || !organization) return
+    if (organization.leadSources.some((s) => s.toLowerCase() === value.toLowerCase())) {
+      setToast('Essa origem já está na lista.')
+      return
+    }
+    try {
+      await updateSettings.mutateAsync({ leadSources: [...organization.leadSources, value] })
+      setNewSource('')
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Erro ao adicionar origem.')
+    }
+  }
+
+  async function handleRemoveSource(source: string) {
+    if (!organization) return
+    try {
+      await updateSettings.mutateAsync({
+        leadSources: organization.leadSources.filter((s) => s !== source),
+      })
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Erro ao remover origem.')
     }
   }
 
@@ -1826,6 +1854,58 @@ function OrganizacaoView() {
                       onClick={() => handleRemoveSegment(segment)}
                       disabled={updateSettings.isPending}
                       aria-label={`Remover ${segment}`}
+                    >
+                      <XIcon />
+                    </button>
+                  )}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className={styles.settingsCard}>
+        <div className={styles.settingsCardHeader}>
+          <div className={styles.settingsCardTitle}>Origens de lead</div>
+          <div className={styles.settingsCardDesc}>
+            {isAdmin
+              ? 'De onde vêm os leads desta representação — aparecem como opções ao criar um lead.'
+              : 'Apenas o dono da representação pode editar estes dados.'}
+          </div>
+        </div>
+        <div className={styles.settingsCardBody}>
+          {isAdmin && (
+            <form onSubmit={handleAddSource} className={styles.segmentInputRow}>
+              <input
+                className={styles.formInput}
+                value={newSource}
+                onChange={(e) => setNewSource(e.target.value)}
+                placeholder="Ex: Facebook, Instagram, Indicação…"
+              />
+              <button
+                type="submit"
+                className={styles.secondaryBtn}
+                disabled={!newSource.trim() || updateSettings.isPending}
+              >
+                <PlusIcon /> Adicionar
+              </button>
+            </form>
+          )}
+          {organization.leadSources.length === 0 ? (
+            <p className={styles.segmentEmpty}>Nenhuma origem cadastrada ainda.</p>
+          ) : (
+            <div className={styles.segmentTagList}>
+              {organization.leadSources.map((source) => (
+                <span key={source} className={styles.segmentTag}>
+                  {source}
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      className={styles.segmentTagRemove}
+                      onClick={() => handleRemoveSource(source)}
+                      disabled={updateSettings.isPending}
+                      aria-label={`Remover ${source}`}
                     >
                       <XIcon />
                     </button>
