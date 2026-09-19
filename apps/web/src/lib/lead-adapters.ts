@@ -42,6 +42,25 @@ export function formatBRL(cents: number): string {
   return (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 0 })
 }
 
+/**
+ * Aplica a máscara de telefone brasileiro progressivamente, ignorando
+ * qualquer caractere que não seja dígito. Até 10 dígitos usa o formato de
+ * fixo "(DD) NNNN-NNNN"; ao digitar o 11º dígito (celular com o 9 na
+ * frente) passa pra "(DD) NNNNN-NNNN".
+ */
+export function formatPhoneBR(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 11)
+  if (digits.length === 0) return ''
+  if (digits.length <= 2) return `(${digits}`
+
+  const ddd = digits.slice(0, 2)
+  const rest = digits.slice(2)
+  if (digits.length <= 10) {
+    return rest.length <= 4 ? `(${ddd}) ${rest}` : `(${ddd}) ${rest.slice(0, 4)}-${rest.slice(4)}`
+  }
+  return `(${ddd}) ${rest.slice(0, 5)}-${rest.slice(5)}`
+}
+
 export function formatCota(valueCents: number, segment: string, quotaCount: number): string {
   const prefix = quotaCount > 1 ? `${quotaCount} Cotas` : 'Cota'
   return `${prefix} R$ ${formatBRL(valueCents)} (${segment})`

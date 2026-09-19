@@ -7,6 +7,7 @@ import { type FormEvent, useState } from 'react'
 import { useCreateLead } from '../../hooks/useLeads'
 import { useOrganizationSettingsQuery } from '../../hooks/useOrganizationSettings'
 import { useTeamMembersQuery } from '../../hooks/useTeam'
+import { formatPhoneBR } from '../../lib/lead-adapters'
 
 export interface CreateLeadModalProps {
   open: boolean
@@ -58,14 +59,13 @@ export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadMod
     setFormError(null)
 
     const valueCents = parseValueToCents(form.value)
-    if (
-      !form.name.trim() ||
-      !form.phone.trim() ||
-      !form.segment.trim() ||
-      !form.source.trim() ||
-      valueCents === null
-    ) {
+    const phoneDigits = form.phone.replace(/\D/g, '')
+    if (!form.name.trim() || !form.segment.trim() || !form.source.trim() || valueCents === null) {
       setFormError('Preencha nome, telefone, segmento, origem e um valor de cota válido.')
+      return
+    }
+    if (phoneDigits.length < 10) {
+      setFormError('Telefone inválido — precisa ter DDD + número (10 ou 11 dígitos).')
       return
     }
 
@@ -107,7 +107,7 @@ export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadMod
           label="Telefone"
           placeholder="(11) 90000-0000"
           value={form.phone}
-          onChange={(e) => updateField('phone', e.target.value)}
+          onChange={(e) => updateField('phone', formatPhoneBR(e.target.value))}
           required
         />
         <label
