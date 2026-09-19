@@ -148,7 +148,7 @@ export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadMod
           placeholder="350000"
           inputMode="decimal"
           value={form.value}
-          onChange={(e) => updateField('value', e.target.value)}
+          onChange={(e) => updateField('value', e.target.value.replace(/[^0-9.,]/g, ''))}
           required
         />
         <Input
@@ -156,7 +156,7 @@ export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadMod
           type="number"
           min={1}
           value={form.quotaCount}
-          onChange={(e) => updateField('quotaCount', e.target.value)}
+          onChange={(e) => updateField('quotaCount', e.target.value.replace(/[^0-9]/g, ''))}
         />
         <label
           htmlFor="lead-source"
