@@ -135,7 +135,7 @@ function PhoneIcon() {
 function CalendarIcon() {
   return (
     <svg
-      width="9"
+      width="10"
       height="10"
       viewBox="0 0 24 24"
       fill="none"
