@@ -195,9 +195,4 @@ describe('LoginPage — static content', () => {
     renderLoginPage()
     expect(screen.getByLabelText(/lembrar de mim/i)).toBeDefined()
   })
-
-  it('renders the Google Workspace button', () => {
-    renderLoginPage()
-    expect(screen.getByRole('button', { name: /google workspace/i })).toBeDefined()
-  })
 })

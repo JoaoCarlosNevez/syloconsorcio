@@ -158,6 +158,7 @@
 
 .metric {
   flex: 1;
+  min-width: 0;
   padding: 0 24px;
 }
 
@@ -290,53 +291,6 @@
   margin-top: 4px;
 }
 
-/* Divider "OU CONTINUE COM" */
-.dividerRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 20px 0;
-}
-
-.dividerLine {
-  flex: 1;
-  height: 1px;
-  background: var(--color-border);
-}
-
-.dividerText {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-disabled);
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  white-space: nowrap;
-}
-
-/* Botão Google */
-.googleButton {
-  width: 100%;
-  height: 46px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  background: #ffffff;
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
-  padding: 11px 17px;
-  transition: background-color var(--duration-normal) var(--easing-default);
-}
-
-.googleButton:hover {
-  background: var(--color-bg-subtle);
-}
-
 /* Notice / aviso */
 .notice {
   font-size: var(--font-size-sm);
@@ -389,7 +343,7 @@
   }
 
   .leftPanel {
-    flex: 0 0 300px;
+    flex: 0 1 auto;
     min-height: 300px;
   }
 
@@ -410,5 +364,46 @@
     padding: 32px 24px;
     flex: 1;
     min-height: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .leftPanel {
+    min-height: 260px;
+  }
+
+  .leftContent {
+    padding: 24px;
+  }
+
+  .saraBadge {
+    top: 16px;
+    right: 16px;
+    padding: 7px 14px;
+  }
+
+  .headline {
+    font-size: 20px;
+    line-height: 26px;
+    max-width: 70%;
+  }
+
+  .metrics {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .metric {
+    width: 100%;
+    padding: 0;
+  }
+
+  .metricDivider {
+    display: none;
+  }
+
+  .rightPanel {
+    padding: 24px 16px;
   }
 }
