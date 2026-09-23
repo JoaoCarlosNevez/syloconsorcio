@@ -42,6 +42,14 @@ export function formatBRL(cents: number): string {
   return (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 0 })
 }
 
+/** Aceita "350000", "350.000" ou "350000,50" — sempre BRL. Retorna null se inválido. */
+export function parseValueToCents(value: string): number | null {
+  const normalized = value.replace(/\./g, '').replace(',', '.')
+  const parsed = Number.parseFloat(normalized)
+  if (Number.isNaN(parsed) || parsed <= 0) return null
+  return Math.round(parsed * 100)
+}
+
 /**
  * Aplica a máscara de telefone brasileiro progressivamente, ignorando
  * qualquer caractere que não seja dígito. Até 10 dígitos usa o formato de
@@ -85,6 +93,9 @@ export function toCardData(lead: Lead): CardData {
     id: lead.id,
     name: lead.name,
     phone: lead.phone,
+    email: lead.email,
+    segment: lead.segment,
+    quotaCount: lead.quotaCount,
     cota: formatCota(lead.valueCents, lead.segment, lead.quotaCount),
     valueCents: lead.valueCents,
     date: formatDate(lead.createdAt),

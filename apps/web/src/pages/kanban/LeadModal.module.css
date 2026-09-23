@@ -385,6 +385,30 @@
   font-weight: 700;
 }
 
+.editActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.attrInput {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0b1c30;
+  font-family: var(--font-family-base);
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(216, 195, 173, 0.5);
+  width: 100%;
+  max-width: 220px;
+  background: #fff;
+}
+
+.attrInput:focus {
+  outline: none;
+  border-color: #0b1c30;
+}
+
 .editBtn {
   display: inline-flex;
   align-items: center;

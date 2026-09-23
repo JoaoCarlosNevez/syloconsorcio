@@ -8,7 +8,13 @@ import { useDeleteLead, useUpdateLead } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { useOrganizationSettingsQuery } from '../../hooks/useOrganizationSettings'
 import { useTeamMembersQuery } from '../../hooks/useTeam'
-import { COLUMN_ID_TO_STAGE, STAGE_TO_COLUMN_ID, resolveAgent } from '../../lib/lead-adapters'
+import {
+  COLUMN_ID_TO_STAGE,
+  STAGE_TO_COLUMN_ID,
+  formatPhoneBR,
+  parseValueToCents,
+  resolveAgent,
+} from '../../lib/lead-adapters'
 import type { OutcomeFilter } from '../../lib/leads-api'
 import styles from './LeadModal.module.css'
 
@@ -121,6 +127,25 @@ function PhoneIcon() {
       aria-hidden="true"
     >
       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.37a16 16 0 0 0 7.72 7.72l.91-.91a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+    </svg>
+  )
+}
+
+function MailIcon() {
+  return (
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+      <path d="M22 6l-10 7L2 6" />
     </svg>
   )
 }
@@ -592,6 +617,47 @@ function parseCota(cota: string): { type: string; value: string } {
   return { type: cota, value: '' }
 }
 
+// ── Helper: edição de atributos ─────────────────────────────────────────────────
+
+interface AttrsForm {
+  name: string
+  phone: string
+  email: string
+  segment: string
+  value: string
+  quotaCount: string
+}
+
+const AUTOSAVE_DELAY_MS = 1000
+
+function buildAttrsForm(card: CardData): AttrsForm {
+  return {
+    name: card.name,
+    phone: card.phone,
+    email: card.email ?? '',
+    segment: card.segment,
+    value: (card.valueCents / 100).toFixed(2).replace('.', ','),
+    quotaCount: String(card.quotaCount),
+  }
+}
+
+/** Retorna o payload pronto pra PATCH, ou null se algum campo obrigatório for inválido. */
+function buildAttrsPayload(form: AttrsForm) {
+  const valueCents = parseValueToCents(form.value)
+  const phoneDigits = form.phone.replace(/\D/g, '')
+  if (!form.name.trim() || !form.segment.trim() || valueCents === null || phoneDigits.length < 10) {
+    return null
+  }
+  return {
+    name: form.name.trim(),
+    phone: form.phone.trim(),
+    email: form.email.trim() || null,
+    segment: form.segment,
+    valueCents,
+    quotaCount: Math.max(1, Number.parseInt(form.quotaCount, 10) || 1),
+  }
+}
+
 // ── LeadModal ──────────────────────────────────────────────────────────────────
 
 export interface LeadModalProps {
@@ -609,10 +675,21 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
   const [addingTag, setAddingTag] = useState(false)
   const tagPickerRef = useRef<HTMLDivElement>(null)
 
+  const [isEditingAttrs, setIsEditingAttrs] = useState(false)
+  const [attrsForm, setAttrsForm] = useState<AttrsForm>(() => buildAttrsForm(card))
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
+    }
+  }, [])
+
   const { organizationId, membership } = useActiveOrganization()
   const { data: teamData } = useTeamMembersQuery(organizationId)
   const members = teamData?.members ?? []
   const { data: settingsData } = useOrganizationSettingsQuery(organizationId)
+  const leadSegments = settingsData?.organization.leadSegments ?? []
   const availableTags = (settingsData?.organization.leadTags ?? []).filter(
     (tag) => !card.tags.includes(tag),
   )
@@ -721,6 +798,89 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
         },
       },
     )
+  }
+
+  function saveAttrs(form: AttrsForm) {
+    const payload = buildAttrsPayload(form)
+    if (!payload) return
+    updateLead.mutate(
+      { id: card.id, payload },
+      {
+        onError: (error) => {
+          toast({
+            type: 'error',
+            title: 'Não foi possível salvar as alterações',
+            description: error instanceof Error ? error.message : undefined,
+          })
+        },
+      },
+    )
+  }
+
+  function updateAttrField<K extends keyof AttrsForm>(key: K, value: AttrsForm[K]) {
+    setAttrsForm((prev) => {
+      const next = { ...prev, [key]: value }
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
+      autosaveTimer.current = setTimeout(() => saveAttrs(next), AUTOSAVE_DELAY_MS)
+      return next
+    })
+  }
+
+  function handleSaveAttrsNow() {
+    if (autosaveTimer.current) {
+      clearTimeout(autosaveTimer.current)
+      autosaveTimer.current = null
+    }
+    const payload = buildAttrsPayload(attrsForm)
+    if (!payload) {
+      toast({
+        type: 'error',
+        title: 'Verifique os campos',
+        description: 'Nome, telefone (DDD + número) e tipo de crédito são obrigatórios.',
+      })
+      return
+    }
+    updateLead.mutate(
+      { id: card.id, payload },
+      {
+        onSuccess: () => toast({ type: 'success', title: 'Alterações salvas' }),
+        onError: (error) => {
+          toast({
+            type: 'error',
+            title: 'Não foi possível salvar as alterações',
+            description: error instanceof Error ? error.message : undefined,
+          })
+        },
+      },
+    )
+  }
+
+  function handleToggleEditAttrs() {
+    if (isEditingAttrs) {
+      if (autosaveTimer.current) {
+        clearTimeout(autosaveTimer.current)
+        autosaveTimer.current = null
+      }
+      const payload = buildAttrsPayload(attrsForm)
+      if (payload) {
+        updateLead.mutate(
+          { id: card.id, payload },
+          {
+            onError: (error) => {
+              toast({
+                type: 'error',
+                title: 'Não foi possível salvar as alterações',
+                description: error instanceof Error ? error.message : undefined,
+              })
+            },
+          },
+        )
+      }
+      setIsEditingAttrs(false)
+    } else {
+      setAttrsForm(buildAttrsForm(card))
+      setIsEditingAttrs(true)
+    }
   }
 
   function handleReopenLead() {
@@ -1140,10 +1300,27 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
                     </button>
                   </div>
                   {activeTab === 'qualificacao' && (
-                    <button type="button" className={styles.editBtn}>
-                      <PencilIcon />
-                      Editar Atributos
-                    </button>
+                    <div className={styles.editActions}>
+                      {isEditingAttrs && (
+                        <button
+                          type="button"
+                          className={styles.btnGanho}
+                          onClick={handleSaveAttrsNow}
+                          disabled={updateLead.isPending}
+                        >
+                          <CheckIcon />
+                          Salvar
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className={styles.editBtn}
+                        onClick={handleToggleEditAttrs}
+                      >
+                        <PencilIcon />
+                        {isEditingAttrs ? 'Concluir Edição' : 'Editar Atributos'}
+                      </button>
+                    </div>
                   )}
                   {activeTab === 'simulacoes' && (
                     <button type="button" className={styles.novaSimBtn}>
@@ -1333,19 +1510,69 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
                   <>
                     {/* Grade de atributos */}
                     <div className={styles.attrsGrid}>
+                      {/* Nome */}
+                      <div className={styles.attrCell}>
+                        <div className={styles.attrLabel}>
+                          <PersonIcon />
+                          Nome
+                        </div>
+                        {isEditingAttrs ? (
+                          <input
+                            className={styles.attrInput}
+                            value={attrsForm.name}
+                            onChange={(e) => updateAttrField('name', e.target.value)}
+                          />
+                        ) : (
+                          <div className={styles.attrValue}>
+                            <span className={styles.attrValueText}>{card.name}</span>
+                          </div>
+                        )}
+                      </div>
+
                       {/* Telefone */}
                       <div className={styles.attrCell}>
                         <div className={styles.attrLabel}>
                           <PhoneIcon />
                           Telefone / WhatsApp
                         </div>
-                        <div className={styles.attrValue}>
-                          <span className={styles.attrValueText}>{card.phone}</span>
-                          <span className={styles.callBadge}>
-                            <WhatsAppIcon />
-                            Chamar
-                          </span>
+                        {isEditingAttrs ? (
+                          <input
+                            className={styles.attrInput}
+                            value={attrsForm.phone}
+                            onChange={(e) =>
+                              updateAttrField('phone', formatPhoneBR(e.target.value))
+                            }
+                          />
+                        ) : (
+                          <div className={styles.attrValue}>
+                            <span className={styles.attrValueText}>{card.phone}</span>
+                            <span className={styles.callBadge}>
+                              <WhatsAppIcon />
+                              Chamar
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Email */}
+                      <div className={styles.attrCell}>
+                        <div className={styles.attrLabel}>
+                          <MailIcon />
+                          Email
                         </div>
+                        {isEditingAttrs ? (
+                          <input
+                            type="email"
+                            className={styles.attrInput}
+                            value={attrsForm.email}
+                            placeholder="nome@exemplo.com"
+                            onChange={(e) => updateAttrField('email', e.target.value)}
+                          />
+                        ) : (
+                          <div className={styles.attrValue}>
+                            <span className={styles.attrValueText}>{card.email ?? '—'}</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Responsável */}
@@ -1422,11 +1649,60 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
                           <HomeIcon />
                           Interesse
                         </div>
-                        <div className={styles.attrValueCol}>
-                          {cota.type && <span className={styles.attrValueBold}>{cota.type}</span>}
-                          {cota.value && <span className={styles.attrValueSub}>{cota.value}</span>}
-                          {!cota.type && <span className={styles.attrValueBold}>{card.cota}</span>}
-                        </div>
+                        {isEditingAttrs ? (
+                          <div className={styles.attrValueCol}>
+                            <select
+                              className={styles.attrInput}
+                              value={attrsForm.segment}
+                              onChange={(e) => updateAttrField('segment', e.target.value)}
+                            >
+                              <option value="" disabled>
+                                Selecione…
+                              </option>
+                              {leadSegments.map((segment) => (
+                                <option key={segment} value={segment}>
+                                  {segment}
+                                </option>
+                              ))}
+                            </select>
+                            <div className={styles.attrValue} style={{ marginTop: 4 }}>
+                              <input
+                                className={styles.attrInput}
+                                style={{ maxWidth: 120 }}
+                                inputMode="decimal"
+                                placeholder="Valor (R$)"
+                                value={attrsForm.value}
+                                onChange={(e) =>
+                                  updateAttrField('value', e.target.value.replace(/[^0-9.,]/g, ''))
+                                }
+                              />
+                              <input
+                                className={styles.attrInput}
+                                style={{ maxWidth: 70 }}
+                                type="number"
+                                min={1}
+                                placeholder="Cotas"
+                                value={attrsForm.quotaCount}
+                                onChange={(e) =>
+                                  updateAttrField(
+                                    'quotaCount',
+                                    e.target.value.replace(/[^0-9]/g, ''),
+                                  )
+                                }
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className={styles.attrValueCol}>
+                            {cota.type && <span className={styles.attrValueBold}>{cota.type}</span>}
+                            {cota.value && (
+                              <span className={styles.attrValueSub}>{cota.value}</span>
+                            )}
+                            {!cota.type && (
+                              <span className={styles.attrValueBold}>{card.cota}</span>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Data de Cadastro */}

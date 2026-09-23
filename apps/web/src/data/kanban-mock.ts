@@ -11,6 +11,9 @@ export interface CardData {
   id: string
   name: string
   phone: string
+  email: string | null
+  segment: string
+  quotaCount: number
   cota: string
   valueCents: number
   date: string

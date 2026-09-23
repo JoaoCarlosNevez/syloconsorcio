@@ -7,7 +7,7 @@ import { type FormEvent, useState } from 'react'
 import { useCreateLead } from '../../hooks/useLeads'
 import { useOrganizationSettingsQuery } from '../../hooks/useOrganizationSettings'
 import { useTeamMembersQuery } from '../../hooks/useTeam'
-import { formatPhoneBR } from '../../lib/lead-adapters'
+import { formatPhoneBR, parseValueToCents } from '../../lib/lead-adapters'
 import styles from './CreateLeadModal.module.css'
 
 export interface CreateLeadModalProps {
@@ -25,14 +25,6 @@ const initialForm = {
   source: '',
   assignedUserId: '',
   notes: '',
-}
-
-function parseValueToCents(value: string): number | null {
-  // Aceita "350000", "350.000" ou "350000,50" — sempre BRL.
-  const normalized = value.replace(/\./g, '').replace(',', '.')
-  const parsed = Number.parseFloat(normalized)
-  if (Number.isNaN(parsed) || parsed <= 0) return null
-  return Math.round(parsed * 100)
 }
 
 export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadModalProps) {
