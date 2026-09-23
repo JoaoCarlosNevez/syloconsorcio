@@ -19,7 +19,8 @@ import type { IAuthProvider } from '@sylocrm/application'
 import { Permission } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
-import { ICON_EXTENSION_BY_MIME, validateIconUpload } from '../lib/icon-validation'
+import { compressImage } from '../lib/image-processing'
+import { validateIconUpload } from '../lib/icon-validation'
 import { createAuthMiddleware } from '../middleware/auth.middleware'
 import { requirePermission } from '../middleware/permission.middleware'
 import { createTenantMiddleware } from '../middleware/tenant.middleware'
@@ -145,12 +146,12 @@ export const organizationSettingsRoute: FastifyPluginAsync<
           .send({ error: validationError.message, code: validationError.code, status: 400 })
       }
 
-      const extension = ICON_EXTENSION_BY_MIME[file.mimetype] as string
+      const processed = await compressImage(buffer, file.mimetype)
       const { url } = await options.storageProvider.uploadPublicFile({
         bucket: ICON_BUCKET,
-        path: `${organization.id}/icon.${extension}`,
-        data: buffer,
-        contentType: file.mimetype,
+        path: `${organization.id}/icon.${processed.extension}`,
+        data: processed.buffer,
+        contentType: processed.contentType,
       })
 
       const updated = await options.organizationRepository.update(organization.id, {

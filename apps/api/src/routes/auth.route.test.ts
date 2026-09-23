@@ -324,7 +324,7 @@ describe('POST /auth/me/avatar', () => {
     const body = response.json<{ avatarUrl: string }>()
     expect(body.avatarUrl).toContain('user-avatars')
     expect(storageProvider.uploadPublicFile).toHaveBeenCalledWith(
-      expect.objectContaining({ bucket: 'user-avatars', path: `${MOCK_IDENTITY.id}/avatar.png` }),
+      expect.objectContaining({ bucket: 'user-avatars', path: `${MOCK_IDENTITY.id}/avatar.webp` }),
     )
     expect(updateProfile).toHaveBeenCalledWith(
       MOCK_IDENTITY.id,

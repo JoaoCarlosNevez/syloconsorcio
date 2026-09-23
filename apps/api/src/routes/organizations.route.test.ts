@@ -598,7 +598,7 @@ describe('POST /organizations/:id/icon', () => {
 
     expect(response.statusCode).toBe(200)
     expect(storageProvider.uploadPublicFile).toHaveBeenCalledWith(
-      expect.objectContaining({ bucket: 'organization-icons', path: 'org-uuid/icon.png' }),
+      expect.objectContaining({ bucket: 'organization-icons', path: 'org-uuid/icon.webp' }),
     )
     expect(organizationRepository.update).toHaveBeenCalledWith(
       'org-uuid',

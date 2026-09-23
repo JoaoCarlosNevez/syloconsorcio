@@ -30,7 +30,8 @@ import { Role } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { buildMembershipContext } from '../auth/membership-context'
-import { ICON_EXTENSION_BY_MIME, validateIconUpload } from '../lib/icon-validation'
+import { compressImage } from '../lib/image-processing'
+import { validateIconUpload } from '../lib/icon-validation'
 import { createAuthMiddleware } from '../middleware/auth.middleware'
 import { createTenantMiddleware } from '../middleware/tenant.middleware'
 
@@ -126,12 +127,12 @@ export const authRoute: FastifyPluginAsync<AuthRouteOptions> = async (fastify, o
         .send({ error: validationError.message, code: validationError.code, status: 400 })
     }
 
-    const extension = ICON_EXTENSION_BY_MIME[file.mimetype] as string
+    const processed = await compressImage(buffer, file.mimetype)
     const { url } = await options.storageProvider.uploadPublicFile({
       bucket: AVATAR_BUCKET,
-      path: `${identity.id}/avatar.${extension}`,
-      data: buffer,
-      contentType: file.mimetype,
+      path: `${identity.id}/avatar.${processed.extension}`,
+      data: processed.buffer,
+      contentType: processed.contentType,
     })
 
     const user = await options.userRepository.updateProfile(identity.id, { avatarUrl: url })
