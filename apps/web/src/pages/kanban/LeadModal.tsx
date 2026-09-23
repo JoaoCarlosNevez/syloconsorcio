@@ -4,7 +4,13 @@
 import { Skeleton, useToast } from '@sylocrm/ui'
 import { useEffect, useRef, useState } from 'react'
 import { COLUMN_META, type CardData } from '../../data/kanban-mock'
-import { useDeleteLead, useUpdateLead } from '../../hooks/useLeads'
+import { useCurrentUser } from '../../hooks/useCurrentUser'
+import {
+  useCreateLeadComment,
+  useDeleteLead,
+  useLeadHistoryQuery,
+  useUpdateLead,
+} from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { useOrganizationSettingsQuery } from '../../hooks/useOrganizationSettings'
 import { useTeamMembersQuery } from '../../hooks/useTeam'
@@ -14,8 +20,10 @@ import {
   formatPhoneBR,
   parseValueToCents,
   resolveAgent,
+  resolveCardOutcome,
 } from '../../lib/lead-adapters'
-import type { OutcomeFilter } from '../../lib/leads-api'
+import type { LeadHistory } from '../../lib/leads-api'
+import type { TeamMember } from '../../lib/team-api'
 import styles from './LeadModal.module.css'
 
 // ── Ícones (SVG inline — padrão do projeto) ────────────────────────────────────
@@ -421,6 +429,24 @@ function LightningIcon() {
   )
 }
 
+function CommentIcon() {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+    </svg>
+  )
+}
+
 function CheckIcon() {
   return (
     <svg
@@ -550,64 +576,84 @@ const MOCK_TASKS = [
   },
 ]
 
-interface HistoryEvent {
-  id: string
-  type: 'system' | 'whatsapp' | 'lead_created'
-  title: string
-  timestamp: string
-  byLabel: string | null
-  byName: string | null
-  detail: string | null
-  detailBold: string | null
-  message?: string
-  source?: string
+// ── Feed de histórico (atribuição real + comentários reais) ────────────────────
+//
+// "WhatsApp" continua como aba de filtro na UI, mas não tem fonte de dado real
+// hoje (não existe integração de envio de mensagens) — fica sempre vazia.
+
+type HistoryTab = 'todos' | 'comentarios' | 'sistema' | 'whatsapp'
+
+const HISTORY_TAB_LABEL: Record<HistoryTab, string> = {
+  todos: 'Tudo',
+  comentarios: 'Comentários',
+  sistema: 'Sistema',
+  whatsapp: 'WhatsApp',
 }
 
-const MOCK_HISTORY: HistoryEvent[] = [
-  {
-    id: 'h1',
-    type: 'system',
-    title: 'Vendedor alterado',
-    timestamp: '01/07/26 13:32',
-    byLabel: 'por',
-    byName: 'Fabione',
-    detail: 'Maui',
-    detailBold: 'Do Carmo',
-  },
-  {
-    id: 'h2',
-    type: 'whatsapp',
-    title: 'WhatsApp Enviado (Sara IA)',
-    timestamp: '03/06/26 20:15',
-    message:
-      '"Olá Aparecido! Notamos seu interesse no consórcio de R$ 350 mil do Parque do Sol. Preparamos 3 lances simulados para você..."',
-    byLabel: null,
-    byName: null,
-    detail: null,
-    detailBold: null,
-  },
-  {
-    id: 'h3',
-    type: 'system',
-    title: 'Vendedor alterado',
-    timestamp: '03/06/26 19:53',
-    byLabel: 'por',
-    byName: 'Tatiana',
-    detail: 'Nenhum',
-    detailBold: 'Maui',
-  },
-  {
-    id: 'h4',
-    type: 'lead_created',
-    title: 'Lead criado',
-    timestamp: '01/06/26 19:05',
-    byLabel: 'via',
-    byName: 'API/Webhook Facebook',
-    source: 'Campanha Consórcio Imobiliário SP',
-    detail: null,
-    detailBold: null,
-  },
-]
+interface FeedItem {
+  id: string
+  kind: 'created' | 'assignment' | 'comment'
+  timestamp: string
+  source?: string
+  changedByName?: string
+  fromName?: string
+  toName?: string
+  authorName?: string
+  text?: string
+}
+
+function buildHistoryFeed(
+  card: CardData,
+  history: LeadHistory | undefined,
+  members: TeamMember[] | undefined,
+  currentUserId: string | undefined,
+): FeedItem[] {
+  const items: FeedItem[] = [
+    { id: 'created', kind: 'created', timestamp: card.createdAt, source: card.source },
+  ]
+
+  for (const change of history?.assignmentHistory ?? []) {
+    items.push({
+      id: change.id,
+      kind: 'assignment',
+      timestamp: change.changedAt,
+      changedByName: resolveAgent(change.changedByUserId, members).name,
+      fromName: resolveAgent(change.fromUserId, members).name,
+      toName: resolveAgent(change.toUserId, members).name,
+    })
+  }
+
+  for (const comment of history?.comments ?? []) {
+    items.push({
+      id: comment.id,
+      kind: 'comment',
+      timestamp: comment.createdAt,
+      authorName:
+        comment.userId === currentUserId ? 'Você' : resolveAgent(comment.userId, members).name,
+      text: comment.text,
+    })
+  }
+
+  return items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+}
+
+function filterHistoryFeed(feed: FeedItem[], tab: HistoryTab): FeedItem[] {
+  if (tab === 'todos') return feed
+  if (tab === 'comentarios') return feed.filter((item) => item.kind === 'comment')
+  if (tab === 'sistema') return feed.filter((item) => item.kind !== 'comment')
+  return [] // 'whatsapp' — sem fonte de dado real hoje
+}
+
+function formatHistoryTimestamp(iso: string): string {
+  const date = new Date(iso)
+  const datePart = date.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+  })
+  const timePart = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  return `${datePart} ${timePart}`
+}
 
 // ── Helper: parse cota string ──────────────────────────────────────────────────
 
@@ -662,15 +708,14 @@ function buildAttrsPayload(form: AttrsForm) {
 
 export interface LeadModalProps {
   card: CardData
-  outcome: OutcomeFilter
   onClose: () => void
   /** Quando true, exibe skeleton no workspace — para quando os dados vierem de API real */
   isLoading?: boolean
 }
 
-export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadModalProps) {
+export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) {
   const [comment, setComment] = useState('')
-  const [localComments, setLocalComments] = useState<{ id: string; text: string }[]>([])
+  const [historyTab, setHistoryTab] = useState<HistoryTab>('todos')
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [addingTag, setAddingTag] = useState(false)
   const tagPickerRef = useRef<HTMLDivElement>(null)
@@ -695,11 +740,16 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
   )
   const updateLead = useUpdateLead(organizationId)
   const deleteLead = useDeleteLead(organizationId)
+  const { data: currentUser } = useCurrentUser()
+  const { data: history } = useLeadHistoryQuery(organizationId, card.id)
+  const createComment = useCreateLeadComment(organizationId, card.id)
   const { toast } = useToast()
 
   const canAssign = membership?.permissions.includes('lead.assign') ?? false
   const canManageLost = membership?.permissions.includes('lead.manage_lost') ?? false
-  const isViewingLost = outcome === 'perdido'
+  const cardOutcome = resolveCardOutcome(card)
+  const isViewingLost = cardOutcome === 'perdido'
+  const isViewingWon = cardOutcome === 'ganho'
   const canDelete = membership?.permissions.includes('lead.delete') ?? false
 
   function handleReassign(userId: string) {
@@ -719,7 +769,9 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
 
   function handleStageClick(columnId: string) {
     const stage = COLUMN_ID_TO_STAGE[columnId]
-    if (!stage || stage === card.stage) return
+    // Ganhar um lead é sempre uma ação explícita (botão "Marcar como Ganho")
+    // — nunca implícita por clicar direto na etapa do funil.
+    if (!stage || stage === card.stage || stage === 'VENDA') return
     updateLead.mutate(
       { id: card.id, payload: { stage } },
       {
@@ -902,6 +954,25 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
     )
   }
 
+  function handleReopenWon() {
+    updateLead.mutate(
+      { id: card.id, payload: { stage: 'FECHADO' } },
+      {
+        onSuccess: () => {
+          toast({ type: 'success', title: 'Lead reaberto' })
+          onClose()
+        },
+        onError: (error) => {
+          toast({
+            type: 'error',
+            title: 'Não foi possível reabrir o lead',
+            description: error instanceof Error ? error.message : undefined,
+          })
+        },
+      },
+    )
+  }
+
   function handleConfirmDelete() {
     deleteLead.mutate(card.id, {
       onSuccess: () => {
@@ -922,8 +993,16 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
   function submitComment() {
     const trimmed = comment.trim()
     if (!trimmed) return
-    setLocalComments((prev) => [{ id: crypto.randomUUID(), text: trimmed }, ...prev])
-    setComment('')
+    createComment.mutate(trimmed, {
+      onSuccess: () => setComment(''),
+      onError: (error) => {
+        toast({
+          type: 'error',
+          title: 'Não foi possível adicionar o comentário',
+          description: error instanceof Error ? error.message : undefined,
+        })
+      },
+    })
   }
 
   useEffect(() => {
@@ -954,6 +1033,8 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
   )
   const activeStage = activeStageIndex === -1 ? 0 : activeStageIndex
   const responsible = resolveAgent(card.assignedUserId, members)
+  const historyFeed = buildHistoryFeed(card, history, members, currentUser?.id)
+  const filteredHistoryFeed = filterHistoryFeed(historyFeed, historyTab)
 
   return (
     <div
@@ -1007,6 +1088,16 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
                     Reabrir Lead
                   </button>
                 )
+              ) : isViewingWon ? (
+                <button
+                  type="button"
+                  className={styles.btnGanho}
+                  onClick={handleReopenWon}
+                  disabled={updateLead.isPending}
+                >
+                  <RefreshIcon />
+                  Reabrir Lead
+                </button>
               ) : (
                 <>
                   <button type="button" className={styles.btnSecondary}>
@@ -1061,19 +1152,20 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
           <div className={styles.funnelBar}>
             <span className={styles.funnelLabel}>Etapas do Funil:</span>
             {FUNNEL_STAGES.map((stage, i) => {
-              // "Venda Concluída" só é alcançável a partir de Fechado — mesma
-              // regra que o backend aplica (UpdateLeadUseCase).
-              const isUnreachableVenda = COLUMN_META[i]?.id === 'venda' && card.stage !== 'FECHADO'
+              // "Venda Concluída" nunca é alcançável clicando na etapa — ganhar um
+              // lead é sempre uma ação explícita, pelo botão "Marcar como Ganho"
+              // (disponível só a partir da etapa Fechado).
+              const isVendaStage = COLUMN_META[i]?.id === 'venda'
               return (
                 <span key={stage} className={styles.funnelGroup}>
                   <button
                     type="button"
                     className={i === activeStage ? styles.funnelStageActive : styles.funnelStage}
                     onClick={() => handleStageClick(COLUMN_META[i]?.id ?? '')}
-                    disabled={updateLead.isPending || isUnreachableVenda}
+                    disabled={updateLead.isPending || isVendaStage}
                     title={
-                      isUnreachableVenda
-                        ? 'Só é possível marcar como Ganho a partir da etapa Fechado.'
+                      isVendaStage
+                        ? 'Use o botão "Marcar como Ganho" (disponível na etapa Fechado) para ganhar o lead.'
                         : undefined
                     }
                   >
@@ -1882,7 +1974,7 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
                 <div className={styles.historyHeader}>
                   <div className={styles.historyHeaderLeft}>
                     <h2 className={styles.historyTitle}>Histórico</h2>
-                    <span className={styles.historyCount}>{MOCK_HISTORY.length}</span>
+                    <span className={styles.historyCount}>{historyFeed.length}</span>
                   </div>
                   <div className={styles.historyActions}>
                     <button
@@ -1900,78 +1992,85 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
 
                 {/* Filtros */}
                 <div className={styles.historyFilters}>
-                  <button type="button" className={styles.filterPillActive}>
-                    Tudo
-                  </button>
-                  <button type="button" className={styles.filterPill}>
-                    Comentários
-                  </button>
-                  <button type="button" className={styles.filterPill}>
-                    Sistema
-                  </button>
-                  <button type="button" className={styles.filterPill}>
-                    WhatsApp
-                  </button>
+                  {(['todos', 'comentarios', 'sistema', 'whatsapp'] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      className={historyTab === tab ? styles.filterPillActive : styles.filterPill}
+                      onClick={() => setHistoryTab(tab)}
+                    >
+                      {HISTORY_TAB_LABEL[tab]}
+                    </button>
+                  ))}
                 </div>
 
                 {/* Timeline */}
                 <div className={styles.timeline}>
-                  {MOCK_HISTORY.map((event, i) => (
-                    <div key={event.id} className={styles.timelineEvent}>
+                  {filteredHistoryFeed.length === 0 && (
+                    <p className={styles.timelineBody}>Nenhum evento aqui ainda.</p>
+                  )}
+                  {filteredHistoryFeed.map((item, i) => (
+                    <div key={item.id} className={styles.timelineEvent}>
                       <div className={styles.timelineLeft}>
                         <div
                           className={
-                            event.type === 'whatsapp'
-                              ? `${styles.timelineIcon} ${styles.timelineIconWa}`
-                              : event.type === 'lead_created'
+                            item.kind === 'comment'
+                              ? `${styles.timelineIcon} ${styles.timelineIconComment}`
+                              : item.kind === 'created'
                                 ? `${styles.timelineIcon} ${styles.timelineIconCreated}`
                                 : `${styles.timelineIcon} ${styles.timelineIconSystem}`
                           }
                         >
-                          {event.type === 'whatsapp' && <WhatsAppIcon size={12} />}
-                          {event.type === 'system' && <LightningIcon />}
-                          {event.type === 'lead_created' && <CheckIcon />}
+                          {item.kind === 'comment' && <CommentIcon />}
+                          {item.kind === 'assignment' && <LightningIcon />}
+                          {item.kind === 'created' && <CheckIcon />}
                         </div>
-                        {i < MOCK_HISTORY.length - 1 && (
+                        {i < filteredHistoryFeed.length - 1 && (
                           <div className={styles.timelineConnector} />
                         )}
                       </div>
                       <div className={styles.timelineContent}>
                         <div className={styles.timelineRow}>
-                          <span
-                            className={
-                              event.type === 'whatsapp'
-                                ? `${styles.timelineTitle} ${styles.timelineTitleWa}`
-                                : styles.timelineTitle
-                            }
-                          >
-                            {event.title}
+                          <span className={styles.timelineTitle}>
+                            {item.kind === 'created'
+                              ? 'Lead criado'
+                              : item.kind === 'assignment'
+                                ? 'Responsável alterado'
+                                : 'Comentário'}
                           </span>
-                          <span className={styles.timelineDate}>{event.timestamp}</span>
+                          <span className={styles.timelineDate}>
+                            {formatHistoryTimestamp(item.timestamp)}
+                          </span>
                         </div>
 
-                        {event.byLabel && event.byName && (
+                        {item.kind === 'assignment' && (
                           <p className={styles.timelineBody}>
-                            {event.byLabel}{' '}
-                            <strong className={styles.timelineBold}>{event.byName}</strong>
+                            por{' '}
+                            <strong className={styles.timelineBold}>{item.changedByName}</strong>
                           </p>
                         )}
 
-                        {event.type === 'whatsapp' && event.message && (
-                          <div className={styles.timelineWaMsg}>{event.message}</div>
+                        {item.kind === 'comment' && (
+                          <p className={styles.timelineBody}>
+                            por <strong className={styles.timelineBold}>{item.authorName}</strong>
+                          </p>
                         )}
 
-                        {event.type !== 'whatsapp' && event.detail && event.detailBold && (
+                        {item.kind === 'assignment' && (
                           <div className={styles.timelineDetail}>
-                            {event.detail} →{' '}
-                            <strong className={styles.timelineBold}>{event.detailBold}</strong>
+                            {item.fromName} →{' '}
+                            <strong className={styles.timelineBold}>{item.toName}</strong>
                           </div>
                         )}
 
-                        {'source' in event && event.source && (
+                        {item.kind === 'comment' && item.text && (
+                          <div className={styles.timelineCommentMsg}>{item.text}</div>
+                        )}
+
+                        {item.kind === 'created' && item.source && (
                           <div className={styles.timelineSource}>
                             <TagIcon />
-                            Origem: {event.source}
+                            Origem: {item.source}
                           </div>
                         )}
                       </div>
@@ -1979,31 +2078,10 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
                   ))}
                 </div>
 
-                {/* Input de comentário */}
-                {localComments.length > 0 && (
-                  <div
-                    style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}
-                  >
-                    {localComments.map(({ id, text }) => (
-                      <div
-                        key={id}
-                        style={{
-                          background: '#f1f5f9',
-                          borderRadius: 8,
-                          padding: '8px 12px',
-                          fontSize: 13,
-                          color: '#1e293b',
-                        }}
-                      >
-                        {text}
-                      </div>
-                    ))}
-                  </div>
-                )}
                 <div className={styles.commentInput}>
                   <img
-                    src={responsible.photo}
-                    alt={responsible.name}
+                    src={currentUser?.avatarUrl ?? '/default-avatar.svg'}
+                    alt={currentUser?.name ?? 'Você'}
                     className={styles.commentAvatar}
                   />
                   <input
@@ -2011,6 +2089,7 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
                     placeholder="Adicionar comentário ou nota interna..."
                     className={styles.commentField}
                     value={comment}
+                    disabled={createComment.isPending}
                     onChange={(e) => setComment(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -2022,6 +2101,7 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
                   <button
                     type="button"
                     onClick={submitComment}
+                    disabled={createComment.isPending}
                     style={{
                       padding: '0 10px',
                       background: '#0b1c30',

@@ -14,7 +14,7 @@ import type { LeadStage } from '@sylocrm/domain'
  * ganho: stage VENDA. perdido: lostAt setado (exige Permission.LEAD_MANAGE_LOST,
  * checado na camada HTTP — ver apps/api/src/routes/leads.route.ts).
  */
-export type LeadOutcomeFilter = 'aberto' | 'ganho' | 'perdido'
+export type LeadOutcomeFilter = 'aberto' | 'ganho' | 'perdido' | 'todos'
 
 export interface LeadRecord {
   id: string
@@ -99,6 +99,29 @@ export interface AssignmentChange {
   changedByUserId: string
 }
 
+export interface AssignmentHistoryRecord {
+  id: string
+  leadId: string
+  fromUserId: string | null
+  toUserId: string | null
+  changedByUserId: string
+  changedAt: Date
+}
+
+export interface LeadCommentRecord {
+  id: string
+  leadId: string
+  userId: string
+  text: string
+  createdAt: Date
+}
+
+export interface NewLeadCommentInput {
+  leadId: string
+  userId: string
+  text: string
+}
+
 export interface ILeadRepository {
   list(filter: LeadListFilter, page: number, pageSize: number): Promise<LeadListPage>
 
@@ -115,4 +138,12 @@ export interface ILeadRepository {
 
   /** Registra uma mudança de responsável para auditoria (AGENTS.md §10). */
   recordAssignmentChange(change: AssignmentChange): Promise<void>
+
+  /** Histórico de mudanças de responsável, mais recente primeiro. */
+  listAssignmentHistory(leadId: string): Promise<AssignmentHistoryRecord[]>
+
+  /** Comentários/anotações internas do lead, mais recente primeiro. */
+  listComments(leadId: string): Promise<LeadCommentRecord[]>
+
+  createComment(input: NewLeadCommentInput): Promise<LeadCommentRecord>
 }

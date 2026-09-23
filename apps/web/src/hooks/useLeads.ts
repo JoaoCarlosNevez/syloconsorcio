@@ -4,11 +4,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   type CreateLeadPayload,
+  type LeadHistory,
   type LeadListPage,
   type ListLeadsParams,
   type UpdateLeadPayload,
   createLead,
+  createLeadComment,
   deleteLead,
+  getLeadHistory,
   listLeads,
   updateLead,
 } from '../lib/leads-api'
@@ -52,6 +55,28 @@ export function useDeleteLead(organizationId: string | null) {
     mutationFn: (id: string) => deleteLead(organizationId as string, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads', organizationId] })
+    },
+  })
+}
+
+function leadHistoryQueryKey(organizationId: string | null, leadId: string) {
+  return ['leads', organizationId, leadId, 'history'] as const
+}
+
+export function useLeadHistoryQuery(organizationId: string | null, leadId: string) {
+  return useQuery<LeadHistory>({
+    queryKey: leadHistoryQueryKey(organizationId, leadId),
+    queryFn: () => getLeadHistory(organizationId as string, leadId),
+    enabled: Boolean(organizationId) && Boolean(leadId),
+  })
+}
+
+export function useCreateLeadComment(organizationId: string | null, leadId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (text: string) => createLeadComment(organizationId as string, leadId, text),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: leadHistoryQueryKey(organizationId, leadId) })
     },
   })
 }

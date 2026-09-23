@@ -15,3 +15,6 @@ export type { DbLead, NewDbLead } from './leads'
 
 export { leadAssignmentHistory } from './lead-assignment-history'
 export type { DbLeadAssignmentHistory, NewDbLeadAssignmentHistory } from './lead-assignment-history'
+
+export { leadComments } from './lead-comments'
+export type { DbLeadComment, NewDbLeadComment } from './lead-comments'

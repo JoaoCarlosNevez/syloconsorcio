@@ -1,15 +1,17 @@
 // Rotas de leads — primeiro módulo de negócio vertical do CRM.
 //
-// GET    /leads      — lista paginada e filtrada por DataScope (lead.read).
-//                      `outcome` (aberto/ganho/perdido) filtra por resultado;
-//                      "perdido" exige lead.manage_lost (Vendedor não tem).
-//                      `tags` (lista separada por vírgula) filtra por overlap (OR).
-// POST   /leads      — cria um lead na organização ativa (lead.create)
-// GET    /leads/:id  — detalhe de um lead dentro do escopo (lead.read)
-// PATCH  /leads/:id  — atualiza um lead (lead.update; reatribuir exige lead.assign).
-//                      `lost: true` marca como Perdido (some do board); `lost: false`
-//                      reabre e exige lead.manage_lost (Vendedor não tem).
-// DELETE /leads/:id  — remove um lead dentro do escopo (lead.delete)
+// GET    /leads              — lista paginada e filtrada por DataScope (lead.read).
+//                              `outcome` (aberto/ganho/perdido/todos) filtra por resultado;
+//                              "perdido"/"todos" exigem lead.manage_lost (Vendedor não tem).
+//                              `tags` (lista separada por vírgula) filtra por overlap (OR).
+// POST   /leads              — cria um lead na organização ativa (lead.create)
+// GET    /leads/:id          — detalhe de um lead dentro do escopo (lead.read)
+// PATCH  /leads/:id          — atualiza um lead (lead.update; reatribuir exige lead.assign).
+//                              `lost: true` marca como Perdido (some do board); `lost: false`
+//                              reabre e exige lead.manage_lost (Vendedor não tem).
+// DELETE /leads/:id          — remove um lead dentro do escopo (lead.delete)
+// GET    /leads/:id/history  — histórico de atribuição + comentários (lead.read)
+// POST   /leads/:id/comments — adiciona um comentário/anotação interna (lead.update)
 //
 // Todas as rotas rodam authMiddleware → tenantMiddleware → requirePermission,
 // nessa ordem. `organizationId` do lead nunca vem do corpo da requisição —
@@ -23,8 +25,10 @@ import type {
   IUserRepository,
 } from '@sylocrm/application'
 import {
+  CreateLeadCommentUseCase,
   CreateLeadUseCase,
   DeleteLeadUseCase,
+  GetLeadHistoryUseCase,
   GetLeadUseCase,
   ListLeadsUseCase,
   UpdateLeadUseCase,
@@ -79,10 +83,14 @@ const listQuerySchema = z.object({
   search: z.string().optional(),
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().optional(),
-  outcome: z.enum(['aberto', 'ganho', 'perdido']).optional(),
+  outcome: z.enum(['aberto', 'ganho', 'perdido', 'todos']).optional(),
   // Lista separada por vírgula (?tags=Quente,Frio) — mais simples de montar
   // no client e de parsear aqui do que depender do parser de query arrays.
   tags: z.string().optional(),
+})
+
+const createCommentSchema = z.object({
+  text: z.string().min(1),
 })
 
 function validationErrorResponse(fieldErrors: Record<string, string[] | undefined>) {
@@ -104,7 +112,15 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
 
   const listLeads = new ListLeadsUseCase(options.leadRepository, options.organizationRepository)
   const getLead = new GetLeadUseCase(options.leadRepository, options.organizationRepository)
+  const getLeadHistory = new GetLeadHistoryUseCase(
+    options.leadRepository,
+    options.organizationRepository,
+  )
   const createLead = new CreateLeadUseCase(options.leadRepository)
+  const createLeadComment = new CreateLeadCommentUseCase(
+    options.leadRepository,
+    options.organizationRepository,
+  )
   const updateLead = new UpdateLeadUseCase(options.leadRepository, options.organizationRepository)
   const deleteLead = new DeleteLeadUseCase(options.leadRepository, options.organizationRepository)
 
@@ -124,9 +140,10 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
       const context = request.authContext as NonNullable<typeof request.authContext>
 
       // Ver leads perdidos exige uma permission adicional — Vendedor não a
-      // possui (ver apps/api/src/auth/permissions.ts).
+      // possui (ver apps/api/src/auth/permissions.ts). 'todos' também inclui
+      // perdidos, então exige a mesma permission.
       if (
-        parsed.data.outcome === 'perdido' &&
+        (parsed.data.outcome === 'perdido' || parsed.data.outcome === 'todos') &&
         !context.currentMembership.permissions.includes(Permission.LEAD_MANAGE_LOST)
       ) {
         return reply.status(403).send({
@@ -166,8 +183,15 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
 
       const context = request.authContext as NonNullable<typeof request.authContext>
 
+      // Sem lead.assign (Vendedor), o lead sempre nasce atribuído a quem criou —
+      // ignora qualquer assignedUserId enviado pelo cliente. Só quem pode
+      // reatribuir pode escolher outro responsável (ou deixar sem atribuição).
+      const canAssign = context.currentMembership.permissions.includes(Permission.LEAD_ASSIGN)
+      const assignedUserId = canAssign ? parsed.data.assignedUserId : context.userId
+
       const lead = await createLead.execute({
         ...parsed.data,
+        assignedUserId,
         organizationId: context.currentMembership.organizationId,
       })
       return reply.status(201).send(lead)
@@ -195,6 +219,60 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
           .send({ error: 'Lead não encontrado.', code: 'LEAD_NOT_FOUND', status: 404 })
       }
       return lead
+    },
+  )
+
+  // ── GET /leads/:id/history ───────────────────────────────────────────────
+  fastify.get<{ Params: { id: string } }>(
+    '/leads/:id/history',
+    {
+      preHandler: [authMiddleware, tenantMiddleware, requirePermission(Permission.LEAD_READ)],
+    },
+    async (request, reply) => {
+      const context = request.authContext as NonNullable<typeof request.authContext>
+
+      const history = await getLeadHistory.execute({
+        id: request.params.id,
+        userId: context.userId,
+        membership: context.currentMembership,
+      })
+
+      if (!history) {
+        return reply
+          .status(404)
+          .send({ error: 'Lead não encontrado.', code: 'LEAD_NOT_FOUND', status: 404 })
+      }
+      return history
+    },
+  )
+
+  // ── POST /leads/:id/comments ──────────────────────────────────────────────
+  fastify.post<{ Params: { id: string } }>(
+    '/leads/:id/comments',
+    {
+      preHandler: [authMiddleware, tenantMiddleware, requirePermission(Permission.LEAD_UPDATE)],
+    },
+    async (request, reply) => {
+      const parsed = createCommentSchema.safeParse(request.body)
+      if (!parsed.success) {
+        return reply.status(400).send(validationErrorResponse(parsed.error.flatten().fieldErrors))
+      }
+
+      const context = request.authContext as NonNullable<typeof request.authContext>
+
+      const comment = await createLeadComment.execute({
+        leadId: request.params.id,
+        userId: context.userId,
+        membership: context.currentMembership,
+        text: parsed.data.text,
+      })
+
+      if (!comment) {
+        return reply
+          .status(404)
+          .send({ error: 'Lead não encontrado.', code: 'LEAD_NOT_FOUND', status: 404 })
+      }
+      return reply.status(201).send(comment)
     },
   )
 

@@ -41,6 +41,7 @@ import {
   formatBRL,
   groupLeadsByColumn,
   resolveAgent,
+  resolveCardOutcome,
 } from '../../lib/lead-adapters'
 import type { OutcomeFilter } from '../../lib/leads-api'
 import type { TeamMember } from '../../lib/team-api'
@@ -292,14 +293,14 @@ function findColumnOfCard(board: Record<string, CardData[]>, cardId: string): st
 interface CardViewProps {
   card: CardData
   members: TeamMember[]
-  outcome: OutcomeFilter
   isDragging?: boolean
 }
 
-function CardView({ card, members, outcome, isDragging }: CardViewProps) {
+function CardView({ card, members, isDragging }: CardViewProps) {
   const agent = resolveAgent(card.assignedUserId, members)
+  const cardOutcome = resolveCardOutcome(card)
   const outcomeClass =
-    outcome === 'ganho' ? styles.cardWon : outcome === 'perdido' ? styles.cardLost : ''
+    cardOutcome === 'ganho' ? styles.cardWon : cardOutcome === 'perdido' ? styles.cardLost : ''
   return (
     <div className={`${styles.card} ${outcomeClass} ${isDragging ? styles.cardDragging : ''}`}>
       <div className={styles.cardTop}>
@@ -344,12 +345,10 @@ function CardView({ card, members, outcome, isDragging }: CardViewProps) {
 function SortableCard({
   card,
   members,
-  outcome,
   onCardClick,
 }: {
   card: CardData
   members: TeamMember[]
-  outcome: OutcomeFilter
   onCardClick: (card: CardData) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -374,7 +373,7 @@ function SortableCard({
         if (!isDragging) onCardClick(card)
       }}
     >
-      <CardView card={card} members={members} outcome={outcome} />
+      <CardView card={card} members={members} />
     </div>
   )
 }
@@ -385,12 +384,11 @@ interface KanbanColumnProps {
   meta: ColumnMeta
   cards: CardData[]
   members: TeamMember[]
-  outcome: OutcomeFilter
   onCardClick: (card: CardData) => void
   isOver?: boolean
 }
 
-function KanbanColumn({ meta, cards, members, outcome, onCardClick, isOver }: KanbanColumnProps) {
+function KanbanColumn({ meta, cards, members, onCardClick, isOver }: KanbanColumnProps) {
   const cardIds = useMemo(() => cards.map((c) => c.id), [cards])
   const totalCents = useMemo(() => cards.reduce((sum, card) => sum + card.valueCents, 0), [cards])
   // Torna a própria coluna um alvo de drop — sem isto, uma coluna vazia não
@@ -420,13 +418,7 @@ function KanbanColumn({ meta, cards, members, outcome, onCardClick, isOver }: Ka
       <div ref={setDroppableRef} className={styles.cardList} data-scroll="column">
         <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
           {cards.map((card) => (
-            <SortableCard
-              key={card.id}
-              card={card}
-              members={members}
-              outcome={outcome}
-              onCardClick={onCardClick}
-            />
+            <SortableCard key={card.id} card={card} members={members} onCardClick={onCardClick} />
           ))}
         </SortableContext>
       </div>
@@ -439,11 +431,10 @@ function KanbanColumn({ meta, cards, members, outcome, onCardClick, isOver }: Ka
 interface ListViewProps {
   board: Record<string, CardData[]>
   members: TeamMember[]
-  outcome: OutcomeFilter
   onCardClick: (card: CardData) => void
 }
 
-function ListView({ board, members, outcome, onCardClick }: ListViewProps) {
+function ListView({ board, members, onCardClick }: ListViewProps) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
   const toggle = (colId: string) => setCollapsed((prev) => ({ ...prev, [colId]: !prev[colId] }))
@@ -518,10 +509,11 @@ function ListView({ board, members, outcome, onCardClick }: ListViewProps) {
                 {!isCollapsed &&
                   cards.map((card, i) => {
                     const agent = resolveAgent(card.assignedUserId, members)
+                    const cardOutcome = resolveCardOutcome(card)
                     const outcomeClass =
-                      outcome === 'ganho'
+                      cardOutcome === 'ganho'
                         ? styles.listRowWon
-                        : outcome === 'perdido'
+                        : cardOutcome === 'perdido'
                           ? styles.listRowLost
                           : ''
                     return (
@@ -601,6 +593,7 @@ const OUTCOME_LABEL: Record<OutcomeFilter, string> = {
   aberto: 'Em Aberto',
   ganho: 'Ganho',
   perdido: 'Perdido',
+  todos: 'Todos',
 }
 
 export function KanbanPage() {
@@ -755,6 +748,29 @@ export function KanbanPage() {
       // aqui só precisamos persistir o novo estágio se a coluna realmente mudou.
       if (originColId && originColId !== colId) {
         const stage = COLUMN_ID_TO_STAGE[colId]
+        // Ganhar um lead é sempre uma ação explícita (botão "Marcar como Ganho"
+        // na ficha do lead) — nunca implícita por soltar o card na última
+        // coluna. Desfaz o movimento visual e não persiste nada.
+        if (stage === 'VENDA') {
+          setBoard((prev) => {
+            const destCards = [...(prev[colId] ?? [])]
+            const activeIdx = destCards.findIndex((c) => c.id === active.id)
+            if (activeIdx === -1) return prev
+            const moved = destCards.splice(activeIdx, 1)[0]
+            if (!moved) return prev
+            return {
+              ...prev,
+              [colId]: destCards,
+              [originColId]: [...(prev[originColId] ?? []), moved],
+            }
+          })
+          toast({
+            type: 'error',
+            title: 'Não é possível arrastar para Venda Concluída',
+            description: 'Abra o lead e use "Marcar como Ganho" (disponível a partir de Fechado).',
+          })
+          return
+        }
         if (stage) {
           updateLead.mutate(
             { id: String(active.id), payload: { stage } },
@@ -796,11 +812,7 @@ export function KanbanPage() {
   return (
     <AppLayout>
       {freshSelectedCard && (
-        <LeadModal
-          card={freshSelectedCard}
-          outcome={outcomeFilter}
-          onClose={() => setSelectedCard(null)}
-        />
+        <LeadModal card={freshSelectedCard} onClose={() => setSelectedCard(null)} />
       )}
       <div className={styles.page}>
         {/* ── Header ──────────────────────────────────────────────────── */}
@@ -842,8 +854,9 @@ export function KanbanPage() {
                   {OUTCOME_LABEL[outcomeFilter]} <ChevronDownIcon />
                 </span>
               }
-              items={(['aberto', 'ganho', 'perdido'] as const)
-                .filter((outcome) => outcome !== 'perdido' || canViewLost)
+              items={(['aberto', 'ganho', 'perdido', 'todos'] as const)
+                // "Perdido" e "Todos" incluem leads perdidos — mesma permission das duas.
+                .filter((outcome) => (outcome !== 'perdido' && outcome !== 'todos') || canViewLost)
                 .map((outcome) => ({
                   key: outcome,
                   label: OUTCOME_LABEL[outcome],
@@ -1010,12 +1023,7 @@ export function KanbanPage() {
 
         {/* ── Lista ────────────────────────────────────────────────────── */}
         {!isLoading && totalLeads > 0 && viewMode === 'list' && (
-          <ListView
-            board={board}
-            members={members}
-            outcome={outcomeFilter}
-            onCardClick={setSelectedCard}
-          />
+          <ListView board={board} members={members} onCardClick={setSelectedCard} />
         )}
 
         {/* ── Board ────────────────────────────────────────────────────── */}
@@ -1035,7 +1043,6 @@ export function KanbanPage() {
                     meta={meta}
                     cards={board[meta.id] ?? []}
                     members={members}
-                    outcome={outcomeFilter}
                     onCardClick={setSelectedCard}
                     isOver={overColId === meta.id}
                   />
@@ -1045,9 +1052,7 @@ export function KanbanPage() {
 
             {/* Card fantasma renderizado fora do DOM do board — sem reflow */}
             <DragOverlay dropAnimation={{ duration: 180, easing: 'ease' }}>
-              {activeCard ? (
-                <CardView card={activeCard} members={members} outcome={outcomeFilter} isDragging />
-              ) : null}
+              {activeCard ? <CardView card={activeCard} members={members} isDragging /> : null}
             </DragOverlay>
           </DndContext>
         )}

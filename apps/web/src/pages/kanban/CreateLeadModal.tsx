@@ -5,6 +5,7 @@
 import { Button, Input, Modal, useToast } from '@sylocrm/ui'
 import { type FormEvent, useState } from 'react'
 import { useCreateLead } from '../../hooks/useLeads'
+import { useActiveOrganization } from '../../hooks/useOrganization'
 import { useOrganizationSettingsQuery } from '../../hooks/useOrganizationSettings'
 import { useTeamMembersQuery } from '../../hooks/useTeam'
 import { formatPhoneBR, parseValueToCents } from '../../lib/lead-adapters'
@@ -31,6 +32,11 @@ export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadMod
   const [form, setForm] = useState(initialForm)
   const [formError, setFormError] = useState<string | null>(null)
   const createLead = useCreateLead(organizationId)
+  const { membership } = useActiveOrganization()
+  // Sem lead.assign (Vendedor), o lead sempre nasce atribuído a quem cria —
+  // o backend força isso independente do que for enviado (ver leads.route.ts),
+  // então nem oferecemos a escolha aqui.
+  const canAssign = membership?.permissions.includes('lead.assign') ?? false
   const { data: teamData } = useTeamMembersQuery(organizationId)
   const members = teamData?.members ?? []
   const { data: settingsData } = useOrganizationSettingsQuery(organizationId)
@@ -168,22 +174,26 @@ export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadMod
             lead.
           </span>
         )}
-        <label htmlFor="lead-assignee" className={styles.label}>
-          Atribuir a
-        </label>
-        <select
-          id="lead-assignee"
-          className={styles.select}
-          value={form.assignedUserId}
-          onChange={(e) => updateField('assignedUserId', e.target.value)}
-        >
-          <option value="">Não atribuído</option>
-          {members.map((member) => (
-            <option key={member.userId} value={member.userId}>
-              {member.name ?? member.email}
-            </option>
-          ))}
-        </select>
+        {canAssign && (
+          <>
+            <label htmlFor="lead-assignee" className={styles.label}>
+              Atribuir a
+            </label>
+            <select
+              id="lead-assignee"
+              className={styles.select}
+              value={form.assignedUserId}
+              onChange={(e) => updateField('assignedUserId', e.target.value)}
+            >
+              <option value="">Não atribuído</option>
+              {members.map((member) => (
+                <option key={member.userId} value={member.userId}>
+                  {member.name ?? member.email}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
         <label htmlFor="lead-notes" className={styles.label}>
           Observações
         </label>

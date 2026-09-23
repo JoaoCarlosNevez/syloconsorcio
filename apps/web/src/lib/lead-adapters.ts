@@ -3,7 +3,7 @@
 // nesses componentes ao trocar a fonte de dados de mock para API real.
 
 import type { CardData } from '../data/kanban-mock'
-import type { Lead, LeadStage } from './leads-api'
+import type { Lead, LeadStage, OutcomeFilter } from './leads-api'
 import type { TeamMember } from './team-api'
 
 export const STAGE_TO_COLUMN_ID: Record<LeadStage, string> = {
@@ -36,6 +36,14 @@ const DEFAULT_SOURCE_COLOR = { bg: '#475569', text: '#fff' }
 
 function getSourceColors(source: string): { bg: string; text: string } {
   return SOURCE_COLORS[source.toUpperCase()] ?? DEFAULT_SOURCE_COLOR
+}
+
+/** Status real do lead (independente do filtro de outcome ativo na página —
+ * necessário porque o filtro "todos" mistura os 3 buckets no mesmo board). */
+export function resolveCardOutcome(card: Pick<CardData, 'stage' | 'lostAt'>): OutcomeFilter {
+  if (card.lostAt) return 'perdido'
+  if (card.stage === 'VENDA') return 'ganho'
+  return 'aberto'
 }
 
 export function formatBRL(cents: number): string {
@@ -99,8 +107,10 @@ export function toCardData(lead: Lead): CardData {
     cota: formatCota(lead.valueCents, lead.segment, lead.quotaCount),
     valueCents: lead.valueCents,
     date: formatDate(lead.createdAt),
+    createdAt: lead.createdAt,
     assignedUserId: lead.assignedUserId,
     stage: lead.stage,
+    lostAt: lead.lostAt,
     tags: lead.tags,
     notes: lead.notes,
     source: lead.source,

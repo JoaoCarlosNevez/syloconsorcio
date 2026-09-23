@@ -17,8 +17,12 @@ export interface CardData {
   cota: string
   valueCents: number
   date: string
+  /** ISO 8601 — usado no feed de histórico (evento "Lead criado"). */
+  createdAt: string
   assignedUserId: string | null
   stage: LeadStage
+  /** Não-null quando o lead está marcado como Perdido — ver resolveCardOutcome. */
+  lostAt: string | null
   tags: string[]
   notes: string | null
   source: string

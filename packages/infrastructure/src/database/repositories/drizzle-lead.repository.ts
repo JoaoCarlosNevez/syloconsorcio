@@ -7,11 +7,14 @@
 
 import type {
   AssignmentChange,
+  AssignmentHistoryRecord,
   ILeadRepository,
+  LeadCommentRecord,
   LeadListFilter,
   LeadListPage,
   LeadRecord,
   LeadScopeFilter,
+  NewLeadCommentInput,
   NewLeadInput,
   UpdateLeadInput,
 } from '@sylocrm/application'
@@ -29,7 +32,7 @@ import {
   sql,
 } from 'drizzle-orm'
 import type { Database } from '../client'
-import { type DbLead, leadAssignmentHistory, leads } from '../schema'
+import { type DbLead, leadAssignmentHistory, leadComments, leads } from '../schema'
 
 const LEAD_COLUMNS = {
   id: leads.id,
@@ -49,6 +52,23 @@ const LEAD_COLUMNS = {
   notes: leads.notes,
   createdAt: leads.createdAt,
   updatedAt: leads.updatedAt,
+} as const
+
+const ASSIGNMENT_HISTORY_COLUMNS = {
+  id: leadAssignmentHistory.id,
+  leadId: leadAssignmentHistory.leadId,
+  fromUserId: leadAssignmentHistory.fromUserId,
+  toUserId: leadAssignmentHistory.toUserId,
+  changedByUserId: leadAssignmentHistory.changedByUserId,
+  changedAt: leadAssignmentHistory.changedAt,
+} as const
+
+const COMMENT_COLUMNS = {
+  id: leadComments.id,
+  leadId: leadComments.leadId,
+  userId: leadComments.userId,
+  text: leadComments.text,
+  createdAt: leadComments.createdAt,
 } as const
 
 function toLeadRecord(row: DbLead): LeadRecord {
@@ -72,13 +92,14 @@ export class DrizzleLeadRepository implements ILeadRepository {
     }
 
     // outcome particiona o funil em 3 buckets mutuamente exclusivos — aberto é
-    // o padrão. findById/update/delete não filtram por outcome (alcançam um
+    // o padrão. 'todos' não filtra por outcome (mostra aberto+ganho+perdido
+    // juntos). findById/update/delete não filtram por outcome (alcançam um
     // lead perdido normalmente, pra permitir reabrir via lost: false).
     const conditions = [...buildScopeConditions(filter)]
     const outcome = filter.outcome ?? 'aberto'
     if (outcome === 'perdido') {
       conditions.push(isNotNull(leads.lostAt))
-    } else {
+    } else if (outcome !== 'todos') {
       conditions.push(isNull(leads.lostAt))
       conditions.push(outcome === 'ganho' ? eq(leads.stage, 'VENDA') : ne(leads.stage, 'VENDA'))
     }
@@ -193,5 +214,32 @@ export class DrizzleLeadRepository implements ILeadRepository {
       toUserId: change.toUserId,
       changedByUserId: change.changedByUserId,
     })
+  }
+
+  async listAssignmentHistory(leadId: string): Promise<AssignmentHistoryRecord[]> {
+    return this.db
+      .select(ASSIGNMENT_HISTORY_COLUMNS)
+      .from(leadAssignmentHistory)
+      .where(eq(leadAssignmentHistory.leadId, leadId))
+      .orderBy(desc(leadAssignmentHistory.changedAt))
+  }
+
+  async listComments(leadId: string): Promise<LeadCommentRecord[]> {
+    return this.db
+      .select(COMMENT_COLUMNS)
+      .from(leadComments)
+      .where(eq(leadComments.leadId, leadId))
+      .orderBy(desc(leadComments.createdAt))
+  }
+
+  async createComment(input: NewLeadCommentInput): Promise<LeadCommentRecord> {
+    const rows = await this.db
+      .insert(leadComments)
+      .values({ leadId: input.leadId, userId: input.userId, text: input.text })
+      .returning(COMMENT_COLUMNS)
+
+    const row = rows[0]
+    if (!row) throw new Error('Failed to create comment: no row returned')
+    return row
   }
 }

@@ -85,6 +85,11 @@ function createNoOpLeadRepository(): ILeadRepository {
     update: async () => null,
     delete: async () => false,
     recordAssignmentChange: async () => {},
+    listAssignmentHistory: async () => [],
+    listComments: async () => [],
+    createComment: async () => {
+      throw new Error('Database not configured — cannot create comments.')
+    },
   }
 }
 

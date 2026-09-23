@@ -14,6 +14,7 @@ import type {
   ILeadRepository,
   IMembershipRepository,
   IOrganizationRepository,
+  LeadCommentRecord,
   LeadRecord,
   UserMembership,
 } from '@sylocrm/application'
@@ -78,6 +79,14 @@ const SAMPLE_LEAD: LeadRecord = {
   updatedAt: new Date('2026-01-01T00:00:00Z'),
 }
 
+const SAMPLE_COMMENT: LeadCommentRecord = {
+  id: 'comment-01',
+  leadId: 'lead-01',
+  userId: IDENTITY.id,
+  text: 'Cliente confirmou interesse.',
+  createdAt: new Date('2026-01-02T00:00:00Z'),
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function buildAuthProvider(): IAuthProvider {
@@ -115,6 +124,9 @@ function buildLeadRepository(overrides: Partial<ILeadRepository> = {}): ILeadRep
     update: vi.fn().mockResolvedValue(SAMPLE_LEAD),
     delete: vi.fn().mockResolvedValue(true),
     recordAssignmentChange: vi.fn(),
+    listAssignmentHistory: vi.fn().mockResolvedValue([]),
+    listComments: vi.fn().mockResolvedValue([]),
+    createComment: vi.fn().mockResolvedValue(SAMPLE_COMMENT),
     ...overrides,
   }
 }
@@ -294,6 +306,40 @@ describe('POST /leads', () => {
       expect.objectContaining({ organizationId: ORG_ID, name: 'Nova Lead' }),
     )
   })
+
+  it('forces assignedUserId to the creator for a SELLER (missing lead.assign), ignoring any value sent', async () => {
+    const leadRepository = buildLeadRepository()
+    const app = buildTestApp({ membership: SELLER_MEMBERSHIP, leadRepository })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/leads',
+      headers: AUTH_HEADERS,
+      payload: { ...validPayload, assignedUserId: OTHER_USER_ID },
+    })
+
+    expect(response.statusCode).toBe(201)
+    expect(leadRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ assignedUserId: IDENTITY.id }),
+    )
+  })
+
+  it('allows a MANAGER (has lead.assign) to assign the lead to someone else', async () => {
+    const leadRepository = buildLeadRepository()
+    const app = buildTestApp({ membership: MANAGER_MEMBERSHIP, leadRepository })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/leads',
+      headers: AUTH_HEADERS,
+      payload: { ...validPayload, assignedUserId: OTHER_USER_ID },
+    })
+
+    expect(response.statusCode).toBe(201)
+    expect(leadRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ assignedUserId: OTHER_USER_ID }),
+    )
+  })
 })
 
 // ── GET /leads/:id ────────────────────────────────────────────────────────────
@@ -323,6 +369,103 @@ describe('GET /leads/:id', () => {
 
     expect(response.statusCode).toBe(200)
     expect(response.json<LeadRecord>().id).toBe('lead-01')
+  })
+})
+
+// ── GET /leads/:id/history ──────────────────────────────────────────────────────
+
+describe('GET /leads/:id/history', () => {
+  it('returns 404 when the lead does not exist or is out of scope', async () => {
+    const leadRepository = buildLeadRepository({ findById: vi.fn().mockResolvedValue(null) })
+    const app = buildTestApp({ leadRepository })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/leads/does-not-exist/history',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(404)
+  })
+
+  it('returns combined assignment history and comments for a lead in scope', async () => {
+    const leadRepository = buildLeadRepository({
+      listAssignmentHistory: vi.fn().mockResolvedValue([
+        {
+          id: 'hist-01',
+          leadId: 'lead-01',
+          fromUserId: null,
+          toUserId: OTHER_USER_ID,
+          changedByUserId: IDENTITY.id,
+          changedAt: new Date('2026-01-03T00:00:00Z'),
+        },
+      ]),
+      listComments: vi.fn().mockResolvedValue([SAMPLE_COMMENT]),
+    })
+    const app = buildTestApp({ leadRepository })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/leads/lead-01/history',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    const body = response.json<{ assignmentHistory: unknown[]; comments: unknown[] }>()
+    expect(body.assignmentHistory).toHaveLength(1)
+    expect(body.comments).toHaveLength(1)
+  })
+})
+
+// ── POST /leads/:id/comments ─────────────────────────────────────────────────────
+
+describe('POST /leads/:id/comments', () => {
+  it('returns 400 when text is empty', async () => {
+    const app = buildTestApp({})
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/leads/lead-01/comments',
+      headers: AUTH_HEADERS,
+      payload: { text: '' },
+    })
+
+    expect(response.statusCode).toBe(400)
+  })
+
+  it('returns 404 when the lead does not exist or is out of scope', async () => {
+    const leadRepository = buildLeadRepository({ findById: vi.fn().mockResolvedValue(null) })
+    const app = buildTestApp({ leadRepository })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/leads/does-not-exist/comments',
+      headers: AUTH_HEADERS,
+      payload: { text: 'Cliente confirmou interesse.' },
+    })
+
+    expect(response.statusCode).toBe(404)
+  })
+
+  it('creates the comment authored by the caller and returns 201', async () => {
+    const leadRepository = buildLeadRepository()
+    const app = buildTestApp({ leadRepository })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/leads/lead-01/comments',
+      headers: AUTH_HEADERS,
+      payload: { text: 'Cliente confirmou interesse.' },
+    })
+
+    expect(response.statusCode).toBe(201)
+    expect(leadRepository.createComment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        leadId: 'lead-01',
+        userId: IDENTITY.id,
+        text: 'Cliente confirmou interesse.',
+      }),
+    )
   })
 })
 

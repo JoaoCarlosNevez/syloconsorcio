@@ -6,8 +6,10 @@ import { apiClient } from './api-client'
 export type LeadStage = 'LEAD' | 'ATENDIMENTO' | 'SIMULACAO' | 'PROPOSTA' | 'FECHADO' | 'VENDA'
 
 /** aberto: pipeline ativo (nem ganho, nem perdido) — padrão. ganho: stage VENDA.
- * perdido: lostAt setado — exige a permission lead.manage_lost (Vendedor não tem). */
-export type OutcomeFilter = 'aberto' | 'ganho' | 'perdido'
+ * perdido: lostAt setado — exige a permission lead.manage_lost (Vendedor não tem).
+ * todos: sem filtro (aberto+ganho+perdido juntos) — exige lead.manage_lost também,
+ * já que inclui perdidos. */
+export type OutcomeFilter = 'aberto' | 'ganho' | 'perdido' | 'todos'
 
 export interface Lead {
   id: string
@@ -107,4 +109,37 @@ export function updateLead(
 
 export function deleteLead(organizationId: string, id: string): Promise<void> {
   return apiClient.delete<void>(`/leads/${id}`, { organizationId })
+}
+
+export interface AssignmentHistoryEntry {
+  id: string
+  fromUserId: string | null
+  toUserId: string | null
+  changedByUserId: string
+  changedAt: string
+}
+
+export interface LeadComment {
+  id: string
+  leadId: string
+  userId: string
+  text: string
+  createdAt: string
+}
+
+export interface LeadHistory {
+  assignmentHistory: AssignmentHistoryEntry[]
+  comments: LeadComment[]
+}
+
+export function getLeadHistory(organizationId: string, leadId: string): Promise<LeadHistory> {
+  return apiClient.get<LeadHistory>(`/leads/${leadId}/history`, { organizationId })
+}
+
+export function createLeadComment(
+  organizationId: string,
+  leadId: string,
+  text: string,
+): Promise<LeadComment> {
+  return apiClient.post<LeadComment>(`/leads/${leadId}/comments`, { text }, { organizationId })
 }
