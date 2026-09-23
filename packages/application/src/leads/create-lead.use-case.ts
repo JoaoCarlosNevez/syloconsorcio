@@ -16,6 +16,7 @@ export interface CreateLeadInput {
   valueCents: number
   quotaCount?: number
   source: string
+  notes?: string | null
 }
 
 export class CreateLeadUseCase implements UseCase<CreateLeadInput, LeadRecord> {

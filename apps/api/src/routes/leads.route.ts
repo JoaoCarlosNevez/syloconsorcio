@@ -56,6 +56,7 @@ const createLeadSchema = z.object({
   quotaCount: z.number().int().positive().optional(),
   source: z.string().min(1),
   assignedUserId: z.string().uuid().nullable().optional(),
+  notes: z.string().nullable().optional(),
 })
 
 const updateLeadSchema = z.object({
@@ -70,6 +71,7 @@ const updateLeadSchema = z.object({
   assignedUserId: z.string().uuid().nullable().optional(),
   lost: z.boolean().optional(),
   tags: z.array(z.string().min(1)).optional(),
+  notes: z.string().nullable().optional(),
 })
 
 const listQuerySchema = z.object({

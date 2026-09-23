@@ -17,6 +17,7 @@ export interface CardData {
   assignedUserId: string | null
   stage: LeadStage
   tags: string[]
+  notes: string | null
   source: string
   sourceBg: string
   sourceText: string

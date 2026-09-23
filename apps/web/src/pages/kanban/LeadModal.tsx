@@ -1445,14 +1445,10 @@ export function LeadModal({ card, outcome, onClose, isLoading = false }: LeadMod
 
                     {/* Observações */}
                     <div className={styles.section}>
-                      <span className={styles.sectionLabel}>
-                        Observações de Qualificação (Descoberta)
-                      </span>
+                      <span className={styles.sectionLabel}>Observações</span>
                       <div className={styles.obsBox}>
                         <p className={styles.obsText}>
-                          Renda familiar mensal: 3500; sua intenção de compra é em itapevi? sim;
-                          Pretende comprar: próximos_4_meses. Lance embutido estimado em 25% com
-                          recursos de FGTS previstos para compor oferta no consórcio imobiliário.
+                          {card.notes?.trim() || 'Nenhuma observação registrada.'}
                         </p>
                       </div>
                     </div>

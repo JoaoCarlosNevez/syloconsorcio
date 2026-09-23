@@ -29,8 +29,8 @@ import {
 import { AuthorizationError, ConflictError, Role } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
-import { compressImage } from '../lib/image-processing'
 import { validateIconUpload } from '../lib/icon-validation'
+import { compressImage } from '../lib/image-processing'
 import { createAuthMiddleware } from '../middleware/auth.middleware'
 import { requirePlatformAdmin } from '../middleware/platform-admin.middleware'
 

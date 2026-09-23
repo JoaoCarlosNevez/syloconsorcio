@@ -33,6 +33,7 @@ export interface LeadRecord {
   lostAt: Date | null
   /** Tags livres (ex: "Quente", "Frio") — um lead pode ter várias ao mesmo tempo. */
   tags: string[]
+  notes: string | null
   createdAt: Date
   updatedAt: Date
 }
@@ -48,6 +49,7 @@ export interface NewLeadInput {
   source: string
   assignedUserId?: string | null
   tags?: string[]
+  notes?: string | null
 }
 
 export interface UpdateLeadInput {
@@ -63,6 +65,7 @@ export interface UpdateLeadInput {
   /** true marca como Perdido (lostAt = agora); false reabre (lostAt = null). */
   lost?: boolean
   tags?: string[]
+  notes?: string | null
 }
 
 export interface LeadScopeFilter {

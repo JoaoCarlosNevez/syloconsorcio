@@ -46,6 +46,7 @@ const LEAD_COLUMNS = {
   stageChangedAt: leads.stageChangedAt,
   lostAt: leads.lostAt,
   tags: leads.tags,
+  notes: leads.notes,
   createdAt: leads.createdAt,
   updatedAt: leads.updatedAt,
 } as const
@@ -141,6 +142,7 @@ export class DrizzleLeadRepository implements ILeadRepository {
         source: input.source,
         assignedUserId: input.assignedUserId ?? null,
         tags: input.tags ?? [],
+        notes: input.notes ?? null,
       })
       .returning(LEAD_COLUMNS)
 

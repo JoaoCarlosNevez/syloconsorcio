@@ -24,6 +24,7 @@ const initialForm = {
   quotaCount: '1',
   source: '',
   assignedUserId: '',
+  notes: '',
 }
 
 function parseValueToCents(value: string): number | null {
@@ -79,6 +80,7 @@ export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadMod
         quotaCount: Math.max(1, Number.parseInt(form.quotaCount, 10) || 1),
         source: form.source,
         assignedUserId: form.assignedUserId || null,
+        notes: form.notes.trim() || null,
       })
       toast({ type: 'success', title: 'Lead criado com sucesso' })
       handleClose()
@@ -190,6 +192,17 @@ export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadMod
             </option>
           ))}
         </select>
+        <label htmlFor="lead-notes" className={styles.label}>
+          Observações
+        </label>
+        <textarea
+          id="lead-notes"
+          className={styles.textarea}
+          placeholder="Anote informações relevantes sobre o lead…"
+          rows={4}
+          value={form.notes}
+          onChange={(e) => updateField('notes', e.target.value)}
+        />
         {formError && (
           <span role="alert" className={styles.errorText}>
             {formError}

@@ -36,6 +36,29 @@
   box-shadow: var(--focus-ring);
 }
 
+.textarea {
+  display: block;
+  width: 100%;
+  padding: 0.875rem 1.0625rem;
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+  transition: border-color var(--duration-normal) var(--easing-default), box-shadow
+    var(--duration-normal) var(--easing-default);
+  outline: none;
+  resize: vertical;
+}
+
+.textarea:focus {
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
+}
+
 .hint {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);

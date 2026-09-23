@@ -91,6 +91,7 @@ export function toCardData(lead: Lead): CardData {
     assignedUserId: lead.assignedUserId,
     stage: lead.stage,
     tags: lead.tags,
+    notes: lead.notes,
     source: lead.source,
     sourceBg: colors.bg,
     sourceText: colors.text,

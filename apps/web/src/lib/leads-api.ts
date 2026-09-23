@@ -24,6 +24,7 @@ export interface Lead {
   stageChangedAt: string
   lostAt: string | null
   tags: string[]
+  notes: string | null
   createdAt: string
   updatedAt: string
 }
@@ -54,6 +55,7 @@ export interface CreateLeadPayload {
   quotaCount?: number
   source: string
   assignedUserId?: string | null
+  notes?: string | null
 }
 
 export interface UpdateLeadPayload {
@@ -69,6 +71,7 @@ export interface UpdateLeadPayload {
   /** true marca como Perdido; false reabre um lead perdido. */
   lost?: boolean
   tags?: string[]
+  notes?: string | null
 }
 
 function toQueryString(params: ListLeadsParams): string {

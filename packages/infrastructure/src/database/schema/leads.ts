@@ -41,6 +41,7 @@ export const leads = pgTable('leads', {
   // tempo, diferente de segment/source. Vêm de organizations.leadTags, mas
   // não são validadas contra essa lista no banco (só sugeridas na UI).
   tags: text('tags').array().notNull().default([]),
+  notes: text('notes'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })
