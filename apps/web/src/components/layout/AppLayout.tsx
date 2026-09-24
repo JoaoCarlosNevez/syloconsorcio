@@ -214,7 +214,9 @@ const TIER_LABELS: Record<Tier, string> = {
   diamante: 'Diamante',
 }
 
-// Paleta de cores por tier injetada como CSS custom properties no sidebar
+// Paleta de cores por tier injetada como CSS custom properties no sidebar.
+// O menu (--nav-*) usa a cor secundária White Label quando a organização
+// ativa tem uma; senão, a do tier.
 const TIER_PALETTE: Record<Tier, { accent: string; subtle: string; muted: string }> = {
   turmalina: { accent: '#00a6cc', subtle: 'rgba(0,166,204,0.10)', muted: 'rgba(0,166,204,0.06)' },
   rubi: { accent: '#e03135', subtle: 'rgba(224,49,53,0.10)', muted: 'rgba(224,49,53,0.06)' },
@@ -305,6 +307,19 @@ export function AppLayout({ children }: AppLayoutProps) {
             '--tier-accent': palette.accent,
             '--tier-subtle': palette.subtle,
             '--tier-muted': palette.muted,
+            ...(brandColor
+              ? {
+                  '--nav-accent': 'var(--color-accent)',
+                  '--nav-text': 'var(--color-accent-text)',
+                  '--nav-subtle': 'color-mix(in srgb, var(--color-accent) 12%, transparent)',
+                  '--nav-muted': 'color-mix(in srgb, var(--color-accent) 6%, transparent)',
+                }
+              : {
+                  '--nav-accent': palette.accent,
+                  '--nav-text': palette.accent,
+                  '--nav-subtle': palette.subtle,
+                  '--nav-muted': palette.muted,
+                }),
           } as React.CSSProperties
         }
       >

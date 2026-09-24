@@ -34,4 +34,11 @@ describe('deriveAccentTokens', () => {
     expect(tokens?.['--color-accent-gradient-to']).toBe('#ffa705')
     expect(tokens?.['--color-accent-gradient-from']).toBe('#fdedb4')
   })
+
+  it('keeps the accent text readable on white, darkening light colors', () => {
+    expect(deriveAccentTokens('#005ecc')?.['--color-accent-text']).toBe('#005ecc')
+    const yellowText = deriveAccentTokens('#fde047')?.['--color-accent-text']
+    expect(yellowText).toMatch(HEX)
+    expect(yellowText).not.toBe('#fde047')
+  })
 })

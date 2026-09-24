@@ -104,6 +104,17 @@ function deriveGradient(rgb: Rgb, hex: string): Record<string, string> {
 const WHITE: Rgb = [255, 255, 255]
 const BLACK: Rgb = [0, 0, 0]
 
+/** A cor (ou ela escurecida) com contraste ≥ 4.5 sobre branco — pra texto
+ * na cor da marca, como o item ativo do menu lateral. */
+function readableOnWhite(rgb: Rgb, hex: string): string {
+  for (let amount = 0; amount <= 1; amount += 0.05) {
+    const candidate = amount === 0 ? hex : mix(rgb, BLACK, amount)
+    const candidateRgb = hexToRgb(candidate) as Rgb
+    if (1.05 / (luminance(candidateRgb) + 0.05) >= 4.5) return candidate
+  }
+  return DARK_TEXT
+}
+
 /** Tokens de destaque derivados da cor; null se o hex for inválido. */
 export function deriveAccentTokens(hex: string): Record<string, string> | null {
   const rgb = hexToRgb(hex)
@@ -117,6 +128,7 @@ export function deriveAccentTokens(hex: string): Record<string, string> | null {
     '--color-accent-link': mix(rgb, BLACK, 0.15),
     '--color-accent-badge-text': mix(rgb, BLACK, 0.3),
     '--color-accent-shadow': `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.25)`,
+    '--color-accent-text': readableOnWhite(rgb, hex),
     ...deriveGradient(rgb, hex),
   }
 }

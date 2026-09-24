@@ -157,13 +157,13 @@
 }
 
 .navItem:hover {
-  background: var(--tier-muted, var(--color-bg-subtle));
+  background: var(--nav-muted, var(--color-bg-subtle));
   color: var(--color-text-primary);
 }
 
 .navItem.active {
-  background: var(--tier-subtle, var(--color-bg-subtle));
-  color: var(--tier-accent, var(--color-text-primary));
+  background: var(--nav-subtle, var(--color-bg-subtle));
+  color: var(--nav-text, var(--color-text-primary));
   font-weight: var(--font-weight-semibold);
 }
 
@@ -177,7 +177,7 @@
   width: 3px;
   height: 60%;
   border-radius: 0 3px 3px 0;
-  background: var(--tier-accent, var(--color-accent));
+  background: var(--nav-accent, var(--color-accent));
 }
 
 /* Sara IA item */
