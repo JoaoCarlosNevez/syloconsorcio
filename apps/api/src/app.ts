@@ -11,6 +11,8 @@ import cors from '@fastify/cors'
 import multipart from '@fastify/multipart'
 import type {
   IAuthProvider,
+  IFunnelRepository,
+  ILeadProposalRepository,
   ILeadRepository,
   IMembershipRepository,
   IOrganizationRepository,
@@ -20,6 +22,7 @@ import type {
 import Fastify from 'fastify'
 import { env } from './config/env'
 import { authRoute } from './routes/auth.route'
+import { funnelsRoute } from './routes/funnels.route'
 import { healthRoute } from './routes/health.route'
 import { leadsRoute } from './routes/leads.route'
 import { organizationSettingsRoute } from './routes/organization-settings.route'
@@ -33,6 +36,8 @@ export interface BuildAppDeps {
   organizationRepository: IOrganizationRepository
   userRepository: IUserRepository
   storageProvider: IStorageProvider
+  funnelRepository: IFunnelRepository
+  leadProposalRepository: ILeadProposalRepository
 }
 
 /** No-op auth provider used when Supabase env vars are not configured. */
@@ -90,6 +95,7 @@ function createNoOpLeadRepository(): ILeadRepository {
     createComment: async () => {
       throw new Error('Database not configured — cannot create comments.')
     },
+    findByPhone: async () => null,
   }
 }
 
@@ -128,6 +134,31 @@ function createNoOpStorageProvider(): IStorageProvider {
   }
 }
 
+/** No-op funnel repository used when database is not configured. */
+function createNoOpFunnelRepository(): IFunnelRepository {
+  return {
+    listByOrganization: async () => [],
+    findById: async () => null,
+    create: async () => {
+      throw new Error('Database not configured — cannot create funnels.')
+    },
+    update: async () => null,
+    delete: async () => false,
+    countLeadsByStage: async () => 0,
+    countLeadsByFunnel: async () => 0,
+  }
+}
+
+/** No-op lead proposal repository used when database is not configured. */
+function createNoOpLeadProposalRepository(): ILeadProposalRepository {
+  return {
+    listByLead: async () => [],
+    create: async () => {
+      throw new Error('Database not configured — cannot create lead proposals.')
+    },
+  }
+}
+
 export function buildApp(deps?: Partial<BuildAppDeps>) {
   // Use provided deps or fall back to no-op adapters.
   // Real adapters are created in main.ts (composition root) from env vars.
@@ -138,6 +169,8 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     organizationRepository: deps?.organizationRepository ?? createNoOpOrganizationRepository(),
     userRepository: deps?.userRepository ?? createNoOpUserRepository(),
     storageProvider: deps?.storageProvider ?? createNoOpStorageProvider(),
+    funnelRepository: deps?.funnelRepository ?? createNoOpFunnelRepository(),
+    leadProposalRepository: deps?.leadProposalRepository ?? createNoOpLeadProposalRepository(),
   }
 
   const app = Fastify({
@@ -180,6 +213,16 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     leadRepository: resolvedDeps.leadRepository,
     organizationRepository: resolvedDeps.organizationRepository,
     userRepository: resolvedDeps.userRepository,
+    funnelRepository: resolvedDeps.funnelRepository,
+    leadProposalRepository: resolvedDeps.leadProposalRepository,
+  })
+
+  app.register(funnelsRoute, {
+    authProvider: resolvedDeps.authProvider,
+    membershipRepository: resolvedDeps.membershipRepository,
+    organizationRepository: resolvedDeps.organizationRepository,
+    userRepository: resolvedDeps.userRepository,
+    funnelRepository: resolvedDeps.funnelRepository,
   })
 
   app.register(organizationsRoute, {

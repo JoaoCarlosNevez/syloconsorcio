@@ -12,6 +12,15 @@
 // DELETE /leads/:id          — remove um lead dentro do escopo (lead.delete)
 // GET    /leads/:id/history  — histórico de atribuição + comentários (lead.read)
 // POST   /leads/:id/comments — adiciona um comentário/anotação interna (lead.update)
+// POST   /leads/:id/duplicate — cria uma cópia do lead em outro funil ("passar
+//                              o bastão pra outro setor" — lead.create). Ver
+//                              também o gatilho automático ao marcar Ganho
+//                              (funnels.duplicateToFunnelId).
+// GET    /leads/:id/proposals  — propostas/simulações de crédito do lead (lead.read)
+// POST   /leads/:id/proposals  — registra uma proposta aprovada; entrada e
+//                              prazo são por-proposta (lead.update) — os dados
+//                              de qualificação do cliente ficam no próprio
+//                              lead (profissão, renda, estado civil, CPF).
 //
 // Todas as rotas rodam authMiddleware → tenantMiddleware → requirePermission,
 // nessa ordem. `organizationId` do lead nunca vem do corpo da requisição —
@@ -19,6 +28,8 @@
 
 import type {
   IAuthProvider,
+  IFunnelRepository,
+  ILeadProposalRepository,
   ILeadRepository,
   IMembershipRepository,
   IOrganizationRepository,
@@ -26,14 +37,17 @@ import type {
 } from '@sylocrm/application'
 import {
   CreateLeadCommentUseCase,
+  CreateLeadProposalUseCase,
   CreateLeadUseCase,
   DeleteLeadUseCase,
+  DuplicateLeadUseCase,
   GetLeadHistoryUseCase,
   GetLeadUseCase,
+  ListLeadProposalsUseCase,
   ListLeadsUseCase,
   UpdateLeadUseCase,
 } from '@sylocrm/application'
-import { LeadStage, Permission, ValidationError } from '@sylocrm/domain'
+import { Permission, ValidationError } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { AuthErrorCode } from '../auth/errors'
@@ -47,9 +61,9 @@ interface LeadsRouteOptions {
   leadRepository: ILeadRepository
   organizationRepository: IOrganizationRepository
   userRepository: IUserRepository
+  funnelRepository: IFunnelRepository
+  leadProposalRepository: ILeadProposalRepository
 }
-
-const LEAD_STAGE_VALUES = Object.values(LeadStage) as [string, ...string[]]
 
 const createLeadSchema = z.object({
   name: z.string().min(1),
@@ -59,8 +73,13 @@ const createLeadSchema = z.object({
   valueCents: z.number().int().nonnegative(),
   quotaCount: z.number().int().positive().optional(),
   source: z.string().min(1),
+  funnelId: z.string().uuid(),
   assignedUserId: z.string().uuid().nullable().optional(),
   notes: z.string().nullable().optional(),
+  profession: z.string().nullable().optional(),
+  incomeCents: z.number().int().nonnegative().nullable().optional(),
+  maritalStatus: z.string().nullable().optional(),
+  cpf: z.string().nullable().optional(),
 })
 
 const updateLeadSchema = z.object({
@@ -71,15 +90,26 @@ const updateLeadSchema = z.object({
   valueCents: z.number().int().nonnegative().optional(),
   quotaCount: z.number().int().positive().optional(),
   source: z.string().min(1).optional(),
-  stage: z.enum(LEAD_STAGE_VALUES).optional(),
+  stageId: z.string().uuid().optional(),
   assignedUserId: z.string().uuid().nullable().optional(),
   lost: z.boolean().optional(),
+  won: z.boolean().optional(),
   tags: z.array(z.string().min(1)).optional(),
   notes: z.string().nullable().optional(),
+  profession: z.string().nullable().optional(),
+  incomeCents: z.number().int().nonnegative().nullable().optional(),
+  maritalStatus: z.string().nullable().optional(),
+  cpf: z.string().nullable().optional(),
+})
+
+const createProposalSchema = z.object({
+  downPaymentCents: z.number().int().nonnegative(),
+  termMonths: z.number().int().positive(),
 })
 
 const listQuerySchema = z.object({
-  stage: z.enum(LEAD_STAGE_VALUES).optional(),
+  funnelId: z.string().uuid().optional(),
+  stageId: z.string().uuid().optional(),
   search: z.string().optional(),
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().optional(),
@@ -91,6 +121,10 @@ const listQuerySchema = z.object({
 
 const createCommentSchema = z.object({
   text: z.string().min(1),
+})
+
+const duplicateLeadSchema = z.object({
+  targetFunnelId: z.string().uuid(),
 })
 
 function validationErrorResponse(fieldErrors: Record<string, string[] | undefined>) {
@@ -116,13 +150,32 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
     options.leadRepository,
     options.organizationRepository,
   )
-  const createLead = new CreateLeadUseCase(options.leadRepository)
+  const createLead = new CreateLeadUseCase(options.leadRepository, options.funnelRepository)
   const createLeadComment = new CreateLeadCommentUseCase(
     options.leadRepository,
     options.organizationRepository,
   )
-  const updateLead = new UpdateLeadUseCase(options.leadRepository, options.organizationRepository)
+  const updateLead = new UpdateLeadUseCase(
+    options.leadRepository,
+    options.organizationRepository,
+    options.funnelRepository,
+  )
   const deleteLead = new DeleteLeadUseCase(options.leadRepository, options.organizationRepository)
+  const duplicateLead = new DuplicateLeadUseCase(
+    options.leadRepository,
+    options.organizationRepository,
+    options.funnelRepository,
+  )
+  const listLeadProposals = new ListLeadProposalsUseCase(
+    options.leadRepository,
+    options.organizationRepository,
+    options.leadProposalRepository,
+  )
+  const createLeadProposal = new CreateLeadProposalUseCase(
+    options.leadRepository,
+    options.organizationRepository,
+    options.leadProposalRepository,
+  )
 
   // ── GET /leads ────────────────────────────────────────────────────────────
   fastify.get(
@@ -156,7 +209,8 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
       return listLeads.execute({
         userId: context.userId,
         membership: context.currentMembership,
-        stage: parsed.data.stage as LeadStage | undefined,
+        funnelId: parsed.data.funnelId,
+        stageId: parsed.data.stageId,
         search: parsed.data.search,
         page: parsed.data.page,
         pageSize: parsed.data.pageSize,
@@ -189,12 +243,19 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
       const canAssign = context.currentMembership.permissions.includes(Permission.LEAD_ASSIGN)
       const assignedUserId = canAssign ? parsed.data.assignedUserId : context.userId
 
-      const lead = await createLead.execute({
-        ...parsed.data,
-        assignedUserId,
-        organizationId: context.currentMembership.organizationId,
-      })
-      return reply.status(201).send(lead)
+      try {
+        const lead = await createLead.execute({
+          ...parsed.data,
+          assignedUserId,
+          organizationId: context.currentMembership.organizationId,
+        })
+        return reply.status(201).send(lead)
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          return reply.status(400).send({ error: error.message, code: error.code, status: 400 })
+        }
+        throw error
+      }
     },
   )
 
@@ -276,6 +337,105 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
     },
   )
 
+  // ── POST /leads/:id/duplicate ─────────────────────────────────────────────
+  fastify.post<{ Params: { id: string } }>(
+    '/leads/:id/duplicate',
+    {
+      preHandler: [authMiddleware, tenantMiddleware, requirePermission(Permission.LEAD_CREATE)],
+    },
+    async (request, reply) => {
+      const parsed = duplicateLeadSchema.safeParse(request.body)
+      if (!parsed.success) {
+        return reply.status(400).send(validationErrorResponse(parsed.error.flatten().fieldErrors))
+      }
+
+      const context = request.authContext as NonNullable<typeof request.authContext>
+
+      try {
+        const lead = await duplicateLead.execute({
+          id: request.params.id,
+          userId: context.userId,
+          membership: context.currentMembership,
+          targetFunnelId: parsed.data.targetFunnelId,
+        })
+
+        if (!lead) {
+          return reply
+            .status(404)
+            .send({ error: 'Lead não encontrado.', code: 'LEAD_NOT_FOUND', status: 404 })
+        }
+        return reply.status(201).send(lead)
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          return reply.status(400).send({ error: error.message, code: error.code, status: 400 })
+        }
+        throw error
+      }
+    },
+  )
+
+  // ── GET /leads/:id/proposals ─────────────────────────────────────────────
+  fastify.get<{ Params: { id: string } }>(
+    '/leads/:id/proposals',
+    {
+      preHandler: [authMiddleware, tenantMiddleware, requirePermission(Permission.LEAD_READ)],
+    },
+    async (request, reply) => {
+      const context = request.authContext as NonNullable<typeof request.authContext>
+
+      const proposals = await listLeadProposals.execute({
+        leadId: request.params.id,
+        userId: context.userId,
+        membership: context.currentMembership,
+      })
+
+      if (!proposals) {
+        return reply
+          .status(404)
+          .send({ error: 'Lead não encontrado.', code: 'LEAD_NOT_FOUND', status: 404 })
+      }
+      return { proposals }
+    },
+  )
+
+  // ── POST /leads/:id/proposals ────────────────────────────────────────────
+  fastify.post<{ Params: { id: string } }>(
+    '/leads/:id/proposals',
+    {
+      preHandler: [authMiddleware, tenantMiddleware, requirePermission(Permission.LEAD_UPDATE)],
+    },
+    async (request, reply) => {
+      const parsed = createProposalSchema.safeParse(request.body)
+      if (!parsed.success) {
+        return reply.status(400).send(validationErrorResponse(parsed.error.flatten().fieldErrors))
+      }
+
+      const context = request.authContext as NonNullable<typeof request.authContext>
+
+      try {
+        const proposal = await createLeadProposal.execute({
+          leadId: request.params.id,
+          userId: context.userId,
+          membership: context.currentMembership,
+          downPaymentCents: parsed.data.downPaymentCents,
+          termMonths: parsed.data.termMonths,
+        })
+
+        if (!proposal) {
+          return reply
+            .status(404)
+            .send({ error: 'Lead não encontrado.', code: 'LEAD_NOT_FOUND', status: 404 })
+        }
+        return reply.status(201).send(proposal)
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          return reply.status(400).send({ error: error.message, code: error.code, status: 400 })
+        }
+        throw error
+      }
+    },
+  )
+
   // ── PATCH /leads/:id ──────────────────────────────────────────────────────
   fastify.patch<{ Params: { id: string } }>(
     '/leads/:id',
@@ -321,7 +481,7 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
           id: request.params.id,
           userId: context.userId,
           membership: context.currentMembership,
-          changes: { ...parsed.data, stage: parsed.data.stage as LeadStage | undefined },
+          changes: parsed.data,
         })
 
         if (!lead) {

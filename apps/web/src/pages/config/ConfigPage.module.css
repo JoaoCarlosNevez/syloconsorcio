@@ -1366,6 +1366,109 @@ button.breadcrumbCurrent:hover {
   margin-top: 12px;
 }
 
+/* ── Funis ── */
+
+.funnelListRow {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(216, 195, 173, 0.2);
+}
+
+.funnelListRow:last-of-type {
+  border-bottom: none;
+}
+
+.funnelListInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.funnelListName {
+  font-size: var(--cfg-text-sm);
+  font-weight: 700;
+  color: #0b1c30;
+}
+
+.funnelBadgeDefault {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  background: rgba(255, 167, 5, 0.15);
+  border-radius: 9999px;
+  font-size: var(--cfg-text-xs);
+  font-weight: 700;
+  color: #7c4a03;
+}
+
+.funnelLeadCount {
+  font-size: var(--cfg-text-xs);
+  color: #94a3b8;
+}
+
+.funnelListActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.stageEditorBox {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  margin-top: 8px;
+  background: #f8fafc;
+  border: 1px solid rgba(216, 195, 173, 0.3);
+  border-radius: 10px;
+}
+
+.stageEditorRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stageEditorRow .formInput {
+  flex: 1;
+}
+
+.stageDragHandle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 32px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.colorSwatchRow {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.colorSwatch,
+.colorSwatchActive {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.colorSwatchActive {
+  border-color: #0b1c30;
+}
+
 /* ── Theme toggle */
 
 .themeGrid {

@@ -33,6 +33,15 @@ export type {
 } from './ports/user.repository'
 export type { IStorageProvider, UploadFileInput } from './ports/storage.provider'
 export type {
+  IFunnelRepository,
+  FunnelRecord,
+  FunnelStageRecord,
+  NewFunnelInput,
+  NewFunnelStageInput,
+  UpdateFunnelInput,
+  StageUpsertInput,
+} from './ports/funnel.repository'
+export type {
   ILeadRepository,
   LeadRecord,
   NewLeadInput,
@@ -45,6 +54,11 @@ export type {
   LeadCommentRecord,
   NewLeadCommentInput,
 } from './ports/lead.repository'
+export type {
+  ILeadProposalRepository,
+  LeadProposalRecord,
+  NewLeadProposalInput,
+} from './ports/lead-proposal.repository'
 
 export { resolveLeadScope } from './leads/lead-scope'
 export type { LeadScope } from './leads/lead-scope'
@@ -63,6 +77,21 @@ export { GetLeadHistoryUseCase } from './leads/get-lead-history.use-case'
 export type { GetLeadHistoryInput, LeadHistory } from './leads/get-lead-history.use-case'
 export { CreateLeadCommentUseCase } from './leads/create-lead-comment.use-case'
 export type { CreateLeadCommentInput } from './leads/create-lead-comment.use-case'
+export { DuplicateLeadUseCase } from './leads/duplicate-lead.use-case'
+export type { DuplicateLeadUseCaseInput } from './leads/duplicate-lead.use-case'
+export { ListLeadProposalsUseCase } from './leads/list-lead-proposals.use-case'
+export type { ListLeadProposalsInput } from './leads/list-lead-proposals.use-case'
+export { CreateLeadProposalUseCase } from './leads/create-lead-proposal.use-case'
+export type { CreateLeadProposalInput } from './leads/create-lead-proposal.use-case'
+
+export { ListFunnelsUseCase } from './funnels/list-funnels.use-case'
+export type { ListFunnelsInput } from './funnels/list-funnels.use-case'
+export { CreateFunnelUseCase } from './funnels/create-funnel.use-case'
+export type { CreateFunnelInput } from './funnels/create-funnel.use-case'
+export { UpdateFunnelUseCase } from './funnels/update-funnel.use-case'
+export type { UpdateFunnelUseCaseInput } from './funnels/update-funnel.use-case'
+export { DeleteFunnelUseCase } from './funnels/delete-funnel.use-case'
+export type { DeleteFunnelInput } from './funnels/delete-funnel.use-case'
 
 export { CreateRepresentationUseCase } from './organizations/create-representation.use-case'
 export type {

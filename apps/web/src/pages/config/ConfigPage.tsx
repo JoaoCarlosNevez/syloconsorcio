@@ -19,6 +19,7 @@ import {
 import { validateIconFile } from '../../lib/icon-validation'
 import type { InvitableRole, TeamMember } from '../../lib/team-api'
 import styles from './ConfigPage.module.css'
+import { FunnelsSection } from './FunnelsSection'
 
 // ── Ícones ──────────────────────────────────────────────────────────────────────
 
@@ -1996,6 +1997,8 @@ function OrganizacaoView() {
           )}
         </div>
       </div>
+
+      <FunnelsSection isAdmin={isAdmin} />
 
       {toast && <Toast msg={toast} onDone={() => setToast('')} />}
     </div>

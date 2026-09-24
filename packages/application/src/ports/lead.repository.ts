@@ -7,12 +7,11 @@
 // `organizationIds` nunca vem do cliente: é resolvido pelo use case a partir do
 // DataScope da Membership ativa (ver packages/application/src/leads/lead-scope.ts).
 
-import type { LeadStage } from '@sylocrm/domain'
-
 /**
- * aberto: pipeline ativo (stage != VENDA e lostAt null) — padrão.
- * ganho: stage VENDA. perdido: lostAt setado (exige Permission.LEAD_MANAGE_LOST,
- * checado na camada HTTP — ver apps/api/src/routes/leads.route.ts).
+ * aberto: pipeline ativo (wonAt e lostAt null) — padrão. ganho: wonAt setado.
+ * perdido: lostAt setado (exige Permission.LEAD_MANAGE_LOST, checado na camada
+ * HTTP — ver apps/api/src/routes/leads.route.ts). Ganho/Perdido são
+ * independentes do estágio do funil — ver plano "Múltiplos funis customizáveis".
  */
 export type LeadOutcomeFilter = 'aberto' | 'ganho' | 'perdido' | 'todos'
 
@@ -26,14 +25,24 @@ export interface LeadRecord {
   valueCents: number
   quotaCount: number
   source: string
-  stage: LeadStage
+  funnelId: string
+  stageId: string
   assignedUserId: string | null
   stageChangedAt: Date
   /** Null enquanto o lead está ativo no funil; setado ao marcar como Perdido. */
   lostAt: Date | null
+  /** Null enquanto o lead não foi ganho; setado ao marcar como Ganho. */
+  wonAt: Date | null
   /** Tags livres (ex: "Quente", "Frio") — um lead pode ter várias ao mesmo tempo. */
   tags: string[]
   notes: string | null
+  /** Dados de qualificação do cliente — compartilhados por todas as propostas
+   * desse lead (ver lead-proposal.repository.ts para entrada/prazo, que são
+   * por-proposta). Null até o vendedor preencher a ficha. */
+  profession: string | null
+  incomeCents: number | null
+  maritalStatus: string | null
+  cpf: string | null
   createdAt: Date
   updatedAt: Date
 }
@@ -47,9 +56,15 @@ export interface NewLeadInput {
   valueCents: number
   quotaCount?: number
   source: string
+  funnelId: string
+  stageId: string
   assignedUserId?: string | null
   tags?: string[]
   notes?: string | null
+  profession?: string | null
+  incomeCents?: number | null
+  maritalStatus?: string | null
+  cpf?: string | null
 }
 
 export interface UpdateLeadInput {
@@ -60,12 +75,18 @@ export interface UpdateLeadInput {
   valueCents?: number
   quotaCount?: number
   source?: string
-  stage?: LeadStage
+  stageId?: string
   assignedUserId?: string | null
   /** true marca como Perdido (lostAt = agora); false reabre (lostAt = null). */
   lost?: boolean
+  /** true marca como Ganho (wonAt = agora); false reabre (wonAt = null). */
+  won?: boolean
   tags?: string[]
   notes?: string | null
+  profession?: string | null
+  incomeCents?: number | null
+  maritalStatus?: string | null
+  cpf?: string | null
 }
 
 export interface LeadScopeFilter {
@@ -76,7 +97,8 @@ export interface LeadScopeFilter {
 }
 
 export interface LeadListFilter extends LeadScopeFilter {
-  stage?: LeadStage
+  funnelId?: string
+  stageId?: string
   /** Busca livre por nome ou telefone. */
   search?: string
   /** Padrão 'aberto' quando ausente — ver LeadOutcomeFilter. */
@@ -135,6 +157,16 @@ export interface ILeadRepository {
 
   /** Retorna false se o lead não existir ou estiver fora do escopo. */
   delete(id: string, scope: LeadScopeFilter): Promise<boolean>
+
+  /** Lead existente com este telefone na organização (compara só os dígitos,
+   * ignora formatação), ou null se não houver — usado pra impedir 2 leads com
+   * o mesmo telefone na mesma org (CreateLeadUseCase/UpdateLeadUseCase).
+   * excludeLeadId ignora o próprio lead ao validar uma edição de telefone. */
+  findByPhone(
+    organizationId: string,
+    phone: string,
+    excludeLeadId?: string,
+  ): Promise<LeadRecord | null>
 
   /** Registra uma mudança de responsável para auditoria (AGENTS.md §10). */
   recordAssignmentChange(change: AssignmentChange): Promise<void>

@@ -1,22 +1,26 @@
 // LeadModal — ficha completa do lead, aberta ao clicar em um card do Kanban.
 // Design: Figma SYLOAPP node 276:590
 
-import { Skeleton, useToast } from '@sylocrm/ui'
+import { Dropdown, Skeleton, useToast } from '@sylocrm/ui'
 import { useEffect, useRef, useState } from 'react'
-import { COLUMN_META, type CardData } from '../../data/kanban-mock'
+import type { CardData } from '../../data/kanban-mock'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
 import {
   useCreateLeadComment,
+  useCreateLeadProposal,
   useDeleteLead,
+  useDuplicateLead,
   useLeadHistoryQuery,
+  useLeadProposalsQuery,
   useUpdateLead,
 } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { useOrganizationSettingsQuery } from '../../hooks/useOrganizationSettings'
 import { useTeamMembersQuery } from '../../hooks/useTeam'
+import type { Funnel } from '../../lib/funnels-api'
 import {
-  COLUMN_ID_TO_STAGE,
-  STAGE_TO_COLUMN_ID,
+  formatBRL,
+  formatCPF,
   formatPhoneBR,
   parseValueToCents,
   resolveAgent,
@@ -239,6 +243,47 @@ function CalendarIcon() {
       <line x1="16" y1="2" x2="16" y2="6" />
       <line x1="8" y1="2" x2="8" y2="6" />
       <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  )
+}
+
+function CurrencyIcon() {
+  return (
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="12" y1="1" x2="12" y2="23" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+  )
+}
+
+function IdCardIcon() {
+  return (
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <circle cx="8" cy="11" r="2" />
+      <line x1="6" y1="16" x2="10" y2="16" />
+      <line x1="14" y1="9" x2="19" y2="9" />
+      <line x1="14" y1="13" x2="19" y2="13" />
     </svg>
   )
 }
@@ -504,54 +549,9 @@ function FilterIcon() {
   )
 }
 
-function PdfIcon() {
-  return (
-    <svg
-      width="10"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <line x1="12" y1="18" x2="12" y2="12" />
-      <line x1="9" y1="15" x2="15" y2="15" />
-    </svg>
-  )
-}
-
-function LinkIcon() {
-  return (
-    <svg
-      width="13"
-      height="7"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-    </svg>
-  )
-}
-
 // ADMIN_USER e getAgentProfile importados de ../../data/kanban-mock
 
 // ── Dados estáticos (mock) ─────────────────────────────────────────────────────
-
-// Mesmas 6 etapas e ordem do board (COLUMN_META) — nunca hardcoded aqui de
-// novo, senão volta a divergir do funil real (bug: essa lista tinha nomes
-// que nem existem nas colunas de verdade, tipo "Agendamento").
-const FUNNEL_STAGES = COLUMN_META.map((column) => column.name)
 
 const MOCK_TASKS = [
   {
@@ -672,9 +672,68 @@ interface AttrsForm {
   segment: string
   value: string
   quotaCount: string
+  profession: string
+  income: string
+  maritalStatus: string
+  cpf: string
 }
 
 const AUTOSAVE_DELAY_MS = 1000
+
+const MARITAL_STATUS_OPTIONS = [
+  'Solteiro(a)',
+  'Casado(a)',
+  'Divorciado(a)',
+  'Viúvo(a)',
+  'União Estável',
+]
+
+// ── Simulação de crédito ─────────────────────────────────────────────────────
+//
+// Fluxo: "Nova Simulação"/"Simular" abre um formulário com valor de entrada e
+// quantidade de meses (sempre — são específicos de CADA proposta, o mesmo
+// lead pode simular várias vezes com valores diferentes) e, se faltar algo na
+// Ficha de Qualificação (profissão, renda, estado civil, CPF — dados do
+// cliente, compartilhados entre propostas), pede pra completar também. Depois
+// mostra uma análise "carregando" por um tempo aleatório entre 30s e 60s e
+// registra a proposta aprovada (ver useCreateLeadProposal) — não é uma
+// análise real, é o efeito "aguarde, estamos analisando" que o time de vendas
+// pediu.
+
+type SimulationState =
+  | { status: 'idle' }
+  | { status: 'loading'; durationMs: number }
+  | { status: 'approved'; downPaymentCents: number; termMonths: number }
+
+const SIMULATION_MIN_MS = 30_000
+const SIMULATION_MAX_MS = 60_000
+
+/** Mensagens que revezam durante a análise — puro efeito visual, sem ligação
+ * com nenhuma etapa real de processamento. */
+const ANALYSIS_STEPS = [
+  'Consultando score de crédito...',
+  'Validando documentos...',
+  'Analisando perfil financeiro...',
+  'Verificando restrições...',
+  'Finalizando análise...',
+]
+
+interface QualificationFieldDef {
+  key: 'profession' | 'income' | 'maritalStatus' | 'cpf'
+  label: string
+  isMissing: (card: CardData) => boolean
+}
+
+const QUALIFICATION_FIELD_DEFS: QualificationFieldDef[] = [
+  { key: 'profession', label: 'Profissão', isMissing: (c) => !c.profession },
+  { key: 'income', label: 'Renda', isMissing: (c) => c.incomeCents == null },
+  { key: 'maritalStatus', label: 'Estado Civil', isMissing: (c) => !c.maritalStatus },
+  { key: 'cpf', label: 'CPF', isMissing: (c) => !c.cpf },
+]
+
+function missingQualificationFields(card: CardData): QualificationFieldDef[] {
+  return QUALIFICATION_FIELD_DEFS.filter((def) => def.isMissing(card))
+}
 
 function buildAttrsForm(card: CardData): AttrsForm {
   return {
@@ -684,6 +743,10 @@ function buildAttrsForm(card: CardData): AttrsForm {
     segment: card.segment,
     value: (card.valueCents / 100).toFixed(2).replace('.', ','),
     quotaCount: String(card.quotaCount),
+    profession: card.profession ?? '',
+    income: card.incomeCents != null ? (card.incomeCents / 100).toFixed(2).replace('.', ',') : '',
+    maritalStatus: card.maritalStatus ?? '',
+    cpf: card.cpf ?? '',
   }
 }
 
@@ -701,6 +764,10 @@ function buildAttrsPayload(form: AttrsForm) {
     segment: form.segment,
     valueCents,
     quotaCount: Math.max(1, Number.parseInt(form.quotaCount, 10) || 1),
+    profession: form.profession.trim() || null,
+    incomeCents: form.income.trim() ? parseValueToCents(form.income) : null,
+    maritalStatus: form.maritalStatus || null,
+    cpf: form.cpf.trim() || null,
   }
 }
 
@@ -708,12 +775,16 @@ function buildAttrsPayload(form: AttrsForm) {
 
 export interface LeadModalProps {
   card: CardData
+  /** Funil ao qual o lead pertence — fonte dos estágios/ordem da barra de progresso. */
+  funnel: Funnel
+  /** Todos os funis da org — opções pra "Transferir" (duplicar pra outro funil). */
+  funnels: Funnel[]
   onClose: () => void
   /** Quando true, exibe skeleton no workspace — para quando os dados vierem de API real */
   isLoading?: boolean
 }
 
-export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) {
+export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }: LeadModalProps) {
   const [comment, setComment] = useState('')
   const [historyTab, setHistoryTab] = useState<HistoryTab>('todos')
   const [confirmingDelete, setConfirmingDelete] = useState(false)
@@ -724,11 +795,32 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
   const [attrsForm, setAttrsForm] = useState<AttrsForm>(() => buildAttrsForm(card))
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const [simulation, setSimulation] = useState<SimulationState>({ status: 'idle' })
+  const simulationTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [simulationFormOpen, setSimulationFormOpen] = useState(false)
+  const [qualificationGapFields, setQualificationGapFields] = useState<QualificationFieldDef[]>([])
+  const [gapForm, setGapForm] = useState<AttrsForm>(() => buildAttrsForm(card))
+  const [simulationParams, setSimulationParams] = useState({ downPayment: '', termMonths: '' })
+  const [analysisStepIndex, setAnalysisStepIndex] = useState(0)
+
   useEffect(() => {
     return () => {
       if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
+      if (simulationTimer.current) clearTimeout(simulationTimer.current)
     }
   }, [])
+
+  // Revezamento das mensagens de análise — só enquanto está "carregando".
+  useEffect(() => {
+    if (simulation.status !== 'loading') {
+      setAnalysisStepIndex(0)
+      return
+    }
+    const interval = setInterval(() => {
+      setAnalysisStepIndex((i) => (i + 1) % ANALYSIS_STEPS.length)
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [simulation.status])
 
   const { organizationId, membership } = useActiveOrganization()
   const { data: teamData } = useTeamMembersQuery(organizationId)
@@ -740,9 +832,12 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
   )
   const updateLead = useUpdateLead(organizationId)
   const deleteLead = useDeleteLead(organizationId)
+  const duplicateLead = useDuplicateLead(organizationId)
   const { data: currentUser } = useCurrentUser()
   const { data: history } = useLeadHistoryQuery(organizationId, card.id)
   const createComment = useCreateLeadComment(organizationId, card.id)
+  const { data: proposalsData } = useLeadProposalsQuery(organizationId, card.id)
+  const createLeadProposal = useCreateLeadProposal(organizationId, card.id)
   const { toast } = useToast()
 
   const canAssign = membership?.permissions.includes('lead.assign') ?? false
@@ -767,13 +862,10 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
     )
   }
 
-  function handleStageClick(columnId: string) {
-    const stage = COLUMN_ID_TO_STAGE[columnId]
-    // Ganhar um lead é sempre uma ação explícita (botão "Marcar como Ganho")
-    // — nunca implícita por clicar direto na etapa do funil.
-    if (!stage || stage === card.stage || stage === 'VENDA') return
+  function handleStageClick(stageId: string) {
+    if (stageId === card.stageId) return
     updateLead.mutate(
-      { id: card.id, payload: { stage } },
+      { id: card.id, payload: { stageId } },
       {
         onError: (error) => {
           toast({
@@ -788,13 +880,31 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
 
   function handleMarkWon() {
     updateLead.mutate(
-      { id: card.id, payload: { stage: 'VENDA' } },
+      { id: card.id, payload: { won: true } },
       {
         onSuccess: () => toast({ type: 'success', title: 'Lead marcado como ganho!' }),
         onError: (error) => {
           toast({
             type: 'error',
             title: 'Não foi possível marcar como ganho',
+            description: error instanceof Error ? error.message : undefined,
+          })
+        },
+      },
+    )
+  }
+
+  function handleTransferToFunnel(targetFunnelId: string, targetFunnelName: string) {
+    duplicateLead.mutate(
+      { id: card.id, targetFunnelId },
+      {
+        onSuccess: () => {
+          toast({ type: 'success', title: `Lead duplicado para "${targetFunnelName}"` })
+        },
+        onError: (error) => {
+          toast({
+            type: 'error',
+            title: 'Não foi possível transferir o lead',
             description: error instanceof Error ? error.message : undefined,
           })
         },
@@ -935,6 +1045,111 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
     }
   }
 
+  function startSimulation(downPaymentCents: number, termMonths: number) {
+    const delayMs = SIMULATION_MIN_MS + Math.random() * (SIMULATION_MAX_MS - SIMULATION_MIN_MS)
+    setSimulation({ status: 'loading', durationMs: delayMs })
+    simulationTimer.current = setTimeout(() => {
+      createLeadProposal.mutate(
+        { downPaymentCents, termMonths },
+        {
+          onSuccess: () => {
+            setSimulation({ status: 'approved', downPaymentCents, termMonths })
+          },
+          onError: (error) => {
+            setSimulation({ status: 'idle' })
+            toast({
+              type: 'error',
+              title: 'Não foi possível registrar a proposta',
+              description: error instanceof Error ? error.message : undefined,
+            })
+          },
+        },
+      )
+    }, delayMs)
+  }
+
+  /** Sempre abre o formulário — entrada e prazo são pedidos em toda simulação
+   * (são por-proposta); a Ficha de Qualificação só aparece nele quando falta
+   * algo (profissão/renda/estado civil/CPF são do cliente, preenchidos 1x). */
+  function handleSimulate() {
+    setGapForm(buildAttrsForm(card))
+    setQualificationGapFields(missingQualificationFields(card))
+    setSimulationParams({ downPayment: '', termMonths: '' })
+    setSimulationFormOpen(true)
+  }
+
+  function updateGapField<K extends keyof AttrsForm>(key: K, value: AttrsForm[K]) {
+    setGapForm((prev) => ({ ...prev, [key]: value }))
+  }
+
+  function handleSubmitSimulationForm() {
+    const downPaymentCents = parseValueToCents(simulationParams.downPayment)
+    const termMonths = simulationParams.termMonths.trim()
+      ? Number.parseInt(simulationParams.termMonths, 10)
+      : null
+
+    if (downPaymentCents === null || !termMonths || termMonths <= 0) {
+      toast({ type: 'error', title: 'Informe o valor de entrada e a quantidade de meses.' })
+      return
+    }
+    if (downPaymentCents >= card.valueCents) {
+      toast({ type: 'error', title: 'O valor de entrada precisa ser menor que o valor da cota.' })
+      return
+    }
+
+    const qualificationPayload =
+      qualificationGapFields.length > 0 ? buildAttrsPayload(gapForm) : null
+    const qualificationIncomplete =
+      qualificationGapFields.length > 0 &&
+      (!qualificationPayload ||
+        !qualificationPayload.profession ||
+        qualificationPayload.incomeCents == null ||
+        !qualificationPayload.maritalStatus ||
+        !qualificationPayload.cpf)
+    if (qualificationIncomplete) {
+      toast({ type: 'error', title: 'Preencha todos os campos destacados.' })
+      return
+    }
+
+    function proceed() {
+      setSimulationFormOpen(false)
+      startSimulation(downPaymentCents as number, termMonths as number)
+    }
+
+    if (qualificationPayload) {
+      updateLead.mutate(
+        { id: card.id, payload: qualificationPayload },
+        {
+          onSuccess: proceed,
+          onError: (error) => {
+            toast({
+              type: 'error',
+              title: 'Não foi possível salvar os dados',
+              description: error instanceof Error ? error.message : undefined,
+            })
+          },
+        },
+      )
+    } else {
+      proceed()
+    }
+  }
+
+  function handleResetSimulation() {
+    if (simulationTimer.current) {
+      clearTimeout(simulationTimer.current)
+      simulationTimer.current = null
+    }
+    setSimulation({ status: 'idle' })
+  }
+
+  /** Botão "Nova Simulação" do cabeçalho da aba — cancela qualquer simulação
+   * em andamento/concluída e abre o formulário de uma nova proposta. */
+  function handleNovaSimulacao() {
+    handleResetSimulation()
+    handleSimulate()
+  }
+
   function handleReopenLead() {
     updateLead.mutate(
       { id: card.id, payload: { lost: false } },
@@ -956,7 +1171,7 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
 
   function handleReopenWon() {
     updateLead.mutate(
-      { id: card.id, payload: { stage: 'FECHADO' } },
+      { id: card.id, payload: { won: false } },
       {
         onSuccess: () => {
           toast({ type: 'success', title: 'Lead reaberto' })
@@ -1028,10 +1243,14 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
   const cota = parseCota(card.cota)
   // Índice real da etapa do lead — antes ficava travado em "Lead" (0)
   // independente da etapa de verdade.
-  const activeStageIndex = COLUMN_META.findIndex(
-    (column) => column.id === STAGE_TO_COLUMN_ID[card.stage],
-  )
+  const activeStageIndex = funnel.stages.findIndex((stage) => stage.id === card.stageId)
   const activeStage = activeStageIndex === -1 ? 0 : activeStageIndex
+  // "Marcar como Ganho" só é permitido a partir da ÚLTIMA etapa (por ordem)
+  // do funil — generalização de "só a partir de Fechado" pra qualquer funil
+  // customizado (ver update-lead.use-case.ts, mesma regra no backend).
+  const lastStage = funnel.stages[funnel.stages.length - 1]
+  const isAtLastStage = lastStage !== undefined && card.stageId === lastStage.id
+  const otherFunnels = funnels.filter((f) => f.id !== funnel.id)
   const responsible = resolveAgent(card.assignedUserId, members)
   const historyFeed = buildHistoryFeed(card, history, members, currentUser?.id)
   const filteredHistoryFeed = filterHistoryFeed(historyFeed, historyTab)
@@ -1076,6 +1295,21 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
 
             {/* Ações */}
             <div className={styles.headerActions}>
+              {otherFunnels.length > 0 && (
+                <Dropdown
+                  trigger={
+                    <button type="button" className={styles.btnSecondary}>
+                      <TransferIcon />
+                      Transferir
+                    </button>
+                  }
+                  items={otherFunnels.map((f) => ({
+                    key: f.id,
+                    label: f.name,
+                    onSelect: () => handleTransferToFunnel(f.id, f.name),
+                  }))}
+                />
+              )}
               {isViewingLost ? (
                 canManageLost && (
                   <button
@@ -1100,10 +1334,6 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                 </button>
               ) : (
                 <>
-                  <button type="button" className={styles.btnSecondary}>
-                    <TransferIcon />
-                    Transferir
-                  </button>
                   <button
                     type="button"
                     className={styles.btnDanger}
@@ -1113,7 +1343,7 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                     <ThumbsDownIcon />
                     Marcar como Perdido
                   </button>
-                  {card.stage === 'FECHADO' && (
+                  {isAtLastStage && (
                     <button
                       type="button"
                       className={styles.btnGanho}
@@ -1151,27 +1381,26 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
           {/* Barra de progresso do funil */}
           <div className={styles.funnelBar}>
             <span className={styles.funnelLabel}>Etapas do Funil:</span>
-            {FUNNEL_STAGES.map((stage, i) => {
-              // "Venda Concluída" nunca é alcançável clicando na etapa — ganhar um
-              // lead é sempre uma ação explícita, pelo botão "Marcar como Ganho"
-              // (disponível só a partir da etapa Fechado).
-              const isVendaStage = COLUMN_META[i]?.id === 'venda'
+            {funnel.stages.map((stage, i) => {
+              // Ganho/Perdido são desacoplados do estágio — qualquer etapa aceita
+              // clique normalmente. A única trava é: um lead já ganho/perdido
+              // precisa ser reaberto antes de mudar de etapa (evita desfazer o
+              // resultado silenciosamente ao clicar num estágio diferente).
+              const isLockedByOutcome = isViewingWon || isViewingLost
               return (
-                <span key={stage} className={styles.funnelGroup}>
+                <span key={stage.id} className={styles.funnelGroup}>
                   <button
                     type="button"
                     className={i === activeStage ? styles.funnelStageActive : styles.funnelStage}
-                    onClick={() => handleStageClick(COLUMN_META[i]?.id ?? '')}
-                    disabled={updateLead.isPending || isVendaStage}
+                    onClick={() => handleStageClick(stage.id)}
+                    disabled={updateLead.isPending || isLockedByOutcome}
                     title={
-                      isVendaStage
-                        ? 'Use o botão "Marcar como Ganho" (disponível na etapa Fechado) para ganhar o lead.'
-                        : undefined
+                      isLockedByOutcome ? 'Reabra o lead para poder mudar de etapa.' : undefined
                     }
                   >
-                    {stage}
+                    {stage.name}
                   </button>
-                  {i < FUNNEL_STAGES.length - 1 && (
+                  {i < funnel.stages.length - 1 && (
                     <span className={styles.funnelArrow}>
                       <ChevronRightIcon />
                     </span>
@@ -1415,7 +1644,12 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                     </div>
                   )}
                   {activeTab === 'simulacoes' && (
-                    <button type="button" className={styles.novaSimBtn}>
+                    <button
+                      type="button"
+                      className={styles.novaSimBtn}
+                      onClick={handleNovaSimulacao}
+                      disabled={simulation.status === 'loading'}
+                    >
                       <LightningIcon />
                       Nova Simulação
                     </button>
@@ -1425,175 +1659,130 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                 {/* ── Aba: Simulações ─────────────────────────────────── */}
                 {activeTab === 'simulacoes' && (
                   <div className={styles.simList}>
-                    {/* Simulação Principal */}
-                    <div className={styles.simCardMain}>
-                      <div className={styles.simTopRow}>
-                        <span className={styles.propPrincipalBadge}>
-                          <span className={styles.propDot} />
-                          Proposta Principal
-                        </span>
-                        <div className={styles.simMeta}>
-                          <span>
-                            Grupo: <strong>7829</strong>
-                          </span>
-                          <span className={styles.simMetaDot}>•</span>
-                          <span>
-                            Cota: <strong>104</strong>
-                          </span>
-                          <span className={styles.simMetaDot}>•</span>
-                          <span>Porthis Consórcio</span>
-                        </div>
-                      </div>
-
-                      <div className={styles.simHeader}>
-                        <div>
-                          <h3 className={styles.simTitle}>Cota Imobiliária Porto Seguro</h3>
-                          <p className={styles.simValue}>R$ 350.000,00</p>
-                        </div>
-                        <div className={styles.simParcelGroup}>
-                          <span className={styles.simParcelLabel}>
-                            Parcela Reduzida (50% até contemplação)
-                          </span>
-                          <div className={styles.simParcelValue}>
-                            <span className={styles.simParcelAmount}>R$ 1.205,55</span>
-                            <span className={styles.simParcelPer}>/mês</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className={styles.simMetrics}>
-                        <div className={styles.simMetricItem}>
-                          <span className={styles.simMetricLabel}>Crédito Contratado</span>
-                          <span className={styles.simMetricValue}>R$ 350.000,00</span>
-                          <span className={styles.simMetricSub}>Fundo Reserva: 2%</span>
-                        </div>
-                        <div className={`${styles.simMetricItem} ${styles.simMetricBorder}`}>
-                          <span className={styles.simMetricLabel}>Prazo Total</span>
-                          <span className={styles.simMetricValue}>180 meses</span>
-                          <span className={`${styles.simMetricSub} ${styles.simMetricSubGreen}`}>
-                            15 anos planejados
-                          </span>
-                        </div>
-                        <div className={`${styles.simMetricItem} ${styles.simMetricBorder}`}>
-                          <span className={styles.simMetricLabel}>Taxa Adm. Diluída</span>
-                          <span className={styles.simMetricValue}>15% total</span>
-                          <span className={styles.simMetricSub}>0,083% a.m. (sem juros)</span>
-                        </div>
-                        <div className={`${styles.simMetricItem} ${styles.simMetricBorder}`}>
-                          <span className={styles.simMetricLabel}>Assembleia Próxima</span>
-                          <span className={styles.simMetricValue}>18/06/2026</span>
-                          <span className={styles.simMetricSub}>Dia útil do sorteio</span>
-                        </div>
-                      </div>
-
-                      <div className={styles.simActions}>
-                        <button type="button" className={styles.pdfBtn}>
-                          <PdfIcon />
-                          Gerar PDF para WhatsApp
-                        </button>
-                        <div className={styles.simSecActions}>
-                          <button type="button" className={styles.simSecBtn}>
-                            <LinkIcon />
-                            Copiar Link
-                          </button>
-                          <button type="button" className={styles.simSecBtn}>
-                            <PencilIcon />
-                            Editar Parâmetros
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Simulação Secundária */}
-                    <div className={styles.simCardSec}>
-                      <div className={styles.simSecTopRow}>
-                        <div className={styles.simSecLeft}>
-                          <span className={styles.cenarioBadge}>Cenário Secundário</span>
-                          <h4 className={styles.simSecTitle}>
-                            Cota Imobiliária Caixa Consórcios — R$ 300.000,00
-                          </h4>
-                        </div>
-                        <div className={styles.simSecButtons}>
-                          <button type="button" className={styles.verDetalhesBtn}>
-                            Ver Detalhes
-                          </button>
-                          <button type="button" className={styles.descartarBtn}>
-                            Descartar
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className={styles.simSecMetrics}>
-                        <div className={styles.simSecMetricItem}>
-                          <span className={styles.simMetricLabel}>Prazo Total</span>
-                          <span className={styles.simSecMetricValue}>200 meses</span>
-                        </div>
-                        <div className={styles.simSecMetricItem}>
-                          <span className={styles.simMetricLabel}>Parcela Mensal</span>
-                          <span className={styles.simSecMetricValue}>R$ 1.875,00 /mês</span>
-                        </div>
-                        <div className={styles.simSecMetricItem}>
-                          <span className={styles.simMetricLabel}>Lance Livre Recomendado</span>
-                          <span className={styles.simSecMetricValue}>35% (R$ 105.000)</span>
-                        </div>
-                        <div className={styles.simSecMetricItem}>
-                          <span className={styles.simMetricLabel}>Probabilidade Sara</span>
-                          <div className={styles.saraProb}>
-                            <SignalIcon />
-                            <span className={styles.simSecMetricValue}>62% (Média)</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Simular Novo Cenário */}
+                    {/* Simular Proposta (crédito, a partir da Ficha de Qualificação) */}
                     <div className={styles.simNewBlock}>
-                      <div className={styles.simNewHeader}>
-                        <div className={styles.simNewIcon}>
-                          <LightningIcon />
-                        </div>
-                        <div>
-                          <h4 className={styles.simNewTitle}>Simular Novo Cenário</h4>
-                          <p className={styles.simNewSub}>
-                            Preencha os parâmetros para calcular lances médios contemplados dos
-                            últimos 6 meses.
+                      {simulation.status === 'idle' && (
+                        <>
+                          <div className={styles.simNewHeader}>
+                            <div className={styles.simNewIcon}>
+                              <LightningIcon />
+                            </div>
+                            <div>
+                              <h4 className={styles.simNewTitle}>Simular Proposta</h4>
+                              <p className={styles.simNewSub}>
+                                Usa profissão, renda, estado civil, CPF, entrada e prazo da Ficha de
+                                Qualificação para rodar a análise de crédito.
+                              </p>
+                            </div>
+                          </div>
+                          <button type="button" className={styles.pdfBtn} onClick={handleSimulate}>
+                            <LightningIcon />
+                            Simular
+                          </button>
+                        </>
+                      )}
+
+                      {simulation.status === 'loading' && (
+                        <div className={styles.simLoading}>
+                          <div className={styles.simSpinnerRing}>
+                            <span className={styles.simSpinner} aria-hidden="true" />
+                            <ClockIcon />
+                          </div>
+                          <h4 className={styles.simLoadingTitle}>Analisando a proposta</h4>
+                          <p className={styles.simLoadingStep}>
+                            {ANALYSIS_STEPS[analysisStepIndex]}
+                          </p>
+                          <div className={styles.simProgressTrack}>
+                            <div
+                              key={simulation.durationMs}
+                              className={styles.simProgressBar}
+                              style={{ animationDuration: `${simulation.durationMs}ms` }}
+                            />
+                          </div>
+                          <p className={styles.simLoadingHint}>
+                            Isso pode levar até 1 minuto — não feche esta janela.
                           </p>
                         </div>
-                      </div>
-                      <div className={styles.simForm}>
-                        <div className={styles.simFormField}>
-                          <label className={styles.simFormLabel} htmlFor="sim-credito">
-                            Crédito Pretendido (R$)
-                          </label>
-                          <input
-                            id="sim-credito"
-                            type="text"
-                            className={styles.simInput}
-                            defaultValue="R$ 400.000,00"
-                          />
+                      )}
+
+                      {simulation.status === 'approved' && (
+                        <div className={styles.simApproved}>
+                          <div className={styles.simApprovedBadge}>
+                            <TrophyIcon />
+                          </div>
+                          <h4 className={styles.simApprovedTitle}>Crédito Aprovado!</h4>
+                          <p className={styles.simApprovedSub}>
+                            A proposta de <strong>{card.name}</strong> foi pré-aprovada com sucesso.
+                          </p>
+                          <div className={styles.simApprovedSummary}>
+                            <div className={styles.simApprovedItem}>
+                              <span className={styles.simApprovedLabel}>Valor da Cota</span>
+                              <span className={styles.simApprovedValue}>
+                                R$ {formatBRL(card.valueCents)}
+                              </span>
+                            </div>
+                            <div className={styles.simApprovedItem}>
+                              <span className={styles.simApprovedLabel}>Entrada</span>
+                              <span className={styles.simApprovedValue}>
+                                R$ {formatBRL(simulation.downPaymentCents)}
+                              </span>
+                            </div>
+                            <div className={styles.simApprovedItem}>
+                              <span className={styles.simApprovedLabel}>Prazo</span>
+                              <span className={styles.simApprovedValue}>
+                                {simulation.termMonths}x
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            className={styles.simSecBtn}
+                            onClick={handleResetSimulation}
+                          >
+                            Nova simulação
+                          </button>
                         </div>
-                        <div className={styles.simFormField}>
-                          <label className={styles.simFormLabel} htmlFor="sim-tipo">
-                            Tipo do Consórcio
-                          </label>
-                          <select id="sim-tipo" className={styles.simSelect}>
-                            <option>Imóvel Residencial</option>
-                            <option>Automóvel</option>
-                            <option>Pesado / Caminhão</option>
-                          </select>
-                        </div>
-                        <div className={styles.simFormField}>
-                          <label className={styles.simFormLabel} htmlFor="sim-prazo">
-                            Prazo Desejado
-                          </label>
-                          <select id="sim-prazo" className={styles.simSelect}>
-                            <option>180 meses (15 anos)</option>
-                            <option>120 meses (10 anos)</option>
-                            <option>200 meses</option>
-                          </select>
-                        </div>
-                      </div>
+                      )}
                     </div>
+
+                    {/* Propostas já simuladas e aprovadas — entrada/prazo são
+                        específicos de cada uma (ver useLeadProposalsQuery). */}
+                    {proposalsData?.proposals.length ? (
+                      proposalsData.proposals.map((proposal) => (
+                        <div key={proposal.id} className={styles.simCardMain}>
+                          <div className={styles.simTopRow}>
+                            <span className={styles.propPrincipalBadge}>
+                              <span className={styles.propDot} />
+                              Crédito Aprovado
+                            </span>
+                            <div className={styles.simMeta}>
+                              <span>
+                                {new Date(proposal.createdAt).toLocaleDateString('pt-BR')}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className={styles.simHeader}>
+                            <div>
+                              <h3 className={styles.simTitle}>{card.cota}</h3>
+                              <p className={styles.simValue}>
+                                Entrada: R$ {formatBRL(proposal.downPaymentCents)}
+                              </p>
+                            </div>
+                            <div className={styles.simParcelGroup}>
+                              <span className={styles.simParcelLabel}>Prazo</span>
+                              <div className={styles.simParcelValue}>
+                                <span className={styles.simParcelAmount}>
+                                  {proposal.termMonths}x
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : simulation.status === 'idle' ? (
+                      <p className={styles.attrValueMuted}>Nenhuma proposta simulada ainda.</p>
+                    ) : null}
                   </div>
                 )}
 
@@ -1806,6 +1995,98 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                         <div className={styles.attrValue}>
                           <span className={styles.attrValueText}>{card.date}</span>
                         </div>
+                      </div>
+
+                      {/* Profissão */}
+                      <div className={styles.attrCell}>
+                        <div className={styles.attrLabel}>
+                          <PersonIcon />
+                          Profissão
+                        </div>
+                        {isEditingAttrs ? (
+                          <input
+                            className={styles.attrInput}
+                            value={attrsForm.profession}
+                            onChange={(e) => updateAttrField('profession', e.target.value)}
+                          />
+                        ) : (
+                          <div className={styles.attrValue}>
+                            <span className={styles.attrValueText}>{card.profession ?? '—'}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Renda */}
+                      <div className={styles.attrCell}>
+                        <div className={styles.attrLabel}>
+                          <CurrencyIcon />
+                          Renda
+                        </div>
+                        {isEditingAttrs ? (
+                          <input
+                            className={styles.attrInput}
+                            inputMode="decimal"
+                            placeholder="R$"
+                            value={attrsForm.income}
+                            onChange={(e) =>
+                              updateAttrField('income', e.target.value.replace(/[^0-9.,]/g, ''))
+                            }
+                          />
+                        ) : (
+                          <div className={styles.attrValue}>
+                            <span className={styles.attrValueText}>
+                              {card.incomeCents != null ? `R$ ${formatBRL(card.incomeCents)}` : '—'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Estado Civil */}
+                      <div className={styles.attrCell}>
+                        <div className={styles.attrLabel}>
+                          <PersonIcon />
+                          Estado Civil
+                        </div>
+                        {isEditingAttrs ? (
+                          <select
+                            className={styles.attrInput}
+                            value={attrsForm.maritalStatus}
+                            onChange={(e) => updateAttrField('maritalStatus', e.target.value)}
+                          >
+                            <option value="">Selecione…</option>
+                            {MARITAL_STATUS_OPTIONS.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <div className={styles.attrValue}>
+                            <span className={styles.attrValueText}>
+                              {card.maritalStatus ?? '—'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* CPF */}
+                      <div className={styles.attrCell}>
+                        <div className={styles.attrLabel}>
+                          <IdCardIcon />
+                          CPF
+                        </div>
+                        {isEditingAttrs ? (
+                          <input
+                            className={styles.attrInput}
+                            placeholder="000.000.000-00"
+                            value={attrsForm.cpf}
+                            onChange={(e) => updateAttrField('cpf', formatCPF(e.target.value))}
+                          />
+                        ) : (
+                          <div className={styles.attrValue}>
+                            <span className={styles.attrValueText}>{card.cpf ?? '—'}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -2186,6 +2467,171 @@ export function LeadModal({ card, onClose, isLoading = false }: LeadModalProps) 
                 }}
               >
                 {deleteLead.isPending ? 'Excluindo…' : 'Excluir'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {simulationFormOpen && (
+        // biome-ignore lint/a11y/useKeyWithClickEvents: overlay backdrop dismiss
+        <div
+          onClick={() => setSimulationFormOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: modal stops propagation */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#fff',
+              borderRadius: 12,
+              padding: 24,
+              width: 380,
+              maxWidth: '90vw',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+            }}
+          >
+            <h2 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 4px' }}>Nova Simulação</h2>
+            <p style={{ fontSize: 13, color: '#475569', margin: '0 0 16px' }}>
+              Entrada e prazo valem só pra esta proposta.
+              {qualificationGapFields.length > 0 &&
+                ' Também falta completar a Ficha de Qualificação do cliente.'}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label
+                  htmlFor="sim-down-payment"
+                  style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}
+                >
+                  Valor de Entrada
+                </label>
+                <input
+                  id="sim-down-payment"
+                  className={styles.attrInput}
+                  inputMode="decimal"
+                  placeholder="R$"
+                  value={simulationParams.downPayment}
+                  onChange={(e) =>
+                    setSimulationParams((prev) => ({
+                      ...prev,
+                      downPayment: e.target.value.replace(/[^0-9.,]/g, ''),
+                    }))
+                  }
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label
+                  htmlFor="sim-term-months"
+                  style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}
+                >
+                  Quantidade de Meses
+                </label>
+                <input
+                  id="sim-term-months"
+                  className={styles.attrInput}
+                  type="number"
+                  min={1}
+                  value={simulationParams.termMonths}
+                  onChange={(e) =>
+                    setSimulationParams((prev) => ({
+                      ...prev,
+                      termMonths: e.target.value.replace(/[^0-9]/g, ''),
+                    }))
+                  }
+                />
+              </div>
+              {qualificationGapFields.map((def) => (
+                <div key={def.key} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <label
+                    htmlFor={`gap-${def.key}`}
+                    style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}
+                  >
+                    {def.label}
+                  </label>
+                  {def.key === 'maritalStatus' ? (
+                    <select
+                      id={`gap-${def.key}`}
+                      className={styles.attrInput}
+                      value={gapForm.maritalStatus}
+                      onChange={(e) => updateGapField('maritalStatus', e.target.value)}
+                    >
+                      <option value="">Selecione…</option>
+                      {MARITAL_STATUS_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  ) : def.key === 'cpf' ? (
+                    <input
+                      id={`gap-${def.key}`}
+                      className={styles.attrInput}
+                      placeholder="000.000.000-00"
+                      value={gapForm.cpf}
+                      onChange={(e) => updateGapField('cpf', formatCPF(e.target.value))}
+                    />
+                  ) : def.key === 'income' ? (
+                    <input
+                      id={`gap-${def.key}`}
+                      className={styles.attrInput}
+                      inputMode="decimal"
+                      placeholder="R$"
+                      value={gapForm.income}
+                      onChange={(e) =>
+                        updateGapField('income', e.target.value.replace(/[^0-9.,]/g, ''))
+                      }
+                    />
+                  ) : (
+                    <input
+                      id={`gap-${def.key}`}
+                      className={styles.attrInput}
+                      value={gapForm.profession}
+                      onChange={(e) => updateGapField('profession', e.target.value)}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
+              <button
+                type="button"
+                onClick={() => setSimulationFormOpen(false)}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 8,
+                  border: '1px solid #e2e8f0',
+                  background: '#fff',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmitSimulationForm}
+                disabled={updateLead.isPending}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: '#0b1c30',
+                  color: '#fff',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                {updateLead.isPending ? 'Salvando…' : 'Simular'}
               </button>
             </div>
           </div>

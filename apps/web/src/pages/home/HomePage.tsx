@@ -7,12 +7,14 @@ import type { Tier } from '@sylocrm/ui'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
-import { COLUMN_STATUS_LABEL, COLUMN_TAREFA_LABEL, USER_TIER } from '../../data/kanban-mock'
+import { USER_TIER } from '../../data/kanban-mock'
 import { useAuth } from '../../hooks/useAuth'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
+import { useFunnelsQuery } from '../../hooks/useFunnels'
 import { useLeadsQuery } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
-import { STAGE_TO_COLUMN_ID, daysSince, formatCota } from '../../lib/lead-adapters'
+import { daysSince, formatCota } from '../../lib/lead-adapters'
+import { deriveStageColors } from '../../lib/stage-colors'
 import styles from './HomePage.module.css'
 
 // ── Ícones ────────────────────────────────────────────────────────────────────
@@ -171,15 +173,12 @@ interface TarefaItem {
   cota: string
   valor: string
   tarefa: string
-  status: 'Atendimento' | 'Simulação' | 'Proposta'
+  /** Nome do estágio real do lead (livre — cada funil define os seus). */
+  status: string
+  /** Hex do estágio, usado pra colorir o badge — ver deriveStageColors. */
+  statusColor: string | undefined
   daysUrgent: boolean
   daysNum: number
-}
-
-const STATUS_CLASS: Record<TarefaItem['status'], string> = {
-  Atendimento: styles.statusAtendimento ?? '',
-  Simulação: styles.statusSimulacao ?? '',
-  Proposta: styles.statusProposta ?? '',
 }
 
 const URGENT_AFTER_DAYS = 60
@@ -205,6 +204,7 @@ export function HomePage() {
   const [isLoading, setIsLoading] = useState(true)
   const { organizationId, membership } = useActiveOrganization()
   const { data: leadsPage } = useLeadsQuery(organizationId, { pageSize: 100 })
+  const { data: funnelsData } = useFunnelsQuery(organizationId)
   const { user } = useAuth()
   const { data: currentUser } = useCurrentUser()
 
@@ -221,14 +221,25 @@ export function HomePage() {
     return () => clearTimeout(t)
   }, [])
 
-  // Os 3 leads com mais dias no funil (exceto os já vendidos) — mesma regra
+  // Estágios de TODOS os funis da org, indexados por id — uma tarefa pode vir
+  // de qualquer funil (esta seção agrega leads parados, não é escopada a um
+  // funil só).
+  const stageById = useMemo(() => {
+    const map = new Map<string, { name: string; color: string }>()
+    for (const funnel of funnelsData?.funnels ?? []) {
+      for (const stage of funnel.stages) map.set(stage.id, stage)
+    }
+    return map
+  }, [funnelsData])
+
+  // Os 3 leads com mais dias no funil (exceto os já ganhos) — mesma regra
   // de negócio que o Kanban usa para calcular urgência.
   const tarefas = useMemo<TarefaItem[]>(() => {
     const leads = leadsPage?.items ?? []
     return leads
-      .filter((lead) => lead.stage !== 'VENDA')
+      .filter((lead) => !lead.wonAt)
       .map((lead): TarefaItem => {
-        const columnId = STAGE_TO_COLUMN_ID[lead.stage]
+        const stage = stageById.get(lead.stageId)
         const daysNum = daysSince(lead.createdAt)
         return {
           id: lead.id,
@@ -237,15 +248,16 @@ export function HomePage() {
           segmento: lead.segment,
           cota: formatCota(lead.valueCents, lead.segment, lead.quotaCount),
           valor: `R$ ${(lead.valueCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-          tarefa: COLUMN_TAREFA_LABEL[columnId] ?? 'Follow-Up',
-          status: (COLUMN_STATUS_LABEL[columnId] ?? 'Atendimento') as TarefaItem['status'],
+          tarefa: 'Follow-up',
+          status: stage?.name ?? 'Em andamento',
+          statusColor: stage?.color,
           daysUrgent: daysNum > URGENT_AFTER_DAYS,
           daysNum,
         }
       })
       .sort((a, b) => b.daysNum - a.daysNum)
       .slice(0, 3)
-  }, [leadsPage])
+  }, [leadsPage, stageById])
 
   return (
     <AppLayout>
@@ -516,46 +528,58 @@ export function HomePage() {
                       </td>
                     </tr>
                   )}
-                  {tarefas.map((t) => (
-                    <tr key={t.id}>
-                      <td className={styles.clienteNome}>{t.cliente}</td>
-                      <td>
-                        <p className={styles.segmentoNome}>{t.segmento}</p>
-                        <p className={styles.segmentoGrupo}>{t.cota}</p>
-                      </td>
-                      <td className={styles.valorCell}>{t.valor}</td>
-                      <td>
-                        <span className={styles.tarefaPill}>{t.tarefa}</span>
-                      </td>
-                      <td>
-                        <span className={`${styles.statusBadge} ${STATUS_CLASS[t.status]}`}>
-                          {t.status}
-                        </span>
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <button
-                            type="button"
-                            className={styles.whatsappBtn}
-                            aria-label={`WhatsApp — ${t.cliente}`}
-                            onClick={() =>
-                              window.open(`https://wa.me/55${t.phone.replace(/\D/g, '')}`, '_blank')
-                            }
+                  {tarefas.map((t) => {
+                    const statusPalette = deriveStageColors(t.statusColor)
+                    return (
+                      <tr key={t.id}>
+                        <td className={styles.clienteNome}>{t.cliente}</td>
+                        <td>
+                          <p className={styles.segmentoNome}>{t.segmento}</p>
+                          <p className={styles.segmentoGrupo}>{t.cota}</p>
+                        </td>
+                        <td className={styles.valorCell}>{t.valor}</td>
+                        <td>
+                          <span className={styles.tarefaPill}>{t.tarefa}</span>
+                        </td>
+                        <td>
+                          <span
+                            className={styles.statusBadge}
+                            style={{
+                              background: statusPalette.headerBg,
+                              color: statusPalette.headerText,
+                            }}
                           >
-                            <WhatsAppIcon />
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.viewBtn}
-                            aria-label={`Ver tarefa — ${t.cliente}`}
-                            onClick={() => navigate('/app/tarefas')}
-                          >
-                            <EyeIcon />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                            {t.status}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <button
+                              type="button"
+                              className={styles.whatsappBtn}
+                              aria-label={`WhatsApp — ${t.cliente}`}
+                              onClick={() =>
+                                window.open(
+                                  `https://wa.me/55${t.phone.replace(/\D/g, '')}`,
+                                  '_blank',
+                                )
+                              }
+                            >
+                              <WhatsAppIcon />
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.viewBtn}
+                              aria-label={`Ver tarefa — ${t.cliente}`}
+                              onClick={() => navigate('/app/tarefas')}
+                            >
+                              <EyeIcon />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

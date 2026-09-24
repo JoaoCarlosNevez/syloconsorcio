@@ -14,6 +14,8 @@ import styles from './CreateLeadModal.module.css'
 export interface CreateLeadModalProps {
   open: boolean
   organizationId: string
+  /** Funil ativo no Kanban — todo lead novo nasce nele, na primeira etapa. */
+  funnelId: string
   onClose: () => void
 }
 
@@ -28,7 +30,7 @@ const initialForm = {
   notes: '',
 }
 
-export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadModalProps) {
+export function CreateLeadModal({ open, organizationId, funnelId, onClose }: CreateLeadModalProps) {
   const [form, setForm] = useState(initialForm)
   const [formError, setFormError] = useState<string | null>(null)
   const createLead = useCreateLead(organizationId)
@@ -77,6 +79,7 @@ export function CreateLeadModal({ open, organizationId, onClose }: CreateLeadMod
         valueCents,
         quotaCount: Math.max(1, Number.parseInt(form.quotaCount, 10) || 1),
         source: form.source,
+        funnelId,
         assignedUserId: form.assignedUserId || null,
         notes: form.notes.trim() || null,
       })

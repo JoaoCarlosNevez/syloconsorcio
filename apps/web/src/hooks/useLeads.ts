@@ -6,12 +6,16 @@ import {
   type CreateLeadPayload,
   type LeadHistory,
   type LeadListPage,
+  type LeadProposal,
   type ListLeadsParams,
   type UpdateLeadPayload,
   createLead,
   createLeadComment,
+  createLeadProposal,
   deleteLead,
+  duplicateLead,
   getLeadHistory,
+  listLeadProposals,
   listLeads,
   updateLead,
 } from '../lib/leads-api'
@@ -59,6 +63,17 @@ export function useDeleteLead(organizationId: string | null) {
   })
 }
 
+export function useDuplicateLead(organizationId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, targetFunnelId }: { id: string; targetFunnelId: string }) =>
+      duplicateLead(organizationId as string, id, targetFunnelId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads', organizationId] })
+    },
+  })
+}
+
 function leadHistoryQueryKey(organizationId: string | null, leadId: string) {
   return ['leads', organizationId, leadId, 'history'] as const
 }
@@ -77,6 +92,29 @@ export function useCreateLeadComment(organizationId: string | null, leadId: stri
     mutationFn: (text: string) => createLeadComment(organizationId as string, leadId, text),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: leadHistoryQueryKey(organizationId, leadId) })
+    },
+  })
+}
+
+function leadProposalsQueryKey(organizationId: string | null, leadId: string) {
+  return ['leads', organizationId, leadId, 'proposals'] as const
+}
+
+export function useLeadProposalsQuery(organizationId: string | null, leadId: string) {
+  return useQuery<{ proposals: LeadProposal[] }>({
+    queryKey: leadProposalsQueryKey(organizationId, leadId),
+    queryFn: () => listLeadProposals(organizationId as string, leadId),
+    enabled: Boolean(organizationId) && Boolean(leadId),
+  })
+}
+
+export function useCreateLeadProposal(organizationId: string | null, leadId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: { downPaymentCents: number; termMonths: number }) =>
+      createLeadProposal(organizationId as string, leadId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: leadProposalsQueryKey(organizationId, leadId) })
     },
   })
 }

@@ -1350,10 +1350,6 @@
   color: #565e74;
 }
 
-.simMetaDot {
-  color: #d8c3ad;
-}
-
 /* Cabeçalho da simulação: título + parcela */
 .simHeader {
   display: flex;
@@ -1409,59 +1405,6 @@
   color: #565e74;
 }
 
-/* Grade de métricas */
-.simMetrics {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0;
-  background: #f8f9ff;
-  border: 1px solid rgba(216, 195, 173, 0.3);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.simMetricItem {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 10px 14px;
-}
-
-.simMetricBorder {
-  border-left: 1px solid rgba(216, 195, 173, 0.3);
-}
-
-.simMetricLabel {
-  font-size: 11px;
-  color: #565e74;
-  line-height: 1.33;
-}
-
-.simMetricValue {
-  font-size: 14px;
-  font-weight: 700;
-  color: #0b1c30;
-  letter-spacing: -0.14px;
-}
-
-.simMetricSub {
-  font-size: 11px;
-  color: #94a3b8;
-}
-
-.simMetricSubGreen {
-  color: #16a34a;
-}
-
-/* Ações da simulação principal */
-.simActions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
 .pdfBtn {
   display: inline-flex;
   align-items: center;
@@ -1483,12 +1426,6 @@
   opacity: 0.88;
 }
 
-.simSecActions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .simSecBtn {
   display: inline-flex;
   align-items: center;
@@ -1508,134 +1445,6 @@
 
 .simSecBtn:hover {
   background: #f8fafc;
-}
-
-/* Simulação Secundária */
-.simCardSec {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  border: 1px solid rgba(216, 195, 173, 0.4);
-  border-radius: 12px;
-  padding: 14px 16px;
-  background: #ffffff;
-}
-
-.simSecTopRow {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.simSecLeft {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.cenarioBadge {
-  display: inline-flex;
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: #e5eeff;
-  font-size: 10px;
-  font-weight: 600;
-  color: #334155;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-  white-space: nowrap;
-  align-self: flex-start;
-}
-
-.simSecTitle {
-  font-size: 14px;
-  font-weight: 600;
-  color: #0b1c30;
-  margin: 0;
-  letter-spacing: -0.14px;
-}
-
-.simSecButtons {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.verDetalhesBtn {
-  display: inline-flex;
-  padding: 5px 12px;
-  background: #fff;
-  border: 1px solid rgba(216, 195, 173, 0.5);
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #334155;
-  cursor: pointer;
-  white-space: nowrap;
-  font-family: var(--font-family-base);
-  transition: background-color var(--duration-normal);
-}
-
-.verDetalhesBtn:hover {
-  background: #f8fafc;
-}
-
-.descartarBtn {
-  display: inline-flex;
-  padding: 5px 12px;
-  background: #fff;
-  border: 1px solid rgba(186, 26, 26, 0.25);
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #ba1a1a;
-  cursor: pointer;
-  white-space: nowrap;
-  font-family: var(--font-family-base);
-  transition: background-color var(--duration-normal);
-}
-
-.descartarBtn:hover {
-  background: #fff1f2;
-}
-
-/* Métricas da simulação secundária */
-.simSecMetrics {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0;
-  background: #f8f9ff;
-  border: 1px solid rgba(216, 195, 173, 0.2);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.simSecMetricItem {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 9px 12px;
-  border-right: 1px solid rgba(216, 195, 173, 0.2);
-}
-
-.simSecMetricItem:last-child {
-  border-right: none;
-}
-
-.simSecMetricValue {
-  font-size: 13px;
-  font-weight: 700;
-  color: #0b1c30;
-}
-
-.saraProb {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: #565e74;
 }
 
 /* Bloco: Simular Novo Cenário */
@@ -1682,58 +1491,185 @@
 }
 
 /* Formulário de nova simulação */
-.simForm {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
+/* ── Simulação de crédito (loading + aprovado) ─────────────────────────── */
 
-.simFormField {
+.simLoading {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
+  padding: 36px 24px;
 }
 
-.simFormLabel {
-  font-size: 11px;
-  font-weight: 500;
+.simSpinnerRing {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  color: #0b1c30;
+  margin-bottom: 8px;
+}
+
+.simSpinner {
+  position: absolute;
+  inset: 0;
+  border: 3px solid rgba(11, 28, 48, 0.1);
+  border-top-color: #ffa705;
+  border-right-color: #ffa705;
+  border-radius: 50%;
+  animation: simSpin 1.1s linear infinite;
+}
+
+@keyframes simSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.simLoadingTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0b1c30;
+  margin: 0;
+}
+
+.simLoadingStep {
+  font-size: 13px;
   color: #565e74;
+  margin: 0;
+  min-height: 18px;
+  animation: simFadeIn 0.3s ease;
 }
 
-.simInput {
-  height: 36px;
-  padding: 0 10px;
-  border: 1px solid rgba(216, 195, 173, 0.5);
-  border-radius: 8px;
+@keyframes simFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.simProgressTrack {
+  width: 100%;
+  max-width: 280px;
+  height: 6px;
+  background: rgba(11, 28, 48, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+.simProgressBar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(to right, #ffeab1, #ffa705);
+  border-radius: 999px;
+  animation-name: simProgress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes simProgress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.simLoadingHint {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 10px 0 0;
+}
+
+.simApproved {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.simApprovedBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  color: #059669;
+  margin-bottom: 8px;
+  animation: simPopIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes simPopIn {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.simApprovedTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #059669;
+  margin: 0;
+}
+
+.simApprovedSub {
   font-size: 13px;
-  color: #0b1c30;
-  background: #ffffff;
-  outline: none;
-  font-family: var(--font-family-base);
-  transition: border-color var(--duration-normal);
+  color: #565e74;
+  margin: 2px 0 16px;
 }
 
-.simInput:focus {
-  border-color: rgba(245, 158, 11, 0.5);
-  box-shadow: 0 0 0 3px rgba(255, 167, 5, 0.08);
+.simApprovedSummary {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  background: #f8f9ff;
+  border: 1px solid rgba(216, 195, 173, 0.3);
+  border-radius: 10px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 340px;
+  margin-bottom: 18px;
 }
 
-.simSelect {
-  height: 36px;
-  padding: 0 10px;
-  border: 1px solid rgba(216, 195, 173, 0.5);
-  border-radius: 8px;
+.simApprovedItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 10px;
+  border-right: 1px solid rgba(216, 195, 173, 0.3);
+}
+
+.simApprovedItem:last-child {
+  border-right: none;
+}
+
+.simApprovedLabel {
+  font-size: 10px;
+  color: #565e74;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.simApprovedValue {
   font-size: 13px;
+  font-weight: 700;
   color: #0b1c30;
-  background: #ffffff;
-  outline: none;
-  font-family: var(--font-family-base);
-  cursor: pointer;
-  appearance: auto;
-  transition: border-color var(--duration-normal);
-}
-
-.simSelect:focus {
-  border-color: rgba(245, 158, 11, 0.5);
-  box-shadow: 0 0 0 3px rgba(255, 167, 5, 0.08);
 }

@@ -29,21 +29,25 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Dropdown, EmptyState, Skeleton, useToast } from '@sylocrm/ui'
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
-import { COLUMN_META, type CardData, type ColumnMeta } from '../../data/kanban-mock'
+import type { CardData, ColumnMeta } from '../../data/kanban-mock'
+import { useFunnelsQuery } from '../../hooks/useFunnels'
 import { useLeadsQuery, useUpdateLead } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { useOrganizationSettingsQuery } from '../../hooks/useOrganizationSettings'
 import { useTeamMembersQuery } from '../../hooks/useTeam'
+import type { FunnelStage } from '../../lib/funnels-api'
 import {
-  COLUMN_ID_TO_STAGE,
   formatBRL,
   groupLeadsByColumn,
+  matchesLeadSearch,
   resolveAgent,
   resolveCardOutcome,
 } from '../../lib/lead-adapters'
 import type { OutcomeFilter } from '../../lib/leads-api'
+import { deriveStageColors } from '../../lib/stage-colors'
 import type { TeamMember } from '../../lib/team-api'
 import { CreateLeadModal } from './CreateLeadModal'
 import styles from './KanbanPage.module.css'
@@ -95,20 +99,21 @@ function ListViewIcon() {
   )
 }
 
-function ChevronRightSmIcon() {
+function SearchIcon() {
   return (
     <svg
-      width="12"
-      height="12"
+      width="14"
+      height="14"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={2.5}
+      strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M9 18l6-6-6-6" />
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
   )
 }
@@ -430,19 +435,23 @@ function KanbanColumn({ meta, cards, members, onCardClick, isOver }: KanbanColum
 
 interface ListViewProps {
   board: Record<string, CardData[]>
+  columns: ColumnMeta[]
   members: TeamMember[]
   onCardClick: (card: CardData) => void
 }
 
-function ListView({ board, members, onCardClick }: ListViewProps) {
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+function ListView({ board, columns, members, onCardClick }: ListViewProps) {
+  const stageById = useMemo(() => new Map(columns.map((meta) => [meta.id, meta])), [columns])
 
-  const toggle = (colId: string) => setCollapsed((prev) => ({ ...prev, [colId]: !prev[colId] }))
-
-  // Colunas visíveis refletem os leads que a API já retornou filtrados por
-  // outcome (aberto/ganho/perdido) — não precisa esconder coluna aqui.
-  const visibleMeta = COLUMN_META
-  const totalVisible = visibleMeta.reduce((sum, m) => sum + (board[m.id]?.length ?? 0), 0)
+  // Lista única, sem agrupar por estágio — o estágio vira só mais uma coluna
+  // (ver stageById acima). Mais recentes primeiro, mesma ordem padrão da API.
+  const rows = useMemo(
+    () =>
+      Object.values(board)
+        .flat()
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [board],
+  )
 
   return (
     <div className={styles.listView}>
@@ -450,6 +459,7 @@ function ListView({ board, members, onCardClick }: ListViewProps) {
         <thead>
           <tr className={styles.listHead}>
             <th className={styles.listHeadCell}>Lead</th>
+            <th className={styles.listHeadCell}>Estágio</th>
             <th className={styles.listHeadCell}>Telefone</th>
             <th className={styles.listHeadCell}>Cota / Interesse</th>
             <th className={styles.listHeadCell}>Origem</th>
@@ -460,125 +470,90 @@ function ListView({ board, members, onCardClick }: ListViewProps) {
           </tr>
         </thead>
         <tbody>
-          {totalVisible === 0 && (
+          {rows.length === 0 && (
             <tr>
               <td
-                colSpan={8}
+                colSpan={9}
                 style={{ padding: '40px 0', textAlign: 'center', color: '#94a3b8', fontSize: 14 }}
               >
                 Nenhum lead encontrado com o filtro atual.
               </td>
             </tr>
           )}
-          {visibleMeta.map((meta) => {
-            const cards = board[meta.id] ?? []
-            const isCollapsed = collapsed[meta.id] ?? false
+          {rows.map((card, i) => {
+            const agent = resolveAgent(card.assignedUserId, members)
+            const cardOutcome = resolveCardOutcome(card)
+            const outcomeClass =
+              cardOutcome === 'ganho'
+                ? styles.listRowWon
+                : cardOutcome === 'perdido'
+                  ? styles.listRowLost
+                  : ''
+            const stageMeta = stageById.get(card.stageId)
             return (
-              <Fragment key={meta.id}>
-                <tr className={styles.listGroupRow}>
-                  <td colSpan={8} className={styles.listGroupCell}>
-                    <button
-                      type="button"
-                      className={styles.listGroupBtn}
-                      onClick={() => toggle(meta.id)}
+              <tr
+                key={card.id}
+                className={`${i % 2 === 0 ? styles.listRow : styles.listRowAlt} ${outcomeClass}`}
+                onClick={() => onCardClick(card)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onCardClick(card)
+                }}
+              >
+                <td className={`${styles.listCell} ${styles.listCellName}`}>
+                  <span className={styles.listName}>{card.name}</span>
+                </td>
+                <td className={styles.listCell}>
+                  {stageMeta && (
+                    <span
+                      className={styles.listSourceTag}
+                      style={{ background: stageMeta.headerBg, color: stageMeta.countText }}
                     >
-                      <span
-                        className={styles.listGroupChevron}
-                        style={{ transform: isCollapsed ? 'rotate(0deg)' : 'rotate(90deg)' }}
-                      >
-                        <ChevronRightSmIcon />
-                      </span>
-                      <span
-                        className={styles.listGroupDot}
-                        style={{ background: meta.headerBorder }}
-                      />
-                      <span className={styles.listGroupName}>{meta.name}</span>
-                      <span
-                        className={styles.listGroupCount}
-                        style={{
-                          background: meta.headerBg,
-                          color: meta.countText,
-                          borderColor: meta.headerBorder,
-                        }}
-                      >
-                        {cards.length}
-                      </span>
-                    </button>
-                  </td>
-                </tr>
-                {!isCollapsed &&
-                  cards.map((card, i) => {
-                    const agent = resolveAgent(card.assignedUserId, members)
-                    const cardOutcome = resolveCardOutcome(card)
-                    const outcomeClass =
-                      cardOutcome === 'ganho'
-                        ? styles.listRowWon
-                        : cardOutcome === 'perdido'
-                          ? styles.listRowLost
-                          : ''
-                    return (
-                      <tr
-                        key={card.id}
-                        className={`${i % 2 === 0 ? styles.listRow : styles.listRowAlt} ${outcomeClass}`}
-                        onClick={() => onCardClick(card)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') onCardClick(card)
-                        }}
-                      >
-                        <td className={`${styles.listCell} ${styles.listCellName}`}>
-                          <span className={styles.listName}>{card.name}</span>
-                        </td>
-                        <td className={styles.listCell}>
-                          <span className={styles.listPhone}>{card.phone}</span>
-                        </td>
-                        <td className={styles.listCell}>
-                          <span className={styles.listCota}>{card.cota}</span>
-                        </td>
-                        <td className={styles.listCell}>
-                          <span
-                            className={styles.listSourceTag}
-                            style={{ background: card.sourceBg, color: card.sourceText }}
-                          >
-                            {card.source}
-                          </span>
-                        </td>
-                        <td className={styles.listCell}>
-                          <span
-                            className={card.daysUrgent ? styles.listDaysUrgent : styles.listDays}
-                          >
-                            {card.days}
-                          </span>
-                        </td>
-                        <td className={styles.listCell}>
-                          <div className={styles.listAgent}>
-                            <img
-                              src={agent.photo}
-                              alt={agent.name}
-                              className={styles.listAgentAvatar}
-                            />
-                            <span className={styles.listAgentName}>{agent.name}</span>
-                          </div>
-                        </td>
-                        <td className={styles.listCell}>
-                          <span className={styles.listDate}>{card.date}</span>
-                        </td>
-                        <td
-                          className={`${styles.listCell} ${styles.listCellActions}`}
-                          onClick={(e) => e.stopPropagation()}
-                          onKeyDown={(e) => e.stopPropagation()}
-                        >
-                          <button
-                            type="button"
-                            className={styles.listWhatsappBtn}
-                            aria-label={`WhatsApp ${card.name}`}
-                          >
-                            <WhatsAppIcon />
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })}
-              </Fragment>
+                      {stageMeta.name}
+                    </span>
+                  )}
+                </td>
+                <td className={styles.listCell}>
+                  <span className={styles.listPhone}>{card.phone}</span>
+                </td>
+                <td className={styles.listCell}>
+                  <span className={styles.listCota}>{card.cota}</span>
+                </td>
+                <td className={styles.listCell}>
+                  <span
+                    className={styles.listSourceTag}
+                    style={{ background: card.sourceBg, color: card.sourceText }}
+                  >
+                    {card.source}
+                  </span>
+                </td>
+                <td className={styles.listCell}>
+                  <span className={card.daysUrgent ? styles.listDaysUrgent : styles.listDays}>
+                    {card.days}
+                  </span>
+                </td>
+                <td className={styles.listCell}>
+                  <div className={styles.listAgent}>
+                    <img src={agent.photo} alt={agent.name} className={styles.listAgentAvatar} />
+                    <span className={styles.listAgentName}>{agent.name}</span>
+                  </div>
+                </td>
+                <td className={styles.listCell}>
+                  <span className={styles.listDate}>{card.date}</span>
+                </td>
+                <td
+                  className={`${styles.listCell} ${styles.listCellActions}`}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    className={styles.listWhatsappBtn}
+                    aria-label={`WhatsApp ${card.name}`}
+                  >
+                    <WhatsAppIcon />
+                  </button>
+                </td>
+              </tr>
             )
           })}
         </tbody>
@@ -597,17 +572,60 @@ const OUTCOME_LABEL: Record<OutcomeFilter, string> = {
 }
 
 export function KanbanPage() {
+  const navigate = useNavigate()
   const { organizationId, membership } = useActiveOrganization()
   const canViewLost = membership?.permissions.includes('lead.manage_lost') ?? false
   const [outcomeFilter, setOutcomeFilter] = useState<OutcomeFilter>('aberto')
+  const [searchQuery, setSearchQuery] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [tagFilterOpen, setTagFilterOpen] = useState(false)
   const tagFilterRef = useRef<HTMLDivElement>(null)
+
+  // ── Funil ativo ────────────────────────────────────────────────────────────
+  const { data: funnelsData } = useFunnelsQuery(organizationId)
+  const funnels = funnelsData?.funnels ?? []
+  const [activeFunnelId, setActiveFunnelId] = useState<string | null>(null)
+
+  // Restaura o último funil escolhido (por organização) ou cai no padrão —
+  // roda de novo sempre que a lista de funis muda (ex: primeiro carregamento).
+  useEffect(() => {
+    if (!organizationId || funnels.length === 0) return
+    const storageKey = `sylocrm:kanban:activeFunnel:${organizationId}`
+    const stored = localStorage.getItem(storageKey)
+    const isStoredValid = funnels.some((f) => f.id === stored)
+    if (isStoredValid) {
+      setActiveFunnelId(stored)
+      return
+    }
+    const fallback = funnels.find((f) => f.isDefault) ?? funnels[0]
+    if (fallback) setActiveFunnelId(fallback.id)
+  }, [organizationId, funnels])
+
+  function handleSelectFunnel(id: string) {
+    setActiveFunnelId(id)
+    if (organizationId) {
+      localStorage.setItem(`sylocrm:kanban:activeFunnel:${organizationId}`, id)
+    }
+  }
+
+  const activeFunnel = funnels.find((f) => f.id === activeFunnelId) ?? null
+  const activeStages: FunnelStage[] = activeFunnel?.stages ?? []
+  const columns: ColumnMeta[] = useMemo(
+    () =>
+      activeStages.map((stage) => ({
+        id: stage.id,
+        name: stage.name,
+        ...deriveStageColors(stage.color),
+      })),
+    [activeStages],
+  )
+
   // pageSize=100: suficiente para o volume inicial do MVP. Lazy loading por
   // coluna (AGENTS.md §12) fica para quando o volume real exigir — ver nota
   // de status do projeto.
   const { data, isLoading: isLoadingLeads } = useLeadsQuery(organizationId, {
     pageSize: 100,
+    funnelId: activeFunnelId ?? undefined,
     outcome: outcomeFilter,
     tags: selectedTags,
   })
@@ -644,14 +662,15 @@ export function KanbanPage() {
   // estágio realmente mudou quando o drag termina (handleDragEnd).
   const dragOriginColumnRef = useRef<string | null>(null)
 
-  const isLoading = isLoadingLeads || !organizationId
+  const isLoading = isLoadingLeads || !organizationId || !activeFunnelId
 
   // Sincroniza o board local a partir dos dados reais sempre que a query
   // resolve (inclusive após criar/mover um lead, via invalidateQueries).
   useEffect(() => {
     if (!data) return
-    setBoard(groupLeadsByColumn(data.items))
-  }, [data])
+    const filtered = data.items.filter((lead) => matchesLeadSearch(lead, searchQuery))
+    setBoard(groupLeadsByColumn(filtered, activeStages))
+  }, [data, activeStages, searchQuery])
 
   // Métricas calculadas a partir da página carregada. Com paginação real
   // (>100 leads) isto deixa de refletir o total exato — ok para o MVP atual.
@@ -710,7 +729,7 @@ export function KanbanPage() {
       const activeColId = findColumnOfCard(board, String(active.id))
       const overColId =
         findColumnOfCard(board, String(over.id)) ??
-        (COLUMN_META.some((m) => m.id === over.id) ? String(over.id) : null)
+        (columns.some((m) => m.id === over.id) ? String(over.id) : null)
 
       setOverColId(overColId)
       if (!activeColId || !overColId || activeColId === overColId) return
@@ -731,7 +750,7 @@ export function KanbanPage() {
         return { ...prev, [activeColId]: sourceCards, [overColId]: destCards }
       })
     },
-    [board],
+    [board, columns],
   )
 
   const handleDragEnd = useCallback(
@@ -746,45 +765,23 @@ export function KanbanPage() {
 
       // handleDragOver já moveu o card para a coluna de destino em tempo real —
       // aqui só precisamos persistir o novo estágio se a coluna realmente mudou.
+      // Ganho/Perdido são desacoplados do estágio (ver plano de funis) — não
+      // existe mais "última coluna especial" bloqueada aqui; qualquer estágio
+      // aceita drop normalmente, e "Marcar como Ganho" continua sendo uma ação
+      // à parte, só habilitada na ficha do lead quando ele já está na última etapa.
       if (originColId && originColId !== colId) {
-        const stage = COLUMN_ID_TO_STAGE[colId]
-        // Ganhar um lead é sempre uma ação explícita (botão "Marcar como Ganho"
-        // na ficha do lead) — nunca implícita por soltar o card na última
-        // coluna. Desfaz o movimento visual e não persiste nada.
-        if (stage === 'VENDA') {
-          setBoard((prev) => {
-            const destCards = [...(prev[colId] ?? [])]
-            const activeIdx = destCards.findIndex((c) => c.id === active.id)
-            if (activeIdx === -1) return prev
-            const moved = destCards.splice(activeIdx, 1)[0]
-            if (!moved) return prev
-            return {
-              ...prev,
-              [colId]: destCards,
-              [originColId]: [...(prev[originColId] ?? []), moved],
-            }
-          })
-          toast({
-            type: 'error',
-            title: 'Não é possível arrastar para Venda Concluída',
-            description: 'Abra o lead e use "Marcar como Ganho" (disponível a partir de Fechado).',
-          })
-          return
-        }
-        if (stage) {
-          updateLead.mutate(
-            { id: String(active.id), payload: { stage } },
-            {
-              onError: (error) => {
-                toast({
-                  type: 'error',
-                  title: 'Não foi possível mover o lead',
-                  description: error instanceof Error ? error.message : undefined,
-                })
-              },
+        updateLead.mutate(
+          { id: String(active.id), payload: { stageId: colId } },
+          {
+            onError: (error) => {
+              toast({
+                type: 'error',
+                title: 'Não foi possível mover o lead',
+                description: error instanceof Error ? error.message : undefined,
+              })
             },
-          )
-        }
+          },
+        )
       }
 
       if (!over || active.id === over.id) return
@@ -811,8 +808,13 @@ export function KanbanPage() {
 
   return (
     <AppLayout>
-      {freshSelectedCard && (
-        <LeadModal card={freshSelectedCard} onClose={() => setSelectedCard(null)} />
+      {freshSelectedCard && activeFunnel && (
+        <LeadModal
+          card={freshSelectedCard}
+          funnel={activeFunnel}
+          funnels={funnels}
+          onClose={() => setSelectedCard(null)}
+        />
       )}
       <div className={styles.page}>
         {/* ── Header ──────────────────────────────────────────────────── */}
@@ -848,6 +850,40 @@ export function KanbanPage() {
               </button>
             </div>
             <span className={styles.headerDivider} />
+            <div className={styles.searchBox}>
+              <span className={styles.searchIcon}>
+                <SearchIcon />
+              </span>
+              <input
+                type="text"
+                className={styles.searchInput}
+                placeholder="Buscar por nome ou telefone..."
+                aria-label="Buscar lead por nome ou telefone"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            {funnels.length > 1 && (
+              <Dropdown
+                trigger={
+                  <span className={`${styles.filterBtn} ${styles.filterBtnActive}`}>
+                    {activeFunnel?.name ?? 'Funil'} <ChevronDownIcon />
+                  </span>
+                }
+                items={[
+                  ...funnels.map((funnel) => ({
+                    key: funnel.id,
+                    label: funnel.name,
+                    onSelect: () => handleSelectFunnel(funnel.id),
+                  })),
+                  {
+                    key: 'manage',
+                    label: 'Gerenciar funis',
+                    onSelect: () => navigate('/app/config'),
+                  },
+                ]}
+              />
+            )}
             <Dropdown
               trigger={
                 <span className={`${styles.filterBtn} ${styles.filterBtnActive}`}>
@@ -948,11 +984,17 @@ export function KanbanPage() {
         {isLoading && (
           <div className={styles.boardWrapper}>
             <div className={styles.board}>
-              {COLUMN_META.map((meta, ci) => (
-                <div key={meta.id} className={styles.column}>
+              {/* Skeleton genérico — os estágios reais ainda não carregaram
+                  neste ponto (dependem do funil ativo). */}
+              {Array.from({ length: 4 }).map((_, ci) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton array — order never changes
+                <div key={ci} className={styles.column}>
                   <div
                     className={styles.columnHeader}
-                    style={{ background: meta.headerBg, borderColor: meta.headerBorder }}
+                    style={{
+                      background: 'rgba(226,232,240,0.7)',
+                      borderColor: 'rgba(203,213,225,0.5)',
+                    }}
                   >
                     <Skeleton variant="text" width="90px" height="14px" />
                     <Skeleton
@@ -1023,7 +1065,12 @@ export function KanbanPage() {
 
         {/* ── Lista ────────────────────────────────────────────────────── */}
         {!isLoading && totalLeads > 0 && viewMode === 'list' && (
-          <ListView board={board} members={members} onCardClick={setSelectedCard} />
+          <ListView
+            board={board}
+            columns={columns}
+            members={members}
+            onCardClick={setSelectedCard}
+          />
         )}
 
         {/* ── Board ────────────────────────────────────────────────────── */}
@@ -1037,7 +1084,7 @@ export function KanbanPage() {
           >
             <div className={styles.boardWrapper}>
               <div ref={boardRef} className={styles.board}>
-                {COLUMN_META.map((meta) => (
+                {columns.map((meta) => (
                   <KanbanColumn
                     key={meta.id}
                     meta={meta}
@@ -1058,10 +1105,11 @@ export function KanbanPage() {
         )}
       </div>
 
-      {organizationId && (
+      {organizationId && activeFunnelId && (
         <CreateLeadModal
           open={isCreateOpen}
           organizationId={organizationId}
+          funnelId={activeFunnelId}
           onClose={() => setIsCreateOpen(false)}
         />
       )}

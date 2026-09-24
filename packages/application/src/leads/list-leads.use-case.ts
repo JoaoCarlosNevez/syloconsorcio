@@ -6,7 +6,6 @@
 // Este use case assume que a chamada já foi autorizada e cuida apenas da
 // resolução de escopo de dados e da paginação server-side (regra P0).
 
-import type { LeadStage } from '@sylocrm/domain'
 import type { MembershipContext } from '../auth/auth-context'
 import type { ILeadRepository, LeadListPage, LeadOutcomeFilter } from '../ports/lead.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
@@ -20,7 +19,8 @@ const DEFAULT_PAGE_SIZE = 25
 export interface ListLeadsInput {
   userId: string
   membership: MembershipContext
-  stage?: LeadStage
+  funnelId?: string
+  stageId?: string
   search?: string
   page?: number
   pageSize?: number
@@ -47,7 +47,8 @@ export class ListLeadsUseCase implements UseCase<ListLeadsInput, LeadListPage> {
     const result = await this.leadRepository.list(
       {
         ...scope,
-        stage: input.stage,
+        funnelId: input.funnelId,
+        stageId: input.stageId,
         search: input.search,
         outcome: input.outcome,
         tags: input.tags,

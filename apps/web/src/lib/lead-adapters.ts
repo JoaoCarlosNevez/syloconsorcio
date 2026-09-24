@@ -3,28 +3,22 @@
 // nesses componentes ao trocar a fonte de dados de mock para API real.
 
 import type { CardData } from '../data/kanban-mock'
-import type { Lead, LeadStage, OutcomeFilter } from './leads-api'
+import type { FunnelStage } from './funnels-api'
+import type { Lead, OutcomeFilter } from './leads-api'
 import type { TeamMember } from './team-api'
 
-export const STAGE_TO_COLUMN_ID: Record<LeadStage, string> = {
-  LEAD: 'lead',
-  ATENDIMENTO: 'atendimento',
-  SIMULACAO: 'simulacao',
-  PROPOSTA: 'proposta',
-  FECHADO: 'fechado',
-  VENDA: 'venda',
-}
-
-export const COLUMN_ID_TO_STAGE: Record<string, LeadStage> = Object.fromEntries(
-  Object.entries(STAGE_TO_COLUMN_ID).map(([stage, columnId]) => [columnId, stage as LeadStage]),
-)
-
-// Heurística de urgência: um lead que ainda não chegou em Simulação e está
-// parado há muito tempo provavelmente perdeu o timing. Etapas mais avançadas
-// não são marcadas como urgentes por dias-no-funil — precisam de um
-// indicador próprio (SLA por etapa) quando esse dado existir.
-const URGENT_STAGES: ReadonlySet<LeadStage> = new Set(['LEAD', 'ATENDIMENTO'])
+// Heurística de urgência: um lead ainda nas 2 primeiras etapas do funil (por
+// ordem) e parado há muito tempo provavelmente perdeu o timing. Etapas mais
+// avançadas não são marcadas como urgentes por dias-no-estágio — precisam de
+// um indicador próprio (SLA por etapa) quando esse dado existir.
+const URGENT_STAGE_COUNT = 2
 const URGENT_AFTER_DAYS = 60
+
+/** true se `stageId` estiver entre as 2 primeiras posições do funil informado. */
+export function isUrgentStage(stageId: string, stages: FunnelStage[]): boolean {
+  const index = stages.findIndex((stage) => stage.id === stageId)
+  return index >= 0 && index < URGENT_STAGE_COUNT
+}
 
 const SOURCE_COLORS: Record<string, { bg: string; text: string }> = {
   FACEBOOK: { bg: '#2563eb', text: '#fff' },
@@ -39,10 +33,11 @@ function getSourceColors(source: string): { bg: string; text: string } {
 }
 
 /** Status real do lead (independente do filtro de outcome ativo na página —
- * necessário porque o filtro "todos" mistura os 3 buckets no mesmo board). */
-export function resolveCardOutcome(card: Pick<CardData, 'stage' | 'lostAt'>): OutcomeFilter {
+ * necessário porque o filtro "todos" mistura os 3 buckets no mesmo board).
+ * Ganho/Perdido são flags independentes do estágio do funil. */
+export function resolveCardOutcome(card: Pick<CardData, 'wonAt' | 'lostAt'>): OutcomeFilter {
   if (card.lostAt) return 'perdido'
-  if (card.stage === 'VENDA') return 'ganho'
+  if (card.wonAt) return 'ganho'
   return 'aberto'
 }
 
@@ -77,6 +72,17 @@ export function formatPhoneBR(raw: string): string {
   return `(${ddd}) ${rest.slice(0, 5)}-${rest.slice(5)}`
 }
 
+/** Aplica a máscara progressiva de CPF (###.###.###-##), ignorando qualquer
+ * caractere que não seja dígito. */
+export function formatCPF(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 11)
+  const parts = [digits.slice(0, 3), digits.slice(3, 6), digits.slice(6, 9)].filter(Boolean)
+  let result = parts.join('.')
+  const rest = digits.slice(9, 11)
+  if (rest) result += `-${rest}`
+  return result
+}
+
 export function formatCota(valueCents: number, segment: string, quotaCount: number): string {
   const prefix = quotaCount > 1 ? `${quotaCount} Cotas` : 'Cota'
   return `${prefix} R$ ${formatBRL(valueCents)} (${segment})`
@@ -91,7 +97,7 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('pt-BR')
 }
 
-export function toCardData(lead: Lead): CardData {
+export function toCardData(lead: Lead, stages: FunnelStage[]): CardData {
   const colors = getSourceColors(lead.source)
   // Dias no estágio atual (não dias desde a criação) — é isso que indica se
   // um lead está empacado, não a idade total dele.
@@ -109,27 +115,49 @@ export function toCardData(lead: Lead): CardData {
     date: formatDate(lead.createdAt),
     createdAt: lead.createdAt,
     assignedUserId: lead.assignedUserId,
-    stage: lead.stage,
+    funnelId: lead.funnelId,
+    stageId: lead.stageId,
     lostAt: lead.lostAt,
+    wonAt: lead.wonAt,
     tags: lead.tags,
     notes: lead.notes,
+    profession: lead.profession,
+    incomeCents: lead.incomeCents,
+    maritalStatus: lead.maritalStatus,
+    cpf: lead.cpf,
     source: lead.source,
     sourceBg: colors.bg,
     sourceText: colors.text,
     days: `${days}d`,
-    daysUrgent: URGENT_STAGES.has(lead.stage) && days > URGENT_AFTER_DAYS,
+    daysUrgent: isUrgentStage(lead.stageId, stages) && days > URGENT_AFTER_DAYS,
   }
 }
 
-/** Agrupa leads por coluna do Kanban — todas as 6 colunas sempre presentes, mesmo vazias. */
-export function groupLeadsByColumn(leads: Lead[]): Record<string, CardData[]> {
+/** true se o lead corresponde à busca livre por nome (substring, sem
+ * diferenciar maiúsculas/minúsculas) ou telefone (compara só os dígitos,
+ * ignora formatação). Query vazia ou só espaços sempre casa. */
+export function matchesLeadSearch(lead: Pick<Lead, 'name' | 'phone'>, query: string): boolean {
+  const trimmed = query.trim()
+  if (!trimmed) return true
+
+  const nameMatch = lead.name.toLowerCase().includes(trimmed.toLowerCase())
+  const queryDigits = trimmed.replace(/\D/g, '')
+  const phoneMatch = queryDigits.length > 0 && lead.phone.replace(/\D/g, '').includes(queryDigits)
+  return nameMatch || phoneMatch
+}
+
+/** Agrupa leads por coluna (stageId) do funil — todos os estágios do funil
+ * sempre presentes, mesmo vazios. */
+export function groupLeadsByColumn(
+  leads: Lead[],
+  stages: FunnelStage[],
+): Record<string, CardData[]> {
   const board: Record<string, CardData[]> = {}
-  for (const columnId of Object.values(STAGE_TO_COLUMN_ID)) {
-    board[columnId] = []
+  for (const stage of stages) {
+    board[stage.id] = []
   }
   for (const lead of leads) {
-    const columnId = STAGE_TO_COLUMN_ID[lead.stage]
-    board[columnId]?.push(toCardData(lead))
+    board[lead.stageId]?.push(toCardData(lead, stages))
   }
   return board
 }

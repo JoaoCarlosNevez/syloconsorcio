@@ -10,11 +10,20 @@ export type { DbOrganization, NewDbOrganization } from './organizations'
 export { organizationMemberships, membershipStatusEnum, roleEnum } from './memberships'
 export type { DbMembership, NewDbMembership } from './memberships'
 
-export { leads, leadStageEnum } from './leads'
+export { leads } from './leads'
 export type { DbLead, NewDbLead } from './leads'
+
+export { funnels } from './funnels'
+export type { DbFunnel, NewDbFunnel } from './funnels'
+
+export { funnelStages } from './funnel-stages'
+export type { DbFunnelStage, NewDbFunnelStage } from './funnel-stages'
 
 export { leadAssignmentHistory } from './lead-assignment-history'
 export type { DbLeadAssignmentHistory, NewDbLeadAssignmentHistory } from './lead-assignment-history'
 
 export { leadComments } from './lead-comments'
 export type { DbLeadComment, NewDbLeadComment } from './lead-comments'
+
+export { leadProposals } from './lead-proposals'
+export type { DbLeadProposal, NewDbLeadProposal } from './lead-proposals'

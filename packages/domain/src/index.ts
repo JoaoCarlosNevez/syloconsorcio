@@ -11,4 +11,3 @@ export { ConflictError } from './errors/conflict-error'
 export { AuthorizationError } from './errors/authorization-error'
 
 export * from './auth'
-export * from './leads'

@@ -27,7 +27,6 @@ import {
   inArray,
   isNotNull,
   isNull,
-  ne,
   or,
   sql,
 } from 'drizzle-orm'
@@ -44,12 +43,18 @@ const LEAD_COLUMNS = {
   valueCents: leads.valueCents,
   quotaCount: leads.quotaCount,
   source: leads.source,
-  stage: leads.stage,
+  funnelId: leads.funnelId,
+  stageId: leads.stageId,
   assignedUserId: leads.assignedUserId,
   stageChangedAt: leads.stageChangedAt,
   lostAt: leads.lostAt,
+  wonAt: leads.wonAt,
   tags: leads.tags,
   notes: leads.notes,
+  profession: leads.profession,
+  incomeCents: leads.incomeCents,
+  maritalStatus: leads.maritalStatus,
+  cpf: leads.cpf,
   createdAt: leads.createdAt,
   updatedAt: leads.updatedAt,
 } as const
@@ -94,17 +99,20 @@ export class DrizzleLeadRepository implements ILeadRepository {
     // outcome particiona o funil em 3 buckets mutuamente exclusivos — aberto é
     // o padrão. 'todos' não filtra por outcome (mostra aberto+ganho+perdido
     // juntos). findById/update/delete não filtram por outcome (alcançam um
-    // lead perdido normalmente, pra permitir reabrir via lost: false).
+    // lead perdido/ganho normalmente, pra permitir reabrir via lost/won: false).
     const conditions = [...buildScopeConditions(filter)]
     const outcome = filter.outcome ?? 'aberto'
     if (outcome === 'perdido') {
       conditions.push(isNotNull(leads.lostAt))
     } else if (outcome !== 'todos') {
       conditions.push(isNull(leads.lostAt))
-      conditions.push(outcome === 'ganho' ? eq(leads.stage, 'VENDA') : ne(leads.stage, 'VENDA'))
+      conditions.push(outcome === 'ganho' ? isNotNull(leads.wonAt) : isNull(leads.wonAt))
     }
-    if (filter.stage) {
-      conditions.push(eq(leads.stage, filter.stage))
+    if (filter.funnelId) {
+      conditions.push(eq(leads.funnelId, filter.funnelId))
+    }
+    if (filter.stageId) {
+      conditions.push(eq(leads.stageId, filter.stageId))
     }
     if (filter.tags && filter.tags.length > 0) {
       // Overlap (OR): retorna leads que tenham QUALQUER uma das tags pedidas.
@@ -161,9 +169,15 @@ export class DrizzleLeadRepository implements ILeadRepository {
         valueCents: input.valueCents,
         quotaCount: input.quotaCount ?? 1,
         source: input.source,
+        funnelId: input.funnelId,
+        stageId: input.stageId,
         assignedUserId: input.assignedUserId ?? null,
         tags: input.tags ?? [],
         notes: input.notes ?? null,
+        profession: input.profession ?? null,
+        incomeCents: input.incomeCents ?? null,
+        maritalStatus: input.maritalStatus ?? null,
+        cpf: input.cpf ?? null,
       })
       .returning(LEAD_COLUMNS)
 
@@ -179,18 +193,43 @@ export class DrizzleLeadRepository implements ILeadRepository {
   ): Promise<LeadRecord | null> {
     if (scope.organizationIds.length === 0) return null
 
-    const { lost, ...rest } = input
+    const { lost, won, ...rest } = input
 
     const rows = await this.db
       .update(leads)
       .set({
         ...rest,
         updatedAt: new Date(),
-        ...(input.stage ? { stageChangedAt: new Date() } : {}),
+        ...(input.stageId ? { stageChangedAt: new Date() } : {}),
         ...(lost !== undefined ? { lostAt: lost ? new Date() : null } : {}),
+        ...(won !== undefined ? { wonAt: won ? new Date() : null } : {}),
       })
       .where(and(eq(leads.id, id), ...buildScopeConditions(scope)))
       .returning(LEAD_COLUMNS)
+
+    const row = rows[0]
+    return row ? toLeadRecord(row) : null
+  }
+
+  async findByPhone(
+    organizationId: string,
+    phone: string,
+    excludeLeadId?: string,
+  ): Promise<LeadRecord | null> {
+    const digits = phone.replace(/\D/g, '')
+    const conditions = [
+      eq(leads.organizationId, organizationId),
+      // Nota: '\D' não funciona como classe "não-dígito" no regexp_replace do
+      // Postgres nesta instância (confirmado manualmente) — '[^0-9]' funciona.
+      sql`regexp_replace(${leads.phone}, '[^0-9]', '', 'g') = ${digits}`,
+    ]
+    if (excludeLeadId) conditions.push(sql`${leads.id} != ${excludeLeadId}`)
+
+    const rows = await this.db
+      .select(LEAD_COLUMNS)
+      .from(leads)
+      .where(and(...conditions))
+      .limit(1)
 
     const row = rows[0]
     return row ? toLeadRecord(row) : null
