@@ -435,6 +435,7 @@ describe('GET /auth/memberships', () => {
       findAll: vi.fn().mockResolvedValue([]),
       deactivate: vi.fn(),
       reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider, mockRepo)
@@ -479,6 +480,7 @@ describe('GET /auth/memberships', () => {
       findAll: vi.fn().mockResolvedValue([]),
       deactivate: vi.fn(),
       reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildApp({
@@ -561,6 +563,7 @@ describe('GET /auth/memberships', () => {
       findAll: vi.fn().mockResolvedValue([]),
       deactivate: vi.fn(),
       reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildApp({
@@ -680,6 +683,7 @@ describe('GET /auth/context', () => {
       findAll: vi.fn().mockResolvedValue([]),
       deactivate: vi.fn(),
       reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider, mockRepo)

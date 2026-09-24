@@ -172,6 +172,7 @@ function buildMembershipRepository(
     findAll: vi.fn().mockResolvedValue([]),
     deactivate: vi.fn(),
     reactivate: vi.fn(),
+    updateSalesGoal: vi.fn(),
     removeAllForUser: vi.fn(),
   }
 }
@@ -187,6 +188,7 @@ function buildLeadRepository(overrides: Partial<ILeadRepository> = {}): ILeadRep
     listAssignmentHistory: vi.fn().mockResolvedValue([]),
     listComments: vi.fn().mockResolvedValue([]),
     createComment: vi.fn().mockResolvedValue(SAMPLE_COMMENT),
+    sumWonValueCents: vi.fn().mockResolvedValue(0),
     findByPhone: vi.fn().mockResolvedValue(null),
     ...overrides,
   }

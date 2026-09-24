@@ -31,6 +31,8 @@ export interface TeamMember {
   avatarUrl: string | null
   role: Role
   status: 'ACTIVE' | 'INVITED' | 'SUSPENDED'
+  /** Meta de vendas na organização, em centavos de crédito. null = sem meta. */
+  salesGoalCents: number | null
 }
 
 /** TeamMember com os dados da organização — usado na listagem cross-org do Super Admin. */
@@ -96,6 +98,13 @@ export interface IMembershipRepository {
 
   /** Reativa (status = ACTIVE) um vínculo previamente desativado. */
   reactivate(userId: string, organizationId: string): Promise<void>
+
+  /** Define (ou limpa, com null) a meta de vendas do membro na organização. */
+  updateSalesGoal(
+    userId: string,
+    organizationId: string,
+    salesGoalCents: number | null,
+  ): Promise<void>
 
   /**
    * Apaga (hard delete) todos os vínculos de um usuário com qualquer

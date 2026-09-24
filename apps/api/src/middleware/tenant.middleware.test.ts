@@ -156,6 +156,7 @@ describe('tenantMiddleware', () => {
       findAll: vi.fn().mockResolvedValue([]),
       deactivate: vi.fn(),
       reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestAppWithoutAuth(mockRepo)
@@ -184,6 +185,7 @@ describe('tenantMiddleware', () => {
       findAll: vi.fn().mockResolvedValue([]),
       deactivate: vi.fn(),
       reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
@@ -208,6 +210,7 @@ describe('tenantMiddleware', () => {
       findAll: vi.fn().mockResolvedValue([]),
       deactivate: vi.fn(),
       reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
@@ -235,6 +238,7 @@ describe('tenantMiddleware', () => {
       findAll: vi.fn().mockResolvedValue([]),
       deactivate: vi.fn(),
       reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(
@@ -267,6 +271,7 @@ describe('tenantMiddleware', () => {
       findAll: vi.fn().mockResolvedValue([]),
       deactivate: vi.fn(),
       reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const organizationRepo = buildOrganizationRepository({
@@ -308,6 +313,7 @@ describe('tenantMiddleware', () => {
       findAll: vi.fn().mockResolvedValue([]),
       deactivate: vi.fn(),
       reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const organizationRepo = buildOrganizationRepository({
@@ -350,6 +356,7 @@ describe('tenantMiddleware', () => {
       findAll: vi.fn().mockResolvedValue([]),
       deactivate: vi.fn(),
       reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(mockRepo, IDENTITY, buildUserRepository(true))
@@ -377,6 +384,7 @@ describe('tenantMiddleware', () => {
       findAll: vi.fn().mockResolvedValue([]),
       deactivate: vi.fn(),
       reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
@@ -404,6 +412,7 @@ describe('tenantMiddleware', () => {
       findAll: vi.fn().mockResolvedValue([]),
       deactivate: vi.fn(),
       reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
@@ -436,6 +445,7 @@ describe('tenantMiddleware', () => {
       findAll: vi.fn().mockResolvedValue([]),
       deactivate: vi.fn(),
       reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
@@ -463,6 +473,7 @@ describe('tenantMiddleware', () => {
         findAll: vi.fn().mockResolvedValue([]),
         deactivate: vi.fn(),
         reactivate: vi.fn(),
+        updateSalesGoal: vi.fn(),
         removeAllForUser: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
@@ -489,6 +500,7 @@ describe('tenantMiddleware', () => {
         findAll: vi.fn().mockResolvedValue([]),
         deactivate: vi.fn(),
         reactivate: vi.fn(),
+        updateSalesGoal: vi.fn(),
         removeAllForUser: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
@@ -515,6 +527,7 @@ describe('tenantMiddleware', () => {
         findAll: vi.fn().mockResolvedValue([]),
         deactivate: vi.fn(),
         reactivate: vi.fn(),
+        updateSalesGoal: vi.fn(),
         removeAllForUser: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
@@ -543,6 +556,7 @@ describe('tenantMiddleware', () => {
         findAll: vi.fn().mockResolvedValue([]),
         deactivate: vi.fn(),
         reactivate: vi.fn(),
+        updateSalesGoal: vi.fn(),
         removeAllForUser: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
@@ -573,6 +587,7 @@ describe('tenantMiddleware', () => {
         findAll: vi.fn().mockResolvedValue([]),
         deactivate: vi.fn(),
         reactivate: vi.fn(),
+        updateSalesGoal: vi.fn(),
         removeAllForUser: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
@@ -601,6 +616,7 @@ describe('tenantMiddleware', () => {
       findAll: vi.fn().mockResolvedValue([]),
       deactivate: vi.fn(),
       reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(mockRepo)

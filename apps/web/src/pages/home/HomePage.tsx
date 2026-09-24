@@ -1,6 +1,7 @@
 // HomePage — fiel ao design Figma.
 // Seções: hero de perfil, metas pessoal + representação, tarefas, KPIs.
-// Dados mock com skeleton durante carregamento.
+// Metas vêm de GET /team/goals/summary (definidas em Configurações → Equipe);
+// o restante ainda é mock, com skeleton durante carregamento.
 
 import { Skeleton } from '@sylocrm/ui'
 import type { Tier } from '@sylocrm/ui'
@@ -13,7 +14,9 @@ import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { useFunnelsQuery } from '../../hooks/useFunnels'
 import { useLeadsQuery } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
+import { useSalesGoalsSummaryQuery } from '../../hooks/useTeam'
 import { daysSince, formatCota } from '../../lib/lead-adapters'
+import { businessDaysRemaining, formatGoalBRL, toGoalProgressView } from '../../lib/sales-goals'
 import { deriveStageColors } from '../../lib/stage-colors'
 import styles from './HomePage.module.css'
 
@@ -207,6 +210,20 @@ export function HomePage() {
   const { data: funnelsData } = useFunnelsQuery(organizationId)
   const { user } = useAuth()
   const { data: currentUser } = useCurrentUser()
+  const { data: goalsSummary, isLoading: isGoalsLoading } =
+    useSalesGoalsSummaryQuery(organizationId)
+
+  const personalGoal = toGoalProgressView(
+    goalsSummary?.personal ?? { goalCents: null, achievedCents: 0 },
+  )
+  const organizationGoal = toGoalProgressView(
+    goalsSummary?.organization ?? { goalCents: null, achievedCents: 0 },
+  )
+  const daysLeft = goalsSummary ? businessDaysRemaining(goalsSummary.periodEnd) : 0
+  const dailyPaceCents =
+    organizationGoal.remainingCents > 0 && daysLeft > 0
+      ? Math.ceil(organizationGoal.remainingCents / daysLeft)
+      : 0
 
   const emailPrefix = user?.email?.split('@')[0] ?? 'consultor'
   const fallbackName = emailPrefix.replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
@@ -338,7 +355,7 @@ export function HomePage() {
         {/* ── Conteúdo ──────────────────────────────────────────────────── */}
         <div className={styles.content}>
           {/* ── Cards de meta ───────────────────────────────────────────── */}
-          {isLoading ? (
+          {isLoading || isGoalsLoading ? (
             <div className={styles.skeletonMetasRow}>
               {[0, 1].map((i) => (
                 <div key={i} className={styles.skeletonMetaCard}>
@@ -374,31 +391,43 @@ export function HomePage() {
                       </div>
                       <p className={styles.metaCardTitle}>Meta Pessoal do Mês</p>
                     </div>
-                    <span className={styles.metaPercent}>70%</span>
+                    <span className={styles.metaPercent}>
+                      {personalGoal.hasGoal ? `${personalGoal.percent}%` : '—'}
+                    </span>
                   </div>
 
                   <div className={styles.metaValuesRow}>
                     <div className={styles.metaValueGroup}>
                       <span className={styles.metaLabel}>Realizado</span>
-                      <span className={styles.metaValue}>R$ 420.000</span>
+                      <span className={styles.metaValue}>
+                        {formatGoalBRL(goalsSummary?.personal.achievedCents ?? 0)}
+                      </span>
                     </div>
                     <div className={styles.metaValueGroup} style={{ alignItems: 'flex-end' }}>
                       <span className={styles.metaLabel}>Objetivo Total</span>
-                      <span className={styles.metaValueMuted}>R$ 600.000</span>
+                      <span className={styles.metaValueMuted}>
+                        {goalsSummary?.personal.goalCents != null
+                          ? formatGoalBRL(goalsSummary.personal.goalCents)
+                          : 'Não definida'}
+                      </span>
                     </div>
                   </div>
 
                   <div className={styles.metaProgressBar}>
                     <div
                       className={`${styles.metaProgressFill} ${styles.metaProgressFillBlue}`}
-                      style={{ width: '69%' }}
+                      style={{ width: `${personalGoal.barPercent * 0.98}%` }}
                     />
                   </div>
                 </div>
 
                 <div className={styles.metaFooter}>
                   <StarIcon />
-                  Faltando R$ 180.000 para atingir a meta
+                  {!personalGoal.hasGoal
+                    ? 'Defina sua meta em Perfil → Editar perfil'
+                    : personalGoal.reached
+                      ? 'Meta do mês atingida — parabéns!'
+                      : `Faltando ${formatGoalBRL(personalGoal.remainingCents)} para atingir a meta`}
                 </div>
               </div>
 
@@ -416,37 +445,57 @@ export function HomePage() {
                       </div>
                       <div>
                         <p className={styles.metaCardTitle}>Meta da Representação</p>
-                        <p className={styles.metaCardSubtitle}>Filial Alpha Consórcios Brasil</p>
+                        <p className={styles.metaCardSubtitle}>
+                          {membership?.organizationName ?? '—'}
+                        </p>
                       </div>
                     </div>
                     <div className={styles.metaPercentRight}>
-                      <span className={styles.metaPercent}>77%</span>
-                      <span className={styles.metaDiasRestantes}>18 dias úteis restantes</span>
+                      <span className={styles.metaPercent}>
+                        {organizationGoal.hasGoal ? `${organizationGoal.percent}%` : '—'}
+                      </span>
+                      <span className={styles.metaDiasRestantes}>
+                        {daysLeft === 1
+                          ? '1 dia útil restante'
+                          : `${daysLeft} dias úteis restantes`}
+                      </span>
                     </div>
                   </div>
 
                   <div className={styles.metaValuesRow}>
                     <div className={styles.metaValueGroup}>
                       <span className={styles.metaLabel}>Produção Consolidada</span>
-                      <span className={styles.metaValue}>R$ 3.850.000</span>
+                      <span className={styles.metaValue}>
+                        {formatGoalBRL(goalsSummary?.organization.achievedCents ?? 0)}
+                      </span>
                     </div>
                     <div className={styles.metaValueGroup} style={{ alignItems: 'flex-end' }}>
-                      <span className={styles.metaLabel}>Teto da Filial</span>
-                      <span className={styles.metaValueMuted}>R$ 5.000.000</span>
+                      <span className={styles.metaLabel}>Meta da Equipe</span>
+                      <span className={styles.metaValueMuted}>
+                        {goalsSummary?.organization.goalCents != null
+                          ? formatGoalBRL(goalsSummary.organization.goalCents)
+                          : 'Não definida'}
+                      </span>
                     </div>
                   </div>
 
                   <div className={styles.metaProgressBar}>
                     <div
                       className={`${styles.metaProgressFill} ${styles.metaProgressFillGreen}`}
-                      style={{ width: '76%' }}
+                      style={{ width: `${organizationGoal.barPercent * 0.98}%` }}
                     />
                   </div>
                 </div>
 
                 <div className={styles.metaFooter}>
                   <TrendUpIcon />
-                  Ritmo diário: R$ 213.800 / dia
+                  {!organizationGoal.hasGoal
+                    ? 'Nenhuma meta definida na equipe ainda'
+                    : organizationGoal.reached
+                      ? 'Meta da representação atingida'
+                      : dailyPaceCents > 0
+                        ? `Ritmo necessário: ${formatGoalBRL(dailyPaceCents)} / dia útil`
+                        : `Faltaram ${formatGoalBRL(organizationGoal.remainingCents)} para a meta`}
                 </div>
               </div>
             </div>

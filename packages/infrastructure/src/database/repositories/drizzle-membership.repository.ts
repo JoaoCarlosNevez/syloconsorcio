@@ -119,6 +119,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         avatarUrl: users.avatarUrl,
         role: organizationMemberships.role,
         status: organizationMemberships.status,
+        salesGoalCents: organizationMemberships.salesGoalCents,
       })
       .from(organizationMemberships)
       .innerJoin(users, eq(organizationMemberships.userId, users.id))
@@ -141,6 +142,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         avatarUrl: users.avatarUrl,
         role: organizationMemberships.role,
         status: organizationMemberships.status,
+        salesGoalCents: organizationMemberships.salesGoalCents,
       })
       .from(organizationMemberships)
       .innerJoin(users, eq(organizationMemberships.userId, users.id))
@@ -158,6 +160,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         avatarUrl: users.avatarUrl,
         role: organizationMemberships.role,
         status: organizationMemberships.status,
+        salesGoalCents: organizationMemberships.salesGoalCents,
         organizationId: organizationMemberships.organizationId,
         organizationName: organizations.name,
       })
@@ -178,6 +181,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         avatarUrl: users.avatarUrl,
         role: organizationMemberships.role,
         status: organizationMemberships.status,
+        salesGoalCents: organizationMemberships.salesGoalCents,
         organizationId: organizationMemberships.organizationId,
         organizationName: organizations.name,
       })
@@ -212,6 +216,22 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
     await this.db
       .update(organizationMemberships)
       .set({ status: 'ACTIVE', updatedAt: new Date() })
+      .where(
+        and(
+          eq(organizationMemberships.userId, userId),
+          eq(organizationMemberships.organizationId, organizationId),
+        ),
+      )
+  }
+
+  async updateSalesGoal(
+    userId: string,
+    organizationId: string,
+    salesGoalCents: number | null,
+  ): Promise<void> {
+    await this.db
+      .update(organizationMemberships)
+      .set({ salesGoalCents, updatedAt: new Date() })
       .where(
         and(
           eq(organizationMemberships.userId, userId),

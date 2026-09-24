@@ -24,6 +24,9 @@ const MANAGER_PERMISSIONS: readonly Permission[] = [
   // Supervisor pode remover só Vendedores — a hierarquia fina é aplicada
   // em RemoveTeamMemberUseCase.
   Permission.USER_REMOVE,
+  // Supervisor define a meta só de Vendedores — hierarquia fina em
+  // UpdateTeamMemberSalesGoalUseCase.
+  Permission.TEAM_GOAL_UPDATE,
   Permission.TASK_READ,
   Permission.TASK_CREATE,
   Permission.TASK_UPDATE,

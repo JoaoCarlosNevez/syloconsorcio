@@ -12,7 +12,9 @@ import {
   useUploadMyAvatar,
 } from '../../hooks/useCurrentUser'
 import { useActiveOrganization } from '../../hooks/useOrganization'
+import { useSalesGoalsSummaryQuery, useUpdateMySalesGoal } from '../../hooks/useTeam'
 import { validateIconFile } from '../../lib/icon-validation'
+import { formatGoalInput, goalInputToCents } from '../../lib/sales-goals'
 import { supabase } from '../../lib/supabase'
 import styles from './PerfilPage.module.css'
 
@@ -405,7 +407,9 @@ interface EditProfileModalProps {
 
 function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
   const { data: currentUser } = useCurrentUser()
-  const { membership } = useActiveOrganization()
+  const { organizationId, membership } = useActiveOrganization()
+  const { data: goalsSummary } = useSalesGoalsSummaryQuery(organizationId)
+  const updateMyGoal = useUpdateMySalesGoal(organizationId)
   const updateProfile = useUpdateMyProfile()
   const uploadAvatar = useUploadMyAvatar()
   const removeAvatar = useRemoveMyAvatar()
@@ -415,6 +419,12 @@ function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
   const [name, setName] = useState(currentUser?.name ?? '')
   const [instagramHandle, setInstagramHandle] = useState(currentUser?.instagramHandle ?? '')
   const [location, setLocation] = useState(currentUser?.location ?? '')
+  // null = campo intocado: mostra a meta salva (que pode chegar depois do
+  // modal abrir) e não reenvia nada ao salvar.
+  const [goalDraft, setGoalDraft] = useState<string | null>(null)
+  const savedGoalCents = goalsSummary?.personal.goalCents ?? null
+  const goalValue =
+    goalDraft ?? (savedGoalCents !== null ? formatGoalInput(String(savedGoalCents / 100)) : '')
   const [formError, setFormError] = useState('')
   const [avatarError, setAvatarError] = useState('')
 
@@ -438,6 +448,9 @@ function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
         instagramHandle: instagramHandle.trim() || null,
         location: location.trim() || null,
       })
+      if (goalDraft !== null && goalInputToCents(goalDraft) !== savedGoalCents) {
+        await updateMyGoal.mutateAsync(goalInputToCents(goalDraft))
+      }
       onSaved('Perfil atualizado com sucesso!')
       onClose()
     } catch (error) {
@@ -659,6 +672,36 @@ function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
             </section>
           )}
 
+          {/* Meta de vendas */}
+          {membership && (
+            <section className={styles.editSection}>
+              <h3 className={styles.editSectionTitle}>Meta pessoal do mês</h3>
+              <p className={styles.editSectionSubtitle}>
+                Quanto você quer vender em crédito por mês em {membership.organizationName}.
+              </p>
+              <div className={styles.editGrid}>
+                <label className={styles.editField}>
+                  <span className={styles.editLabel}>Meta de vendas</span>
+                  <div className={styles.editInputPrefixed}>
+                    <span className={styles.editInputPrefix}>R$</span>
+                    <input
+                      className={styles.editInputWithPrefix}
+                      type="text"
+                      inputMode="numeric"
+                      value={goalValue}
+                      onChange={(e) => setGoalDraft(formatGoalInput(e.target.value))}
+                      placeholder="0"
+                    />
+                  </div>
+                  <span className={styles.editHint}>
+                    Aparece no card "Meta Pessoal do Mês" do início. Deixe em branco para ficar sem
+                    meta.
+                  </span>
+                </label>
+              </div>
+            </section>
+          )}
+
           {/* Segurança */}
           <section className={styles.editSection}>
             <h3 className={styles.editSectionTitle}>Segurança</h3>
@@ -745,9 +788,11 @@ function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
               type="button"
               className={styles.primaryBtn}
               onClick={handleSave}
-              disabled={updateProfile.isPending}
+              disabled={updateProfile.isPending || updateMyGoal.isPending}
             >
-              {updateProfile.isPending ? 'Salvando…' : 'Salvar alterações'}
+              {updateProfile.isPending || updateMyGoal.isPending
+                ? 'Salvando…'
+                : 'Salvar alterações'}
             </button>
           </div>
         </div>

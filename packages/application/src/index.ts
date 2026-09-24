@@ -47,6 +47,7 @@ export type {
   NewLeadInput,
   UpdateLeadInput,
   LeadScopeFilter,
+  WonValueFilter,
   LeadListFilter,
   LeadListPage,
   AssignmentChange,
@@ -139,3 +140,13 @@ export type { RemoveTeamMemberInput } from './team/remove-team-member.use-case'
 
 export { ReactivateTeamMemberUseCase } from './team/reactivate-team-member.use-case'
 export type { ReactivateTeamMemberInput } from './team/reactivate-team-member.use-case'
+
+export { GetSalesGoalsSummaryUseCase } from './team/get-sales-goals-summary.use-case'
+export type {
+  GetSalesGoalsSummaryInput,
+  SalesGoalProgress,
+  SalesGoalsSummary,
+} from './team/get-sales-goals-summary.use-case'
+
+export { UpdateTeamMemberSalesGoalUseCase } from './team/update-team-member-sales-goal.use-case'
+export type { UpdateTeamMemberSalesGoalInput } from './team/update-team-member-sales-goal.use-case'

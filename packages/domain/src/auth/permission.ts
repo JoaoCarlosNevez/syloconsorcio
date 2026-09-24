@@ -19,6 +19,10 @@ export const Permission = {
   LEAD_MANAGE_LOST: 'lead.manage_lost',
   USER_INVITE: 'user.invite',
   USER_REMOVE: 'user.remove',
+  /** Definir a meta de vendas (em crédito) de um membro da equipe — a
+   * hierarquia fina (só papéis abaixo do seu) é aplicada em
+   * UpdateTeamMemberSalesGoalUseCase. */
+  TEAM_GOAL_UPDATE: 'team.goal_update',
   REPORTS_READ: 'reports.read',
   ORGANIZATION_UPDATE: 'organization.update',
   TASK_READ: 'task.read',

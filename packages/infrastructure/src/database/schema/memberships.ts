@@ -7,7 +7,7 @@
 // Constraint UNIQUE (user_id, organization_id): um usuário não pode ter
 // dois memberships na mesma organização.
 
-import { pgEnum, pgTable, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import { bigint, pgEnum, pgTable, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 import { organizations } from './organizations'
 import { users } from './users'
 
@@ -27,6 +27,10 @@ export const organizationMemberships = pgTable(
       .references(() => organizations.id),
     role: roleEnum('role').notNull(),
     status: membershipStatusEnum('status').notNull().default('ACTIVE'),
+    // Meta de vendas do membro nesta organização, em valor de crédito
+    // (centavos). null = sem meta definida. bigint porque metas somadas de
+    // crédito de consórcio passam fácil do teto de integer (~R$ 21 mi).
+    salesGoalCents: bigint('sales_goal_cents', { mode: 'number' }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },

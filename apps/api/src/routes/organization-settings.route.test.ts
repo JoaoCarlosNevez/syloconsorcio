@@ -68,6 +68,7 @@ function buildMembershipRepository(membership: UserMembership): IMembershipRepos
     findAll: vi.fn().mockResolvedValue([]),
     deactivate: vi.fn(),
     reactivate: vi.fn(),
+    updateSalesGoal: vi.fn(),
     removeAllForUser: vi.fn(),
   }
 }

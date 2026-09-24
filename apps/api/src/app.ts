@@ -76,6 +76,9 @@ function createNoOpMembershipRepository(): IMembershipRepository {
     reactivate: async () => {
       throw new Error('Database not configured — cannot reactivate memberships.')
     },
+    updateSalesGoal: async () => {
+      throw new Error('Database not configured — cannot update sales goals.')
+    },
     removeAllForUser: async () => {
       throw new Error('Database not configured — cannot remove memberships.')
     },
@@ -99,6 +102,7 @@ function createNoOpLeadRepository(): ILeadRepository {
       throw new Error('Database not configured — cannot create comments.')
     },
     findByPhone: async () => null,
+    sumWonValueCents: async () => 0,
   }
 }
 
@@ -263,6 +267,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     userRepository: resolvedDeps.userRepository,
     membershipRepository: resolvedDeps.membershipRepository,
     organizationRepository: resolvedDeps.organizationRepository,
+    leadRepository: resolvedDeps.leadRepository,
   })
 
   app.register(organizationSettingsRoute, {

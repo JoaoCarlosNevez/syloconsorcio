@@ -17,16 +17,19 @@ import type {
   NewLeadCommentInput,
   NewLeadInput,
   UpdateLeadInput,
+  WonValueFilter,
 } from '@sylocrm/application'
 import {
   and,
   arrayOverlaps,
   desc,
   eq,
+  gte,
   ilike,
   inArray,
   isNotNull,
   isNull,
+  lt,
   or,
   sql,
 } from 'drizzle-orm'
@@ -233,6 +236,23 @@ export class DrizzleLeadRepository implements ILeadRepository {
 
     const row = rows[0]
     return row ? toLeadRecord(row) : null
+  }
+
+  async sumWonValueCents(filter: WonValueFilter): Promise<number> {
+    const conditions = [
+      eq(leads.organizationId, filter.organizationId),
+      gte(leads.wonAt, filter.wonFrom),
+      lt(leads.wonAt, filter.wonTo),
+    ]
+    if (filter.assignedUserId) conditions.push(eq(leads.assignedUserId, filter.assignedUserId))
+
+    // sum() de integer vira bigint no Postgres, que o driver devolve como string.
+    const rows = await this.db
+      .select({ total: sql<string>`coalesce(sum(${leads.valueCents}), 0)` })
+      .from(leads)
+      .where(and(...conditions))
+
+    return Number(rows[0]?.total ?? 0)
   }
 
   async delete(id: string, scope: LeadScopeFilter): Promise<boolean> {

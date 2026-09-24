@@ -101,6 +101,7 @@ function buildMembershipRepository(membership: UserMembership): IMembershipRepos
     findAll: vi.fn().mockResolvedValue([]),
     deactivate: vi.fn(),
     reactivate: vi.fn(),
+    updateSalesGoal: vi.fn(),
     removeAllForUser: vi.fn(),
   }
 }
@@ -237,6 +238,7 @@ describe('DELETE /team/members/:userId', () => {
       findAll: vi.fn().mockResolvedValue([]),
       deactivate: vi.fn(),
       reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
   }
@@ -428,6 +430,7 @@ describe('POST /team/members/:userId/reactivate', () => {
       create: vi.fn(),
       deactivate: vi.fn(),
       reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
   }
@@ -548,5 +551,231 @@ describe('POST /team/members/:userId/reactivate', () => {
 
     expect(response.statusCode).toBe(204)
     expect(membershipRepository.reactivate).toHaveBeenCalledWith(TARGET_ID, ORG_ID)
+  })
+})
+
+describe('PATCH /team/members/:userId', () => {
+  const TARGET_ID = 'target-user-uuid'
+
+  function buildGoalMembershipRepository(
+    actorMembership: UserMembership,
+    targetMembership: UserMembership | null,
+  ): IMembershipRepository {
+    return {
+      findActiveByUserId: vi.fn().mockResolvedValue([actorMembership]),
+      findActiveByUserAndOrganization: vi.fn().mockResolvedValue(actorMembership),
+      findByUserAndOrganization: vi
+        .fn()
+        .mockImplementation((userId: string) =>
+          Promise.resolve(userId === TARGET_ID ? targetMembership : actorMembership),
+        ),
+      findActiveByOrganizationId: vi.fn().mockResolvedValue([]),
+      findByOrganizationId: vi.fn().mockResolvedValue([]),
+      findAllActive: vi.fn().mockResolvedValue([]),
+      findAll: vi.fn().mockResolvedValue([]),
+      create: vi.fn(),
+      deactivate: vi.fn(),
+      reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
+      removeAllForUser: vi.fn(),
+    }
+  }
+
+  function patchGoal(app: ReturnType<typeof buildApp>, payload: unknown) {
+    return app.inject({
+      method: 'PATCH',
+      url: `/team/members/${TARGET_ID}`,
+      headers: AUTH_HEADERS,
+      payload: payload as Record<string, unknown>,
+    })
+  }
+
+  it('returns 403 when a SELLER tries to set a goal (missing team.goal_update)', async () => {
+    const membershipRepository = buildGoalMembershipRepository(SELLER_MEMBERSHIP, SELLER_MEMBERSHIP)
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository,
+    })
+
+    const response = await patchGoal(app, { salesGoalCents: 100_000_00 })
+
+    expect(response.statusCode).toBe(403)
+    expect(membershipRepository.updateSalesGoal).not.toHaveBeenCalled()
+  })
+
+  it('returns 403 when a MANAGER tries to set the goal of another MANAGER', async () => {
+    const membershipRepository = buildGoalMembershipRepository(
+      MANAGER_MEMBERSHIP,
+      MANAGER_MEMBERSHIP,
+    )
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository,
+    })
+
+    const response = await patchGoal(app, { salesGoalCents: 100_000_00 })
+
+    expect(response.statusCode).toBe(403)
+    expect(membershipRepository.updateSalesGoal).not.toHaveBeenCalled()
+  })
+
+  it('returns 400 for a negative goal', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository: buildGoalMembershipRepository(ADMIN_MEMBERSHIP, SELLER_MEMBERSHIP),
+    })
+
+    const response = await patchGoal(app, { salesGoalCents: -1 })
+
+    expect(response.statusCode).toBe(400)
+  })
+
+  it('returns 404 when the target is not a member of the organization', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository: buildGoalMembershipRepository(ADMIN_MEMBERSHIP, null),
+    })
+
+    const response = await patchGoal(app, { salesGoalCents: 100_000_00 })
+
+    expect(response.statusCode).toBe(404)
+  })
+
+  it('allows an ADMIN to set the goal of a SELLER', async () => {
+    const membershipRepository = buildGoalMembershipRepository(ADMIN_MEMBERSHIP, SELLER_MEMBERSHIP)
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository,
+    })
+
+    const response = await patchGoal(app, { salesGoalCents: 500_000_00 })
+
+    expect(response.statusCode).toBe(204)
+    expect(membershipRepository.updateSalesGoal).toHaveBeenCalledWith(TARGET_ID, ORG_ID, 500_000_00)
+  })
+
+  it('allows a MANAGER to clear the goal of a SELLER', async () => {
+    const membershipRepository = buildGoalMembershipRepository(
+      MANAGER_MEMBERSHIP,
+      SELLER_MEMBERSHIP,
+    )
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository,
+    })
+
+    const response = await patchGoal(app, { salesGoalCents: null })
+
+    expect(response.statusCode).toBe(204)
+    expect(membershipRepository.updateSalesGoal).toHaveBeenCalledWith(TARGET_ID, ORG_ID, null)
+  })
+})
+
+describe('GET /team/goals/summary', () => {
+  it('returns 401 when Authorization header is absent', async () => {
+    const app = buildTestApp(SELLER_MEMBERSHIP)
+
+    const response = await app.inject({ method: 'GET', url: '/team/goals/summary' })
+
+    expect(response.statusCode).toBe(401)
+  })
+
+  it('returns the personal and organization goal progress for any role', async () => {
+    const membershipRepository = buildMembershipRepository(SELLER_MEMBERSHIP)
+    vi.mocked(membershipRepository.findActiveByOrganizationId).mockResolvedValue([
+      {
+        userId: IDENTITY.id,
+        name: null,
+        email: IDENTITY.email,
+        avatarUrl: null,
+        role: Role.SELLER,
+        status: 'ACTIVE',
+        salesGoalCents: 200_000_00,
+      },
+      {
+        userId: 'colleague-uuid',
+        name: null,
+        email: 'colega@empresa.com',
+        avatarUrl: null,
+        role: Role.SELLER,
+        status: 'ACTIVE',
+        salesGoalCents: 300_000_00,
+      },
+    ])
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository,
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/team/goals/summary',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    const body = response.json<{
+      personal: { goalCents: number | null; achievedCents: number }
+      organization: { goalCents: number | null; achievedCents: number }
+    }>()
+    expect(body.personal).toEqual({ goalCents: 200_000_00, achievedCents: 0 })
+    expect(body.organization).toEqual({ goalCents: 500_000_00, achievedCents: 0 })
+  })
+})
+
+describe('PUT /team/me/sales-goal', () => {
+  it('returns 401 when Authorization header is absent', async () => {
+    const app = buildTestApp(SELLER_MEMBERSHIP)
+
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/team/me/sales-goal',
+      payload: { salesGoalCents: 100_000_00 },
+    })
+
+    expect(response.statusCode).toBe(401)
+  })
+
+  it('lets a SELLER set their own goal in the active organization', async () => {
+    const membershipRepository = buildMembershipRepository(SELLER_MEMBERSHIP)
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository,
+    })
+
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/team/me/sales-goal',
+      headers: AUTH_HEADERS,
+      payload: { salesGoalCents: 300_000_00 },
+    })
+
+    expect(response.statusCode).toBe(204)
+    expect(membershipRepository.updateSalesGoal).toHaveBeenCalledWith(
+      IDENTITY.id,
+      ORG_ID,
+      300_000_00,
+    )
+  })
+
+  it('returns 400 for an invalid goal', async () => {
+    const app = buildTestApp(SELLER_MEMBERSHIP)
+
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/team/me/sales-goal',
+      headers: AUTH_HEADERS,
+      payload: { salesGoalCents: 'muito' },
+    })
+
+    expect(response.statusCode).toBe(400)
   })
 })

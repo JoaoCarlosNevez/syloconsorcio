@@ -15,8 +15,11 @@ import {
   useReactivateTeamMember,
   useRemoveTeamMember,
   useTeamMembersQuery,
+  useUpdateTeamMemberSalesGoal,
 } from '../../hooks/useTeam'
 import { validateIconFile } from '../../lib/icon-validation'
+import { formatBRL } from '../../lib/lead-adapters'
+import { formatGoalInput, goalInputToCents } from '../../lib/sales-goals'
 import type { InvitableRole, TeamMember } from '../../lib/team-api'
 import styles from './ConfigPage.module.css'
 import { FunnelsSection } from './FunnelsSection'
@@ -552,6 +555,7 @@ function EquipeView() {
   const [page, setPage] = useState(1)
   const [inviteOpen, setInviteOpen] = useState(false)
   const [removeTarget, setRemoveTarget] = useState<TeamMember | null>(null)
+  const [detailUserId, setDetailUserId] = useState<string | null>(null)
   const [toast, setToast] = useState('')
 
   const invitableRoles = membership ? (INVITABLE_ROLES_BY_ROLE[membership.role] ?? []) : []
@@ -580,6 +584,7 @@ function EquipeView() {
   }
 
   const members = data?.members ?? []
+  const detailMember = members.find((m) => m.userId === detailUserId) ?? null
   const filtered = members.filter(
     (m) =>
       (m.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
@@ -625,19 +630,20 @@ function EquipeView() {
               <th className={styles.thUser}>USUÁRIO</th>
               <th className={styles.th}>FUNÇÃO</th>
               <th className={styles.th}>STATUS</th>
+              <th className={styles.th}>META DE VENDAS</th>
               <th className={styles.th} />
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
-                <td className={styles.td} colSpan={4}>
+                <td className={styles.td} colSpan={5}>
                   Carregando…
                 </td>
               </tr>
             ) : paged.length === 0 ? (
               <tr>
-                <td className={styles.td} colSpan={4}>
+                <td className={styles.td} colSpan={5}>
                   Nenhum membro encontrado.
                 </td>
               </tr>
@@ -648,13 +654,25 @@ function EquipeView() {
                   membership !== null &&
                   canManageMember(membership.role, isPlatformAdmin, member.role)
                 return (
-                  <tr key={member.userId} className={styles.tableRow}>
+                  // biome-ignore lint/a11y/useKeyWithClickEvents: atalho de mouse — pelo teclado o detalhe abre no botão do nome
+                  <tr
+                    key={member.userId}
+                    className={`${styles.tableRow} ${styles.tableRowClickable}`}
+                    onClick={() => setDetailUserId(member.userId)}
+                  >
                     <td className={styles.tdUser}>
                       <span className={styles.avatar}>{initialsForMember(member)}</span>
-                      <span className={styles.userInfo}>
+                      <button
+                        type="button"
+                        className={styles.userInfoBtn}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setDetailUserId(member.userId)
+                        }}
+                      >
                         <span className={styles.userName}>{member.name ?? '—'}</span>
                         <span className={styles.userEmail}>{member.email}</span>
-                      </span>
+                      </button>
                     </td>
                     <td className={styles.td}>
                       <span className={`${styles.roleBadge} ${roleBadgeClass(member.role)}`}>
@@ -672,6 +690,16 @@ function EquipeView() {
                       </span>
                     </td>
                     <td className={styles.td}>
+                      {member.salesGoalCents !== null ? (
+                        <span className={styles.goalValue}>
+                          R$ {formatBRL(member.salesGoalCents)}
+                        </span>
+                      ) : (
+                        <span className={styles.goalEmpty}>Sem meta</span>
+                      )}
+                    </td>
+                    {/* biome-ignore lint/a11y/useKeyWithClickEvents: só impede que o clique nas ações abra o detalhe */}
+                    <td className={styles.td} onClick={(e) => e.stopPropagation()}>
                       {manageable && member.status === 'SUSPENDED' && (
                         <button
                           type="button"
@@ -705,6 +733,21 @@ function EquipeView() {
           organizationId={organizationId}
           invitableRoles={invitableRoles}
           onClose={() => setInviteOpen(false)}
+        />
+      )}
+
+      {detailMember && organizationId && (
+        <MemberDetailModal
+          organizationId={organizationId}
+          member={detailMember}
+          canEditGoal={
+            isPlatformAdmin ||
+            (detailMember.userId !== currentUser?.id &&
+              membership !== null &&
+              canManageMember(membership.role, false, detailMember.role))
+          }
+          onSaved={(msg) => setToast(msg)}
+          onClose={() => setDetailUserId(null)}
         />
       )}
 
@@ -2361,6 +2404,132 @@ function RemoveMemberModal({
             {isPending ? 'Removendo…' : 'Remover'}
           </button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ── MemberDetailModal ──────────────────────────────────────────────────────────
+
+function MemberDetailModal({
+  organizationId,
+  member,
+  canEditGoal,
+  onSaved,
+  onClose,
+}: {
+  organizationId: string
+  member: TeamMember
+  canEditGoal: boolean
+  onSaved: (msg: string) => void
+  onClose: () => void
+}) {
+  const [goal, setGoal] = useState(
+    member.salesGoalCents !== null ? formatGoalInput(String(member.salesGoalCents / 100)) : '',
+  )
+  const [formError, setFormError] = useState('')
+  const updateGoal = useUpdateTeamMemberSalesGoal(organizationId)
+  const displayName = member.name ?? member.email
+
+  async function save(salesGoalCents: number | null) {
+    setFormError('')
+    try {
+      await updateGoal.mutateAsync({ userId: member.userId, salesGoalCents })
+      onSaved(
+        salesGoalCents === null
+          ? `Meta de ${displayName} removida.`
+          : `Meta de ${displayName} atualizada.`,
+      )
+      onClose()
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Não foi possível salvar a meta.')
+    }
+  }
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    save(goalInputToCents(goal))
+  }
+
+  return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: overlay backdrop
+    <div className={styles.modalOverlay} onClick={onClose}>
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: modal stops propagation */}
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <div className={styles.memberDetailHeader}>
+            <span className={`${styles.avatar} ${styles.avatarLg}`}>
+              {initialsForMember(member)}
+            </span>
+            <div className={styles.memberDetailInfo}>
+              <div className={styles.modalTitle}>{member.name ?? '—'}</div>
+              <div className={styles.modalDesc}>{member.email}</div>
+            </div>
+          </div>
+          <div className={styles.memberDetailBadges}>
+            <span className={`${styles.roleBadge} ${roleBadgeClass(member.role)}`}>
+              {ROLE_LABEL[member.role]}
+            </span>
+            <span className={styles.statusCell}>
+              <span className={`${styles.statusDot} ${statusDotClass(member.status)}`} />
+              <span className={`${styles.statusLabel} ${statusLabelClass(member.status)}`}>
+                {statusLabel(member.status)}
+              </span>
+            </span>
+          </div>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className={styles.modalBody}>
+            <div className={styles.formRow}>
+              <label className={styles.formLabel} htmlFor="member-sales-goal">
+                Meta de vendas
+              </label>
+              <div className={styles.currencyInput}>
+                <span className={styles.currencyPrefix}>R$</span>
+                <input
+                  id="member-sales-goal"
+                  type="text"
+                  inputMode="numeric"
+                  className={styles.formInput}
+                  value={goal}
+                  onChange={(e) => setGoal(formatGoalInput(e.target.value))}
+                  placeholder="0"
+                  disabled={!canEditGoal}
+                />
+              </div>
+              <span className={styles.formHint}>
+                {canEditGoal
+                  ? 'Valor em crédito que este membro deve vender na organização. Deixe em branco para ficar sem meta.'
+                  : 'Só quem está acima deste membro na hierarquia pode alterar a meta.'}
+              </span>
+            </div>
+            {formError && (
+              <span role="alert" className={styles.formError}>
+                {formError}
+              </span>
+            )}
+          </div>
+          <div className={styles.modalFooter}>
+            {canEditGoal && member.salesGoalCents !== null && (
+              <button
+                type="button"
+                className={`${styles.dangerOutlineBtn} ${styles.modalFooterLeft}`}
+                onClick={() => save(null)}
+                disabled={updateGoal.isPending}
+              >
+                Remover meta
+              </button>
+            )}
+            <button type="button" className={styles.secondaryBtn} onClick={onClose}>
+              {canEditGoal ? 'Cancelar' : 'Fechar'}
+            </button>
+            {canEditGoal && (
+              <button type="submit" className={styles.primaryBtn} disabled={updateGoal.isPending}>
+                {updateGoal.isPending ? 'Salvando…' : 'Salvar meta'}
+              </button>
+            )}
+          </div>
+        </form>
       </div>
     </div>
   )

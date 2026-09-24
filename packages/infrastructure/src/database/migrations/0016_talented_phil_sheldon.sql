@@ -1,0 +1,41 @@
+-- Nota: o drizzle-kit "generate" recalculou aqui também tabelas/colunas de
+-- features anteriores (lead_proposals, tasks, colunas de perfil em leads) que
+-- foram aplicadas via `db:push` sem passar por `generate`, então o snapshot
+-- 0015 não as tinha. Já estão aplicadas em produção/dev; mantidas comentadas
+-- só pra não reintroduzi-las por engano num `migrate`.
+
+-- CREATE TABLE "lead_proposals" (
+-- 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+-- 	"lead_id" uuid NOT NULL,
+-- 	"down_payment_cents" integer NOT NULL,
+-- 	"term_months" integer NOT NULL,
+-- 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE "tasks" (
+-- 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+-- 	"organization_id" uuid NOT NULL,
+-- 	"lead_id" uuid,
+-- 	"assigned_user_id" uuid NOT NULL,
+-- 	"created_by_user_id" uuid NOT NULL,
+-- 	"type" text NOT NULL,
+-- 	"title" text NOT NULL,
+-- 	"notes" text,
+-- 	"status" text DEFAULT 'pendente' NOT NULL,
+-- 	"due_at" timestamp with time zone NOT NULL,
+-- 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+-- 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+-- );
+-- --> statement-breakpoint
+-- ALTER TABLE "leads" ADD COLUMN "profession" text;--> statement-breakpoint
+-- ALTER TABLE "leads" ADD COLUMN "income_cents" integer;--> statement-breakpoint
+-- ALTER TABLE "leads" ADD COLUMN "marital_status" text;--> statement-breakpoint
+-- ALTER TABLE "leads" ADD COLUMN "cpf" text;--> statement-breakpoint
+-- ALTER TABLE "lead_proposals" ADD CONSTRAINT "lead_proposals_lead_id_leads_id_fk" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "tasks" ADD CONSTRAINT "tasks_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "tasks" ADD CONSTRAINT "tasks_lead_id_leads_id_fk" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "tasks" ADD CONSTRAINT "tasks_assigned_user_id_users_id_fk" FOREIGN KEY ("assigned_user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- ALTER TABLE "tasks" ADD CONSTRAINT "tasks_created_by_user_id_users_id_fk" FOREIGN KEY ("created_by_user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+
+-- Meta de vendas do membro (ver memberships.ts) — única mudança real desta migração.
+ALTER TABLE "organization_memberships" ADD COLUMN "sales_goal_cents" bigint;

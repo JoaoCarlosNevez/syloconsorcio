@@ -144,6 +144,13 @@ export interface NewLeadCommentInput {
   text: string
 }
 
+export interface WonValueFilter {
+  organizationId: string
+  assignedUserId?: string
+  wonFrom: Date
+  wonTo: Date
+}
+
 export interface ILeadRepository {
   list(filter: LeadListFilter, page: number, pageSize: number): Promise<LeadListPage>
 
@@ -178,4 +185,9 @@ export interface ILeadRepository {
   listComments(leadId: string): Promise<LeadCommentRecord[]>
 
   createComment(input: NewLeadCommentInput): Promise<LeadCommentRecord>
+
+  /** Soma de valueCents dos leads marcados como Ganho em [wonFrom, wonTo) na
+   * organização — base do "realizado" das metas de vendas. Com
+   * assignedUserId, soma só os leads daquele responsável. */
+  sumWonValueCents(filter: WonValueFilter): Promise<number>
 }
