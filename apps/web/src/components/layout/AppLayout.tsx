@@ -3,12 +3,13 @@
 
 import { Dropdown, OrganizationAvatar } from '@sylocrm/ui'
 import type { DropdownEntry, Tier } from '@sylocrm/ui'
-import type { ReactNode } from 'react'
+import { type ReactNode, useLayoutEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { USER_TIER } from '../../data/kanban-mock'
 import { useAuth } from '../../hooks/useAuth'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { useActiveOrganization } from '../../hooks/useOrganization'
+import { applyBrandColor } from '../../lib/brand-theme'
 import styles from './AppLayout.module.css'
 
 function deriveDisplayName(email: string | undefined): string {
@@ -248,6 +249,16 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { user, signOut } = useAuth()
   const { data: currentUser } = useCurrentUser()
   const { membership, memberships, setActiveOrganizationId } = useActiveOrganization()
+  const brandColor = membership?.organizationSecondaryColor ?? null
+  const whiteLabelLogoUrl = membership?.organizationIconUrl ?? null
+
+  // Cor White Label da organização ativa. Layout effect (e não useEffect) pra
+  // que a troca de página — que desmonta e remonta o AppLayout — não pisque
+  // o âmbar padrão entre uma e outra.
+  useLayoutEffect(() => {
+    applyBrandColor(brandColor)
+    return () => applyBrandColor(null)
+  }, [brandColor])
 
   const displayName =
     currentUser?.name ??
@@ -299,7 +310,15 @@ export function AppLayout({ children }: AppLayoutProps) {
       >
         {/* Logo */}
         <div className={styles.logo}>
-          <img src="/sylo-logo.png" alt="Sylo CRM" className={styles.logoImg} />
+          {whiteLabelLogoUrl ? (
+            <img
+              src={whiteLabelLogoUrl}
+              alt={membership?.organizationName ?? ''}
+              className={styles.logoImgWhiteLabel}
+            />
+          ) : (
+            <img src="/sylo-logo.png" alt="Sylo CRM" className={styles.logoImg} />
+          )}
         </div>
 
         {/* Seletor de empresa — troca entre as organizações do usuário */}

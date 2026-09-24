@@ -83,8 +83,8 @@
   padding: 6px 14px;
   border: none;
   border-radius: var(--radius-md);
-  background: linear-gradient(to right, #ffeab1, #ffa705);
-  color: #020617;
+  background: var(--color-accent-gradient);
+  color: var(--color-accent-contrast, #020617);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
@@ -970,8 +970,12 @@
   height: 56px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: linear-gradient(135deg, #ffeab1, #ffa705);
-  color: #0b1c30;
+  background: linear-gradient(
+    135deg,
+    var(--color-accent-gradient-from),
+    var(--color-accent-gradient-to)
+  );
+  color: var(--color-accent-contrast, #0b1c30);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1056,7 +1060,7 @@
 }
 
 .editInput:focus {
-  border-color: #ffa705;
+  border-color: var(--color-accent);
 }
 
 .editInput:disabled {
@@ -1233,13 +1237,13 @@
 
 .primaryBtn {
   padding: 8px 18px;
-  background: linear-gradient(to right, #ffeab1, #ffa705);
+  background: var(--color-accent-gradient);
   border: none;
   border-radius: 8px;
   font-family: inherit;
   font-size: 13px;
   font-weight: 600;
-  color: #0b1c30;
+  color: var(--color-accent-contrast, #0b1c30);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -1255,13 +1259,13 @@
 
 .primaryBtnSmall {
   padding: 7px 14px;
-  background: linear-gradient(to right, #ffeab1, #ffa705);
+  background: var(--color-accent-gradient);
   border: none;
   border-radius: 8px;
   font-family: inherit;
   font-size: 12px;
   font-weight: 600;
-  color: #0b1c30;
+  color: var(--color-accent-contrast, #0b1c30);
   cursor: pointer;
   white-space: nowrap;
 }

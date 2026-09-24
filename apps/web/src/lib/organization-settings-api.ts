@@ -16,6 +16,7 @@ export interface UpdateOrganizationSettingsPayload {
   leadSegments?: string[]
   leadSources?: string[]
   leadTags?: string[]
+  salesGoalCents?: number | null
 }
 
 export function getOrganizationSettings(
@@ -40,6 +41,15 @@ export async function uploadOrganizationSettingsIcon(
   const formData = new FormData()
   formData.append('file', file)
   return apiClient.post<{ organization: Organization }>('/organization/icon', formData, {
+    organizationId,
+  })
+}
+
+export function updateOrganizationBranding(
+  organizationId: string,
+  payload: { secondaryColor: string | null },
+): Promise<{ organization: Organization }> {
+  return apiClient.patch<{ organization: Organization }>('/organization/branding', payload, {
     organizationId,
   })
 }

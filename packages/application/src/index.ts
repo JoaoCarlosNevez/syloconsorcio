@@ -144,9 +144,13 @@ export type { ReactivateTeamMemberInput } from './team/reactivate-team-member.us
 export { GetSalesGoalsSummaryUseCase } from './team/get-sales-goals-summary.use-case'
 export type {
   GetSalesGoalsSummaryInput,
+  PersonalGoalProgress,
   SalesGoalProgress,
   SalesGoalsSummary,
 } from './team/get-sales-goals-summary.use-case'
+
+export { UpdateMyPersonalGoalUseCase } from './team/update-my-personal-goal.use-case'
+export type { UpdateMyPersonalGoalInput } from './team/update-my-personal-goal.use-case'
 
 export { UpdateTeamMemberSalesGoalUseCase } from './team/update-team-member-sales-goal.use-case'
 export type { UpdateTeamMemberSalesGoalInput } from './team/update-team-member-sales-goal.use-case'

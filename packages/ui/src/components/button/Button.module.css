@@ -28,8 +28,8 @@
 /* ── Variants ── */
 
 .primary {
-  background: linear-gradient(to right, var(--color-accent-light), var(--color-accent));
-  color: #000000;
+  background: var(--color-accent-gradient);
+  color: var(--color-accent-contrast, #000000);
   border-color: var(--color-accent-border-btn);
   box-shadow: var(--shadow-accent);
 }

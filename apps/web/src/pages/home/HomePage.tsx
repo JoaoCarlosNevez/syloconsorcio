@@ -380,7 +380,7 @@ export function HomePage() {
               {/* Meta Pessoal do Mês */}
               <div className={styles.metaCard}>
                 <div className={styles.metaCardBgLogo} aria-hidden="true">
-                  <img src="/sylo-3d-logo.png" alt="" />
+                  <img src={membership?.organizationIconUrl ?? '/sylo-3d-logo.png'} alt="" />
                 </div>
 
                 <div>
@@ -389,7 +389,14 @@ export function HomePage() {
                       <div className={styles.metaCardIconWrap}>
                         <TargetIcon />
                       </div>
-                      <p className={styles.metaCardTitle}>Meta Pessoal do Mês</p>
+                      <div>
+                        <p className={styles.metaCardTitle}>Meta Pessoal do Mês</p>
+                        {goalsSummary?.personal.teamGoalCents != null && (
+                          <p className={styles.metaCardSubtitle}>
+                            Meta na equipe: {formatGoalBRL(goalsSummary.personal.teamGoalCents)}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     <span className={styles.metaPercent}>
                       {personalGoal.hasGoal ? `${personalGoal.percent}%` : '—'}
@@ -434,7 +441,7 @@ export function HomePage() {
               {/* Meta da Representação */}
               <div className={styles.metaCard}>
                 <div className={styles.metaCardBgLogo} aria-hidden="true">
-                  <img src="/sylo-3d-logo.png" alt="" />
+                  <img src={membership?.organizationIconUrl ?? '/sylo-3d-logo.png'} alt="" />
                 </div>
 
                 <div>

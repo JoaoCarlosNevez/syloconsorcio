@@ -6,6 +6,8 @@ import type { TeamMember } from './team-api'
 
 export interface OrganizationBranding {
   iconUrl?: string
+  /** Cor secundária White Label (#RRGGBB). */
+  secondaryColor?: string
 }
 
 export interface Organization {
@@ -26,6 +28,8 @@ export interface Organization {
   /** Tags configuradas (ex: "Quente", "Frio") — usadas no editor de tags do
    * lead e no filtro "Todas as tags" do Kanban. */
   leadTags: string[]
+  /** Meta de vendas mensal da organização, em centavos de crédito. null = sem meta. */
+  salesGoalCents: number | null
 }
 
 export interface CreateRepresentationPayload {

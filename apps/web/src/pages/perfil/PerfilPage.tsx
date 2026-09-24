@@ -12,7 +12,7 @@ import {
   useUploadMyAvatar,
 } from '../../hooks/useCurrentUser'
 import { useActiveOrganization } from '../../hooks/useOrganization'
-import { useSalesGoalsSummaryQuery, useUpdateMySalesGoal } from '../../hooks/useTeam'
+import { useSalesGoalsSummaryQuery, useUpdateMyPersonalGoal } from '../../hooks/useTeam'
 import { validateIconFile } from '../../lib/icon-validation'
 import { formatGoalInput, goalInputToCents } from '../../lib/sales-goals'
 import { supabase } from '../../lib/supabase'
@@ -381,13 +381,13 @@ function BadgeModal({ badge, onClose }: { badge: BadgeData; onClose: () => void 
           style={{
             marginTop: 8,
             padding: '8px 24px',
-            background: 'linear-gradient(to right,#ffeab1,#ffa705)',
+            background: 'var(--color-accent-gradient)',
             border: 'none',
             borderRadius: 8,
             fontFamily: 'inherit',
             fontSize: 13,
             fontWeight: 600,
-            color: '#0b1c30',
+            color: 'var(--color-accent-contrast, #0b1c30)',
             cursor: 'pointer',
           }}
         >
@@ -409,7 +409,7 @@ function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
   const { data: currentUser } = useCurrentUser()
   const { organizationId, membership } = useActiveOrganization()
   const { data: goalsSummary } = useSalesGoalsSummaryQuery(organizationId)
-  const updateMyGoal = useUpdateMySalesGoal(organizationId)
+  const updateMyGoal = useUpdateMyPersonalGoal(organizationId)
   const updateProfile = useUpdateMyProfile()
   const uploadAvatar = useUploadMyAvatar()
   const removeAvatar = useRemoveMyAvatar()
@@ -677,11 +677,12 @@ function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
             <section className={styles.editSection}>
               <h3 className={styles.editSectionTitle}>Meta pessoal do mês</h3>
               <p className={styles.editSectionSubtitle}>
-                Quanto você quer vender em crédito por mês em {membership.organizationName}.
+                Seu objetivo de vendas em crédito por mês em {membership.organizationName} — pode
+                ser maior que a meta que a equipe definiu pra você.
               </p>
               <div className={styles.editGrid}>
                 <label className={styles.editField}>
-                  <span className={styles.editLabel}>Meta de vendas</span>
+                  <span className={styles.editLabel}>Meta pessoal</span>
                   <div className={styles.editInputPrefixed}>
                     <span className={styles.editInputPrefix}>R$</span>
                     <input

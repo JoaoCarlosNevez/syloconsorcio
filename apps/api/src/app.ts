@@ -79,6 +79,10 @@ function createNoOpMembershipRepository(): IMembershipRepository {
     updateSalesGoal: async () => {
       throw new Error('Database not configured — cannot update sales goals.')
     },
+    findPersonalGoal: async () => null,
+    updatePersonalGoal: async () => {
+      throw new Error('Database not configured — cannot update personal goals.')
+    },
     removeAllForUser: async () => {
       throw new Error('Database not configured — cannot remove memberships.')
     },
@@ -102,7 +106,7 @@ function createNoOpLeadRepository(): ILeadRepository {
       throw new Error('Database not configured — cannot create comments.')
     },
     findByPhone: async () => null,
-    sumWonValueCents: async () => 0,
+    sumWonValueCentsInDefaultFunnel: async () => 0,
   }
 }
 

@@ -16,6 +16,7 @@ const MEMBERSHIP: MembershipContext = {
   organizationType: OrganizationType.REPRESENTACAO,
   organizationName: 'Representação Teste',
   organizationIconUrl: null,
+  organizationSecondaryColor: null,
   role: Role.MANAGER,
   dataScope: DataScope.REPRESENTATION,
   permissions: [],
@@ -68,7 +69,7 @@ function buildLeadRepository(overrides: Partial<ILeadRepository> = {}): ILeadRep
     listAssignmentHistory: vi.fn(),
     listComments: vi.fn(),
     createComment: vi.fn(),
-    sumWonValueCents: vi.fn().mockResolvedValue(0),
+    sumWonValueCentsInDefaultFunnel: vi.fn().mockResolvedValue(0),
     findByPhone: vi.fn().mockResolvedValue(null),
     ...overrides,
   }

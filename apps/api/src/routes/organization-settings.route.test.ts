@@ -26,6 +26,7 @@ const ADMIN_MEMBERSHIP: UserMembership = {
   organizationType: OrganizationType.REPRESENTACAO,
   organizationName: 'Representação Teste',
   organizationIconUrl: null,
+  organizationSecondaryColor: null,
   role: Role.ADMIN,
   status: 'ACTIVE',
 }
@@ -69,6 +70,8 @@ function buildMembershipRepository(membership: UserMembership): IMembershipRepos
     deactivate: vi.fn(),
     reactivate: vi.fn(),
     updateSalesGoal: vi.fn(),
+    findPersonalGoal: vi.fn().mockResolvedValue(null),
+    updatePersonalGoal: vi.fn(),
     removeAllForUser: vi.fn(),
   }
 }
@@ -297,6 +300,46 @@ describe('PATCH /organization', () => {
       expect.objectContaining({ leadTags: ['Quente', 'Frio'] }),
     )
   })
+
+  it('allows an ADMIN to set and clear the organization sales goal', async () => {
+    const organizationRepository = buildOrganizationRepository({
+      update: vi.fn().mockResolvedValue({ ...SAMPLE_ORG, salesGoalCents: 5_000_000_00 }),
+    })
+    const app = buildTestApp({ organizationRepository })
+
+    const setResponse = await app.inject({
+      method: 'PATCH',
+      url: '/organization',
+      headers: AUTH_HEADERS,
+      payload: { salesGoalCents: 5_000_000_00 },
+    })
+    const clearResponse = await app.inject({
+      method: 'PATCH',
+      url: '/organization',
+      headers: AUTH_HEADERS,
+      payload: { salesGoalCents: null },
+    })
+
+    expect(setResponse.statusCode).toBe(200)
+    expect(clearResponse.statusCode).toBe(200)
+    expect(organizationRepository.update).toHaveBeenCalledWith(ORG_ID, {
+      salesGoalCents: 5_000_000_00,
+    })
+    expect(organizationRepository.update).toHaveBeenCalledWith(ORG_ID, { salesGoalCents: null })
+  })
+
+  it('returns 400 for a negative organization sales goal', async () => {
+    const app = buildTestApp({})
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/organization',
+      headers: AUTH_HEADERS,
+      payload: { salesGoalCents: -100 },
+    })
+
+    expect(response.statusCode).toBe(400)
+  })
 })
 
 describe('POST /organization/icon', () => {
@@ -417,5 +460,97 @@ describe('POST /organization/icon', () => {
     expect(response.statusCode).toBe(400)
     const body = response.json<{ code: string }>()
     expect(body.code).toBe('FILE_TOO_LARGE')
+  })
+})
+
+describe('PATCH /organization/branding', () => {
+  it('returns 403 when a SELLER tries to change the color (missing organization.update)', async () => {
+    const app = buildTestApp({ membership: SELLER_MEMBERSHIP })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/organization/branding',
+      headers: AUTH_HEADERS,
+      payload: { secondaryColor: '#123abc' },
+    })
+
+    expect(response.statusCode).toBe(403)
+  })
+
+  it('returns 403 when the organization is not White Label', async () => {
+    const organizationRepository = buildOrganizationRepository({
+      findById: vi.fn().mockResolvedValue({ ...SAMPLE_ORG, isWhiteLabel: false }),
+    })
+    const app = buildTestApp({ organizationRepository })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/organization/branding',
+      headers: AUTH_HEADERS,
+      payload: { secondaryColor: '#123abc' },
+    })
+
+    expect(response.statusCode).toBe(403)
+    expect(response.json<{ code: string }>().code).toBe('NOT_WHITE_LABEL')
+    expect(organizationRepository.update).not.toHaveBeenCalled()
+  })
+
+  it('returns 400 for a color that is not #RRGGBB', async () => {
+    const app = buildTestApp({})
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/organization/branding',
+      headers: AUTH_HEADERS,
+      payload: { secondaryColor: 'azul' },
+    })
+
+    expect(response.statusCode).toBe(400)
+  })
+
+  it('saves the color keeping the existing icon', async () => {
+    const organizationRepository = buildOrganizationRepository({
+      findById: vi.fn().mockResolvedValue({
+        ...SAMPLE_ORG,
+        isWhiteLabel: true,
+        branding: { iconUrl: 'https://cdn/icon.png' },
+      }),
+    })
+    const app = buildTestApp({ organizationRepository })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/organization/branding',
+      headers: AUTH_HEADERS,
+      payload: { secondaryColor: '#12AB9F' },
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(organizationRepository.update).toHaveBeenCalledWith(ORG_ID, {
+      branding: { iconUrl: 'https://cdn/icon.png', secondaryColor: '#12ab9f' },
+    })
+  })
+
+  it('clears the color with null', async () => {
+    const organizationRepository = buildOrganizationRepository({
+      findById: vi.fn().mockResolvedValue({
+        ...SAMPLE_ORG,
+        isWhiteLabel: true,
+        branding: { iconUrl: 'https://cdn/icon.png', secondaryColor: '#12ab9f' },
+      }),
+    })
+    const app = buildTestApp({ organizationRepository })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/organization/branding',
+      headers: AUTH_HEADERS,
+      payload: { secondaryColor: null },
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(organizationRepository.update).toHaveBeenCalledWith(ORG_ID, {
+      branding: { iconUrl: 'https://cdn/icon.png' },
+    })
   })
 })

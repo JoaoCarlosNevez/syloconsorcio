@@ -1,0 +1,1 @@
+ALTER TABLE "organization_memberships" ADD COLUMN "personal_goal_cents" bigint;

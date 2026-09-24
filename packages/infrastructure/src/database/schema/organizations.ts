@@ -4,7 +4,7 @@
 // REPRESENTACAO com parent_organization_id = null é independente.
 
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
-import { boolean, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { bigint, boolean, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 
 export const organizationTypeEnum = pgEnum('organization_type', [
   'INCORPORADORA',
@@ -47,6 +47,11 @@ export const organizations = pgTable('organizations', {
   // mesmo tempo. Ver leads.tags. Usado pra popular o filtro "Todas as tags"
   // e o editor de tags no Kanban.
   leadTags: text('lead_tags').array().notNull().default(['Quente', 'Frio']),
+  // Meta de vendas mensal da organização, em centavos de crédito — definida
+  // pelo ADMIN em Configurações > Organização e exibida no card "Meta da
+  // Representação" do início. null = sem meta (o card cai na soma das metas
+  // dos membros definidas em Configurações > Equipe).
+  salesGoalCents: bigint('sales_goal_cents', { mode: 'number' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })

@@ -23,7 +23,7 @@
 }
 
 .link.active {
-  background-color: rgba(255, 167, 5, 0.15);
+  background-color: color-mix(in srgb, var(--color-accent) 15%, transparent);
   color: var(--color-accent);
 }
 

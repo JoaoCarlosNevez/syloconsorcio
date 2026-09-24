@@ -19,6 +19,8 @@ export interface MembershipSummary {
   organizationType: 'INCORPORADORA' | 'MASTER' | 'REPRESENTACAO'
   organizationName: string
   organizationIconUrl: string | null
+  /** Cor secundária White Label (#RRGGBB), null = âmbar padrão da Sylo. */
+  organizationSecondaryColor: string | null
   role: 'ADMIN' | 'MANAGER' | 'SELLER'
   dataScope: 'own' | 'representation' | 'master' | 'incorporadora'
   permissions: string[]

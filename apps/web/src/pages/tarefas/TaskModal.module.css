@@ -143,13 +143,13 @@
   align-items: center;
   gap: 6px;
   padding: 7px 14px;
-  background: linear-gradient(to right, #ffeab1, #ffa705);
+  background: var(--color-accent-gradient);
   border: none;
   border-radius: 8px;
   font-family: var(--font-family-base);
   font-size: 13px;
   font-weight: 600;
-  color: #0b1c30;
+  color: var(--color-accent-contrast, #0b1c30);
   cursor: pointer;
   white-space: nowrap;
   transition: opacity var(--duration-normal);
@@ -530,6 +530,6 @@
 }
 
 .commentField:focus {
-  border-color: rgba(245, 158, 11, 0.4);
-  box-shadow: 0 0 0 3px rgba(255, 167, 5, 0.08);
+  border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 8%, transparent);
 }

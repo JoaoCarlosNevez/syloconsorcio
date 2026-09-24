@@ -27,6 +27,8 @@ export interface MembershipContext {
   organizationName: string
   /** Ícone da organização (branding.iconUrl), null quando não definido */
   organizationIconUrl: string | null
+  /** Cor secundária White Label (branding.secondaryColor), null quando não definida */
+  organizationSecondaryColor: string | null
   /** Papel do usuário nesta organização específica */
   role: Role
   /** Alcance de dados calculado a partir do tipo da org + role */

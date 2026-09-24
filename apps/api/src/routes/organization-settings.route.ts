@@ -1,10 +1,13 @@
 // Rotas de configurações da própria organização — tela Configurações > Organização.
 //
 // GET   /organization       — dados da organização ativa (qualquer membership ativa)
-// PATCH /organization       — edita nome/CNPJ/telefone/site/leadSegments/leadSources/leadTags;
+// PATCH /organization       — edita nome/CNPJ/telefone/site/leadSegments/leadSources/leadTags/
+//                             salesGoalCents (meta mensal da organização);
 //                             exige organization.update (só ADMIN — ver auth/permissions.ts)
 // POST  /organization/icon  — envia o ícone; exige organization.update E isWhiteLabel=true
 //                             (organizações sem White Label usam a marca Sylo por padrão)
+// PATCH /organization/branding — define/limpa a cor secundária (branding.secondaryColor);
+//                             mesmas exigências do ícone
 //
 // Diferente de organizations.route.ts (plural, Super Admin, cross-tenant), estas rotas
 // são escopadas pela organização ativa da própria requisição (X-Organization-Id).
@@ -43,6 +46,14 @@ const updateOrganizationSettingsSchema = z.object({
   leadSegments: z.array(z.string().min(1)).optional(),
   leadSources: z.array(z.string().min(1)).optional(),
   leadTags: z.array(z.string().min(1)).optional(),
+  salesGoalCents: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable().optional(),
+})
+
+const updateBrandingSchema = z.object({
+  secondaryColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/, 'Use uma cor no formato #RRGGBB.')
+    .nullable(),
 })
 
 function validationErrorResponse(fieldErrors: Record<string, string[] | undefined>) {
@@ -158,6 +169,47 @@ export const organizationSettingsRoute: FastifyPluginAsync<
         branding: { ...organization.branding, iconUrl: url },
       })
 
+      return { organization: updated }
+    },
+  )
+
+  // ── PATCH /organization/branding ───────────────────────────────────────────
+  fastify.patch(
+    '/organization/branding',
+    { preHandler: [authMiddleware, tenantMiddleware, requireOrganizationUpdate] },
+    async (request, reply) => {
+      const parsed = updateBrandingSchema.safeParse(request.body)
+      if (!parsed.success) {
+        return reply.status(400).send(validationErrorResponse(parsed.error.flatten().fieldErrors))
+      }
+
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      const organization = await options.organizationRepository.findById(
+        context.currentMembership.organizationId,
+      )
+      if (!organization) {
+        return reply.status(404).send({
+          error: 'Organização não encontrada.',
+          code: 'ORGANIZATION_NOT_FOUND',
+          status: 404,
+        })
+      }
+
+      if (!organization.isWhiteLabel) {
+        return reply.status(403).send({
+          error: 'Esta organização não é White Label — não é possível definir cores próprias.',
+          code: 'NOT_WHITE_LABEL',
+          status: 403,
+        })
+      }
+
+      const { secondaryColor: _previous, ...rest } = organization.branding ?? {}
+      const branding =
+        parsed.data.secondaryColor === null
+          ? rest
+          : { ...rest, secondaryColor: parsed.data.secondaryColor.toLowerCase() }
+
+      const updated = await options.organizationRepository.update(organization.id, { branding })
       return { organization: updated }
     },
   )

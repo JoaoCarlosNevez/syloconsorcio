@@ -4,6 +4,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   getOrganizationSettings,
+  updateOrganizationBranding,
   updateOrganizationSettings,
   uploadOrganizationSettingsIcon,
 } from '../lib/organization-settings-api'
@@ -25,6 +26,8 @@ export function useUpdateOrganizationSettings(organizationId: string | null) {
       updateOrganizationSettings(organizationId as string, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY(organizationId) })
+      // A meta da organização alimenta o card "Meta da Representação" do início.
+      queryClient.invalidateQueries({ queryKey: ['team', 'goals', 'summary', organizationId] })
     },
   })
 }
@@ -35,6 +38,20 @@ export function useUploadOrganizationSettingsIcon(organizationId: string | null)
     mutationFn: (file: File) => uploadOrganizationSettingsIcon(organizationId as string, file),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY(organizationId) })
+      // Ícone/cor chegam na sidebar e no tema via GET /auth/memberships.
+      queryClient.invalidateQueries({ queryKey: ['auth', 'memberships'] })
+    },
+  })
+}
+
+export function useUpdateOrganizationBranding(organizationId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (secondaryColor: string | null) =>
+      updateOrganizationBranding(organizationId as string, { secondaryColor }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY(organizationId) })
+      queryClient.invalidateQueries({ queryKey: ['auth', 'memberships'] })
     },
   })
 }

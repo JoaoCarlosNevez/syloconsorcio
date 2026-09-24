@@ -27,6 +27,7 @@ const ORGANIZATION_COLUMNS = {
   leadSegments: organizations.leadSegments,
   leadSources: organizations.leadSources,
   leadTags: organizations.leadTags,
+  salesGoalCents: organizations.salesGoalCents,
 } as const
 
 function toOrganizationRecord(row: {
@@ -42,6 +43,7 @@ function toOrganizationRecord(row: {
   leadSegments: string[]
   leadSources: string[]
   leadTags: string[]
+  salesGoalCents: number | null
 }): OrganizationRecord {
   return {
     id: row.id,
@@ -56,6 +58,7 @@ function toOrganizationRecord(row: {
     leadSegments: row.leadSegments,
     leadSources: row.leadSources,
     leadTags: row.leadTags,
+    salesGoalCents: row.salesGoalCents,
   }
 }
 
@@ -119,6 +122,7 @@ export class DrizzleOrganizationRepository implements IOrganizationRepository {
         ...(input.leadSegments !== undefined ? { leadSegments: input.leadSegments } : {}),
         ...(input.leadSources !== undefined ? { leadSources: input.leadSources } : {}),
         ...(input.leadTags !== undefined ? { leadTags: input.leadTags } : {}),
+        ...(input.salesGoalCents !== undefined ? { salesGoalCents: input.salesGoalCents } : {}),
         updatedAt: new Date(),
       })
       .where(eq(organizations.id, id))

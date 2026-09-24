@@ -46,6 +46,9 @@ function toUserMembership(row: {
     // salvo em branding.iconUrl caso a organização reative depois, mas não
     // deve "vazar" pra fora enquanto White Label estiver desligado.
     organizationIconUrl: row.organizationIsWhiteLabel ? (branding?.iconUrl ?? null) : null,
+    organizationSecondaryColor: row.organizationIsWhiteLabel
+      ? (branding?.secondaryColor ?? null)
+      : null,
     role: row.role as Role,
     status: row.status as UserMembership['status'],
   }
@@ -232,6 +235,37 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
     await this.db
       .update(organizationMemberships)
       .set({ salesGoalCents, updatedAt: new Date() })
+      .where(
+        and(
+          eq(organizationMemberships.userId, userId),
+          eq(organizationMemberships.organizationId, organizationId),
+        ),
+      )
+  }
+
+  async findPersonalGoal(userId: string, organizationId: string): Promise<number | null> {
+    const rows = await this.db
+      .select({ personalGoalCents: organizationMemberships.personalGoalCents })
+      .from(organizationMemberships)
+      .where(
+        and(
+          eq(organizationMemberships.userId, userId),
+          eq(organizationMemberships.organizationId, organizationId),
+        ),
+      )
+      .limit(1)
+
+    return rows[0]?.personalGoalCents ?? null
+  }
+
+  async updatePersonalGoal(
+    userId: string,
+    organizationId: string,
+    personalGoalCents: number | null,
+  ): Promise<void> {
+    await this.db
+      .update(organizationMemberships)
+      .set({ personalGoalCents, updatedAt: new Date() })
       .where(
         and(
           eq(organizationMemberships.userId, userId),

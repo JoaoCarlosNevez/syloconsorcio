@@ -27,14 +27,16 @@
 //                                            team.goal_update; hierarquia
 //                                            fina em
 //                                            UpdateTeamMemberSalesGoalUseCase.
-// PUT    /team/me/sales-goal              — o próprio usuário define a sua
-//                                            meta (Editar perfil). Qualquer
+// PUT    /team/me/personal-goal           — o próprio usuário define a sua
+//                                            meta pessoal (Perfil), separada
+//                                            da meta da equipe. Qualquer
 //                                            papel.
 //
 // GET    /team/goals/summary              — progresso do mês da meta pessoal
 //                                            do usuário e da meta da
-//                                            representação (soma das metas
-//                                            dos membros). Qualquer papel.
+//                                            representação (meta da org, ou
+//                                            soma das metas dos membros).
+//                                            Qualquer papel.
 //
 // Todas rodam authMiddleware → tenantMiddleware.
 
@@ -50,6 +52,7 @@ import {
   InviteTeamMemberUseCase,
   ReactivateTeamMemberUseCase,
   RemoveTeamMemberUseCase,
+  UpdateMyPersonalGoalUseCase,
   UpdateTeamMemberSalesGoalUseCase,
 } from '@sylocrm/application'
 import { AuthorizationError, ConflictError, Permission, Role } from '@sylocrm/domain'
@@ -79,6 +82,10 @@ const updateMemberSchema = z.object({
   salesGoalCents: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable(),
 })
 
+const updatePersonalGoalSchema = z.object({
+  personalGoalCents: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable(),
+})
+
 export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, options) => {
   const authMiddleware = createAuthMiddleware(options.authProvider)
   const tenantMiddleware = createTenantMiddleware(
@@ -96,9 +103,11 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
   const removeTeamMember = new RemoveTeamMemberUseCase(options.membershipRepository)
   const reactivateTeamMember = new ReactivateTeamMemberUseCase(options.membershipRepository)
   const updateSalesGoal = new UpdateTeamMemberSalesGoalUseCase(options.membershipRepository)
+  const updateMyPersonalGoal = new UpdateMyPersonalGoalUseCase(options.membershipRepository)
   const getSalesGoalsSummary = new GetSalesGoalsSummaryUseCase(
     options.membershipRepository,
     options.leadRepository,
+    options.organizationRepository,
   )
 
   // ── GET /team/members ─────────────────────────────────────────────────────
@@ -133,12 +142,12 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
     },
   )
 
-  // ── PUT /team/me/sales-goal ───────────────────────────────────────────────
+  // ── PUT /team/me/personal-goal ────────────────────────────────────────────
   fastify.put(
-    '/team/me/sales-goal',
+    '/team/me/personal-goal',
     { preHandler: [authMiddleware, tenantMiddleware] },
     async (request, reply) => {
-      const parsed = updateMemberSchema.safeParse(request.body)
+      const parsed = updatePersonalGoalSchema.safeParse(request.body)
       if (!parsed.success) {
         return reply.status(400).send({
           error: 'Dados inválidos.',
@@ -149,14 +158,10 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
       }
 
       const context = request.authContext as NonNullable<typeof request.authContext>
-      await updateSalesGoal.execute({
-        actorUserId: context.userId,
-        actorRole: context.currentMembership.role,
-        actorIsPlatformAdmin: false,
-        targetUserId: context.userId,
-        targetRole: context.currentMembership.role,
+      await updateMyPersonalGoal.execute({
+        userId: context.userId,
         organizationId: context.currentMembership.organizationId,
-        salesGoalCents: parsed.data.salesGoalCents,
+        personalGoalCents: parsed.data.personalGoalCents,
       })
       return reply.status(204).send()
     },
@@ -328,7 +333,6 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
 
       try {
         await updateSalesGoal.execute({
-          actorUserId: context.userId,
           actorRole: context.currentMembership.role,
           actorIsPlatformAdmin: actor?.isPlatformAdmin ?? false,
           targetUserId,

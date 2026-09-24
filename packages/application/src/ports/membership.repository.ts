@@ -19,6 +19,9 @@ export interface UserMembership {
   organizationName: string
   /** Ícone da organização (branding.iconUrl), null quando não definido. */
   organizationIconUrl: string | null
+  /** Cor secundária (branding.secondaryColor), null quando não definida ou
+   * quando a organização não é White Label. */
+  organizationSecondaryColor: string | null
   role: Role
   status: 'ACTIVE' | 'INVITED' | 'SUSPENDED'
 }
@@ -99,11 +102,24 @@ export interface IMembershipRepository {
   /** Reativa (status = ACTIVE) um vínculo previamente desativado. */
   reactivate(userId: string, organizationId: string): Promise<void>
 
-  /** Define (ou limpa, com null) a meta de vendas do membro na organização. */
+  /** Define (ou limpa, com null) a meta de vendas do membro na organização —
+   * a definida pelo gestor em Configurações → Equipe. */
   updateSalesGoal(
     userId: string,
     organizationId: string,
     salesGoalCents: number | null,
+  ): Promise<void>
+
+  /** Meta pessoal do membro na organização (definida por ele no Perfil).
+   * null quando não definida ou quando o vínculo não existe. Não faz parte de
+   * TeamMember de propósito: não é exposta na listagem da equipe. */
+  findPersonalGoal(userId: string, organizationId: string): Promise<number | null>
+
+  /** Define (ou limpa, com null) a meta pessoal do membro na organização. */
+  updatePersonalGoal(
+    userId: string,
+    organizationId: string,
+    personalGoalCents: number | null,
   ): Promise<void>
 
   /**

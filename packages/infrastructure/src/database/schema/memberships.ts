@@ -31,6 +31,10 @@ export const organizationMemberships = pgTable(
     // (centavos). null = sem meta definida. bigint porque metas somadas de
     // crédito de consórcio passam fácil do teto de integer (~R$ 21 mi).
     salesGoalCents: bigint('sales_goal_cents', { mode: 'number' }),
+    // Meta pessoal do mês, definida pelo próprio membro no Perfil — objetivo
+    // dele, independente (e muitas vezes maior) da meta acima, que é definida
+    // pelo gestor e compõe a Meta da Representação. Centavos; null = sem meta.
+    personalGoalCents: bigint('personal_goal_cents', { mode: 'number' }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },

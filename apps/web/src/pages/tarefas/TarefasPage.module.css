@@ -48,13 +48,17 @@
   align-items: center;
   gap: var(--space-1-5);
   padding: var(--space-2) var(--space-4);
-  background: linear-gradient(135deg, var(--color-accent-light), var(--color-accent));
+  background: linear-gradient(
+    135deg,
+    var(--color-accent-gradient-from),
+    var(--color-accent-gradient-to)
+  );
   border: none;
   border-radius: var(--radius-md);
   font-family: var(--font-family-base);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
+  color: var(--color-accent-contrast, var(--color-text-primary));
   cursor: pointer;
   box-shadow: var(--shadow-accent);
   transition: opacity var(--duration-normal) var(--easing-default);
@@ -836,8 +840,8 @@
 
 .ntInput:focus,
 .ntSelect:focus {
-  border-color: rgba(245, 158, 11, 0.5);
-  box-shadow: 0 0 0 3px rgba(255, 167, 5, 0.08);
+  border-color: color-mix(in srgb, var(--color-accent) 50%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 8%, transparent);
 }
 
 .ntError {
@@ -871,13 +875,13 @@
 
 .ntSubmitBtn {
   padding: 8px 18px;
-  background: linear-gradient(to right, #ffeab1, #ffa705);
+  background: var(--color-accent-gradient);
   border: none;
   border-radius: 8px;
   font-family: var(--font-family-base);
   font-size: 13px;
   font-weight: 600;
-  color: #0b1c30;
+  color: var(--color-accent-contrast, #0b1c30);
   cursor: pointer;
   transition: opacity var(--duration-normal);
 }

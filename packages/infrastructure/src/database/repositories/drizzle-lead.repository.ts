@@ -34,7 +34,7 @@ import {
   sql,
 } from 'drizzle-orm'
 import type { Database } from '../client'
-import { type DbLead, leadAssignmentHistory, leadComments, leads } from '../schema'
+import { type DbLead, funnels, leadAssignmentHistory, leadComments, leads } from '../schema'
 
 const LEAD_COLUMNS = {
   id: leads.id,
@@ -238,9 +238,10 @@ export class DrizzleLeadRepository implements ILeadRepository {
     return row ? toLeadRecord(row) : null
   }
 
-  async sumWonValueCents(filter: WonValueFilter): Promise<number> {
+  async sumWonValueCentsInDefaultFunnel(filter: WonValueFilter): Promise<number> {
     const conditions = [
       eq(leads.organizationId, filter.organizationId),
+      eq(funnels.isDefault, true),
       gte(leads.wonAt, filter.wonFrom),
       lt(leads.wonAt, filter.wonTo),
     ]
@@ -250,6 +251,7 @@ export class DrizzleLeadRepository implements ILeadRepository {
     const rows = await this.db
       .select({ total: sql<string>`coalesce(sum(${leads.valueCents}), 0)` })
       .from(leads)
+      .innerJoin(funnels, eq(leads.funnelId, funnels.id))
       .where(and(...conditions))
 
     return Number(rows[0]?.total ?? 0)

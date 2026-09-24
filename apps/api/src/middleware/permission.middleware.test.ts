@@ -20,6 +20,7 @@ function buildContext(permissions: Permission[]): AuthenticatedContext {
       organizationType: OrganizationType.REPRESENTACAO,
       organizationName: 'Representação Teste',
       organizationIconUrl: null,
+      organizationSecondaryColor: null,
       role: Role.SELLER,
       dataScope: DataScope.OWN,
       permissions,

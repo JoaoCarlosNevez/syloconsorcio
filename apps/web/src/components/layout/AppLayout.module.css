@@ -37,6 +37,14 @@
   object-fit: contain;
 }
 
+/* Ícone da organização White Label — quadrado, no lugar do logotipo da Sylo. */
+.logoImgWhiteLabel {
+  height: 34px;
+  width: 34px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
 /* Company selector */
 .companySelector {
   display: flex;

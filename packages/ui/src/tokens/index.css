@@ -35,6 +35,17 @@
   --color-accent-link: #d97706; /* amber-600 — links, "Forgot password?" */
   --color-accent-badge-text: #b45309; /* amber-700 — badge text */
   --color-accent-shadow: rgba(245, 158, 11, 0.25); /* button shadow */
+  /* Gradiente dos botões de destaque. White Label sobrescreve from/to (e
+   * define --color-accent-contrast, a cor do texto sobre o gradiente) em
+   * apps/web/src/lib/brand-theme.ts; sem White Label, os usos caem no
+   * fallback de cor escura de cada componente. */
+  --color-accent-gradient-from: #ffeab1;
+  --color-accent-gradient-to: #ffa705;
+  --color-accent-gradient: linear-gradient(
+    to right,
+    var(--color-accent-gradient-from),
+    var(--color-accent-gradient-to)
+  );
 
   /* ── Colors: Emerald (success / positive) ───────────────────────────────── */
   --color-success-subtle: #ecfdf5; /* emerald-50  — success badge bg */

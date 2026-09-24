@@ -186,8 +186,10 @@ export interface ILeadRepository {
 
   createComment(input: NewLeadCommentInput): Promise<LeadCommentRecord>
 
-  /** Soma de valueCents dos leads marcados como Ganho em [wonFrom, wonTo) na
-   * organização — base do "realizado" das metas de vendas. Com
-   * assignedUserId, soma só os leads daquele responsável. */
-  sumWonValueCents(filter: WonValueFilter): Promise<number>
+  /** Soma de valueCents (valor do crédito) dos leads marcados como Ganho em
+   * [wonFrom, wonTo) no funil padrão da organização — o funil comercial, base
+   * do "realizado" das metas de vendas. Leads de outros funis (ex: cópias do
+   * "passar o bastão" no pós-venda) não contam, pra não somar a mesma venda
+   * duas vezes. Com assignedUserId, soma só os leads daquele responsável. */
+  sumWonValueCentsInDefaultFunnel(filter: WonValueFilter): Promise<number>
 }

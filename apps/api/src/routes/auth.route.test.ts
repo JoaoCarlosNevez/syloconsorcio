@@ -436,6 +436,8 @@ describe('GET /auth/memberships', () => {
       deactivate: vi.fn(),
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
+      findPersonalGoal: vi.fn().mockResolvedValue(null),
+      updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider, mockRepo)
@@ -467,6 +469,7 @@ describe('GET /auth/memberships', () => {
           organizationType: OrganizationType.REPRESENTACAO,
           organizationName: 'Representação Um',
           organizationIconUrl: null,
+          organizationSecondaryColor: null,
           role: Role.SELLER,
           status: 'ACTIVE',
         },
@@ -481,6 +484,8 @@ describe('GET /auth/memberships', () => {
       deactivate: vi.fn(),
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
+      findPersonalGoal: vi.fn().mockResolvedValue(null),
+      updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildApp({
@@ -564,6 +569,8 @@ describe('GET /auth/memberships', () => {
       deactivate: vi.fn(),
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
+      findPersonalGoal: vi.fn().mockResolvedValue(null),
+      updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildApp({
@@ -684,6 +691,8 @@ describe('GET /auth/context', () => {
       deactivate: vi.fn(),
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
+      findPersonalGoal: vi.fn().mockResolvedValue(null),
+      updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(mockProvider, mockRepo)

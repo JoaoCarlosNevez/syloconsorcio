@@ -10,6 +10,9 @@ import type { OrganizationType } from '@sylocrm/domain'
 
 export interface OrganizationBranding {
   iconUrl?: string
+  /** Cor secundária (hex "#RRGGBB") — substitui o âmbar da Sylo (tokens
+   * --color-accent*) enquanto a organização está ativa. Só White Label. */
+  secondaryColor?: string
 }
 
 export interface OrganizationRecord {
@@ -32,6 +35,8 @@ export interface OrganizationRecord {
   /** Tags livres (ex: "Quente", "Frio") — um lead pode ter várias ao mesmo
    * tempo. Usado pra popular o filtro de tags e o editor de tags no Kanban. */
   leadTags: string[]
+  /** Meta de vendas mensal da organização, em centavos de crédito. null = sem meta. */
+  salesGoalCents: number | null
 }
 
 export interface NewOrganizationInput {
@@ -50,6 +55,7 @@ export interface UpdateOrganizationInput {
   leadSegments?: string[]
   leadSources?: string[]
   leadTags?: string[]
+  salesGoalCents?: number | null
 }
 
 export interface IOrganizationRepository {

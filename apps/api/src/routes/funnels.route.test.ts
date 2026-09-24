@@ -30,6 +30,7 @@ const SELLER_MEMBERSHIP: UserMembership = {
   organizationType: OrganizationType.REPRESENTACAO,
   organizationName: 'Representação Teste',
   organizationIconUrl: null,
+  organizationSecondaryColor: null,
   role: Role.SELLER,
   status: 'ACTIVE',
 }
@@ -39,6 +40,7 @@ const ADMIN_MEMBERSHIP: UserMembership = {
   organizationType: OrganizationType.REPRESENTACAO,
   organizationName: 'Representação Teste',
   organizationIconUrl: null,
+  organizationSecondaryColor: null,
   role: Role.ADMIN,
   status: 'ACTIVE',
 }
@@ -94,6 +96,8 @@ function buildMembershipRepository(
     deactivate: vi.fn(),
     reactivate: vi.fn(),
     updateSalesGoal: vi.fn(),
+    findPersonalGoal: vi.fn().mockResolvedValue(null),
+    updatePersonalGoal: vi.fn(),
     removeAllForUser: vi.fn(),
   }
 }

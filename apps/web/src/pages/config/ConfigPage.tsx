@@ -7,6 +7,7 @@ import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import {
   useOrganizationSettingsQuery,
+  useUpdateOrganizationBranding,
   useUpdateOrganizationSettings,
   useUploadOrganizationSettingsIcon,
 } from '../../hooks/useOrganizationSettings'
@@ -833,7 +834,7 @@ function Toast({ msg, onDone }: { msg: string; onDone: () => void }) {
         height="16"
         viewBox="0 0 24 24"
         fill="none"
-        stroke="#ffa705"
+        stroke="var(--color-accent)"
         strokeWidth={2.5}
         strokeLinecap="round"
         aria-hidden="true"
@@ -1604,23 +1605,33 @@ function NotificacoesView() {
 
 // ── Organização view ───────────────────────────────────────────────────────────────
 
+/** Âmbar da Sylo (--color-accent) — valor inicial do seletor de cor. */
+const DEFAULT_SECONDARY_COLOR = '#ffa705'
+
 function OrganizacaoView() {
   const { organizationId, membership } = useActiveOrganization()
   const { data, isLoading } = useOrganizationSettingsQuery(organizationId)
   const updateSettings = useUpdateOrganizationSettings(organizationId)
   const uploadIcon = useUploadOrganizationSettingsIcon(organizationId)
+  const updateBranding = useUpdateOrganizationBranding(organizationId)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [orgName, setOrgName] = useState('')
   const [cnpj, setCnpj] = useState('')
   const [website, setWebsite] = useState('')
   const [phone, setPhone] = useState('')
+  const [orgGoal, setOrgGoal] = useState('')
+  const [secondaryColor, setSecondaryColor] = useState(DEFAULT_SECONDARY_COLOR)
   const [newSegment, setNewSegment] = useState('')
   const [newSource, setNewSource] = useState('')
   const [newTag, setNewTag] = useState('')
   const [toast, setToast] = useState('')
 
   const organization = data?.organization
+  const { data: teamData } = useTeamMembersQuery(organizationId)
+  const teamGoalsSumCents = (teamData?.members ?? [])
+    .filter((m) => m.status === 'ACTIVE')
+    .reduce((sum, m) => sum + (m.salesGoalCents ?? 0), 0)
   const isAdmin = membership?.role === 'ADMIN'
   const canChangeLogo = isAdmin && organization?.isWhiteLabel === true
 
@@ -1631,7 +1642,32 @@ function OrganizacaoView() {
     setCnpj(organization.cnpj ?? '')
     setWebsite(organization.website ?? '')
     setPhone(organization.phone ?? '')
+    setSecondaryColor(organization.branding?.secondaryColor ?? DEFAULT_SECONDARY_COLOR)
+    setOrgGoal(
+      organization.salesGoalCents !== null
+        ? formatGoalInput(String(organization.salesGoalCents / 100))
+        : '',
+    )
   }, [organization])
+
+  async function handleSaveColor(color: string | null) {
+    try {
+      await updateBranding.mutateAsync(color)
+      setToast(color ? 'Cor secundária salva!' : 'Cor padrão da Sylo restaurada.')
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Erro ao salvar a cor.')
+    }
+  }
+
+  async function handleSaveGoal(e: FormEvent) {
+    e.preventDefault()
+    try {
+      await updateSettings.mutateAsync({ salesGoalCents: goalInputToCents(orgGoal) })
+      setToast('Meta da organização salva!')
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Erro ao salvar a meta.')
+    }
+  }
 
   async function handleSave(e: FormEvent) {
     e.preventDefault()
@@ -1802,6 +1838,53 @@ function OrganizacaoView() {
               />
             </div>
           </div>
+          {organization.isWhiteLabel && (
+            <div className={styles.formRow}>
+              <label className={styles.formLabel} htmlFor="org-secondary-color">
+                Cor secundária
+              </label>
+              <div className={styles.colorPickerRow}>
+                <input
+                  id="org-secondary-color"
+                  type="color"
+                  className={styles.colorSwatchInput}
+                  value={secondaryColor}
+                  onChange={(e) => setSecondaryColor(e.target.value)}
+                  disabled={!isAdmin}
+                />
+                <span className={styles.colorHex}>{secondaryColor.toUpperCase()}</span>
+                {isAdmin && (
+                  <>
+                    <button
+                      type="button"
+                      className={styles.primaryBtn}
+                      onClick={() => handleSaveColor(secondaryColor)}
+                      disabled={
+                        updateBranding.isPending ||
+                        secondaryColor === organization.branding?.secondaryColor
+                      }
+                    >
+                      Salvar cor
+                    </button>
+                    {organization.branding?.secondaryColor && (
+                      <button
+                        type="button"
+                        className={styles.secondaryBtn}
+                        onClick={() => handleSaveColor(null)}
+                        disabled={updateBranding.isPending}
+                      >
+                        Restaurar padrão
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+              <span className={styles.formHint}>
+                Substitui o laranja da Sylo em botões, menu, abas e destaques do sistema para todos
+                os membros desta organização.
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1878,6 +1961,56 @@ function OrganizacaoView() {
                   disabled={updateSettings.isPending}
                 >
                   {updateSettings.isPending ? 'Salvando…' : 'Salvar organização'}
+                </button>
+              </div>
+            )}
+          </form>
+        </div>
+      </div>
+
+      <div className={styles.settingsCard}>
+        <div className={styles.settingsCardHeader}>
+          <div className={styles.settingsCardTitle}>Meta da organização</div>
+          <div className={styles.settingsCardDesc}>
+            {isAdmin
+              ? 'Meta mensal de vendas em crédito — aparece no card "Meta da Representação" do início.'
+              : 'Apenas o dono da representação pode editar a meta.'}
+          </div>
+        </div>
+        <div className={styles.settingsCardBody}>
+          <form onSubmit={handleSaveGoal} style={{ display: 'contents' }}>
+            <div className={styles.formRow}>
+              <label className={styles.formLabel} htmlFor="org-sales-goal">
+                Meta mensal de vendas
+              </label>
+              <div className={styles.currencyInput}>
+                <span className={styles.currencyPrefix}>R$</span>
+                <input
+                  id="org-sales-goal"
+                  type="text"
+                  inputMode="numeric"
+                  className={styles.formInput}
+                  value={orgGoal}
+                  onChange={(e) => setOrgGoal(formatGoalInput(e.target.value))}
+                  placeholder="0"
+                  disabled={!isAdmin}
+                />
+              </div>
+              <span className={styles.formHint}>
+                {teamGoalsSumCents > 0
+                  ? `Soma das metas da equipe: R$ ${formatBRL(teamGoalsSumCents)}. `
+                  : ''}
+                Sem meta definida, o início usa a soma das metas da equipe.
+              </span>
+            </div>
+            {isAdmin && (
+              <div className={styles.saveRow}>
+                <button
+                  type="submit"
+                  className={styles.primaryBtn}
+                  disabled={updateSettings.isPending}
+                >
+                  {updateSettings.isPending ? 'Salvando…' : 'Salvar meta'}
                 </button>
               </div>
             )}

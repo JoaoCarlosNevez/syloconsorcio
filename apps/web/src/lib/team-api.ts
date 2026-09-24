@@ -59,10 +59,16 @@ export interface SalesGoalProgress {
   achievedCents: number
 }
 
+/** goalCents é a meta pessoal (Perfil); teamGoalCents, a definida pelo
+ * gestor em Configurações → Equipe. */
+export interface PersonalGoalProgress extends SalesGoalProgress {
+  teamGoalCents: number | null
+}
+
 export interface SalesGoalsSummary {
   periodStart: string
   periodEnd: string
-  personal: SalesGoalProgress
+  personal: PersonalGoalProgress
   organization: SalesGoalProgress
 }
 
@@ -70,9 +76,9 @@ export function getSalesGoalsSummary(organizationId: string): Promise<SalesGoals
   return apiClient.get<SalesGoalsSummary>('/team/goals/summary', { organizationId })
 }
 
-export function updateMySalesGoal(
+export function updateMyPersonalGoal(
   organizationId: string,
-  salesGoalCents: number | null,
+  personalGoalCents: number | null,
 ): Promise<void> {
-  return apiClient.put<void>('/team/me/sales-goal', { salesGoalCents }, { organizationId })
+  return apiClient.put<void>('/team/me/personal-goal', { personalGoalCents }, { organizationId })
 }

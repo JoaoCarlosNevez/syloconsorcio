@@ -177,6 +177,9 @@ export const authRoute: FastifyPluginAsync<AuthRouteOptions> = async (fastify, o
         organizationIconUrl: organization.isWhiteLabel
           ? (organization.branding?.iconUrl ?? null)
           : null,
+        organizationSecondaryColor: organization.isWhiteLabel
+          ? (organization.branding?.secondaryColor ?? null)
+          : null,
         role: Role.ADMIN,
         status: 'ACTIVE',
       }))

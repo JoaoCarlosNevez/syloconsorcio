@@ -34,6 +34,7 @@ const ACTIVE_REPRESENTACAO_SELLER: UserMembership = {
   organizationType: OrganizationType.REPRESENTACAO,
   organizationName: 'Representação Teste',
   organizationIconUrl: null,
+  organizationSecondaryColor: null,
   role: Role.SELLER,
   status: 'ACTIVE',
 }
@@ -43,6 +44,7 @@ const ACTIVE_REPRESENTACAO_ADMIN: UserMembership = {
   organizationType: OrganizationType.REPRESENTACAO,
   organizationName: 'Representação Teste',
   organizationIconUrl: null,
+  organizationSecondaryColor: null,
   role: Role.ADMIN,
   status: 'ACTIVE',
 }
@@ -52,6 +54,7 @@ const ACTIVE_MASTER: UserMembership = {
   organizationType: OrganizationType.MASTER,
   organizationName: 'Master Teste',
   organizationIconUrl: null,
+  organizationSecondaryColor: null,
   role: Role.MANAGER,
   status: 'ACTIVE',
 }
@@ -61,6 +64,7 @@ const SUSPENDED_MEMBERSHIP: UserMembership = {
   organizationType: OrganizationType.REPRESENTACAO,
   organizationName: 'Representação Teste',
   organizationIconUrl: null,
+  organizationSecondaryColor: null,
   role: Role.SELLER,
   status: 'SUSPENDED',
 }
@@ -157,6 +161,8 @@ describe('tenantMiddleware', () => {
       deactivate: vi.fn(),
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
+      findPersonalGoal: vi.fn().mockResolvedValue(null),
+      updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestAppWithoutAuth(mockRepo)
@@ -186,6 +192,8 @@ describe('tenantMiddleware', () => {
       deactivate: vi.fn(),
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
+      findPersonalGoal: vi.fn().mockResolvedValue(null),
+      updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
@@ -211,6 +219,8 @@ describe('tenantMiddleware', () => {
       deactivate: vi.fn(),
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
+      findPersonalGoal: vi.fn().mockResolvedValue(null),
+      updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
@@ -239,6 +249,8 @@ describe('tenantMiddleware', () => {
       deactivate: vi.fn(),
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
+      findPersonalGoal: vi.fn().mockResolvedValue(null),
+      updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(
@@ -272,6 +284,8 @@ describe('tenantMiddleware', () => {
       deactivate: vi.fn(),
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
+      findPersonalGoal: vi.fn().mockResolvedValue(null),
+      updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const organizationRepo = buildOrganizationRepository({
@@ -314,6 +328,8 @@ describe('tenantMiddleware', () => {
       deactivate: vi.fn(),
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
+      findPersonalGoal: vi.fn().mockResolvedValue(null),
+      updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const organizationRepo = buildOrganizationRepository({
@@ -357,6 +373,8 @@ describe('tenantMiddleware', () => {
       deactivate: vi.fn(),
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
+      findPersonalGoal: vi.fn().mockResolvedValue(null),
+      updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(mockRepo, IDENTITY, buildUserRepository(true))
@@ -385,6 +403,8 @@ describe('tenantMiddleware', () => {
       deactivate: vi.fn(),
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
+      findPersonalGoal: vi.fn().mockResolvedValue(null),
+      updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
@@ -413,6 +433,8 @@ describe('tenantMiddleware', () => {
       deactivate: vi.fn(),
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
+      findPersonalGoal: vi.fn().mockResolvedValue(null),
+      updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
@@ -446,6 +468,8 @@ describe('tenantMiddleware', () => {
       deactivate: vi.fn(),
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
+      findPersonalGoal: vi.fn().mockResolvedValue(null),
+      updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
@@ -474,6 +498,8 @@ describe('tenantMiddleware', () => {
         deactivate: vi.fn(),
         reactivate: vi.fn(),
         updateSalesGoal: vi.fn(),
+        findPersonalGoal: vi.fn().mockResolvedValue(null),
+        updatePersonalGoal: vi.fn(),
         removeAllForUser: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
@@ -501,6 +527,8 @@ describe('tenantMiddleware', () => {
         deactivate: vi.fn(),
         reactivate: vi.fn(),
         updateSalesGoal: vi.fn(),
+        findPersonalGoal: vi.fn().mockResolvedValue(null),
+        updatePersonalGoal: vi.fn(),
         removeAllForUser: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
@@ -528,6 +556,8 @@ describe('tenantMiddleware', () => {
         deactivate: vi.fn(),
         reactivate: vi.fn(),
         updateSalesGoal: vi.fn(),
+        findPersonalGoal: vi.fn().mockResolvedValue(null),
+        updatePersonalGoal: vi.fn(),
         removeAllForUser: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
@@ -557,6 +587,8 @@ describe('tenantMiddleware', () => {
         deactivate: vi.fn(),
         reactivate: vi.fn(),
         updateSalesGoal: vi.fn(),
+        findPersonalGoal: vi.fn().mockResolvedValue(null),
+        updatePersonalGoal: vi.fn(),
         removeAllForUser: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
@@ -588,6 +620,8 @@ describe('tenantMiddleware', () => {
         deactivate: vi.fn(),
         reactivate: vi.fn(),
         updateSalesGoal: vi.fn(),
+        findPersonalGoal: vi.fn().mockResolvedValue(null),
+        updatePersonalGoal: vi.fn(),
         removeAllForUser: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
@@ -617,6 +651,8 @@ describe('tenantMiddleware', () => {
       deactivate: vi.fn(),
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
+      findPersonalGoal: vi.fn().mockResolvedValue(null),
+      updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
     }
     const app = buildTestApp(mockRepo)

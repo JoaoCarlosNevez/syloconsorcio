@@ -212,14 +212,14 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: linear-gradient(to right, #ffeab1, #ffa705);
+  background: var(--color-accent-gradient);
   border: none;
   border-radius: 12px;
   padding: 0 16px;
   height: 36px;
   font-size: 12px;
   font-weight: 700;
-  color: #020617;
+  color: var(--color-accent-contrast, #020617);
   cursor: pointer;
   white-space: nowrap;
   transition: opacity 0.15s;

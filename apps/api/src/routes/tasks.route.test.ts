@@ -33,6 +33,7 @@ const SELLER_MEMBERSHIP: UserMembership = {
   organizationType: OrganizationType.REPRESENTACAO,
   organizationName: 'Representação Teste',
   organizationIconUrl: null,
+  organizationSecondaryColor: null,
   role: Role.SELLER,
   status: 'ACTIVE',
 }
@@ -42,6 +43,7 @@ const MANAGER_MEMBERSHIP: UserMembership = {
   organizationType: OrganizationType.REPRESENTACAO,
   organizationName: 'Representação Teste',
   organizationIconUrl: null,
+  organizationSecondaryColor: null,
   role: Role.MANAGER,
   status: 'ACTIVE',
 }
@@ -113,6 +115,8 @@ function buildMembershipRepository(
     deactivate: vi.fn(),
     reactivate: vi.fn(),
     updateSalesGoal: vi.fn(),
+    findPersonalGoal: vi.fn().mockResolvedValue(null),
+    updatePersonalGoal: vi.fn(),
     removeAllForUser: vi.fn(),
   }
 }
@@ -138,7 +142,7 @@ function buildLeadRepository(overrides: Partial<ILeadRepository> = {}): ILeadRep
     listAssignmentHistory: vi.fn(),
     listComments: vi.fn(),
     createComment: vi.fn(),
-    sumWonValueCents: vi.fn().mockResolvedValue(0),
+    sumWonValueCentsInDefaultFunnel: vi.fn().mockResolvedValue(0),
     findByPhone: vi.fn().mockResolvedValue(null),
     ...overrides,
   }

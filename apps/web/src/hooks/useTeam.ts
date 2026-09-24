@@ -8,7 +8,7 @@ import {
   listTeamMembers,
   reactivateTeamMember,
   removeTeamMember,
-  updateMySalesGoal,
+  updateMyPersonalGoal,
   updateTeamMemberSalesGoal,
 } from '../lib/team-api'
 
@@ -71,13 +71,12 @@ export function useUpdateTeamMemberSalesGoal(organizationId: string | null) {
   })
 }
 
-export function useUpdateMySalesGoal(organizationId: string | null) {
+export function useUpdateMyPersonalGoal(organizationId: string | null) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (salesGoalCents: number | null) =>
-      updateMySalesGoal(organizationId as string, salesGoalCents),
+    mutationFn: (personalGoalCents: number | null) =>
+      updateMyPersonalGoal(organizationId as string, personalGoalCents),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['team', 'members', organizationId] })
       queryClient.invalidateQueries({ queryKey: ['team', 'goals', 'summary', organizationId] })
     },
   })
