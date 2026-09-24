@@ -16,6 +16,7 @@ import {
 } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { useOrganizationSettingsQuery } from '../../hooks/useOrganizationSettings'
+import { useCreateTask, useDeleteTask, useTasksQuery, useUpdateTask } from '../../hooks/useTasks'
 import { useTeamMembersQuery } from '../../hooks/useTeam'
 import type { Funnel } from '../../lib/funnels-api'
 import {
@@ -27,7 +28,15 @@ import {
   resolveCardOutcome,
 } from '../../lib/lead-adapters'
 import type { LeadHistory } from '../../lib/leads-api'
+import type { CreateTaskPayload, Task, TaskType, UpdateTaskPayload } from '../../lib/tasks-api'
 import type { TeamMember } from '../../lib/team-api'
+import { TaskFormModal } from '../tarefas/TaskFormModal'
+import { TaskModal } from '../tarefas/TaskModal'
+import {
+  TYPE_BADGES as TASK_TYPE_BADGES,
+  displayStatus,
+  formatTaskDateTime,
+} from '../tarefas/tarefas.types'
 import styles from './LeadModal.module.css'
 
 // ── Ícones (SVG inline — padrão do projeto) ────────────────────────────────────
@@ -345,16 +354,6 @@ function ClockIcon() {
   )
 }
 
-function DotsIcon() {
-  return (
-    <svg width="3" height="13" viewBox="0 0 3 13" fill="currentColor" aria-hidden="true">
-      <circle cx="1.5" cy="1.5" r="1.5" />
-      <circle cx="1.5" cy="6.5" r="1.5" />
-      <circle cx="1.5" cy="11.5" r="1.5" />
-    </svg>
-  )
-}
-
 function TransferIcon() {
   return (
     <svg
@@ -550,31 +549,6 @@ function FilterIcon() {
 }
 
 // ADMIN_USER e getAgentProfile importados de ../../data/kanban-mock
-
-// ── Dados estáticos (mock) ─────────────────────────────────────────────────────
-
-const MOCK_TASKS = [
-  {
-    id: 't1',
-    title: 'Enviar tabela comparativa de lances livres vs. embutidos (R$ 350k)',
-    dueLabel: 'Hoje às 17:30',
-    dueUrgent: true,
-    responsible: 'Do Carmo',
-    channel: 'Via WhatsApp',
-    priority: 'Prioritário',
-    urgent: true,
-  },
-  {
-    id: 't2',
-    title: 'Confirmar se o FGTS já foi liberado no aplicativo Caixa',
-    dueLabel: 'Amanhã, 02/06 às 11:00',
-    dueUrgent: false,
-    responsible: 'Fabione Alencar',
-    channel: null,
-    priority: 'Planejado',
-    urgent: false,
-  },
-]
 
 // ── Feed de histórico (atribuição real + comentários reais) ────────────────────
 //
@@ -838,9 +812,22 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
   const createComment = useCreateLeadComment(organizationId, card.id)
   const { data: proposalsData } = useLeadProposalsQuery(organizationId, card.id)
   const createLeadProposal = useCreateLeadProposal(organizationId, card.id)
+  const { data: leadTasksData } = useTasksQuery(organizationId, {
+    leadId: card.id,
+    status: 'todos',
+    pageSize: 20,
+  })
+  const leadTasks = leadTasksData?.items ?? []
+  const createTask = useCreateTask(organizationId)
+  const updateTaskMutation = useUpdateTask(organizationId)
+  const deleteTaskMutation = useDeleteTask(organizationId)
+  const [taskDetail, setTaskDetail] = useState<Task | null>(null)
+  const [taskFormOpen, setTaskFormOpen] = useState(false)
+  const [editingLeadTask, setEditingLeadTask] = useState<Task | null>(null)
   const { toast } = useToast()
 
   const canAssign = membership?.permissions.includes('lead.assign') ?? false
+  const canAssignTask = membership?.permissions.includes('task.assign') ?? false
   const canManageLost = membership?.permissions.includes('lead.manage_lost') ?? false
   const cardOutcome = resolveCardOutcome(card)
   const isViewingLost = cardOutcome === 'perdido'
@@ -1148,6 +1135,31 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
   function handleNovaSimulacao() {
     handleResetSimulation()
     handleSimulate()
+  }
+
+  function handleQuickCreateTask(type: TaskType, title: string, hoursFromNow: number) {
+    if (!currentUser) return
+    const dueAt = new Date(Date.now() + hoursFromNow * 60 * 60 * 1000).toISOString()
+    createTask.mutate(
+      { leadId: card.id, assignedUserId: currentUser.id, type, title, dueAt },
+      {
+        onSuccess: () => toast({ type: 'success', title: 'Tarefa criada' }),
+        onError: (error) => {
+          toast({
+            type: 'error',
+            title: 'Não foi possível criar a tarefa',
+            description: error instanceof Error ? error.message : undefined,
+          })
+        },
+      },
+    )
+  }
+
+  function handleToggleTaskComplete(task: Task) {
+    updateTaskMutation.mutate({
+      id: task.id,
+      payload: { status: task.status === 'concluida' ? 'pendente' : 'concluida' },
+    })
   }
 
   function handleReopenLead() {
@@ -2168,7 +2180,11 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                       Acompanhe contatos telefônicos, envio de simulações e visitas presenciais.
                     </p>
                   </div>
-                  <button type="button" className={styles.newTaskBtn}>
+                  <button
+                    type="button"
+                    className={styles.newTaskBtn}
+                    onClick={() => setTaskFormOpen(true)}
+                  >
                     <PlusIcon />
                     Nova Tarefa
                   </button>
@@ -2177,15 +2193,34 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                 {/* Quick chips */}
                 <div className={styles.chipsRow}>
                   <span className={styles.chipsLabel}>Criar rápido:</span>
-                  <button type="button" className={styles.chip}>
+                  <button
+                    type="button"
+                    className={styles.chip}
+                    disabled={createTask.isPending}
+                    onClick={() =>
+                      handleQuickCreateTask('Ligação', `Ligação de follow-up com ${card.name}`, 24)
+                    }
+                  >
                     <PhoneIcon />
                     Ligação de Follow-up
                   </button>
-                  <button type="button" className={styles.chip}>
+                  <button
+                    type="button"
+                    className={styles.chip}
+                    disabled={createTask.isPending}
+                    onClick={() =>
+                      handleQuickCreateTask('Simulação', `Simular lance para ${card.name}`, 24)
+                    }
+                  >
                     <CalendarIcon />
                     Simulação de Lance
                   </button>
-                  <button type="button" className={styles.chip}>
+                  <button
+                    type="button"
+                    className={styles.chip}
+                    disabled={createTask.isPending}
+                    onClick={() => handleQuickCreateTask('Reunião', `Reunião com ${card.name}`, 48)}
+                  >
                     <CalendarIcon />
                     Agendar Reunião
                   </button>
@@ -2193,57 +2228,63 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
 
                 {/* Lista de tarefas */}
                 <div className={styles.taskList}>
-                  {MOCK_TASKS.map((task) => (
-                    <div
-                      key={task.id}
-                      className={task.urgent ? styles.taskItemUrgent : styles.taskItem}
-                    >
-                      <div className={styles.taskLeft}>
-                        <div
-                          className={styles.taskCheckbox}
-                          role="checkbox"
-                          aria-checked="false"
-                          aria-label="Concluir tarefa"
-                          tabIndex={0}
-                        />
-                        <div className={styles.taskContent}>
-                          <span className={styles.taskItemTitle}>{task.title}</span>
-                          <div className={styles.taskMeta}>
-                            <span
-                              className={task.dueUrgent ? styles.taskTimeUrgent : styles.taskTime}
-                            >
-                              <ClockIcon />
-                              {task.dueLabel}
-                            </span>
-                            <span className={styles.taskMetaDot}>•</span>
-                            <span className={styles.taskMetaText}>Resp: {task.responsible}</span>
-                            {task.channel && (
-                              <>
-                                <span className={styles.taskMetaDot}>•</span>
-                                <span className={styles.taskChannel}>{task.channel}</span>
-                              </>
-                            )}
+                  {leadTasks.length === 0 && (
+                    <p className={styles.attrValueMuted}>
+                      Nenhuma tarefa criada pra este lead ainda.
+                    </p>
+                  )}
+                  {leadTasks.map((task) => {
+                    const urgent = displayStatus(task) === 'atrasada'
+                    const badge = TASK_TYPE_BADGES[task.type]
+                    return (
+                      <button
+                        key={task.id}
+                        type="button"
+                        className={urgent ? styles.taskItemUrgent : styles.taskItem}
+                        onClick={() => setTaskDetail(task)}
+                        style={{ cursor: 'pointer', width: '100%', textAlign: 'left' }}
+                      >
+                        <div className={styles.taskLeft}>
+                          {/* biome-ignore lint/a11y/useKeyWithClickEvents: mouse-only shortcut — completing via TaskModal's "Concluir" button stays keyboard-accessible */}
+                          <span
+                            className={styles.taskCheckbox}
+                            title={
+                              task.status === 'concluida' ? 'Reabrir tarefa' : 'Concluir tarefa'
+                            }
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleToggleTaskComplete(task)
+                            }}
+                          />
+                          <div className={styles.taskContent}>
+                            <span className={styles.taskItemTitle}>{task.title}</span>
+                            <div className={styles.taskMeta}>
+                              <span className={urgent ? styles.taskTimeUrgent : styles.taskTime}>
+                                <ClockIcon />
+                                {formatTaskDateTime(task.dueAt)}
+                              </span>
+                              <span className={styles.taskMetaDot}>•</span>
+                              <span className={styles.taskMetaText}>
+                                Resp: {resolveAgent(task.assignedUserId, members).name}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className={styles.taskRight}>
-                        <span
-                          className={
-                            task.urgent ? styles.priorityBadgeUrgent : styles.priorityBadgeNormal
-                          }
-                        >
-                          {task.priority}
-                        </span>
-                        <button
-                          type="button"
-                          className={styles.taskMenuBtn}
-                          aria-label="Opções da tarefa"
-                        >
-                          <DotsIcon />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                        <div className={styles.taskRight}>
+                          <span
+                            className={styles.priorityBadgeNormal}
+                            style={{
+                              background: badge.bg,
+                              borderColor: badge.border,
+                              color: badge.color,
+                            }}
+                          >
+                            {badge.label}
+                          </span>
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             </div>
@@ -2404,6 +2445,90 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
           </div>
         )}
       </div>
+
+      {taskDetail && (
+        <TaskModal
+          task={taskDetail}
+          leadName={card.name}
+          members={members}
+          onClose={() => setTaskDetail(null)}
+          onConcluir={() => {
+            updateTaskMutation.mutate(
+              { id: taskDetail.id, payload: { status: 'concluida' } },
+              { onSuccess: () => setTaskDetail(null) },
+            )
+          }}
+          onExcluir={() => {
+            deleteTaskMutation.mutate(taskDetail.id, { onSuccess: () => setTaskDetail(null) })
+          }}
+          onEdit={() => {
+            setEditingLeadTask(taskDetail)
+            setTaskDetail(null)
+          }}
+          onSaveNotes={(notes) =>
+            updateTaskMutation.mutate(
+              { id: taskDetail.id, payload: { notes } },
+              { onSuccess: (updated) => setTaskDetail(updated) },
+            )
+          }
+        />
+      )}
+
+      {taskFormOpen && currentUser && (
+        <TaskFormModal
+          mode="create"
+          fixedLeadId={card.id}
+          fixedLeadLabel={card.name}
+          leadOptions={[]}
+          members={members}
+          currentUserId={currentUser.id}
+          canAssign={canAssignTask}
+          onClose={() => setTaskFormOpen(false)}
+          onSubmit={(payload) => {
+            createTask.mutate(payload as CreateTaskPayload, {
+              onSuccess: () => setTaskFormOpen(false),
+              onError: (error) => {
+                toast({
+                  type: 'error',
+                  title: 'Não foi possível criar a tarefa',
+                  description: error instanceof Error ? error.message : undefined,
+                })
+              },
+            })
+          }}
+          isSubmitting={createTask.isPending}
+        />
+      )}
+
+      {editingLeadTask && currentUser && (
+        <TaskFormModal
+          mode="edit"
+          initialTask={editingLeadTask}
+          fixedLeadId={card.id}
+          fixedLeadLabel={card.name}
+          leadOptions={[]}
+          members={members}
+          currentUserId={currentUser.id}
+          canAssign={canAssignTask}
+          onClose={() => setEditingLeadTask(null)}
+          onSubmit={(payload) => {
+            updateTaskMutation.mutate(
+              { id: editingLeadTask.id, payload: payload as UpdateTaskPayload },
+              {
+                onSuccess: () => setEditingLeadTask(null),
+                onError: (error) => {
+                  toast({
+                    type: 'error',
+                    title: 'Não foi possível salvar as alterações',
+                    description: error instanceof Error ? error.message : undefined,
+                  })
+                },
+              },
+            )
+          }}
+          isSubmitting={updateTaskMutation.isPending}
+        />
+      )}
 
       {confirmingDelete && (
         // biome-ignore lint/a11y/useKeyWithClickEvents: overlay backdrop dismiss

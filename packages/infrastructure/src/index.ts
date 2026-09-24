@@ -31,3 +31,4 @@ export { DrizzleLeadRepository } from './database/repositories/drizzle-lead.repo
 export { DrizzleLeadProposalRepository } from './database/repositories/drizzle-lead-proposal.repository'
 export { DrizzleUserRepository } from './database/repositories/drizzle-user.repository'
 export { DrizzleFunnelRepository } from './database/repositories/drizzle-funnel.repository'
+export { DrizzleTaskRepository } from './database/repositories/drizzle-task.repository'

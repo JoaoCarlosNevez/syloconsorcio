@@ -24,12 +24,21 @@ const MANAGER_PERMISSIONS: readonly Permission[] = [
   // Supervisor pode remover só Vendedores — a hierarquia fina é aplicada
   // em RemoveTeamMemberUseCase.
   Permission.USER_REMOVE,
+  Permission.TASK_READ,
+  Permission.TASK_CREATE,
+  Permission.TASK_UPDATE,
+  Permission.TASK_DELETE,
+  Permission.TASK_ASSIGN,
 ]
 
 const SELLER_PERMISSIONS: readonly Permission[] = [
   Permission.LEAD_READ,
   Permission.LEAD_CREATE,
   Permission.LEAD_UPDATE,
+  Permission.TASK_READ,
+  Permission.TASK_CREATE,
+  Permission.TASK_UPDATE,
+  Permission.TASK_DELETE,
 ]
 
 const ROLE_PERMISSION_MAP: Record<Role, readonly Permission[]> = {

@@ -17,6 +17,7 @@ import type {
   IMembershipRepository,
   IOrganizationRepository,
   IStorageProvider,
+  ITaskRepository,
   IUserRepository,
 } from '@sylocrm/application'
 import Fastify from 'fastify'
@@ -27,6 +28,7 @@ import { healthRoute } from './routes/health.route'
 import { leadsRoute } from './routes/leads.route'
 import { organizationSettingsRoute } from './routes/organization-settings.route'
 import { organizationsRoute } from './routes/organizations.route'
+import { tasksRoute } from './routes/tasks.route'
 import { teamRoute } from './routes/team.route'
 
 export interface BuildAppDeps {
@@ -38,6 +40,7 @@ export interface BuildAppDeps {
   storageProvider: IStorageProvider
   funnelRepository: IFunnelRepository
   leadProposalRepository: ILeadProposalRepository
+  taskRepository: ITaskRepository
 }
 
 /** No-op auth provider used when Supabase env vars are not configured. */
@@ -159,6 +162,18 @@ function createNoOpLeadProposalRepository(): ILeadProposalRepository {
   }
 }
 
+/** No-op task repository used when database is not configured. */
+function createNoOpTaskRepository(): ITaskRepository {
+  return {
+    list: async (_filter, page, pageSize) => ({ items: [], total: 0, page, pageSize }),
+    create: async () => {
+      throw new Error('Database not configured — cannot create tasks.')
+    },
+    update: async () => null,
+    delete: async () => false,
+  }
+}
+
 export function buildApp(deps?: Partial<BuildAppDeps>) {
   // Use provided deps or fall back to no-op adapters.
   // Real adapters are created in main.ts (composition root) from env vars.
@@ -171,6 +186,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     storageProvider: deps?.storageProvider ?? createNoOpStorageProvider(),
     funnelRepository: deps?.funnelRepository ?? createNoOpFunnelRepository(),
     leadProposalRepository: deps?.leadProposalRepository ?? createNoOpLeadProposalRepository(),
+    taskRepository: deps?.taskRepository ?? createNoOpTaskRepository(),
   }
 
   const app = Fastify({
@@ -223,6 +239,15 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     organizationRepository: resolvedDeps.organizationRepository,
     userRepository: resolvedDeps.userRepository,
     funnelRepository: resolvedDeps.funnelRepository,
+  })
+
+  app.register(tasksRoute, {
+    authProvider: resolvedDeps.authProvider,
+    membershipRepository: resolvedDeps.membershipRepository,
+    organizationRepository: resolvedDeps.organizationRepository,
+    userRepository: resolvedDeps.userRepository,
+    taskRepository: resolvedDeps.taskRepository,
+    leadRepository: resolvedDeps.leadRepository,
   })
 
   app.register(organizationsRoute, {

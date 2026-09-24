@@ -21,6 +21,14 @@ export const Permission = {
   USER_REMOVE: 'user.remove',
   REPORTS_READ: 'reports.read',
   ORGANIZATION_UPDATE: 'organization.update',
+  TASK_READ: 'task.read',
+  TASK_CREATE: 'task.create',
+  TASK_UPDATE: 'task.update',
+  TASK_DELETE: 'task.delete',
+  /** Criar/editar uma tarefa atribuída a outra pessoa — Vendedor não tem:
+   * toda tarefa que ele cria nasce (e permanece) atribuída a ele mesmo,
+   * mesmo símile de LEAD_ASSIGN. */
+  TASK_ASSIGN: 'task.assign',
 } as const
 
 export type Permission = (typeof Permission)[keyof typeof Permission]

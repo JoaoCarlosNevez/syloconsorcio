@@ -59,6 +59,17 @@ export type {
   LeadProposalRecord,
   NewLeadProposalInput,
 } from './ports/lead-proposal.repository'
+export type {
+  ITaskRepository,
+  TaskRecord,
+  NewTaskInput,
+  UpdateTaskInput,
+  TaskScopeFilter,
+  TaskListFilter,
+  TaskListPage,
+  TaskStatus,
+  TaskStatusFilter,
+} from './ports/task.repository'
 
 export { resolveLeadScope } from './leads/lead-scope'
 export type { LeadScope } from './leads/lead-scope'
@@ -83,6 +94,15 @@ export { ListLeadProposalsUseCase } from './leads/list-lead-proposals.use-case'
 export type { ListLeadProposalsInput } from './leads/list-lead-proposals.use-case'
 export { CreateLeadProposalUseCase } from './leads/create-lead-proposal.use-case'
 export type { CreateLeadProposalInput } from './leads/create-lead-proposal.use-case'
+
+export { ListTasksUseCase } from './tasks/list-tasks.use-case'
+export type { ListTasksInput } from './tasks/list-tasks.use-case'
+export { CreateTaskUseCase } from './tasks/create-task.use-case'
+export type { CreateTaskInput } from './tasks/create-task.use-case'
+export { UpdateTaskUseCase } from './tasks/update-task.use-case'
+export type { UpdateTaskUseCaseInput } from './tasks/update-task.use-case'
+export { DeleteTaskUseCase } from './tasks/delete-task.use-case'
+export type { DeleteTaskInput } from './tasks/delete-task.use-case'
 
 export { ListFunnelsUseCase } from './funnels/list-funnels.use-case'
 export type { ListFunnelsInput } from './funnels/list-funnels.use-case'

@@ -1,8 +1,12 @@
-// TaskModal — ficha de detalhe de uma tarefa, abre ao clicar em qualquer linha da TarefasPage.
+// TaskModal — ficha de detalhe de uma tarefa, abre ao clicar em qualquer linha
+// da TarefasPage (ou do card de Tarefas do LeadModal).
 
 import { useEffect, useState } from 'react'
+import { resolveAgent } from '../../lib/lead-adapters'
+import type { Task } from '../../lib/tasks-api'
+import type { TeamMember } from '../../lib/team-api'
 import styles from './TaskModal.module.css'
-import type { Task, TaskStatus } from './tarefas.types'
+import { STATUS_CFG, TYPE_BADGES, displayStatus, formatTaskDateTime } from './tarefas.types'
 
 // ── Ícones ─────────────────────────────────────────────────────────────────────
 
@@ -179,119 +183,38 @@ function TagIcon() {
   )
 }
 
-function BellIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-    </svg>
-  )
-}
-
-// ── Status config ───────────────────────────────────────────────────────────────
-
-const STATUS_CFG: Record<
-  TaskStatus,
-  { dot: string; label: string; bg: string; border: string; color: string }
-> = {
-  atrasada: {
-    dot: '#ba1a1a',
-    label: 'Atrasada',
-    bg: '#fff1f2',
-    border: '#fecdd3',
-    color: '#ba1a1a',
-  },
-  em_andamento: {
-    dot: '#3b82f6',
-    label: 'Em andamento',
-    bg: '#eff6ff',
-    border: '#bfdbfe',
-    color: '#1d4ed8',
-  },
-  pendente: {
-    dot: '#94a3b8',
-    label: 'Pendente',
-    bg: '#f8fafc',
-    border: '#e2e8f0',
-    color: '#475569',
-  },
-  concluida: {
-    dot: '#059669',
-    label: 'Concluída',
-    bg: '#ecfdf5',
-    border: '#a7f3d0',
-    color: '#047857',
-  },
-}
-
-// ── Mock activity log ───────────────────────────────────────────────────────────
-
-const MOCK_NOTES =
-  'Entrar em contato para confirmar disponibilidade e alinhar próximos passos. Verificar documentação pendente antes do contato.'
-
-interface ActivityEntry {
-  icon: 'system' | 'check'
-  title: string
-  date: string
-  body?: string
-}
-
-function buildActivity(task: Task): ActivityEntry[] {
-  const entries: ActivityEntry[] = [
-    { icon: 'system', title: 'Tarefa criada', date: 'há 2 dias', body: `Tipo: ${task.type.label}` },
-  ]
-  if (task.status === 'em_andamento') {
-    entries.push({ icon: 'system', title: 'Status atualizado para Em andamento', date: 'há 1 dia' })
-  }
-  if (task.status === 'concluida') {
-    entries.push({ icon: 'check', title: 'Tarefa concluída', date: 'Ontem · 10:45' })
-  }
-  if (task.status === 'atrasada') {
-    entries.push({
-      icon: 'system',
-      title: 'Prazo ultrapassado',
-      date: task.dateTime,
-      body: 'Tarefa não foi concluída no horário previsto.',
-    })
-  }
-  return entries
-}
-
 // ── Props ───────────────────────────────────────────────────────────────────────
 
 interface TaskModalProps {
   task: Task
+  leadName?: string
+  members: TeamMember[]
   onClose: () => void
   onConcluir?: () => void
   onExcluir?: () => void
+  onEdit?: () => void
+  onSaveNotes?: (notes: string | null) => void
 }
 
 // ── Component ───────────────────────────────────────────────────────────────────
 
-export function TaskModal({ task, onClose, onConcluir, onExcluir }: TaskModalProps) {
-  const statusCfg = STATUS_CFG[task.status]
-  const activity = buildActivity(task)
-  const [comment, setComment] = useState('')
-  const [localComments, setLocalComments] = useState<{ id: string; text: string }[]>([])
+export function TaskModal({
+  task,
+  leadName,
+  members,
+  onClose,
+  onConcluir,
+  onExcluir,
+  onEdit,
+  onSaveNotes,
+}: TaskModalProps) {
+  const statusCfg = STATUS_CFG[displayStatus(task)]
+  const badge = TYPE_BADGES[task.type]
+  const responsible = resolveAgent(task.assignedUserId, members)
 
-  function submitComment() {
-    const trimmed = comment.trim()
-    if (!trimmed) return
-    setLocalComments((prev) => [{ id: crypto.randomUUID(), text: trimmed }, ...prev])
-    setComment('')
-  }
+  const [editingNotes, setEditingNotes] = useState(false)
+  const [notesDraft, setNotesDraft] = useState(task.notes ?? '')
 
-  // Fecha com Escape
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
@@ -299,6 +222,11 @@ export function TaskModal({ task, onClose, onConcluir, onExcluir }: TaskModalPro
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
+
+  function handleSaveNotes() {
+    onSaveNotes?.(notesDraft.trim() || null)
+    setEditingNotes(false)
+  }
 
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: overlay backdrop dismiss
@@ -309,16 +237,14 @@ export function TaskModal({ task, onClose, onConcluir, onExcluir }: TaskModalPro
         <div className={styles.header}>
           <div className={styles.headerTop}>
             <div className={styles.identityArea}>
-              {/* Breadcrumb */}
               <div className={styles.breadcrumb}>
                 <span className={styles.breadcrumbLink}>Tarefas</span>
                 <span className={styles.breadcrumbSep}>
                   <ChevronRightIcon />
                 </span>
-                <span className={styles.breadcrumbLink}>{task.type.label}</span>
+                <span className={styles.breadcrumbLink}>{task.type}</span>
               </div>
 
-              {/* Title row */}
               <div className={styles.titleRow}>
                 <h2 className={styles.taskName}>{task.title}</h2>
                 <span
@@ -330,51 +256,35 @@ export function TaskModal({ task, onClose, onConcluir, onExcluir }: TaskModalPro
                 </span>
               </div>
 
-              {/* Lead & date strip */}
               <div className={styles.metaStrip}>
                 <span className={styles.metaItem}>
                   <span className={styles.metaIcon}>
                     <PersonIcon />
                   </span>
-                  {task.lead}
+                  {leadName ?? 'Sem lead vinculado'}
                 </span>
                 <span className={styles.metaDot}>·</span>
                 <span className={styles.metaItem}>
                   <span className={styles.metaIcon}>
                     <ClockIcon />
                   </span>
-                  {task.dateTime}
+                  {formatTaskDateTime(task.dueAt)}
                 </span>
               </div>
             </div>
 
-            {/* Actions + close */}
             <div className={styles.headerActions}>
               {task.status !== 'concluida' && (
-                <button
-                  type="button"
-                  className={styles.btnConcluir}
-                  onClick={() => {
-                    onConcluir?.()
-                    onClose()
-                  }}
-                >
+                <button type="button" className={styles.btnConcluir} onClick={onConcluir}>
                   <CheckIcon />
                   Concluir
                 </button>
               )}
-              <button type="button" className={styles.btnSecondary}>
+              <button type="button" className={styles.btnSecondary} onClick={onEdit}>
                 <PencilIcon />
                 Editar
               </button>
-              <button
-                type="button"
-                className={styles.btnDanger}
-                onClick={() => {
-                  onExcluir?.()
-                  onClose()
-                }}
-              >
+              <button type="button" className={styles.btnDanger} onClick={onExcluir}>
                 <TrashIcon />
                 Excluir
               </button>
@@ -393,9 +303,7 @@ export function TaskModal({ task, onClose, onConcluir, onExcluir }: TaskModalPro
 
         {/* ── Workspace ───────────────────────────────────────────────────── */}
         <div className={styles.workspace}>
-          {/* LEFT: detalhes + observações */}
           <div className={styles.leftCol}>
-            {/* Info card */}
             <div className={styles.card}>
               <div className={styles.cardTitleRow}>
                 <span className={styles.cardTitle}>Detalhes da atividade</span>
@@ -408,13 +316,9 @@ export function TaskModal({ task, onClose, onConcluir, onExcluir }: TaskModalPro
                   </span>
                   <span
                     className={styles.typeBadge}
-                    style={{
-                      background: task.type.bg,
-                      borderColor: task.type.border,
-                      color: task.type.color,
-                    }}
+                    style={{ background: badge.bg, borderColor: badge.border, color: badge.color }}
                   >
-                    {task.type.label}
+                    {badge.label}
                   </span>
                 </div>
 
@@ -422,14 +326,14 @@ export function TaskModal({ task, onClose, onConcluir, onExcluir }: TaskModalPro
                   <span className={styles.attrLabel}>
                     <PersonIcon /> Lead / Cliente
                   </span>
-                  <span className={styles.attrValue}>{task.lead}</span>
+                  <span className={styles.attrValue}>{leadName ?? '—'}</span>
                 </div>
 
                 <div className={styles.attrCell}>
                   <span className={styles.attrLabel}>
                     <CalIcon /> Data &amp; Horário
                   </span>
-                  <span className={styles.attrValue}>{task.dateTime}</span>
+                  <span className={styles.attrValue}>{formatTaskDateTime(task.dueAt)}</span>
                 </div>
 
                 <div className={styles.attrCell}>
@@ -447,116 +351,97 @@ export function TaskModal({ task, onClose, onConcluir, onExcluir }: TaskModalPro
 
                 <div className={styles.attrCell}>
                   <span className={styles.attrLabel}>
-                    <BellIcon /> Lembrete
-                  </span>
-                  <span className={styles.attrValueMuted}>15 min antes</span>
-                </div>
-
-                <div className={styles.attrCell}>
-                  <span className={styles.attrLabel}>
                     <PersonIcon /> Responsável
                   </span>
-                  <span className={styles.attrValue}>Você</span>
+                  <span className={styles.attrValue}>{responsible.name}</span>
                 </div>
               </div>
             </div>
 
-            {/* Observações card */}
             <div className={styles.card}>
               <div className={styles.cardTitleRow}>
                 <span className={styles.cardTitle}>Observações</span>
-                <button type="button" className={styles.editBtn}>
-                  <PencilIcon /> Editar
-                </button>
+                {!editingNotes && (
+                  <button
+                    type="button"
+                    className={styles.editBtn}
+                    onClick={() => setEditingNotes(true)}
+                  >
+                    <PencilIcon /> Editar
+                  </button>
+                )}
               </div>
-              <div className={styles.obsBox}>
-                <p className={styles.obsText}>{MOCK_NOTES}</p>
-              </div>
+              {editingNotes ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <textarea
+                    className={styles.obsBox}
+                    style={{ width: '100%', minHeight: 80, resize: 'vertical' }}
+                    value={notesDraft}
+                    onChange={(e) => setNotesDraft(e.target.value)}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                    <button
+                      type="button"
+                      className={styles.editBtn}
+                      onClick={() => {
+                        setNotesDraft(task.notes ?? '')
+                        setEditingNotes(false)
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                    <button type="button" className={styles.editBtn} onClick={handleSaveNotes}>
+                      Salvar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.obsBox}>
+                  <p className={styles.obsText}>
+                    {task.notes?.trim() || 'Nenhuma observação registrada.'}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* RIGHT: histórico */}
           <div className={styles.rightCol}>
             <div className={styles.historyCard}>
               <div className={styles.historyHeader}>
-                <span className={styles.historyTitle}>Histórico</span>
-                <span className={styles.historyCount}>{activity.length}</span>
+                <span className={styles.historyTitle}>Informações</span>
               </div>
-
               <div className={styles.timeline}>
-                {activity.map((entry, i) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: static activity list
-                  <div key={i} className={styles.timelineEvent}>
-                    <div className={styles.timelineLeft}>
-                      <div
-                        className={`${styles.timelineIcon} ${entry.icon === 'check' ? styles.timelineIconCheck : styles.timelineIconSystem}`}
-                      >
-                        {entry.icon === 'check' ? <CheckIcon /> : <ClockIcon />}
-                      </div>
-                      {i < activity.length - 1 && <div className={styles.timelineConnector} />}
+                <div className={styles.timelineEvent}>
+                  <div className={styles.timelineLeft}>
+                    <div className={`${styles.timelineIcon} ${styles.timelineIconSystem}`}>
+                      <ClockIcon />
                     </div>
-                    <div className={styles.timelineContent}>
-                      <div className={styles.timelineRow}>
-                        <span className={styles.timelineTitle}>{entry.title}</span>
-                        <span className={styles.timelineDate}>{entry.date}</span>
-                      </div>
-                      {entry.body && <p className={styles.timelineBody}>{entry.body}</p>}
+                    <div className={styles.timelineConnector} />
+                  </div>
+                  <div className={styles.timelineContent}>
+                    <div className={styles.timelineRow}>
+                      <span className={styles.timelineTitle}>Criada em</span>
+                      <span className={styles.timelineDate}>
+                        {formatTaskDateTime(task.createdAt)}
+                      </span>
                     </div>
                   </div>
-                ))}
-              </div>
-
-              {/* Comment input */}
-              {localComments.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}>
-                  {localComments.map(({ id, text }) => (
-                    <div
-                      key={id}
-                      style={{
-                        background: '#f1f5f9',
-                        borderRadius: 8,
-                        padding: '8px 12px',
-                        fontSize: 13,
-                        color: '#1e293b',
-                      }}
-                    >
-                      {text}
-                    </div>
-                  ))}
                 </div>
-              )}
-              <div className={styles.commentInput}>
-                <input
-                  type="text"
-                  className={styles.commentField}
-                  placeholder="Adicionar uma nota ou comentário..."
-                  aria-label="Nova nota"
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      submitComment()
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={submitComment}
-                  style={{
-                    padding: '0 10px',
-                    background: '#0b1c30',
-                    border: 'none',
-                    borderRadius: 7,
-                    color: '#fff',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    flexShrink: 0,
-                  }}
-                >
-                  Enviar
-                </button>
+                <div className={styles.timelineEvent}>
+                  <div className={styles.timelineLeft}>
+                    <div className={`${styles.timelineIcon} ${styles.timelineIconSystem}`}>
+                      <PencilIcon />
+                    </div>
+                  </div>
+                  <div className={styles.timelineContent}>
+                    <div className={styles.timelineRow}>
+                      <span className={styles.timelineTitle}>Última atualização</span>
+                      <span className={styles.timelineDate}>
+                        {formatTaskDateTime(task.updatedAt)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

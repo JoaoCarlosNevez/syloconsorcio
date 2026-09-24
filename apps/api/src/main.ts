@@ -12,6 +12,7 @@ import {
   DrizzleLeadRepository,
   DrizzleMembershipRepository,
   DrizzleOrganizationRepository,
+  DrizzleTaskRepository,
   DrizzleUserRepository,
   SupabaseAuthAdapter,
   SupabaseStorageAdapter,
@@ -41,6 +42,7 @@ const organizationRepository = database ? new DrizzleOrganizationRepository(data
 const userRepository = database ? new DrizzleUserRepository(database) : undefined
 const funnelRepository = database ? new DrizzleFunnelRepository(database) : undefined
 const leadProposalRepository = database ? new DrizzleLeadProposalRepository(database) : undefined
+const taskRepository = database ? new DrizzleTaskRepository(database) : undefined
 
 const storageProvider =
   env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY
@@ -59,6 +61,7 @@ const app = buildApp({
   storageProvider,
   funnelRepository,
   leadProposalRepository,
+  taskRepository,
 })
 
 try {

@@ -27,3 +27,6 @@ export type { DbLeadComment, NewDbLeadComment } from './lead-comments'
 
 export { leadProposals } from './lead-proposals'
 export type { DbLeadProposal, NewDbLeadProposal } from './lead-proposals'
+
+export { tasks } from './tasks'
+export type { DbTask, NewDbTask } from './tasks'
