@@ -324,7 +324,9 @@ export function AppLayout({ children }: AppLayoutProps) {
         }
       >
         {/* Logo */}
-        <div className={styles.logo}>
+        <div
+          className={whiteLabelLogoUrl ? `${styles.logo} ${styles.logoWhiteLabel}` : styles.logo}
+        >
           {whiteLabelLogoUrl ? (
             <img
               src={whiteLabelLogoUrl}
