@@ -9,6 +9,7 @@ import { useActiveOrganization } from '../../hooks/useOrganization'
 import { useOrganizationSettingsQuery } from '../../hooks/useOrganizationSettings'
 import { useTeamMembersQuery } from '../../hooks/useTeam'
 import { formatPhoneBR, parseValueToCents } from '../../lib/lead-adapters'
+import type { Lead } from '../../lib/leads-api'
 import styles from './CreateLeadModal.module.css'
 
 export interface CreateLeadModalProps {
@@ -17,6 +18,8 @@ export interface CreateLeadModalProps {
   /** Funil ativo no Kanban — todo lead novo nasce nele, na primeira etapa. */
   funnelId: string
   onClose: () => void
+  /** Chamado com o lead recém-criado — o Kanban usa pra abrir o card dele. */
+  onCreated?: (lead: Lead) => void
 }
 
 const initialForm = {
@@ -30,7 +33,13 @@ const initialForm = {
   notes: '',
 }
 
-export function CreateLeadModal({ open, organizationId, funnelId, onClose }: CreateLeadModalProps) {
+export function CreateLeadModal({
+  open,
+  organizationId,
+  funnelId,
+  onClose,
+  onCreated,
+}: CreateLeadModalProps) {
   const [form, setForm] = useState(initialForm)
   const [formError, setFormError] = useState<string | null>(null)
   const createLead = useCreateLead(organizationId)
@@ -72,7 +81,7 @@ export function CreateLeadModal({ open, organizationId, funnelId, onClose }: Cre
     }
 
     try {
-      await createLead.mutateAsync({
+      const lead = await createLead.mutateAsync({
         name: form.name.trim(),
         phone: form.phone.trim(),
         segment: form.segment.trim(),
@@ -85,6 +94,7 @@ export function CreateLeadModal({ open, organizationId, funnelId, onClose }: Cre
       })
       toast({ type: 'success', title: 'Lead criado com sucesso' })
       handleClose()
+      onCreated?.(lead)
     } catch (error) {
       toast({
         type: 'error',

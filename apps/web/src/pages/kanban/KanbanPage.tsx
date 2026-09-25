@@ -45,6 +45,7 @@ import {
   matchesLeadSearch,
   resolveAgent,
   resolveCardOutcome,
+  toCardData,
 } from '../../lib/lead-adapters'
 import type { OutcomeFilter } from '../../lib/leads-api'
 import { deriveStageColors } from '../../lib/stage-colors'
@@ -1111,6 +1112,11 @@ export function KanbanPage() {
           organizationId={organizationId}
           funnelId={activeFunnelId}
           onClose={() => setIsCreateOpen(false)}
+          // Abre o card do lead recém-criado. Até o board recarregar, o modal
+          // usa este CardData montado da resposta (ver freshSelectedCard).
+          onCreated={(lead) => {
+            if (activeFunnel) setSelectedCard(toCardData(lead, activeFunnel.stages))
+          }}
         />
       )}
     </AppLayout>
