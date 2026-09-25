@@ -4,8 +4,8 @@
 // do usuário (GET /tasks?status=abertas&mine=true);
 // o restante ainda é mock, com skeleton durante carregamento.
 
-import { Skeleton } from '@sylocrm/ui'
-import type { Tier } from '@sylocrm/ui'
+import { Dropdown, Skeleton } from '@sylocrm/ui'
+import type { DropdownEntry, Tier } from '@sylocrm/ui'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
@@ -18,10 +18,11 @@ import { useTasksQuery } from '../../hooks/useTasks'
 import { useSalesGoalsSummaryQuery } from '../../hooks/useTeam'
 import { formatCota } from '../../lib/lead-adapters'
 import { businessDaysRemaining, formatGoalBRL, toGoalProgressView } from '../../lib/sales-goals'
-import type { Task } from '../../lib/tasks-api'
+import type { Task, TaskType } from '../../lib/tasks-api'
 import {
   type DisplayStatus,
   STATUS_CFG,
+  TASK_TYPES,
   TYPE_BADGES,
   displayStatus,
   formatTaskDateTime,
@@ -128,6 +129,24 @@ function ChevronDownIcon() {
   )
 }
 
+function CheckIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  )
+}
+
 function BellIcon() {
   return (
     <svg
@@ -190,6 +209,16 @@ interface TarefaItem {
 /** Quantas tarefas o card do início mostra — o resto fica em "Ver tudo". */
 const HOME_TASKS_LIMIT = 5
 
+/** Filtros de status do card — sempre dentro das tarefas em aberto. */
+type HomeTaskStatusFilter = 'abertas' | 'atrasada' | 'pendente' | 'em_andamento'
+
+const HOME_TASK_STATUS_OPTIONS: { value: HomeTaskStatusFilter; label: string }[] = [
+  { value: 'abertas', label: 'Em aberto' },
+  { value: 'atrasada', label: 'Atrasadas' },
+  { value: 'pendente', label: 'Pendentes' },
+  { value: 'em_andamento', label: 'Em andamento' },
+]
+
 const TIER_GRADIENT: Record<Tier, string> = {
   turmalina: 'linear-gradient(135deg, #9ef5ff, #00d9ff, #00a6cc)',
   rubi: 'linear-gradient(135deg, #ff6d70, #cc0003)',
@@ -214,11 +243,53 @@ export function HomePage() {
   // por prazo crescente). Leads com outcome 'todos' pra resolver o cliente
   // mesmo de tarefas ligadas a leads já ganhos/perdidos — mesma abordagem da
   // tela de Tarefas.
+  const [taskStatusFilter, setTaskStatusFilter] = useState<HomeTaskStatusFilter>('abertas')
+  const [taskTypeFilter, setTaskTypeFilter] = useState<TaskType | null>(null)
   const { data: tasksPage, isLoading: isTasksLoading } = useTasksQuery(organizationId, {
-    status: 'abertas',
+    status: taskStatusFilter,
+    type: taskTypeFilter ?? undefined,
     mine: true,
     pageSize: HOME_TASKS_LIMIT,
   })
+  const activeTaskFilters = (taskStatusFilter !== 'abertas' ? 1 : 0) + (taskTypeFilter ? 1 : 0)
+
+  const taskFilterItems: DropdownEntry[] = [
+    { key: 'status-label', type: 'label', label: 'Status' },
+    ...HOME_TASK_STATUS_OPTIONS.map((option) => ({
+      key: `status-${option.value}`,
+      label: option.label,
+      icon:
+        taskStatusFilter === option.value ? <CheckIcon /> : <span className={styles.checkSpacer} />,
+      onSelect: () => setTaskStatusFilter(option.value),
+    })),
+    { key: 'type-separator', type: 'separator' },
+    { key: 'type-label', type: 'label', label: 'Tipo' },
+    {
+      key: 'type-all',
+      label: 'Todos os tipos',
+      icon: taskTypeFilter === null ? <CheckIcon /> : <span className={styles.checkSpacer} />,
+      onSelect: () => setTaskTypeFilter(null),
+    },
+    ...TASK_TYPES.map((type) => ({
+      key: `type-${type}`,
+      label: type,
+      icon: taskTypeFilter === type ? <CheckIcon /> : <span className={styles.checkSpacer} />,
+      onSelect: () => setTaskTypeFilter(type),
+    })),
+    ...(activeTaskFilters > 0
+      ? ([
+          { key: 'clear-separator', type: 'separator' },
+          {
+            key: 'clear',
+            label: 'Limpar filtros',
+            onSelect: () => {
+              setTaskStatusFilter('abertas')
+              setTaskTypeFilter(null)
+            },
+          },
+        ] satisfies DropdownEntry[])
+      : []),
+  ]
   const { data: leadsPage } = useLeadsQuery(organizationId, { pageSize: 100, outcome: 'todos' })
   const { user } = useAuth()
   const { data: currentUser } = useCurrentUser()
@@ -547,9 +618,22 @@ export function HomePage() {
                   <Link to="/app/tarefas" className={styles.verTudoBtn}>
                     Ver tudo
                   </Link>
-                  <button type="button" className={styles.filtrarBtn}>
-                    Filtrar <ChevronDownIcon />
-                  </button>
+                  <Dropdown
+                    align="right"
+                    items={taskFilterItems}
+                    trigger={
+                      <button
+                        type="button"
+                        className={`${styles.filtrarBtn} ${activeTaskFilters > 0 ? styles.filtrarBtnActive : ''}`}
+                      >
+                        Filtrar
+                        {activeTaskFilters > 0 && (
+                          <span className={styles.filtrarCount}>{activeTaskFilters}</span>
+                        )}
+                        <ChevronDownIcon />
+                      </button>
+                    }
+                  />
                 </div>
               </div>
 
@@ -572,7 +656,9 @@ export function HomePage() {
                         className={styles.segmentoGrupo}
                         style={{ padding: '24px 0' }}
                       >
-                        Nenhuma tarefa em aberto.
+                        {activeTaskFilters > 0
+                          ? 'Nenhuma tarefa com esses filtros.'
+                          : 'Nenhuma tarefa em aberto.'}
                       </td>
                     </tr>
                   )}

@@ -66,6 +66,9 @@ export class DrizzleTaskRepository implements ITaskRepository {
         conditions.push(eq(tasks.status, filter.status))
       }
     }
+    if (filter.type) {
+      conditions.push(eq(tasks.type, filter.type))
+    }
     if (filter.search) {
       conditions.push(ilike(tasks.title, `%${filter.search}%`))
     }

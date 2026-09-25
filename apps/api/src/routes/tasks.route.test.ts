@@ -221,6 +221,30 @@ describe('GET /tasks', () => {
     )
   })
 
+  it('filters by task type and rejects an unknown type', async () => {
+    const taskRepository = buildTaskRepository()
+    const app = buildTestApp({ taskRepository })
+
+    const ok = await app.inject({
+      method: 'GET',
+      url: `/tasks?type=${encodeURIComponent('Ligação')}`,
+      headers: AUTH_HEADERS,
+    })
+    const invalid = await app.inject({
+      method: 'GET',
+      url: '/tasks?type=Churrasco',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(ok.statusCode).toBe(200)
+    expect(taskRepository.list).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'Ligação' }),
+      expect.anything(),
+      expect.anything(),
+    )
+    expect(invalid.statusCode).toBe(400)
+  })
+
   it('filters by leadId when provided', async () => {
     const taskRepository = buildTaskRepository()
     const app = buildTestApp({ taskRepository })

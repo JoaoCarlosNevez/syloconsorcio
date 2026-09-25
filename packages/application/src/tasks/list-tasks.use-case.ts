@@ -18,6 +18,7 @@ export interface ListTasksInput {
   membership: MembershipContext
   leadId?: string
   status?: TaskStatusFilter
+  type?: string
   /** Só as tarefas atribuídas ao próprio usuário, mesmo com DataScope mais
    * amplo (ex: card de Tarefas do início de um Supervisor). */
   onlyMine?: boolean
@@ -48,6 +49,7 @@ export class ListTasksUseCase implements UseCase<ListTasksInput, TaskListPage> {
         ...(input.onlyMine ? { assignedUserId: input.userId } : {}),
         leadId: input.leadId,
         status: input.status,
+        type: input.type,
         search: input.search,
       },
       page,

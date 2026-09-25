@@ -62,6 +62,8 @@ export interface TaskScopeFilter {
 export interface TaskListFilter extends TaskScopeFilter {
   leadId?: string
   status?: TaskStatusFilter
+  /** Tipo da tarefa (ex: "Ligação") — texto livre no banco, validado na rota. */
+  type?: string
   /** Busca livre por título. */
   search?: string
 }

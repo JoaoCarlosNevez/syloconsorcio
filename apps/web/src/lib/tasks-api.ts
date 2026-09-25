@@ -35,6 +35,7 @@ export interface TaskListPage {
 export interface ListTasksParams {
   leadId?: string
   status?: TaskStatusFilter
+  type?: TaskType
   /** Só as tarefas atribuídas ao próprio usuário. */
   mine?: boolean
   search?: string
@@ -65,6 +66,7 @@ function toQueryString(params: ListTasksParams): string {
   const search = new URLSearchParams()
   if (params.leadId) search.set('leadId', params.leadId)
   if (params.status) search.set('status', params.status)
+  if (params.type) search.set('type', params.type)
   if (params.mine) search.set('mine', 'true')
   if (params.search) search.set('search', params.search)
   if (params.page) search.set('page', String(params.page))
