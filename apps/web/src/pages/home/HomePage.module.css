@@ -472,6 +472,7 @@
 }
 
 .clienteNome {
+  margin: 0;
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
   font-size: var(--font-size-base);
@@ -511,6 +512,29 @@
 }
 
 /* Badges de status */
+.tarefaTitulo {
+  margin: 4px 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prazoCell {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.prazoAtrasado {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: #ba1a1a;
+  white-space: nowrap;
+}
+
 .statusBadge {
   display: inline-flex;
   align-items: center;

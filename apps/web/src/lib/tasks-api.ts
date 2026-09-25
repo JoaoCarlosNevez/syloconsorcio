@@ -7,8 +7,8 @@ export type TaskType = 'Ligação' | 'Reunião' | 'Follow-up' | 'Tarefa' | 'Simu
 export type TaskStatus = 'pendente' | 'em_andamento' | 'concluida'
 
 /** 'atrasada' é derivado no backend (não concluída + prazo já vencido) —
- * nunca persistido. 'todos' remove o filtro de status. */
-export type TaskStatusFilter = TaskStatus | 'atrasada' | 'todos'
+ * nunca persistido. 'abertas' = não concluídas. 'todos' remove o filtro. */
+export type TaskStatusFilter = TaskStatus | 'atrasada' | 'abertas' | 'todos'
 
 export interface Task {
   id: string
@@ -35,6 +35,8 @@ export interface TaskListPage {
 export interface ListTasksParams {
   leadId?: string
   status?: TaskStatusFilter
+  /** Só as tarefas atribuídas ao próprio usuário. */
+  mine?: boolean
   search?: string
   page?: number
   pageSize?: number
@@ -63,6 +65,7 @@ function toQueryString(params: ListTasksParams): string {
   const search = new URLSearchParams()
   if (params.leadId) search.set('leadId', params.leadId)
   if (params.status) search.set('status', params.status)
+  if (params.mine) search.set('mine', 'true')
   if (params.search) search.set('search', params.search)
   if (params.page) search.set('page', String(params.page))
   if (params.pageSize) search.set('pageSize', String(params.pageSize))

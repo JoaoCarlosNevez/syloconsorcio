@@ -77,6 +77,29 @@ describe('ListTasksUseCase', () => {
     expect(callArgs[0].assignedUserId).toBeUndefined()
   })
 
+  it('restricts to the user own tasks with onlyMine even for DataScope.REPRESENTATION', async () => {
+    const membership: MembershipContext = {
+      organizationId: ORG_ID,
+      organizationType: OrganizationType.REPRESENTACAO,
+      organizationName: 'Representação Teste',
+      organizationIconUrl: null,
+      organizationSecondaryColor: null,
+      role: Role.MANAGER,
+      dataScope: DataScope.REPRESENTATION,
+      permissions: [],
+    }
+    const taskRepository = buildTaskRepository()
+    const useCase = new ListTasksUseCase(taskRepository, buildOrganizationRepository())
+
+    await useCase.execute({ userId: USER_ID, membership, onlyMine: true, status: 'abertas' })
+
+    expect(taskRepository.list).toHaveBeenCalledWith(
+      expect.objectContaining({ assignedUserId: USER_ID, status: 'abertas' }),
+      1,
+      25,
+    )
+  })
+
   it('clamps page and pageSize to sane bounds', async () => {
     const membership: MembershipContext = {
       organizationId: ORG_ID,

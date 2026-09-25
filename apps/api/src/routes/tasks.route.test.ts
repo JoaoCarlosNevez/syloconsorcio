@@ -203,6 +203,24 @@ describe('GET /tasks', () => {
     expect(response.statusCode).toBe(400)
   })
 
+  it('passes the abertas status and mine filter to the repository', async () => {
+    const taskRepository = buildTaskRepository()
+    const app = buildTestApp({ taskRepository })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/tasks?status=abertas&mine=true',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(taskRepository.list).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'abertas', assignedUserId: expect.any(String) }),
+      expect.anything(),
+      expect.anything(),
+    )
+  })
+
   it('filters by leadId when provided', async () => {
     const taskRepository = buildTaskRepository()
     const app = buildTestApp({ taskRepository })

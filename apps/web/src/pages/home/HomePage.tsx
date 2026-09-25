@@ -1,6 +1,7 @@
 // HomePage — fiel ao design Figma.
 // Seções: hero de perfil, metas pessoal + representação, tarefas, KPIs.
-// Metas vêm de GET /team/goals/summary (definidas em Configurações → Equipe);
+// Metas vêm de GET /team/goals/summary; tarefas, das tarefas reais em aberto
+// do usuário (GET /tasks?status=abertas&mine=true);
 // o restante ainda é mock, com skeleton durante carregamento.
 
 import { Skeleton } from '@sylocrm/ui'
@@ -11,13 +12,20 @@ import { AppLayout } from '../../components/layout/AppLayout'
 import { USER_TIER } from '../../data/kanban-mock'
 import { useAuth } from '../../hooks/useAuth'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
-import { useFunnelsQuery } from '../../hooks/useFunnels'
 import { useLeadsQuery } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
+import { useTasksQuery } from '../../hooks/useTasks'
 import { useSalesGoalsSummaryQuery } from '../../hooks/useTeam'
-import { daysSince, formatCota } from '../../lib/lead-adapters'
+import { formatCota } from '../../lib/lead-adapters'
 import { businessDaysRemaining, formatGoalBRL, toGoalProgressView } from '../../lib/sales-goals'
-import { deriveStageColors } from '../../lib/stage-colors'
+import type { Task } from '../../lib/tasks-api'
+import {
+  type DisplayStatus,
+  STATUS_CFG,
+  TYPE_BADGES,
+  displayStatus,
+  formatTaskDateTime,
+} from '../tarefas/tarefas.types'
 import styles from './HomePage.module.css'
 
 // ── Ícones ────────────────────────────────────────────────────────────────────
@@ -169,22 +177,18 @@ function WhatsAppIcon() {
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
 interface TarefaItem {
-  id: string
-  cliente: string
-  phone: string
-  segmento: string
-  cota: string
-  valor: string
-  tarefa: string
-  /** Nome do estágio real do lead (livre — cada funil define os seus). */
-  status: string
-  /** Hex do estágio, usado pra colorir o badge — ver deriveStageColors. */
-  statusColor: string | undefined
-  daysUrgent: boolean
-  daysNum: number
+  task: Task
+  /** Nome do lead vinculado; null quando a tarefa não tem lead. */
+  cliente: string | null
+  phone: string | null
+  cota: string | null
+  valor: string | null
+  prazo: string
+  status: DisplayStatus
 }
 
-const URGENT_AFTER_DAYS = 60
+/** Quantas tarefas o card do início mostra — o resto fica em "Ver tudo". */
+const HOME_TASKS_LIMIT = 5
 
 const TIER_GRADIENT: Record<Tier, string> = {
   turmalina: 'linear-gradient(135deg, #9ef5ff, #00d9ff, #00a6cc)',
@@ -206,8 +210,16 @@ export function HomePage() {
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(true)
   const { organizationId, membership } = useActiveOrganization()
-  const { data: leadsPage } = useLeadsQuery(organizationId, { pageSize: 100 })
-  const { data: funnelsData } = useFunnelsQuery(organizationId)
+  // Tarefas em aberto do próprio usuário, atrasadas primeiro (a API ordena
+  // por prazo crescente). Leads com outcome 'todos' pra resolver o cliente
+  // mesmo de tarefas ligadas a leads já ganhos/perdidos — mesma abordagem da
+  // tela de Tarefas.
+  const { data: tasksPage, isLoading: isTasksLoading } = useTasksQuery(organizationId, {
+    status: 'abertas',
+    mine: true,
+    pageSize: HOME_TASKS_LIMIT,
+  })
+  const { data: leadsPage } = useLeadsQuery(organizationId, { pageSize: 100, outcome: 'todos' })
   const { user } = useAuth()
   const { data: currentUser } = useCurrentUser()
   const { data: goalsSummary, isLoading: isGoalsLoading } =
@@ -238,43 +250,23 @@ export function HomePage() {
     return () => clearTimeout(t)
   }, [])
 
-  // Estágios de TODOS os funis da org, indexados por id — uma tarefa pode vir
-  // de qualquer funil (esta seção agrega leads parados, não é escopada a um
-  // funil só).
-  const stageById = useMemo(() => {
-    const map = new Map<string, { name: string; color: string }>()
-    for (const funnel of funnelsData?.funnels ?? []) {
-      for (const stage of funnel.stages) map.set(stage.id, stage)
-    }
-    return map
-  }, [funnelsData])
-
-  // Os 3 leads com mais dias no funil (exceto os já ganhos) — mesma regra
-  // de negócio que o Kanban usa para calcular urgência.
   const tarefas = useMemo<TarefaItem[]>(() => {
-    const leads = leadsPage?.items ?? []
-    return leads
-      .filter((lead) => !lead.wonAt)
-      .map((lead): TarefaItem => {
-        const stage = stageById.get(lead.stageId)
-        const daysNum = daysSince(lead.createdAt)
-        return {
-          id: lead.id,
-          cliente: lead.name,
-          phone: lead.phone,
-          segmento: lead.segment,
-          cota: formatCota(lead.valueCents, lead.segment, lead.quotaCount),
-          valor: `R$ ${(lead.valueCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-          tarefa: 'Follow-up',
-          status: stage?.name ?? 'Em andamento',
-          statusColor: stage?.color,
-          daysUrgent: daysNum > URGENT_AFTER_DAYS,
-          daysNum,
-        }
-      })
-      .sort((a, b) => b.daysNum - a.daysNum)
-      .slice(0, 3)
-  }, [leadsPage, stageById])
+    const leadById = new Map((leadsPage?.items ?? []).map((lead) => [lead.id, lead]))
+    return (tasksPage?.items ?? []).map((task): TarefaItem => {
+      const lead = task.leadId ? leadById.get(task.leadId) : undefined
+      return {
+        task,
+        cliente: lead?.name ?? null,
+        phone: lead?.phone ?? null,
+        cota: lead ? formatCota(lead.valueCents, lead.segment, lead.quotaCount) : null,
+        valor: lead
+          ? `R$ ${(lead.valueCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+          : null,
+        prazo: formatTaskDateTime(task.dueAt),
+        status: displayStatus(task),
+      }
+    })
+  }, [tasksPage, leadsPage])
 
   return (
     <AppLayout>
@@ -509,7 +501,7 @@ export function HomePage() {
           )}
 
           {/* ── Tarefas ───────────────────────────────────────────────── */}
-          {isLoading ? (
+          {isLoading || isTasksLoading ? (
             <div className={styles.skeletonTarefasCard}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -548,7 +540,7 @@ export function HomePage() {
                 <div>
                   <h2 className={styles.tarefasTitle}>Tarefas</h2>
                   <p className={styles.tarefasSubtitle}>
-                    Propostas de alto valor com previsão de assembleia nos próximos 15 dias
+                    Suas tarefas em aberto, das atrasadas às de prazo mais próximo
                   </p>
                 </div>
                 <div className={styles.tarefasHeaderActions}>
@@ -565,9 +557,9 @@ export function HomePage() {
                 <thead>
                   <tr>
                     <th>Cliente</th>
-                    <th>Segmento</th>
-                    <th>Valor</th>
                     <th>Tarefa</th>
+                    <th>Prazo</th>
+                    <th>Valor</th>
                     <th>Status</th>
                     <th>Ação Direta</th>
                   </tr>
@@ -580,54 +572,76 @@ export function HomePage() {
                         className={styles.segmentoGrupo}
                         style={{ padding: '24px 0' }}
                       >
-                        Nenhuma tarefa pendente no funil.
+                        Nenhuma tarefa em aberto.
                       </td>
                     </tr>
                   )}
                   {tarefas.map((t) => {
-                    const statusPalette = deriveStageColors(t.statusColor)
+                    const typeBadge = TYPE_BADGES[t.task.type]
+                    const statusCfg = STATUS_CFG[t.status]
                     return (
-                      <tr key={t.id}>
-                        <td className={styles.clienteNome}>{t.cliente}</td>
+                      <tr key={t.task.id}>
                         <td>
-                          <p className={styles.segmentoNome}>{t.segmento}</p>
-                          <p className={styles.segmentoGrupo}>{t.cota}</p>
+                          <p className={styles.clienteNome}>{t.cliente ?? 'Sem lead'}</p>
+                          {t.cota && <p className={styles.segmentoGrupo}>{t.cota}</p>}
                         </td>
-                        <td className={styles.valorCell}>{t.valor}</td>
                         <td>
-                          <span className={styles.tarefaPill}>{t.tarefa}</span>
+                          <span
+                            className={styles.tarefaPill}
+                            style={{
+                              background: typeBadge.bg,
+                              borderColor: typeBadge.border,
+                              color: typeBadge.color,
+                            }}
+                          >
+                            {typeBadge.label}
+                          </span>
+                          <p className={styles.tarefaTitulo}>{t.task.title}</p>
                         </td>
+                        <td
+                          className={
+                            t.status === 'atrasada' ? styles.prazoAtrasado : styles.prazoCell
+                          }
+                        >
+                          {t.prazo}
+                        </td>
+                        <td className={styles.valorCell}>{t.valor ?? '—'}</td>
                         <td>
                           <span
                             className={styles.statusBadge}
                             style={{
-                              background: statusPalette.headerBg,
-                              color: statusPalette.headerText,
+                              background: statusCfg.bg,
+                              borderColor: statusCfg.border,
+                              color: statusCfg.color,
                             }}
                           >
-                            {t.status}
+                            {statusCfg.label}
                           </span>
                         </td>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <button
-                              type="button"
-                              className={styles.whatsappBtn}
-                              aria-label={`WhatsApp — ${t.cliente}`}
-                              onClick={() =>
-                                window.open(
-                                  `https://wa.me/55${t.phone.replace(/\D/g, '')}`,
-                                  '_blank',
-                                )
-                              }
-                            >
-                              <WhatsAppIcon />
-                            </button>
+                            {t.phone && (
+                              <button
+                                type="button"
+                                className={styles.whatsappBtn}
+                                aria-label={`WhatsApp — ${t.cliente}`}
+                                onClick={() =>
+                                  window.open(
+                                    `https://wa.me/55${(t.phone ?? '').replace(/\D/g, '')}`,
+                                    '_blank',
+                                  )
+                                }
+                              >
+                                <WhatsAppIcon />
+                              </button>
+                            )}
                             <button
                               type="button"
                               className={styles.viewBtn}
-                              aria-label={`Ver tarefa — ${t.cliente}`}
-                              onClick={() => navigate('/app/tarefas')}
+                              aria-label={`Ver tarefa — ${t.task.title}`}
+                              onClick={() =>
+                                navigate('/app/tarefas', { state: { openTask: t.task } })
+                              }
                             >
                               <EyeIcon />
                             </button>

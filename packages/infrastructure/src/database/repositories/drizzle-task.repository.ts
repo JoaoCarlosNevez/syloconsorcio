@@ -14,7 +14,7 @@ import type {
   TaskStatus,
   UpdateTaskInput,
 } from '@sylocrm/application'
-import { and, asc, eq, ilike, inArray, sql } from 'drizzle-orm'
+import { and, asc, eq, ilike, inArray, ne, sql } from 'drizzle-orm'
 import type { Database } from '../client'
 import { type DbTask, tasks } from '../schema'
 
@@ -58,11 +58,13 @@ export class DrizzleTaskRepository implements ITaskRepository {
       conditions.push(eq(tasks.leadId, filter.leadId))
     }
     if (filter.status && filter.status !== 'todos') {
-      conditions.push(
-        filter.status === 'atrasada'
-          ? sql`${tasks.status} != 'concluida' AND ${tasks.dueAt} < now()`
-          : eq(tasks.status, filter.status),
-      )
+      if (filter.status === 'atrasada') {
+        conditions.push(sql`${tasks.status} != 'concluida' AND ${tasks.dueAt} < now()`)
+      } else if (filter.status === 'abertas') {
+        conditions.push(ne(tasks.status, 'concluida'))
+      } else {
+        conditions.push(eq(tasks.status, filter.status))
+      }
     }
     if (filter.search) {
       conditions.push(ilike(tasks.title, `%${filter.search}%`))

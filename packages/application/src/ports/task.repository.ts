@@ -11,9 +11,10 @@
 export type TaskStatus = 'pendente' | 'em_andamento' | 'concluida'
 
 /** 'atrasada' é um filtro derivado (status != 'concluida' AND dueAt no
- * passado) — nunca persistido, ver nota em schema/tasks.ts. 'todos' remove o
+ * passado) — nunca persistido, ver nota em schema/tasks.ts. 'abertas' =
+ * qualquer status exceto 'concluida' (atrasadas incluídas). 'todos' remove o
  * filtro de status. */
-export type TaskStatusFilter = TaskStatus | 'atrasada' | 'todos'
+export type TaskStatusFilter = TaskStatus | 'atrasada' | 'abertas' | 'todos'
 
 export interface TaskRecord {
   id: string

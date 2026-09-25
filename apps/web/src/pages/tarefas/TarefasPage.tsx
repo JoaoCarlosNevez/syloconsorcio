@@ -4,6 +4,7 @@
 
 import { useToast } from '@sylocrm/ui'
 import { useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { useLeadsQuery } from '../../hooks/useLeads'
@@ -554,9 +555,22 @@ export function TarefasPage() {
   const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>('todos')
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const location = useLocation()
+  const navigate = useNavigate()
+  // O card de Tarefas do início navega pra cá com a tarefa em state
+  // (`{ openTask }`) pra abri-la direto, mesmo fora da página/filtro atual.
+  const [selectedTask, setSelectedTask] = useState<Task | null>(
+    (location.state as { openTask?: Task } | null)?.openTask ?? null,
+  )
   const [creatingTask, setCreatingTask] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
+
+  // Limpa o state da navegação pra tarefa não reabrir num refresh/voltar.
+  useEffect(() => {
+    if ((location.state as { openTask?: Task } | null)?.openTask) {
+      navigate(location.pathname, { replace: true, state: null })
+    }
+  }, [location.state, location.pathname, navigate])
 
   // Debounce da busca antes de disparar a query (regra P0).
   useEffect(() => {

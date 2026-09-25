@@ -2,7 +2,9 @@
 //
 // GET    /tasks      — lista paginada e filtrada por DataScope (task.read).
 //                      `status` aceita os 3 estados reais + 'atrasada' (derivado:
-//                      não concluída e com prazo vencido) + 'todos'.
+//                      não concluída e com prazo vencido) + 'abertas' (não
+//                      concluídas) + 'todos'. `mine=true` restringe às tarefas
+//                      do próprio usuário, mesmo com DataScope mais amplo.
 // POST   /tasks      — cria uma tarefa (task.create). Sem task.assign
 //                      (Vendedor), a tarefa sempre nasce atribuída a quem
 //                      criou — ignora qualquer assignedUserId enviado.
@@ -69,7 +71,11 @@ const updateTaskSchema = z.object({
 
 const listQuerySchema = z.object({
   leadId: z.string().uuid().optional(),
-  status: z.enum([...TASK_STATUSES, 'atrasada', 'todos']).optional(),
+  status: z.enum([...TASK_STATUSES, 'atrasada', 'abertas', 'todos']).optional(),
+  mine: z
+    .enum(['true', 'false'])
+    .transform((v) => v === 'true')
+    .optional(),
   search: z.string().optional(),
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().optional(),
@@ -122,6 +128,7 @@ export const tasksRoute: FastifyPluginAsync<TasksRouteOptions> = async (fastify,
         membership: context.currentMembership,
         leadId: parsed.data.leadId,
         status: parsed.data.status,
+        onlyMine: parsed.data.mine,
         search: parsed.data.search,
         page: parsed.data.page,
         pageSize: parsed.data.pageSize,
