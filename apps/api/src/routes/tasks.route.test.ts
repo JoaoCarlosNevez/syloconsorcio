@@ -151,6 +151,7 @@ function buildLeadRepository(overrides: Partial<ILeadRepository> = {}): ILeadRep
 function buildTaskRepository(overrides: Partial<ITaskRepository> = {}): ITaskRepository {
   return {
     list: vi.fn().mockResolvedValue({ items: [SAMPLE_TASK], total: 1, page: 1, pageSize: 25 }),
+    findById: vi.fn().mockResolvedValue(SAMPLE_TASK),
     create: vi.fn().mockResolvedValue(SAMPLE_TASK),
     update: vi.fn().mockResolvedValue(SAMPLE_TASK),
     delete: vi.fn().mockResolvedValue(true),

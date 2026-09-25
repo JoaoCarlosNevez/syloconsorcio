@@ -113,6 +113,19 @@ export class DrizzleTaskRepository implements ITaskRepository {
     return toTaskRecord(row)
   }
 
+  async findById(id: string, scope: TaskScopeFilter): Promise<TaskRecord | null> {
+    if (scope.organizationIds.length === 0) return null
+
+    const rows = await this.db
+      .select(TASK_COLUMNS)
+      .from(tasks)
+      .where(and(eq(tasks.id, id), ...buildScopeConditions(scope)))
+      .limit(1)
+
+    const row = rows[0]
+    return row ? toTaskRecord(row) : null
+  }
+
   async update(
     id: string,
     scope: TaskScopeFilter,

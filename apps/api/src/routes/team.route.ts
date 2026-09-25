@@ -41,6 +41,7 @@
 // Todas rodam authMiddleware → tenantMiddleware.
 
 import type {
+  IActivityLogRepository,
   IAuthProvider,
   ILeadRepository,
   IMembershipRepository,
@@ -68,6 +69,7 @@ interface TeamRouteOptions {
   membershipRepository: IMembershipRepository
   organizationRepository: IOrganizationRepository
   leadRepository: ILeadRepository
+  activityLogRepository: IActivityLogRepository
 }
 
 const INVITABLE_ROLES = [Role.MANAGER, Role.SELLER] as const
@@ -98,11 +100,21 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
     options.authProvider,
     options.userRepository,
     options.membershipRepository,
+    options.activityLogRepository,
   )
 
-  const removeTeamMember = new RemoveTeamMemberUseCase(options.membershipRepository)
-  const reactivateTeamMember = new ReactivateTeamMemberUseCase(options.membershipRepository)
-  const updateSalesGoal = new UpdateTeamMemberSalesGoalUseCase(options.membershipRepository)
+  const removeTeamMember = new RemoveTeamMemberUseCase(
+    options.membershipRepository,
+    options.activityLogRepository,
+  )
+  const reactivateTeamMember = new ReactivateTeamMemberUseCase(
+    options.membershipRepository,
+    options.activityLogRepository,
+  )
+  const updateSalesGoal = new UpdateTeamMemberSalesGoalUseCase(
+    options.membershipRepository,
+    options.activityLogRepository,
+  )
   const updateMyPersonalGoal = new UpdateMyPersonalGoalUseCase(options.membershipRepository)
   const getSalesGoalsSummary = new GetSalesGoalsSummaryUseCase(
     options.membershipRepository,
@@ -189,6 +201,7 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
       try {
         const result = await inviteTeamMember.execute({
           inviterRole: context.currentMembership.role,
+          actorUserId: context.userId,
           organizationId: context.currentMembership.organizationId,
           targetRole: parsed.data.role,
           name: parsed.data.name,
@@ -279,6 +292,7 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
 
       try {
         await reactivateTeamMember.execute({
+          actorUserId: context.userId,
           reactivatorRole: context.currentMembership.role,
           reactivatorIsPlatformAdmin: actor?.isPlatformAdmin ?? false,
           targetUserId,
@@ -333,6 +347,7 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
 
       try {
         await updateSalesGoal.execute({
+          actorUserId: context.userId,
           actorRole: context.currentMembership.role,
           actorIsPlatformAdmin: actor?.isPlatformAdmin ?? false,
           targetUserId,

@@ -134,6 +134,13 @@
       "when": 1790284692828,
       "tag": "0018_fixed_ink",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790306921678,
+      "tag": "0019_good_dragon_man",
+      "breakpoints": true
     }
   ]
 }

@@ -6,10 +6,12 @@
 // Super Admin da plataforma ignora a hierarquia.
 
 import { AuthorizationError, type Role, canGrantRole } from '@sylocrm/domain'
+import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activity-log.repository'
 import type { IMembershipRepository } from '../ports/membership.repository'
 import type { UseCase } from '../ports/use-case'
 
 export interface UpdateTeamMemberSalesGoalInput {
+  actorUserId?: string
   actorRole: Role
   actorIsPlatformAdmin: boolean
   targetUserId: string
@@ -22,7 +24,10 @@ export interface UpdateTeamMemberSalesGoalInput {
 export class UpdateTeamMemberSalesGoalUseCase
   implements UseCase<UpdateTeamMemberSalesGoalInput, void>
 {
-  constructor(private readonly membershipRepository: IMembershipRepository) {}
+  constructor(
+    private readonly membershipRepository: IMembershipRepository,
+    private readonly activityLog: IActivityLogRepository = NO_OP_ACTIVITY_LOG,
+  ) {}
 
   async execute(input: UpdateTeamMemberSalesGoalInput): Promise<void> {
     if (!input.actorIsPlatformAdmin && !canGrantRole(input.actorRole, input.targetRole)) {
@@ -36,5 +41,15 @@ export class UpdateTeamMemberSalesGoalUseCase
       input.organizationId,
       input.salesGoalCents,
     )
+
+    await this.activityLog.record({
+      organizationId: input.organizationId,
+      actorUserId: input.actorUserId ?? null,
+      action: 'team.goal_updated',
+      entityType: 'team',
+      entityId: input.targetUserId,
+      entityLabel: null,
+      metadata: { salesGoalCents: input.salesGoalCents, role: input.targetRole },
+    })
   }
 }

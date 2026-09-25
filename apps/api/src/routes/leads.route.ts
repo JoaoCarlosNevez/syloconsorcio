@@ -27,6 +27,7 @@
 // é sempre a organização ativa resolvida pelo tenantMiddleware.
 
 import type {
+  IActivityLogRepository,
   IAuthProvider,
   IFunnelRepository,
   ILeadProposalRepository,
@@ -63,6 +64,7 @@ interface LeadsRouteOptions {
   userRepository: IUserRepository
   funnelRepository: IFunnelRepository
   leadProposalRepository: ILeadProposalRepository
+  activityLogRepository: IActivityLogRepository
 }
 
 const createLeadSchema = z.object({
@@ -150,21 +152,32 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
     options.leadRepository,
     options.organizationRepository,
   )
-  const createLead = new CreateLeadUseCase(options.leadRepository, options.funnelRepository)
+  const createLead = new CreateLeadUseCase(
+    options.leadRepository,
+    options.funnelRepository,
+    options.activityLogRepository,
+  )
   const createLeadComment = new CreateLeadCommentUseCase(
     options.leadRepository,
     options.organizationRepository,
+    options.activityLogRepository,
   )
   const updateLead = new UpdateLeadUseCase(
     options.leadRepository,
     options.organizationRepository,
     options.funnelRepository,
+    options.activityLogRepository,
   )
-  const deleteLead = new DeleteLeadUseCase(options.leadRepository, options.organizationRepository)
+  const deleteLead = new DeleteLeadUseCase(
+    options.leadRepository,
+    options.organizationRepository,
+    options.activityLogRepository,
+  )
   const duplicateLead = new DuplicateLeadUseCase(
     options.leadRepository,
     options.organizationRepository,
     options.funnelRepository,
+    options.activityLogRepository,
   )
   const listLeadProposals = new ListLeadProposalsUseCase(
     options.leadRepository,
@@ -175,6 +188,7 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
     options.leadRepository,
     options.organizationRepository,
     options.leadProposalRepository,
+    options.activityLogRepository,
   )
 
   // ── GET /leads ────────────────────────────────────────────────────────────
@@ -248,6 +262,7 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
           ...parsed.data,
           assignedUserId,
           organizationId: context.currentMembership.organizationId,
+          createdByUserId: context.userId,
         })
         return reply.status(201).send(lead)
       } catch (error) {

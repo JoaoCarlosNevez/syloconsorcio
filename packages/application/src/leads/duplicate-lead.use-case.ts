@@ -4,6 +4,7 @@
 // original não é alterado.
 
 import type { MembershipContext } from '../auth/auth-context'
+import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activity-log.repository'
 import type { IFunnelRepository } from '../ports/funnel.repository'
 import type { ILeadRepository, LeadRecord } from '../ports/lead.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
@@ -23,6 +24,7 @@ export class DuplicateLeadUseCase implements UseCase<DuplicateLeadUseCaseInput, 
     private readonly leadRepository: ILeadRepository,
     private readonly organizationRepository: IOrganizationRepository,
     private readonly funnelRepository: IFunnelRepository,
+    private readonly activityLog: IActivityLogRepository = NO_OP_ACTIVITY_LOG,
   ) {}
 
   async execute(input: DuplicateLeadUseCaseInput): Promise<LeadRecord | null> {
@@ -39,12 +41,32 @@ export class DuplicateLeadUseCase implements UseCase<DuplicateLeadUseCaseInput, 
       source.organizationId,
     )
 
-    return duplicateLeadRecord(
+    const copy = await duplicateLeadRecord(
       this.leadRepository,
       this.funnelRepository,
       source,
       sourceFunnel?.name ?? '',
       input.targetFunnelId,
     )
+
+    const targetFunnel = await this.funnelRepository.findById(
+      input.targetFunnelId,
+      source.organizationId,
+    )
+    await this.activityLog.record({
+      organizationId: source.organizationId,
+      actorUserId: input.userId,
+      action: 'lead.duplicated',
+      entityType: 'lead',
+      entityId: copy.id,
+      entityLabel: copy.name,
+      metadata: {
+        fromFunnelName: sourceFunnel?.name ?? null,
+        toFunnelName: targetFunnel?.name ?? null,
+        automatic: false,
+      },
+    })
+
+    return copy
   }
 }

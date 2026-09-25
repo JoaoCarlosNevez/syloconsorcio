@@ -13,6 +13,7 @@
 // ADMIN tem organization.update (apps/api/src/auth/permissions.ts).
 
 import type {
+  IActivityLogRepository,
   IAuthProvider,
   IFunnelRepository,
   IMembershipRepository,
@@ -38,6 +39,7 @@ interface FunnelsRouteOptions {
   organizationRepository: IOrganizationRepository
   userRepository: IUserRepository
   funnelRepository: IFunnelRepository
+  activityLogRepository: IActivityLogRepository
 }
 
 const stageInputSchema = z.object({
@@ -76,9 +78,18 @@ export const funnelsRoute: FastifyPluginAsync<FunnelsRouteOptions> = async (fast
   const requireOrganizationUpdate = requirePermission(Permission.ORGANIZATION_UPDATE)
 
   const listFunnels = new ListFunnelsUseCase(options.funnelRepository)
-  const createFunnel = new CreateFunnelUseCase(options.funnelRepository)
-  const updateFunnel = new UpdateFunnelUseCase(options.funnelRepository)
-  const deleteFunnel = new DeleteFunnelUseCase(options.funnelRepository)
+  const createFunnel = new CreateFunnelUseCase(
+    options.funnelRepository,
+    options.activityLogRepository,
+  )
+  const updateFunnel = new UpdateFunnelUseCase(
+    options.funnelRepository,
+    options.activityLogRepository,
+  )
+  const deleteFunnel = new DeleteFunnelUseCase(
+    options.funnelRepository,
+    options.activityLogRepository,
+  )
 
   // ── GET /funnels ─────────────────────────────────────────────────────────
   fastify.get('/funnels', { preHandler: [authMiddleware, tenantMiddleware] }, async (request) => {
@@ -105,6 +116,7 @@ export const funnelsRoute: FastifyPluginAsync<FunnelsRouteOptions> = async (fast
           organizationId: context.currentMembership.organizationId,
           name: parsed.data.name,
           stages: parsed.data.stages,
+          actorUserId: context.userId,
         })
         return reply.status(201).send(funnel)
       } catch (error) {
@@ -132,6 +144,7 @@ export const funnelsRoute: FastifyPluginAsync<FunnelsRouteOptions> = async (fast
           id: request.params.id,
           organizationId: context.currentMembership.organizationId,
           changes: parsed.data,
+          actorUserId: context.userId,
         })
         if (!funnel) {
           return reply.status(404).send(funnelNotFoundResponse())
@@ -156,6 +169,7 @@ export const funnelsRoute: FastifyPluginAsync<FunnelsRouteOptions> = async (fast
         const deleted = await deleteFunnel.execute({
           id: request.params.id,
           organizationId: context.currentMembership.organizationId,
+          actorUserId: context.userId,
         })
         if (!deleted) {
           return reply.status(404).send(funnelNotFoundResponse())

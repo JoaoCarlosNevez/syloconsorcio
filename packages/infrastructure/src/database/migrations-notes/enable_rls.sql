@@ -30,3 +30,5 @@ ALTER TABLE public.funnels ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.funnel_stages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lead_proposals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
+-- 2026-09-25: activity_log (log de atividades) — também incluído na migration 0019.
+ALTER TABLE public.activity_log ENABLE ROW LEVEL SECURITY;

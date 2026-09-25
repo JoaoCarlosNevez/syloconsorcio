@@ -8,6 +8,7 @@
 // organização, diferente do próprio funil.
 
 import { ValidationError } from '@sylocrm/domain'
+import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activity-log.repository'
 import type { FunnelRecord, IFunnelRepository, UpdateFunnelInput } from '../ports/funnel.repository'
 import type { UseCase } from '../ports/use-case'
 
@@ -15,10 +16,14 @@ export interface UpdateFunnelUseCaseInput {
   id: string
   organizationId: string
   changes: UpdateFunnelInput
+  actorUserId?: string
 }
 
 export class UpdateFunnelUseCase implements UseCase<UpdateFunnelUseCaseInput, FunnelRecord | null> {
-  constructor(private readonly funnelRepository: IFunnelRepository) {}
+  constructor(
+    private readonly funnelRepository: IFunnelRepository,
+    private readonly activityLog: IActivityLogRepository = NO_OP_ACTIVITY_LOG,
+  ) {}
 
   async execute(input: UpdateFunnelUseCaseInput): Promise<FunnelRecord | null> {
     const current = await this.funnelRepository.findById(input.id, input.organizationId)
@@ -66,6 +71,29 @@ export class UpdateFunnelUseCase implements UseCase<UpdateFunnelUseCaseInput, Fu
       }
     }
 
-    return this.funnelRepository.update(input.id, input.organizationId, input.changes)
+    const updated = await this.funnelRepository.update(
+      input.id,
+      input.organizationId,
+      input.changes,
+    )
+
+    if (updated) {
+      await this.activityLog.record({
+        organizationId: input.organizationId,
+        actorUserId: input.actorUserId ?? null,
+        action: 'funnel.updated',
+        entityType: 'funnel',
+        entityId: updated.id,
+        entityLabel: updated.name,
+        metadata: {
+          fields: Object.keys(input.changes).filter(
+            (key) => input.changes[key as keyof UpdateFunnelInput] !== undefined,
+          ),
+          previousName: current.name !== updated.name ? current.name : null,
+        },
+      })
+    }
+
+    return updated
   }
 }

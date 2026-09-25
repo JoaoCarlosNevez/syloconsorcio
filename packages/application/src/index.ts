@@ -154,3 +154,16 @@ export type { UpdateMyPersonalGoalInput } from './team/update-my-personal-goal.u
 
 export { UpdateTeamMemberSalesGoalUseCase } from './team/update-team-member-sales-goal.use-case'
 export type { UpdateTeamMemberSalesGoalInput } from './team/update-team-member-sales-goal.use-case'
+
+export { NO_OP_ACTIVITY_LOG } from './ports/activity-log.repository'
+export type {
+  ActivityAction,
+  ActivityActor,
+  ActivityEntityType,
+  ActivityListFilter,
+  ActivityListPage,
+  ActivityMetadata,
+  ActivityRecord,
+  IActivityLogRepository,
+  NewActivityEntry,
+} from './ports/activity-log.repository'

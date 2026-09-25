@@ -30,3 +30,6 @@ export type { DbLeadProposal, NewDbLeadProposal } from './lead-proposals'
 
 export { tasks } from './tasks'
 export type { DbTask, NewDbTask } from './tasks'
+
+export { activityLog } from './activity-log'
+export type { DbActivityLog, NewDbActivityLog } from './activity-log'

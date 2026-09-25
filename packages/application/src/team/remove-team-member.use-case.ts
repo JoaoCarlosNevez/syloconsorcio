@@ -12,6 +12,7 @@
 // Dono se desvincular e deixar a organização sem ADMIN).
 
 import { AuthorizationError, type Role, canGrantRole } from '@sylocrm/domain'
+import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activity-log.repository'
 import type { IMembershipRepository } from '../ports/membership.repository'
 import type { UseCase } from '../ports/use-case'
 
@@ -25,7 +26,10 @@ export interface RemoveTeamMemberInput {
 }
 
 export class RemoveTeamMemberUseCase implements UseCase<RemoveTeamMemberInput, void> {
-  constructor(private readonly membershipRepository: IMembershipRepository) {}
+  constructor(
+    private readonly membershipRepository: IMembershipRepository,
+    private readonly activityLog: IActivityLogRepository = NO_OP_ACTIVITY_LOG,
+  ) {}
 
   async execute(input: RemoveTeamMemberInput): Promise<void> {
     if (input.actorUserId === input.targetUserId) {
@@ -39,5 +43,15 @@ export class RemoveTeamMemberUseCase implements UseCase<RemoveTeamMemberInput, v
     }
 
     await this.membershipRepository.deactivate(input.targetUserId, input.organizationId)
+
+    await this.activityLog.record({
+      organizationId: input.organizationId,
+      actorUserId: input.actorUserId,
+      action: 'team.member_removed',
+      entityType: 'team',
+      entityId: input.targetUserId,
+      entityLabel: null,
+      metadata: { role: input.targetRole },
+    })
   }
 }

@@ -6,6 +6,7 @@
 
 import { ValidationError } from '@sylocrm/domain'
 import type { MembershipContext } from '../auth/auth-context'
+import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activity-log.repository'
 import type { ILeadProposalRepository, LeadProposalRecord } from '../ports/lead-proposal.repository'
 import type { ILeadRepository } from '../ports/lead.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
@@ -27,6 +28,7 @@ export class CreateLeadProposalUseCase
     private readonly leadRepository: ILeadRepository,
     private readonly organizationRepository: IOrganizationRepository,
     private readonly leadProposalRepository: ILeadProposalRepository,
+    private readonly activityLog: IActivityLogRepository = NO_OP_ACTIVITY_LOG,
   ) {}
 
   async execute(input: CreateLeadProposalInput): Promise<LeadProposalRecord | null> {
@@ -47,10 +49,22 @@ export class CreateLeadProposalUseCase
       ])
     }
 
-    return this.leadProposalRepository.create({
+    const proposal = await this.leadProposalRepository.create({
       leadId: input.leadId,
       downPaymentCents: input.downPaymentCents,
       termMonths: input.termMonths,
     })
+
+    await this.activityLog.record({
+      organizationId: lead.organizationId,
+      actorUserId: input.userId,
+      action: 'lead.proposal_created',
+      entityType: 'lead',
+      entityId: lead.id,
+      entityLabel: lead.name,
+      metadata: { downPaymentCents: input.downPaymentCents, termMonths: input.termMonths },
+    })
+
+    return proposal
   }
 }

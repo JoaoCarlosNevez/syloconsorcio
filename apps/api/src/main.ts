@@ -7,6 +7,7 @@
 
 import 'dotenv/config'
 import {
+  DrizzleActivityLogRepository,
   DrizzleFunnelRepository,
   DrizzleLeadProposalRepository,
   DrizzleLeadRepository,
@@ -43,6 +44,7 @@ const userRepository = database ? new DrizzleUserRepository(database) : undefine
 const funnelRepository = database ? new DrizzleFunnelRepository(database) : undefined
 const leadProposalRepository = database ? new DrizzleLeadProposalRepository(database) : undefined
 const taskRepository = database ? new DrizzleTaskRepository(database) : undefined
+const activityLogRepository = database ? new DrizzleActivityLogRepository(database) : undefined
 
 const storageProvider =
   env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY
@@ -62,6 +64,7 @@ const app = buildApp({
   funnelRepository,
   leadProposalRepository,
   taskRepository,
+  activityLogRepository,
 })
 
 try {

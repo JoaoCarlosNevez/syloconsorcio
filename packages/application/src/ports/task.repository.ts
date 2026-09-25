@@ -79,6 +79,9 @@ export interface ITaskRepository {
   /** Ordenado por prazo (dueAt) ascendente — mais urgentes primeiro. */
   list(filter: TaskListFilter, page: number, pageSize: number): Promise<TaskListPage>
 
+  /** Retorna null se a tarefa não existir ou estiver fora do escopo. */
+  findById(id: string, scope: TaskScopeFilter): Promise<TaskRecord | null>
+
   create(input: NewTaskInput): Promise<TaskRecord>
 
   /** Retorna null se a tarefa não existir ou estiver fora do escopo. */

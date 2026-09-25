@@ -1995,6 +1995,34 @@ button.breadcrumbCurrent:hover {
   margin-top: 2px;
 }
 
+.activityCount {
+  font-size: var(--cfg-text-xs);
+  color: #94a3b8;
+}
+
+.activityDay {
+  padding: 14px 22px 6px;
+  font-size: var(--cfg-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.activityEmpty {
+  padding: 40px 22px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: var(--cfg-text-sm);
+}
+
+.activityLoadMore {
+  display: flex;
+  justify-content: center;
+  padding: 14px 22px 18px;
+  border-top: 1px solid rgba(216, 195, 173, 0.15);
+}
+
 /* ── Modal overlay */
 
 .modalOverlay {

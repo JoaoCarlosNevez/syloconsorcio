@@ -16,6 +16,7 @@
 // próprias tarefas, um Supervisor vê as da representação, etc.
 
 import type {
+  IActivityLogRepository,
   IAuthProvider,
   ILeadRepository,
   IMembershipRepository,
@@ -44,6 +45,7 @@ interface TasksRouteOptions {
   userRepository: IUserRepository
   taskRepository: ITaskRepository
   leadRepository: ILeadRepository
+  activityLogRepository: IActivityLogRepository
 }
 
 // Espelhado no frontend (tarefas.types.ts) — mantenha em sincronia.
@@ -108,9 +110,18 @@ export const tasksRoute: FastifyPluginAsync<TasksRouteOptions> = async (fastify,
     options.taskRepository,
     options.leadRepository,
     options.organizationRepository,
+    options.activityLogRepository,
   )
-  const updateTask = new UpdateTaskUseCase(options.taskRepository, options.organizationRepository)
-  const deleteTask = new DeleteTaskUseCase(options.taskRepository, options.organizationRepository)
+  const updateTask = new UpdateTaskUseCase(
+    options.taskRepository,
+    options.organizationRepository,
+    options.activityLogRepository,
+  )
+  const deleteTask = new DeleteTaskUseCase(
+    options.taskRepository,
+    options.organizationRepository,
+    options.activityLogRepository,
+  )
 
   // ── GET /tasks ────────────────────────────────────────────────────────────
   fastify.get(

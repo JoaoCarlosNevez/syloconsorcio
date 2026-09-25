@@ -8,6 +8,7 @@
 import { ValidationError } from '@sylocrm/domain'
 import type { MembershipContext } from '../auth/auth-context'
 import { resolveLeadScope } from '../leads/lead-scope'
+import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activity-log.repository'
 import type { ILeadRepository } from '../ports/lead.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
 import type { ITaskRepository, TaskRecord } from '../ports/task.repository'
@@ -29,9 +30,11 @@ export class CreateTaskUseCase implements UseCase<CreateTaskInput, TaskRecord> {
     private readonly taskRepository: ITaskRepository,
     private readonly leadRepository: ILeadRepository,
     private readonly organizationRepository: IOrganizationRepository,
+    private readonly activityLog: IActivityLogRepository = NO_OP_ACTIVITY_LOG,
   ) {}
 
   async execute(input: CreateTaskInput): Promise<TaskRecord> {
+    let leadName: string | null = null
     if (input.leadId) {
       const scope = await resolveLeadScope(
         input.membership,
@@ -42,9 +45,10 @@ export class CreateTaskUseCase implements UseCase<CreateTaskInput, TaskRecord> {
       if (!lead) {
         throw new ValidationError([{ field: 'leadId', message: 'Lead não encontrado.' }])
       }
+      leadName = lead.name
     }
 
-    return this.taskRepository.create({
+    const task = await this.taskRepository.create({
       organizationId: input.membership.organizationId,
       leadId: input.leadId ?? null,
       assignedUserId: input.assignedUserId ?? input.userId,
@@ -54,5 +58,22 @@ export class CreateTaskUseCase implements UseCase<CreateTaskInput, TaskRecord> {
       notes: input.notes ?? null,
       dueAt: input.dueAt,
     })
+
+    await this.activityLog.record({
+      organizationId: task.organizationId,
+      actorUserId: input.userId,
+      action: 'task.created',
+      entityType: 'task',
+      entityId: task.id,
+      entityLabel: task.title,
+      metadata: {
+        type: task.type,
+        dueAt: task.dueAt.toISOString(),
+        leadName,
+        assignedUserId: task.assignedUserId,
+      },
+    })
+
+    return task
   }
 }

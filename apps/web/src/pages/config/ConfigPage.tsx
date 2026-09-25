@@ -1,8 +1,9 @@
 // ConfigPage — Configurações com três sub-páginas: Hub, Equipe, Plano e Cobrança
 
-import { OrganizationAvatar } from '@sylocrm/ui'
+import { OrganizationAvatar, Skeleton } from '@sylocrm/ui'
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
+import { useActivityQuery } from '../../hooks/useActivity'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import {
@@ -18,6 +19,14 @@ import {
   useTeamMembersQuery,
   useUpdateTeamMemberSalesGoal,
 } from '../../hooks/useTeam'
+import type { ActivityEntityType, ActivityEntry } from '../../lib/activity-api'
+import {
+  ACTIVITY_CATEGORY,
+  activityActorName,
+  activityDayLabel,
+  activityTimeLabel,
+  describeActivity,
+} from '../../lib/activity-format'
 import { validateIconFile } from '../../lib/icon-validation'
 import { formatBRL } from '../../lib/lead-adapters'
 import { formatGoalInput, goalInputToCents } from '../../lib/sales-goals'
@@ -2183,98 +2192,13 @@ function OrganizacaoView() {
 
 // ── Atividade view ─────────────────────────────────────────────────────────────────
 
-interface ActivityEntry {
-  id: string
-  type: 'lead' | 'task' | 'user' | 'billing' | 'auth'
-  action: string
-  user: string
-  time: string
-  color: string
-  bg: string
-}
-
-const ACTIVITY_LOG: ActivityEntry[] = [
-  {
-    id: '1',
-    type: 'lead',
-    action: 'criou o lead',
-    user: 'Carlos Mendes',
-    time: 'Há 5 min',
-    color: '#1d4ed8',
-    bg: '#eff6ff',
-  },
-  {
-    id: '2',
-    type: 'task',
-    action: 'concluiu a tarefa "Follow-up Bradesco"',
-    user: 'Ana Souza',
-    time: 'Há 18 min',
-    color: '#059669',
-    bg: '#dcfce7',
-  },
-  {
-    id: '3',
-    type: 'user',
-    action: 'convidou Rafael Alves para a equipe',
-    user: 'Carlos Mendes',
-    time: 'Há 1 h',
-    color: '#8b5cf6',
-    bg: '#f3e8ff',
-  },
-  {
-    id: '4',
-    type: 'lead',
-    action: 'moveu lead para "Proposta Enviada"',
-    user: 'Pedro Lima',
-    time: 'Há 2 h',
-    color: '#1d4ed8',
-    bg: '#eff6ff',
-  },
-  {
-    id: '5',
-    type: 'auth',
-    action: 'fez login',
-    user: 'Juliana Costa',
-    time: 'Há 3 h',
-    color: '#64748b',
-    bg: '#f1f5f9',
-  },
-  {
-    id: '6',
-    type: 'billing',
-    action: 'fatura #2024-011 paga com sucesso',
-    user: 'Sistema',
-    time: '01/11/2024',
-    color: '#059669',
-    bg: '#dcfce7',
-  },
-  {
-    id: '7',
-    type: 'task',
-    action: 'criou a tarefa "Apresentação Itaú"',
-    user: 'Ana Souza',
-    time: '31/10/2024',
-    color: '#059669',
-    bg: '#dcfce7',
-  },
-  {
-    id: '8',
-    type: 'user',
-    action: 'alterou permissão de Juliana Costa para Visualizador',
-    user: 'Carlos Mendes',
-    time: '30/10/2024',
-    color: '#8b5cf6',
-    bg: '#f3e8ff',
-  },
+const ACTIVITY_FILTERS: { value: ActivityEntityType | 'all'; label: string }[] = [
+  { value: 'all', label: 'Todos os eventos' },
+  ...(Object.keys(ACTIVITY_CATEGORY) as ActivityEntityType[]).map((type) => ({
+    value: type,
+    label: ACTIVITY_CATEGORY[type].label,
+  })),
 ]
-
-const TYPE_LABELS: Record<ActivityEntry['type'], string> = {
-  lead: 'Lead',
-  task: 'Tarefa',
-  user: 'Usuário',
-  billing: 'Cobrança',
-  auth: 'Acesso',
-}
 
 function ActivityDotIcon({ color, bg }: { color: string; bg: string }) {
   return (
@@ -2296,9 +2220,29 @@ function ActivityDotIcon({ color, bg }: { color: string; bg: string }) {
 }
 
 function AtividadeView() {
-  const [filter, setFilter] = useState<ActivityEntry['type'] | 'all'>('all')
+  const { organizationId } = useActiveOrganization()
+  const [filter, setFilter] = useState<ActivityEntityType | 'all'>('all')
+  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useActivityQuery(organizationId, filter === 'all' ? undefined : filter)
+  const { data: teamData } = useTeamMembersQuery(organizationId)
 
-  const filtered = filter === 'all' ? ACTIVITY_LOG : ACTIVITY_LOG.filter((a) => a.type === filter)
+  const memberName = (userId: string | null): string => {
+    if (!userId) return 'ninguém'
+    const member = teamData?.members.find((m) => m.userId === userId)
+    return member ? (member.name ?? member.email) : 'um membro'
+  }
+
+  const entries = data?.pages.flatMap((page) => page.items) ?? []
+  const total = data?.pages[0]?.total ?? 0
+
+  // Agrupa por dia ("Hoje", "Ontem", "23 de setembro"), mantendo a ordem.
+  const groups: { day: string; items: ActivityEntry[] }[] = []
+  for (const entry of entries) {
+    const day = activityDayLabel(entry.createdAt)
+    const last = groups[groups.length - 1]
+    if (last && last.day === day) last.items.push(entry)
+    else groups.push({ day, items: [entry] })
+  }
 
   return (
     <div className={styles.settingsContent}>
@@ -2306,43 +2250,82 @@ function AtividadeView() {
         <select
           className={styles.activityFilterSelect}
           value={filter}
-          onChange={(e) => setFilter(e.target.value as ActivityEntry['type'] | 'all')}
+          onChange={(e) => setFilter(e.target.value as ActivityEntityType | 'all')}
+          aria-label="Filtrar eventos"
         >
-          <option value="all">Todos os eventos</option>
-          {(Object.keys(TYPE_LABELS) as ActivityEntry['type'][]).map((t) => (
-            <option key={t} value={t}>
-              {TYPE_LABELS[t]}
+          {ACTIVITY_FILTERS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
             </option>
           ))}
         </select>
+        {!isLoading && total > 0 && (
+          <span className={styles.activityCount}>
+            {total === 1 ? '1 evento' : `${total.toLocaleString('pt-BR')} eventos`}
+          </span>
+        )}
       </div>
 
       <div className={styles.settingsCard}>
         <div className={styles.activityList}>
-          {filtered.map((entry) => (
-            <div key={entry.id} className={styles.activityItem}>
-              <ActivityDotIcon color={entry.color} bg={entry.bg} />
-              <div className={styles.activityContent}>
-                <div className={styles.activityAction}>
-                  <span className={styles.activityUser}>{entry.user}</span> {entry.action}
+          {isLoading &&
+            [0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className={styles.activityItem}>
+                <Skeleton variant="circle" width="30px" height="30px" />
+                <div className={styles.activityContent}>
+                  <Skeleton variant="text" width="70%" height="14px" />
+                  <Skeleton variant="text" width="80px" height="12px" />
                 </div>
-                <div className={styles.activityMeta}>{entry.time}</div>
               </div>
+            ))}
+
+          {groups.map((group) => (
+            <div key={group.day}>
+              <div className={styles.activityDay}>{group.day}</div>
+              {group.items.map((entry) => {
+                const category = ACTIVITY_CATEGORY[entry.entityType]
+                return (
+                  <div key={entry.id} className={styles.activityItem}>
+                    <ActivityDotIcon color={category.color} bg={category.bg} />
+                    <div className={styles.activityContent}>
+                      <div className={styles.activityAction}>
+                        <span className={styles.activityUser}>{activityActorName(entry)}</span>{' '}
+                        {describeActivity(entry, memberName)}
+                      </div>
+                      <div
+                        className={styles.activityMeta}
+                        title={new Date(entry.createdAt).toLocaleString('pt-BR')}
+                      >
+                        {activityTimeLabel(entry.createdAt)} · {category.label}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           ))}
-          {filtered.length === 0 && (
-            <div
-              style={{
-                padding: '40px 22px',
-                textAlign: 'center',
-                color: '#94a3b8',
-                fontSize: 'var(--cfg-text-sm)',
-              }}
-            >
-              Nenhum evento encontrado.
+
+          {!isLoading && entries.length === 0 && (
+            <div className={styles.activityEmpty}>
+              {isError
+                ? 'Não foi possível carregar a atividade.'
+                : 'Nenhum evento registrado ainda. As próximas ações da equipe aparecem aqui.'}
             </div>
           )}
         </div>
+
+        {hasNextPage && (
+          <div className={styles.activityLoadMore}>
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+            >
+              {isFetchingNextPage ? 'Carregando…' : 'Carregar mais'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

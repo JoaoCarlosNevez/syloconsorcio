@@ -11,6 +11,7 @@
 // é o mesmo negócio sendo encaminhado de propósito pra outro setor/funil.
 
 import { ValidationError } from '@sylocrm/domain'
+import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activity-log.repository'
 import type { IFunnelRepository } from '../ports/funnel.repository'
 import type { ILeadRepository, LeadRecord } from '../ports/lead.repository'
 import type { UseCase } from '../ports/use-case'
@@ -27,12 +28,15 @@ export interface CreateLeadInput {
   quotaCount?: number
   source: string
   notes?: string | null
+  /** Quem está criando — registrado no log de atividades. */
+  createdByUserId?: string
 }
 
 export class CreateLeadUseCase implements UseCase<CreateLeadInput, LeadRecord> {
   constructor(
     private readonly leadRepository: ILeadRepository,
     private readonly funnelRepository: IFunnelRepository,
+    private readonly activityLog: IActivityLogRepository = NO_OP_ACTIVITY_LOG,
   ) {}
 
   async execute(input: CreateLeadInput): Promise<LeadRecord> {
@@ -52,6 +56,25 @@ export class CreateLeadUseCase implements UseCase<CreateLeadInput, LeadRecord> {
       ])
     }
 
-    return this.leadRepository.create({ ...input, stageId: firstStage.id })
+    const { createdByUserId, ...leadInput } = input
+    const lead = await this.leadRepository.create({ ...leadInput, stageId: firstStage.id })
+
+    await this.activityLog.record({
+      organizationId: lead.organizationId,
+      actorUserId: createdByUserId ?? null,
+      action: 'lead.created',
+      entityType: 'lead',
+      entityId: lead.id,
+      entityLabel: lead.name,
+      metadata: {
+        funnelName: funnel.name,
+        stageName: firstStage.name,
+        valueCents: lead.valueCents,
+        segment: lead.segment,
+        source: lead.source,
+      },
+    })
+
+    return lead
   }
 }

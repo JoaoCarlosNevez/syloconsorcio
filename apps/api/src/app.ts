@@ -10,6 +10,7 @@
 import cors from '@fastify/cors'
 import multipart from '@fastify/multipart'
 import type {
+  IActivityLogRepository,
   IAuthProvider,
   IFunnelRepository,
   ILeadProposalRepository,
@@ -20,8 +21,10 @@ import type {
   ITaskRepository,
   IUserRepository,
 } from '@sylocrm/application'
+import { NO_OP_ACTIVITY_LOG } from '@sylocrm/application'
 import Fastify from 'fastify'
 import { env } from './config/env'
+import { activityRoute } from './routes/activity.route'
 import { authRoute } from './routes/auth.route'
 import { funnelsRoute } from './routes/funnels.route'
 import { healthRoute } from './routes/health.route'
@@ -41,6 +44,7 @@ export interface BuildAppDeps {
   funnelRepository: IFunnelRepository
   leadProposalRepository: ILeadProposalRepository
   taskRepository: ITaskRepository
+  activityLogRepository: IActivityLogRepository
 }
 
 /** No-op auth provider used when Supabase env vars are not configured. */
@@ -174,6 +178,7 @@ function createNoOpLeadProposalRepository(): ILeadProposalRepository {
 function createNoOpTaskRepository(): ITaskRepository {
   return {
     list: async (_filter, page, pageSize) => ({ items: [], total: 0, page, pageSize }),
+    findById: async () => null,
     create: async () => {
       throw new Error('Database not configured — cannot create tasks.')
     },
@@ -195,6 +200,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     funnelRepository: deps?.funnelRepository ?? createNoOpFunnelRepository(),
     leadProposalRepository: deps?.leadProposalRepository ?? createNoOpLeadProposalRepository(),
     taskRepository: deps?.taskRepository ?? createNoOpTaskRepository(),
+    activityLogRepository: deps?.activityLogRepository ?? NO_OP_ACTIVITY_LOG,
   }
 
   const app = Fastify({
@@ -239,6 +245,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     userRepository: resolvedDeps.userRepository,
     funnelRepository: resolvedDeps.funnelRepository,
     leadProposalRepository: resolvedDeps.leadProposalRepository,
+    activityLogRepository: resolvedDeps.activityLogRepository,
   })
 
   app.register(funnelsRoute, {
@@ -247,6 +254,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     organizationRepository: resolvedDeps.organizationRepository,
     userRepository: resolvedDeps.userRepository,
     funnelRepository: resolvedDeps.funnelRepository,
+    activityLogRepository: resolvedDeps.activityLogRepository,
   })
 
   app.register(tasksRoute, {
@@ -256,6 +264,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     userRepository: resolvedDeps.userRepository,
     taskRepository: resolvedDeps.taskRepository,
     leadRepository: resolvedDeps.leadRepository,
+    activityLogRepository: resolvedDeps.activityLogRepository,
   })
 
   app.register(organizationsRoute, {
@@ -272,6 +281,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     membershipRepository: resolvedDeps.membershipRepository,
     organizationRepository: resolvedDeps.organizationRepository,
     leadRepository: resolvedDeps.leadRepository,
+    activityLogRepository: resolvedDeps.activityLogRepository,
   })
 
   app.register(organizationSettingsRoute, {
@@ -280,6 +290,15 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     membershipRepository: resolvedDeps.membershipRepository,
     storageProvider: resolvedDeps.storageProvider,
     userRepository: resolvedDeps.userRepository,
+    activityLogRepository: resolvedDeps.activityLogRepository,
+  })
+
+  app.register(activityRoute, {
+    authProvider: resolvedDeps.authProvider,
+    membershipRepository: resolvedDeps.membershipRepository,
+    organizationRepository: resolvedDeps.organizationRepository,
+    userRepository: resolvedDeps.userRepository,
+    activityLogRepository: resolvedDeps.activityLogRepository,
   })
 
   return app

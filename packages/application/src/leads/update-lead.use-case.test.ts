@@ -6,6 +6,7 @@
 import { DataScope, OrganizationType, Role, ValidationError } from '@sylocrm/domain'
 import { describe, expect, it, vi } from 'vitest'
 import type { MembershipContext } from '../auth/auth-context'
+import type { IActivityLogRepository } from '../ports/activity-log.repository'
 import type { IFunnelRepository } from '../ports/funnel.repository'
 import type { ILeadRepository, LeadRecord } from '../ports/lead.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
@@ -232,6 +233,12 @@ describe('UpdateLeadUseCase', () => {
     const leadRepository = buildLeadRepository({
       findById: vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, stageId: LAST_STAGE_ID }),
       update: vi.fn().mockResolvedValue(wonLead),
+      create: vi.fn().mockResolvedValue({
+        ...SAMPLE_LEAD,
+        id: 'lead-copy',
+        funnelId: TARGET_FUNNEL_ID,
+        stageId: TARGET_FIRST_STAGE_ID,
+      }),
     })
     const funnelRepository = buildFunnelRepository({
       findById: vi.fn((id: string) => {
@@ -239,10 +246,12 @@ describe('UpdateLeadUseCase', () => {
         return Promise.resolve({ ...SAMPLE_FUNNEL, duplicateToFunnelId: TARGET_FUNNEL_ID })
       }),
     })
+    const activityLog: IActivityLogRepository = { record: vi.fn(), list: vi.fn() }
     const useCase = new UpdateLeadUseCase(
       leadRepository,
       buildOrganizationRepository(),
       funnelRepository,
+      activityLog,
     )
 
     await useCase.execute({
@@ -257,6 +266,58 @@ describe('UpdateLeadUseCase', () => {
         funnelId: TARGET_FUNNEL_ID,
         stageId: TARGET_FIRST_STAGE_ID,
         name: wonLead.name,
+      }),
+    )
+    expect(activityLog.record).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'lead.won', actorUserId: 'user-01' }),
+    )
+    expect(activityLog.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'lead.duplicated',
+        actorUserId: null,
+        entityId: 'lead-copy',
+        metadata: expect.objectContaining({ toFunnelName: 'Instalação', automatic: true }),
+      }),
+    )
+  })
+
+  it('records the stage change and edited fields in the activity log', async () => {
+    const leadRepository = buildLeadRepository({
+      findById: vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, stageId: FIRST_STAGE_ID }),
+      update: vi.fn().mockResolvedValue({
+        ...SAMPLE_LEAD,
+        stageId: LAST_STAGE_ID,
+        valueCents: SAMPLE_LEAD.valueCents + 100_00,
+      }),
+    })
+    const funnelRepository = buildFunnelRepository({
+      findById: vi.fn().mockResolvedValue(SAMPLE_FUNNEL),
+    })
+    const activityLog: IActivityLogRepository = { record: vi.fn(), list: vi.fn() }
+    const useCase = new UpdateLeadUseCase(
+      leadRepository,
+      buildOrganizationRepository(),
+      funnelRepository,
+      activityLog,
+    )
+
+    await useCase.execute({
+      id: 'lead-01',
+      userId: 'user-01',
+      membership: MEMBERSHIP,
+      changes: { stageId: LAST_STAGE_ID, valueCents: SAMPLE_LEAD.valueCents + 100_00 },
+    })
+
+    expect(activityLog.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'lead.stage_changed',
+        metadata: expect.objectContaining({ fromStage: 'Lead', toStage: 'Fechado' }),
+      }),
+    )
+    expect(activityLog.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'lead.updated',
+        metadata: { fields: ['valueCents'] },
       }),
     )
   })

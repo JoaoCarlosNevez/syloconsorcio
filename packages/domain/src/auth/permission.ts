@@ -25,6 +25,8 @@ export const Permission = {
   TEAM_GOAL_UPDATE: 'team.goal_update',
   REPORTS_READ: 'reports.read',
   ORGANIZATION_UPDATE: 'organization.update',
+  /** Ver o log de atividades da organização (Configurações > Atividade). */
+  ACTIVITY_READ: 'activity.read',
   TASK_READ: 'task.read',
   TASK_CREATE: 'task.create',
   TASK_UPDATE: 'task.update',

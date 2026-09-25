@@ -3,16 +3,21 @@
 // e não pode ter leads (o usuário precisa mover/excluir os leads antes).
 
 import { ValidationError } from '@sylocrm/domain'
+import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activity-log.repository'
 import type { IFunnelRepository } from '../ports/funnel.repository'
 import type { UseCase } from '../ports/use-case'
 
 export interface DeleteFunnelInput {
   id: string
   organizationId: string
+  actorUserId?: string
 }
 
 export class DeleteFunnelUseCase implements UseCase<DeleteFunnelInput, boolean> {
-  constructor(private readonly funnelRepository: IFunnelRepository) {}
+  constructor(
+    private readonly funnelRepository: IFunnelRepository,
+    private readonly activityLog: IActivityLogRepository = NO_OP_ACTIVITY_LOG,
+  ) {}
 
   async execute(input: DeleteFunnelInput): Promise<boolean> {
     const [funnel, allFunnels] = await Promise.all([
@@ -38,6 +43,19 @@ export class DeleteFunnelUseCase implements UseCase<DeleteFunnelInput, boolean> 
       ])
     }
 
-    return this.funnelRepository.delete(input.id, input.organizationId)
+    const deleted = await this.funnelRepository.delete(input.id, input.organizationId)
+
+    if (deleted) {
+      await this.activityLog.record({
+        organizationId: input.organizationId,
+        actorUserId: input.actorUserId ?? null,
+        action: 'funnel.deleted',
+        entityType: 'funnel',
+        entityId: funnel.id,
+        entityLabel: funnel.name,
+      })
+    }
+
+    return deleted
   }
 }

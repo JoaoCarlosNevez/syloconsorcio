@@ -13,6 +13,7 @@
 // são escopadas pela organização ativa da própria requisição (X-Organization-Id).
 
 import type {
+  IActivityLogRepository,
   IMembershipRepository,
   IOrganizationRepository,
   IStorageProvider,
@@ -34,6 +35,7 @@ interface OrganizationSettingsRouteOptions {
   membershipRepository: IMembershipRepository
   storageProvider: IStorageProvider
   userRepository: IUserRepository
+  activityLogRepository: IActivityLogRepository
 }
 
 const ICON_BUCKET = 'organization-icons'
@@ -113,6 +115,33 @@ export const organizationSettingsRoute: FastifyPluginAsync<
           status: 404,
         })
       }
+
+      const { salesGoalCents, ...otherChanges } = parsed.data
+      const changedFields = Object.keys(otherChanges).filter(
+        (key) => otherChanges[key as keyof typeof otherChanges] !== undefined,
+      )
+      const base = {
+        organizationId: organization.id,
+        actorUserId: context.userId,
+        entityType: 'organization' as const,
+        entityId: organization.id,
+        entityLabel: organization.name,
+      }
+      if (salesGoalCents !== undefined) {
+        await options.activityLogRepository.record({
+          ...base,
+          action: 'organization.goal_updated',
+          metadata: { salesGoalCents },
+        })
+      }
+      if (changedFields.length > 0) {
+        await options.activityLogRepository.record({
+          ...base,
+          action: 'organization.updated',
+          metadata: { fields: changedFields },
+        })
+      }
+
       return { organization }
     },
   )
@@ -169,6 +198,15 @@ export const organizationSettingsRoute: FastifyPluginAsync<
         branding: { ...organization.branding, iconUrl: url },
       })
 
+      await options.activityLogRepository.record({
+        organizationId: organization.id,
+        actorUserId: context.userId,
+        action: 'organization.icon_updated',
+        entityType: 'organization',
+        entityId: organization.id,
+        entityLabel: organization.name,
+      })
+
       return { organization: updated }
     },
   )
@@ -210,6 +248,17 @@ export const organizationSettingsRoute: FastifyPluginAsync<
           : { ...rest, secondaryColor: parsed.data.secondaryColor.toLowerCase() }
 
       const updated = await options.organizationRepository.update(organization.id, { branding })
+
+      await options.activityLogRepository.record({
+        organizationId: organization.id,
+        actorUserId: context.userId,
+        action: 'organization.branding_updated',
+        entityType: 'organization',
+        entityId: organization.id,
+        entityLabel: organization.name,
+        metadata: { secondaryColor: parsed.data.secondaryColor?.toLowerCase() ?? null },
+      })
+
       return { organization: updated }
     },
   )

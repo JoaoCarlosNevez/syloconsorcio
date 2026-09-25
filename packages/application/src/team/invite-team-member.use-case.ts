@@ -7,6 +7,7 @@
 
 import { AuthorizationError, type Role, canGrantRole } from '@sylocrm/domain'
 import { generateTemporaryPassword } from '../auth/generate-temporary-password'
+import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activity-log.repository'
 import type { AuthIdentity, IAuthProvider } from '../ports/auth.provider'
 import type { IMembershipRepository } from '../ports/membership.repository'
 import type { UseCase } from '../ports/use-case'
@@ -18,6 +19,7 @@ export interface InviteTeamMemberInput {
   targetRole: Role
   name: string
   email: string
+  actorUserId?: string
 }
 
 export interface InviteTeamMemberOutput {
@@ -31,6 +33,7 @@ export class InviteTeamMemberUseCase
     private readonly authProvider: IAuthProvider,
     private readonly userRepository: IUserRepository,
     private readonly membershipRepository: IMembershipRepository,
+    private readonly activityLog: IActivityLogRepository = NO_OP_ACTIVITY_LOG,
   ) {}
 
   async execute(input: InviteTeamMemberInput): Promise<InviteTeamMemberOutput> {
@@ -53,6 +56,16 @@ export class InviteTeamMemberUseCase
       userId: identity.id,
       organizationId: input.organizationId,
       role: input.targetRole,
+    })
+
+    await this.activityLog.record({
+      organizationId: input.organizationId,
+      actorUserId: input.actorUserId ?? null,
+      action: 'team.member_invited',
+      entityType: 'team',
+      entityId: identity.id,
+      entityLabel: input.name,
+      metadata: { role: input.targetRole, email: identity.email },
     })
 
     return { member: { ...identity, temporaryPassword, role: input.targetRole } }

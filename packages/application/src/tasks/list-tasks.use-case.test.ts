@@ -26,6 +26,7 @@ function buildOrganizationRepository(): IOrganizationRepository {
 function buildTaskRepository(overrides: Partial<ITaskRepository> = {}): ITaskRepository {
   return {
     list: vi.fn().mockResolvedValue(EMPTY_PAGE),
+    findById: vi.fn().mockResolvedValue(null),
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),

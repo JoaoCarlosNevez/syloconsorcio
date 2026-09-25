@@ -18,6 +18,7 @@ const MANAGER_PERMISSIONS: readonly Permission[] = [
   Permission.LEAD_DELETE,
   Permission.LEAD_MANAGE_LOST,
   Permission.REPORTS_READ,
+  Permission.ACTIVITY_READ,
   // Supervisor pode convidar Vendedores — a hierarquia fina (não pode
   // conceder ADMIN/MANAGER) é aplicada em InviteTeamMemberUseCase.
   Permission.USER_INVITE,
