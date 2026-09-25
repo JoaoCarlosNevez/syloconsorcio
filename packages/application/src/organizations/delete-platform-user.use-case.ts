@@ -10,12 +10,17 @@
 // tenha mexido em um lead. O registro fica como um identificador "morto":
 // sem login, sem organização, mas ainda resolvível no histórico.
 //
+// A foto de perfil sai do Storage e do registro (avatarUrl = null) — não há
+// mais ninguém pra exibi-la, e o arquivo só ocuparia espaço no bucket.
+//
 // A checagem de "é Super Admin" acontece na camada HTTP.
 
 import { AuthorizationError } from '@sylocrm/domain'
 import type { IAuthProvider } from '../ports/auth.provider'
 import type { IMembershipRepository } from '../ports/membership.repository'
+import { type IStorageProvider, STORAGE_BUCKETS } from '../ports/storage.provider'
 import type { UseCase } from '../ports/use-case'
+import type { IUserRepository } from '../ports/user.repository'
 
 export interface DeletePlatformUserInput {
   actorUserId: string
@@ -26,6 +31,8 @@ export class DeletePlatformUserUseCase implements UseCase<DeletePlatformUserInpu
   constructor(
     private readonly authProvider: IAuthProvider,
     private readonly membershipRepository: IMembershipRepository,
+    private readonly userRepository: IUserRepository,
+    private readonly storageProvider: IStorageProvider,
   ) {}
 
   async execute(input: DeletePlatformUserInput): Promise<void> {
@@ -33,6 +40,12 @@ export class DeletePlatformUserUseCase implements UseCase<DeletePlatformUserInpu
       throw new AuthorizationError('Você não pode apagar a própria conta.')
     }
 
+    // Storage primeiro: se falhar, nada foi apagado ainda e dá pra tentar de novo.
+    await this.storageProvider.deleteFolderFiles({
+      bucket: STORAGE_BUCKETS.userAvatars,
+      folder: input.targetUserId,
+    })
+    await this.userRepository.updateProfile(input.targetUserId, { avatarUrl: null })
     await this.membershipRepository.removeAllForUser(input.targetUserId)
     await this.authProvider.deleteUser(input.targetUserId)
   }

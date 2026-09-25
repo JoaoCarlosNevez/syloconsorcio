@@ -19,6 +19,7 @@ import type {
   IStorageProvider,
   IUserRepository,
 } from '@sylocrm/application'
+import { STORAGE_BUCKETS } from '@sylocrm/application'
 import type { IAuthProvider } from '@sylocrm/application'
 import { Permission } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
@@ -37,8 +38,6 @@ interface OrganizationSettingsRouteOptions {
   userRepository: IUserRepository
   activityLogRepository: IActivityLogRepository
 }
-
-const ICON_BUCKET = 'organization-icons'
 
 const updateOrganizationSettingsSchema = z.object({
   name: z.string().min(1).optional(),
@@ -187,12 +186,25 @@ export const organizationSettingsRoute: FastifyPluginAsync<
       }
 
       const processed = await compressImage(buffer, file.mimetype)
+      const path = `${organization.id}/icon.${processed.extension}`
       const { url } = await options.storageProvider.uploadPublicFile({
-        bucket: ICON_BUCKET,
-        path: `${organization.id}/icon.${processed.extension}`,
+        bucket: STORAGE_BUCKETS.organizationIcons,
+        path,
         data: processed.buffer,
         contentType: processed.contentType,
       })
+      // Mantém só o arquivo vigente na pasta — ex: trocar SVG por PNG deixaria
+      // o icon.svg antigo pra trás. Falha aqui não desfaz o upload (que já deu
+      // certo); só fica registrada no log.
+      try {
+        await options.storageProvider.deleteFolderFiles({
+          bucket: STORAGE_BUCKETS.organizationIcons,
+          folder: organization.id,
+          keepPath: path,
+        })
+      } catch (error) {
+        request.log.warn({ err: error }, 'Falha ao limpar arquivos antigos do Storage')
+      }
 
       const updated = await options.organizationRepository.update(organization.id, {
         branding: { ...organization.branding, iconUrl: url },

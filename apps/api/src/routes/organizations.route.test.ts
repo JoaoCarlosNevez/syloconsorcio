@@ -21,6 +21,7 @@ import { buildTestPng } from '../test-utils/png'
 
 function buildStorageProvider(): IStorageProvider {
   return {
+    deleteFolderFiles: vi.fn(),
     uploadPublicFile: vi.fn().mockResolvedValue({
       url: 'https://xvzsobntyhvxrbdfboax.supabase.co/storage/v1/object/public/organization-icons/org-uuid/icon.png',
     }),
@@ -603,6 +604,11 @@ describe('POST /organizations/:id/icon', () => {
     expect(storageProvider.uploadPublicFile).toHaveBeenCalledWith(
       expect.objectContaining({ bucket: 'organization-icons', path: 'org-uuid/icon.webp' }),
     )
+    expect(storageProvider.deleteFolderFiles).toHaveBeenCalledWith({
+      bucket: 'organization-icons',
+      folder: 'org-uuid',
+      keepPath: 'org-uuid/icon.webp',
+    })
     expect(organizationRepository.update).toHaveBeenCalledWith(
       'org-uuid',
       expect.objectContaining({
@@ -814,14 +820,17 @@ describe('DELETE /organizations/members/:userId', () => {
     expect(membershipRepository.removeAllForUser).not.toHaveBeenCalled()
   })
 
-  it('deletes the auth identity and all memberships, keeping the users row', async () => {
+  it('deletes the auth identity, all memberships and the avatar file, keeping the users row', async () => {
     const authProvider = buildAuthProvider()
     const membershipRepository = buildMembershipRepository()
+    const userRepository = buildUserRepository(true)
+    const storageProvider = buildStorageProvider()
     const app = buildApp({
       authProvider,
-      userRepository: buildUserRepository(true),
+      userRepository,
       organizationRepository: buildOrganizationRepository(),
       membershipRepository,
+      storageProvider,
     })
 
     const response = await app.inject({
@@ -833,5 +842,12 @@ describe('DELETE /organizations/members/:userId', () => {
     expect(response.statusCode).toBe(204)
     expect(membershipRepository.removeAllForUser).toHaveBeenCalledWith('target-user-uuid')
     expect(authProvider.deleteUser).toHaveBeenCalledWith('target-user-uuid')
+    expect(storageProvider.deleteFolderFiles).toHaveBeenCalledWith({
+      bucket: 'user-avatars',
+      folder: 'target-user-uuid',
+    })
+    expect(userRepository.updateProfile).toHaveBeenCalledWith('target-user-uuid', {
+      avatarUrl: null,
+    })
   })
 })

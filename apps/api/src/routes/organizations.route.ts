@@ -21,6 +21,7 @@ import type {
   IStorageProvider,
   IUserRepository,
 } from '@sylocrm/application'
+import { STORAGE_BUCKETS } from '@sylocrm/application'
 import {
   CreatePlatformUserUseCase,
   CreateRepresentationUseCase,
@@ -41,8 +42,6 @@ interface OrganizationsRouteOptions {
   membershipRepository: IMembershipRepository
   storageProvider: IStorageProvider
 }
-
-const ICON_BUCKET = 'organization-icons'
 
 const createRepresentationSchema = z.object({
   organizationName: z.string().min(1),
@@ -93,6 +92,8 @@ export const organizationsRoute: FastifyPluginAsync<OrganizationsRouteOptions> =
   const deletePlatformUser = new DeletePlatformUserUseCase(
     options.authProvider,
     options.membershipRepository,
+    options.userRepository,
+    options.storageProvider,
   )
 
   // ── GET /organizations ────────────────────────────────────────────────────
@@ -247,12 +248,25 @@ export const organizationsRoute: FastifyPluginAsync<OrganizationsRouteOptions> =
       }
 
       const processed = await compressImage(buffer, file.mimetype)
+      const path = `${organization.id}/icon.${processed.extension}`
       const { url } = await options.storageProvider.uploadPublicFile({
-        bucket: ICON_BUCKET,
-        path: `${organization.id}/icon.${processed.extension}`,
+        bucket: STORAGE_BUCKETS.organizationIcons,
+        path,
         data: processed.buffer,
         contentType: processed.contentType,
       })
+      // Mantém só o arquivo vigente na pasta — ex: trocar SVG por PNG deixaria
+      // o icon.svg antigo pra trás. Falha aqui não desfaz o upload (que já deu
+      // certo); só fica registrada no log.
+      try {
+        await options.storageProvider.deleteFolderFiles({
+          bucket: STORAGE_BUCKETS.organizationIcons,
+          folder: organization.id,
+          keepPath: path,
+        })
+      } catch (error) {
+        request.log.warn({ err: error }, 'Falha ao limpar arquivos antigos do Storage')
+      }
 
       const updated = await options.organizationRepository.update(organization.id, {
         branding: { ...organization.branding, iconUrl: url },

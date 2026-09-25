@@ -25,6 +25,7 @@ function buildTestApp(authProvider: IAuthProvider, membershipRepository?: IMembe
 
 function buildStorageProvider(): IStorageProvider {
   return {
+    deleteFolderFiles: vi.fn(),
     uploadPublicFile: vi.fn().mockResolvedValue({
       url: 'https://xvzsobntyhvxrbdfboax.supabase.co/storage/v1/object/public/user-avatars/user-uuid/avatar.png',
     }),
@@ -326,6 +327,11 @@ describe('POST /auth/me/avatar', () => {
     expect(storageProvider.uploadPublicFile).toHaveBeenCalledWith(
       expect.objectContaining({ bucket: 'user-avatars', path: `${MOCK_IDENTITY.id}/avatar.webp` }),
     )
+    expect(storageProvider.deleteFolderFiles).toHaveBeenCalledWith({
+      bucket: 'user-avatars',
+      folder: MOCK_IDENTITY.id,
+      keepPath: `${MOCK_IDENTITY.id}/avatar.webp`,
+    })
     expect(updateProfile).toHaveBeenCalledWith(
       MOCK_IDENTITY.id,
       expect.objectContaining({ avatarUrl: expect.stringContaining('user-avatars') }),
@@ -354,7 +360,7 @@ describe('DELETE /auth/me/avatar', () => {
     expect(response.statusCode).toBe(401)
   })
 
-  it('clears the avatar', async () => {
+  it('clears the avatar and deletes the file from the Storage', async () => {
     const mockProvider: IAuthProvider = {
       verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
       signOut: vi.fn(),
@@ -371,9 +377,11 @@ describe('DELETE /auth/me/avatar', () => {
       isPlatformAdmin: false,
       createdAt: new Date('2026-01-01T00:00:00Z'),
     })
+    const storageProvider = buildStorageProvider()
     const app = buildApp({
       authProvider: mockProvider,
       userRepository: { findById: vi.fn(), upsert: vi.fn(), updateProfile },
+      storageProvider,
     })
 
     const response = await app.inject({
@@ -386,6 +394,10 @@ describe('DELETE /auth/me/avatar', () => {
     const body = response.json<{ avatarUrl: string | null }>()
     expect(body.avatarUrl).toBeNull()
     expect(updateProfile).toHaveBeenCalledWith(MOCK_IDENTITY.id, { avatarUrl: null })
+    expect(storageProvider.deleteFolderFiles).toHaveBeenCalledWith({
+      bucket: 'user-avatars',
+      folder: MOCK_IDENTITY.id,
+    })
   })
 })
 

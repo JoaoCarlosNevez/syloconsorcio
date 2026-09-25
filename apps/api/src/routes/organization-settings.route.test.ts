@@ -91,6 +91,7 @@ function buildOrganizationRepository(
 
 function buildStorageProvider(): IStorageProvider {
   return {
+    deleteFolderFiles: vi.fn(),
     uploadPublicFile: vi.fn().mockResolvedValue({
       url: 'https://xvzsobntyhvxrbdfboax.supabase.co/storage/v1/object/public/organization-icons/org-rep-01/icon.png',
     }),
@@ -400,6 +401,31 @@ describe('POST /organization/icon', () => {
     expect(storageProvider.uploadPublicFile).toHaveBeenCalledWith(
       expect.objectContaining({ bucket: 'organization-icons', path: `${ORG_ID}/icon.webp` }),
     )
+    expect(storageProvider.deleteFolderFiles).toHaveBeenCalledWith({
+      bucket: 'organization-icons',
+      folder: ORG_ID,
+      keepPath: `${ORG_ID}/icon.webp`,
+    })
+  })
+
+  it('keeps the upload successful when cleaning old files fails', async () => {
+    const organizationRepository = buildOrganizationRepository({
+      findById: vi.fn().mockResolvedValue({ ...SAMPLE_ORG, isWhiteLabel: true }),
+    })
+    const storageProvider = buildStorageProvider()
+    vi.mocked(storageProvider.deleteFolderFiles).mockRejectedValue(new Error('Storage fora do ar'))
+    const app = buildTestApp({ organizationRepository, storageProvider })
+    const { payload, headers } = buildMultipartUpload('icon.png', 'image/png', buildTestPng(64, 64))
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/organization/icon',
+      headers: { ...AUTH_HEADERS, ...headers },
+      payload,
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(organizationRepository.update).toHaveBeenCalled()
   })
 
   it('returns 400 for an unsupported image format', async () => {

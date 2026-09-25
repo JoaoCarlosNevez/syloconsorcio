@@ -143,6 +143,7 @@ function createNoOpUserRepository(): IUserRepository {
 /** No-op storage provider used when Supabase env vars are not configured. */
 function createNoOpStorageProvider(): IStorageProvider {
   return {
+    deleteFolderFiles: async () => {},
     uploadPublicFile: async () => {
       throw new Error('Storage provider not configured — cannot upload files.')
     },

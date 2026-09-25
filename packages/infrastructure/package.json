@@ -10,7 +10,8 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:backfill-funnels": "tsx src/database/scripts/backfill-funnels.ts"
+    "db:backfill-funnels": "tsx src/database/scripts/backfill-funnels.ts",
+    "storage:cleanup": "tsx src/database/scripts/cleanup-storage.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.47.10",

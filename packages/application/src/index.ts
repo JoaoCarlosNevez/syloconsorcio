@@ -32,6 +32,7 @@ export type {
   UpdateProfileInput,
 } from './ports/user.repository'
 export type { IStorageProvider, UploadFileInput } from './ports/storage.provider'
+export { STORAGE_BUCKETS } from './ports/storage.provider'
 export type {
   IFunnelRepository,
   FunnelRecord,

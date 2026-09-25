@@ -26,6 +26,7 @@ import type {
   UserMembership,
   UserRecord,
 } from '@sylocrm/application'
+import { STORAGE_BUCKETS } from '@sylocrm/application'
 import { Role } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
@@ -34,8 +35,6 @@ import { validateIconUpload } from '../lib/icon-validation'
 import { compressImage } from '../lib/image-processing'
 import { createAuthMiddleware } from '../middleware/auth.middleware'
 import { createTenantMiddleware } from '../middleware/tenant.middleware'
-
-const AVATAR_BUCKET = 'user-avatars'
 
 const updateProfileSchema = z.object({
   name: z.string().min(1).optional(),
@@ -128,12 +127,24 @@ export const authRoute: FastifyPluginAsync<AuthRouteOptions> = async (fastify, o
     }
 
     const processed = await compressImage(buffer, file.mimetype)
+    const path = `${identity.id}/avatar.${processed.extension}`
     const { url } = await options.storageProvider.uploadPublicFile({
-      bucket: AVATAR_BUCKET,
-      path: `${identity.id}/avatar.${processed.extension}`,
+      bucket: STORAGE_BUCKETS.userAvatars,
+      path,
       data: processed.buffer,
       contentType: processed.contentType,
     })
+    // Mantém só a foto vigente na pasta (ex: trocou de SVG pra PNG). Falha
+    // aqui não desfaz o upload; só fica registrada no log.
+    try {
+      await options.storageProvider.deleteFolderFiles({
+        bucket: STORAGE_BUCKETS.userAvatars,
+        folder: identity.id,
+        keepPath: path,
+      })
+    } catch (error) {
+      request.log.warn({ err: error }, 'Falha ao limpar fotos antigas do Storage')
+    }
 
     const user = await options.userRepository.updateProfile(identity.id, { avatarUrl: url })
     return serializeUser(identity, user)
@@ -143,6 +154,16 @@ export const authRoute: FastifyPluginAsync<AuthRouteOptions> = async (fastify, o
   fastify.delete('/auth/me/avatar', { preHandler: [authMiddleware] }, async (request) => {
     const identity = request.authIdentity as NonNullable<typeof request.authIdentity>
     const user = await options.userRepository.updateProfile(identity.id, { avatarUrl: null })
+    // A foto sai do perfil primeiro; apagar o arquivo é faxina — se falhar,
+    // o script storage:cleanup recolhe depois.
+    try {
+      await options.storageProvider.deleteFolderFiles({
+        bucket: STORAGE_BUCKETS.userAvatars,
+        folder: identity.id,
+      })
+    } catch (error) {
+      request.log.warn({ err: error }, 'Falha ao apagar a foto removida do Storage')
+    }
     return serializeUser(identity, user)
   })
 
