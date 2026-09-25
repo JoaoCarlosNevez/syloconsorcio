@@ -8,7 +8,7 @@ import { useCreateLead } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { useOrganizationSettingsQuery } from '../../hooks/useOrganizationSettings'
 import { useTeamMembersQuery } from '../../hooks/useTeam'
-import { formatPhoneBR, parseValueToCents } from '../../lib/lead-adapters'
+import { formatMoneyInput, formatPhoneBR, parseValueToCents } from '../../lib/lead-adapters'
 import type { Lead } from '../../lib/leads-api'
 import styles from './CreateLeadModal.module.css'
 
@@ -148,10 +148,10 @@ export function CreateLeadModal({
         )}
         <Input
           label="Valor do crédito (R$)"
-          placeholder="350000"
-          inputMode="decimal"
+          placeholder="350.000,00"
+          inputMode="numeric"
           value={form.value}
-          onChange={(e) => updateField('value', e.target.value.replace(/[^0-9.,]/g, ''))}
+          onChange={(e) => updateField('value', formatMoneyInput(e.target.value))}
           required
         />
         <Input

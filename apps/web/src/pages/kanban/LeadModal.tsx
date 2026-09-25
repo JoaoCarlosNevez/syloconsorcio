@@ -20,8 +20,10 @@ import { useCreateTask, useDeleteTask, useTasksQuery, useUpdateTask } from '../.
 import { useTeamMembersQuery } from '../../hooks/useTeam'
 import type { Funnel } from '../../lib/funnels-api'
 import {
+  centsToMoneyInput,
   formatBRL,
   formatCPF,
+  formatMoneyInput,
   formatPhoneBR,
   parseValueToCents,
   resolveAgent,
@@ -715,10 +717,10 @@ function buildAttrsForm(card: CardData): AttrsForm {
     phone: card.phone,
     email: card.email ?? '',
     segment: card.segment,
-    value: (card.valueCents / 100).toFixed(2).replace('.', ','),
+    value: centsToMoneyInput(card.valueCents),
     quotaCount: String(card.quotaCount),
     profession: card.profession ?? '',
-    income: card.incomeCents != null ? (card.incomeCents / 100).toFixed(2).replace('.', ',') : '',
+    income: card.incomeCents != null ? centsToMoneyInput(card.incomeCents) : '',
     maritalStatus: card.maritalStatus ?? '',
     cpf: card.cpf ?? '',
   }
@@ -1962,11 +1964,11 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                               <input
                                 className={styles.attrInput}
                                 style={{ maxWidth: 120 }}
-                                inputMode="decimal"
+                                inputMode="numeric"
                                 placeholder="Valor (R$)"
                                 value={attrsForm.value}
                                 onChange={(e) =>
-                                  updateAttrField('value', e.target.value.replace(/[^0-9.,]/g, ''))
+                                  updateAttrField('value', formatMoneyInput(e.target.value))
                                 }
                               />
                               <input
@@ -2037,11 +2039,11 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                         {isEditingAttrs ? (
                           <input
                             className={styles.attrInput}
-                            inputMode="decimal"
+                            inputMode="numeric"
                             placeholder="R$"
                             value={attrsForm.income}
                             onChange={(e) =>
-                              updateAttrField('income', e.target.value.replace(/[^0-9.,]/g, ''))
+                              updateAttrField('income', formatMoneyInput(e.target.value))
                             }
                           />
                         ) : (
@@ -2641,13 +2643,13 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                 <input
                   id="sim-down-payment"
                   className={styles.attrInput}
-                  inputMode="decimal"
+                  inputMode="numeric"
                   placeholder="R$"
                   value={simulationParams.downPayment}
                   onChange={(e) =>
                     setSimulationParams((prev) => ({
                       ...prev,
-                      downPayment: e.target.value.replace(/[^0-9.,]/g, ''),
+                      downPayment: formatMoneyInput(e.target.value),
                     }))
                   }
                 />
@@ -2707,12 +2709,10 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                     <input
                       id={`gap-${def.key}`}
                       className={styles.attrInput}
-                      inputMode="decimal"
+                      inputMode="numeric"
                       placeholder="R$"
                       value={gapForm.income}
-                      onChange={(e) =>
-                        updateGapField('income', e.target.value.replace(/[^0-9.,]/g, ''))
-                      }
+                      onChange={(e) => updateGapField('income', formatMoneyInput(e.target.value))}
                     />
                   ) : (
                     <input

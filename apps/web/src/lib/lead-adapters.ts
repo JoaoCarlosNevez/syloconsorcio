@@ -45,6 +45,24 @@ export function formatBRL(cents: number): string {
   return (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 0 })
 }
 
+/**
+ * Máscara de dinheiro no padrão de app de banco: os dígitos entram pela
+ * direita, a partir dos centavos — "35000000" → "350.000,00". Ignora tudo que
+ * não for dígito. O resultado é aceito por parseValueToCents.
+ */
+export function formatMoneyInput(raw: string): string {
+  const digits = raw.replace(/\D/g, '').replace(/^0+/, '').slice(0, 15)
+  if (!digits) return ''
+  const cents = digits.padStart(3, '0')
+  const reais = Number(cents.slice(0, -2)).toLocaleString('pt-BR')
+  return `${reais},${cents.slice(-2)}`
+}
+
+/** Centavos → texto da máscara de dinheiro ("35000000" → "350.000,00"). */
+export function centsToMoneyInput(cents: number): string {
+  return formatMoneyInput(String(Math.round(cents)))
+}
+
 /** Aceita "350000", "350.000" ou "350000,50" — sempre BRL. Retorna null se inválido. */
 export function parseValueToCents(value: string): number | null {
   const normalized = value.replace(/\./g, '').replace(',', '.')
