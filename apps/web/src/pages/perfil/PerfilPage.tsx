@@ -925,7 +925,6 @@ export function PerfilPage() {
             ? ({
                 '--tier-from': TIER_COLORS[membership.tier].from,
                 '--tier-to': TIER_COLORS[membership.tier].to,
-                '--tier-accent': TIER_COLORS[membership.tier].accent,
               } as React.CSSProperties)
             : undefined
         }

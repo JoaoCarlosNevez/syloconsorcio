@@ -1,14 +1,19 @@
 /* PerfilPage — Perfil completo do consultor */
 
-/* Cores da patente do usuário (--tier-from/--tier-to/--tier-accent): definidas
-   inline em .page a partir de TIER_COLORS; neutras enquanto carrega. */
+/* Gradiente do XP, níveis e ofensiva — progresso interno do sistema,
+   independente da patente. */
+:root {
+  --diamante-from: #b69eff;
+  --diamante-to: #4b00cc;
+}
 
 /* ── Layout ───────────────────────────────────────────────────────────────── */
 
 .page {
+  /* Patente do usuário (anel da foto e selo) — definida inline em .page a
+     partir de TIER_COLORS; neutra enquanto carrega. */
   --tier-from: #cbd5e1;
   --tier-to: #64748b;
-  --tier-accent: #64748b;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -345,7 +350,7 @@
 .xpFill {
   height: 100%;
   border-radius: 9999px;
-  background: linear-gradient(to left, var(--tier-from), var(--tier-to));
+  background: linear-gradient(to left, var(--diamante-from), var(--diamante-to));
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: width var(--duration-slow) var(--easing-out);
 }
@@ -428,16 +433,16 @@
 }
 
 .levelDotDone {
-  background: color-mix(in srgb, var(--tier-accent) 12%, transparent);
-  border: 2px solid var(--tier-accent);
-  color: var(--tier-accent);
+  background: rgba(124, 58, 237, 0.12);
+  border: 2px solid #7c3aed;
+  color: #7c3aed;
 }
 
 .levelDotCurrent {
-  background: linear-gradient(135deg, var(--tier-from), var(--tier-to));
+  background: linear-gradient(135deg, var(--diamante-from), var(--diamante-to));
   border: none;
   color: #fff;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tier-accent) 15%, transparent);
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.15);
   transform: scale(1.1);
 }
 
@@ -457,7 +462,7 @@
 }
 
 .levelLineDone {
-  background: var(--tier-accent);
+  background: #7c3aed;
 }
 
 .levelLinePending {
@@ -508,7 +513,7 @@
 }
 
 .xpSummaryValue {
-  color: var(--tier-accent);
+  color: #7c3aed;
   font-weight: var(--font-weight-semibold);
 }
 
@@ -567,7 +572,7 @@
 .recordBadge {
   padding: 4px 10px;
   border-radius: 9999px;
-  background: linear-gradient(to left, var(--tier-from), var(--tier-to));
+  background: linear-gradient(to left, var(--diamante-from), var(--diamante-to));
   color: #fff;
   font-size: 12px;
   font-weight: var(--font-weight-bold);
@@ -614,7 +619,7 @@
 
 .weekDay.today {
   background: linear-gradient(135deg, rgba(182, 158, 255, 0.2), rgba(75, 0, 204, 0.15));
-  border: 1.5px solid var(--tier-accent);
+  border: 1.5px solid #7c3aed;
 }
 
 .weekDay.pending {
@@ -629,7 +634,7 @@
 }
 
 .weekDay.today .weekDayLabel {
-  color: var(--tier-accent);
+  color: #7c3aed;
   font-weight: var(--font-weight-bold);
 }
 
@@ -645,12 +650,12 @@
 }
 
 .weekDay.done .weekDayCheck {
-  background: var(--tier-accent);
+  background: #7c3aed;
   color: #fff;
 }
 
 .weekDay.today .weekDayCheck {
-  background: var(--tier-accent);
+  background: #7c3aed;
   color: #fff;
 }
 
@@ -664,7 +669,7 @@
   padding: 12px;
   border: none;
   border-radius: var(--radius-lg);
-  background: linear-gradient(to left, var(--tier-from), var(--tier-to));
+  background: linear-gradient(to left, var(--diamante-from), var(--diamante-to));
   color: #fff;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
@@ -764,7 +769,7 @@
 
 .badgeProgressFill {
   height: 100%;
-  background: linear-gradient(to left, var(--tier-from), var(--tier-to));
+  background: linear-gradient(to left, var(--diamante-from), var(--diamante-to));
   border-radius: 9999px;
 }
 
