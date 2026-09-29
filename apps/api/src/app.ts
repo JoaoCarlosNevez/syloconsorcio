@@ -16,12 +16,13 @@ import type {
   ILeadProposalRepository,
   ILeadRepository,
   IMembershipRepository,
+  INotificationRepository,
   IOrganizationRepository,
   IStorageProvider,
   ITaskRepository,
   IUserRepository,
 } from '@sylocrm/application'
-import { NO_OP_ACTIVITY_LOG } from '@sylocrm/application'
+import { NO_OP_ACTIVITY_LOG, NO_OP_NOTIFICATIONS } from '@sylocrm/application'
 import Fastify from 'fastify'
 import { env } from './config/env'
 import { activityRoute } from './routes/activity.route'
@@ -29,6 +30,7 @@ import { authRoute } from './routes/auth.route'
 import { funnelsRoute } from './routes/funnels.route'
 import { healthRoute } from './routes/health.route'
 import { leadsRoute } from './routes/leads.route'
+import { notificationsRoute } from './routes/notifications.route'
 import { organizationSettingsRoute } from './routes/organization-settings.route'
 import { organizationsRoute } from './routes/organizations.route'
 import { tasksRoute } from './routes/tasks.route'
@@ -45,6 +47,7 @@ export interface BuildAppDeps {
   leadProposalRepository: ILeadProposalRepository
   taskRepository: ITaskRepository
   activityLogRepository: IActivityLogRepository
+  notificationRepository: INotificationRepository
 }
 
 /** No-op auth provider used when Supabase env vars are not configured. */
@@ -202,6 +205,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     leadProposalRepository: deps?.leadProposalRepository ?? createNoOpLeadProposalRepository(),
     taskRepository: deps?.taskRepository ?? createNoOpTaskRepository(),
     activityLogRepository: deps?.activityLogRepository ?? NO_OP_ACTIVITY_LOG,
+    notificationRepository: deps?.notificationRepository ?? NO_OP_NOTIFICATIONS,
   }
 
   const app = Fastify({
@@ -266,6 +270,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     taskRepository: resolvedDeps.taskRepository,
     leadRepository: resolvedDeps.leadRepository,
     activityLogRepository: resolvedDeps.activityLogRepository,
+    notificationRepository: resolvedDeps.notificationRepository,
   })
 
   app.register(organizationsRoute, {
@@ -300,6 +305,14 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     organizationRepository: resolvedDeps.organizationRepository,
     userRepository: resolvedDeps.userRepository,
     activityLogRepository: resolvedDeps.activityLogRepository,
+  })
+
+  app.register(notificationsRoute, {
+    authProvider: resolvedDeps.authProvider,
+    membershipRepository: resolvedDeps.membershipRepository,
+    organizationRepository: resolvedDeps.organizationRepository,
+    userRepository: resolvedDeps.userRepository,
+    notificationRepository: resolvedDeps.notificationRepository,
   })
 
   return app

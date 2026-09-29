@@ -4,12 +4,15 @@
 // lead nasce atribuído a quem criou" — ver create-lead.use-case.ts). Quando
 // leadId é informado, valida que o lead existe dentro do escopo do usuário —
 // nunca confia num leadId de outra organização vindo do cliente.
+//
+// Quando a tarefa é criada para outra pessoa, o responsável é notificado.
 
 import { ValidationError } from '@sylocrm/domain'
 import type { MembershipContext } from '../auth/auth-context'
 import { resolveLeadScope } from '../leads/lead-scope'
 import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activity-log.repository'
 import type { ILeadRepository } from '../ports/lead.repository'
+import { type INotificationRepository, NO_OP_NOTIFICATIONS } from '../ports/notification.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
 import type { ITaskRepository, TaskRecord } from '../ports/task.repository'
 import type { UseCase } from '../ports/use-case'
@@ -31,6 +34,7 @@ export class CreateTaskUseCase implements UseCase<CreateTaskInput, TaskRecord> {
     private readonly leadRepository: ILeadRepository,
     private readonly organizationRepository: IOrganizationRepository,
     private readonly activityLog: IActivityLogRepository = NO_OP_ACTIVITY_LOG,
+    private readonly notifications: INotificationRepository = NO_OP_NOTIFICATIONS,
   ) {}
 
   async execute(input: CreateTaskInput): Promise<TaskRecord> {
@@ -73,6 +77,18 @@ export class CreateTaskUseCase implements UseCase<CreateTaskInput, TaskRecord> {
         assignedUserId: task.assignedUserId,
       },
     })
+
+    if (task.assignedUserId !== input.userId) {
+      await this.notifications.notify({
+        organizationId: task.organizationId,
+        userId: task.assignedUserId,
+        actorUserId: input.userId,
+        type: 'task.assigned',
+        taskId: task.id,
+        title: task.title,
+        metadata: { taskType: task.type, dueAt: task.dueAt.toISOString(), leadName },
+      })
+    }
 
     return task
   }

@@ -12,6 +12,7 @@ import {
   DrizzleLeadProposalRepository,
   DrizzleLeadRepository,
   DrizzleMembershipRepository,
+  DrizzleNotificationRepository,
   DrizzleOrganizationRepository,
   DrizzleTaskRepository,
   DrizzleUserRepository,
@@ -45,6 +46,7 @@ const funnelRepository = database ? new DrizzleFunnelRepository(database) : unde
 const leadProposalRepository = database ? new DrizzleLeadProposalRepository(database) : undefined
 const taskRepository = database ? new DrizzleTaskRepository(database) : undefined
 const activityLogRepository = database ? new DrizzleActivityLogRepository(database) : undefined
+const notificationRepository = database ? new DrizzleNotificationRepository(database) : undefined
 
 const storageProvider =
   env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY
@@ -65,6 +67,7 @@ const app = buildApp({
   leadProposalRepository,
   taskRepository,
   activityLogRepository,
+  notificationRepository,
 })
 
 try {

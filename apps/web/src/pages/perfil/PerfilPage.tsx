@@ -4,6 +4,7 @@ import { OrganizationAvatar } from '@sylocrm/ui'
 import { type ChangeEvent, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
+import { NotificationBell } from '../../components/notifications/NotificationBell'
 import { useAuth } from '../../hooks/useAuth'
 import {
   useCurrentUser,
@@ -35,25 +36,6 @@ function formatMemberSince(createdAt: string | null): string | null {
 }
 
 // ── Ícones ────────────────────────────────────────────────────────────────────
-
-function BellIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-    </svg>
-  )
-}
 
 function SettingsIcon() {
   return (
@@ -939,10 +921,7 @@ export function PerfilPage() {
         {/* ── Barra de ações ──────────────────────────────────────────────────── */}
         <div className={styles.topBar}>
           <div className={styles.topBarActions}>
-            <button type="button" className={styles.iconBtn} aria-label="Notificações">
-              <BellIcon />
-              <span className={styles.notifDot} aria-hidden="true" />
-            </button>
+            <NotificationBell triggerClassName={styles.iconBtn} align="right" />
             <button
               type="button"
               className={styles.iconBtn}

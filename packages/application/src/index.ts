@@ -168,3 +168,22 @@ export type {
   IActivityLogRepository,
   NewActivityEntry,
 } from './ports/activity-log.repository'
+
+export { NO_OP_NOTIFICATIONS } from './ports/notification.repository'
+export type {
+  INotificationRepository,
+  NewNotification,
+  NotificationActor,
+  NotificationList,
+  NotificationMetadata,
+  NotificationRecipient,
+  NotificationRecord,
+  NotificationTask,
+  NotificationType,
+  TaskReminderOptions,
+} from './ports/notification.repository'
+export {
+  ListNotificationsUseCase,
+  TASK_DUE_SOON_WINDOW_MS,
+} from './notifications/list-notifications.use-case'
+export type { ListNotificationsInput } from './notifications/list-notifications.use-case'

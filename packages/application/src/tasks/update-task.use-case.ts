@@ -1,9 +1,13 @@
 // UpdateTaskUseCase — atualiza campos e/ou status de uma tarefa dentro do
 // escopo do usuário (mesmo DataScope de leads).
+//
+// Notifica o novo responsável quando a tarefa é reatribuída a outra pessoa, e
+// quem criou a tarefa quando outra pessoa a conclui.
 
 import type { MembershipContext } from '../auth/auth-context'
 import { resolveLeadScope } from '../leads/lead-scope'
 import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activity-log.repository'
+import { type INotificationRepository, NO_OP_NOTIFICATIONS } from '../ports/notification.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
 import type { ITaskRepository, TaskRecord, UpdateTaskInput } from '../ports/task.repository'
 import type { UseCase } from '../ports/use-case'
@@ -20,6 +24,7 @@ export class UpdateTaskUseCase implements UseCase<UpdateTaskUseCaseInput, TaskRe
     private readonly taskRepository: ITaskRepository,
     private readonly organizationRepository: IOrganizationRepository,
     private readonly activityLog: IActivityLogRepository = NO_OP_ACTIVITY_LOG,
+    private readonly notifications: INotificationRepository = NO_OP_NOTIFICATIONS,
   ) {}
 
   async execute(input: UpdateTaskUseCaseInput): Promise<TaskRecord | null> {
@@ -64,6 +69,36 @@ export class UpdateTaskUseCase implements UseCase<UpdateTaskUseCaseInput, TaskRe
         ...base,
         action: 'task.updated',
         metadata: { type: updated.type, fields: changedFields },
+      })
+    }
+
+    const notificationBase = {
+      organizationId: updated.organizationId,
+      actorUserId: input.userId,
+      taskId: updated.id,
+      title: updated.title,
+    }
+    if (
+      before.assignedUserId !== updated.assignedUserId &&
+      updated.assignedUserId !== input.userId
+    ) {
+      await this.notifications.notify({
+        ...notificationBase,
+        userId: updated.assignedUserId,
+        type: 'task.assigned',
+        metadata: { taskType: updated.type, dueAt: updated.dueAt.toISOString() },
+      })
+    }
+    if (
+      before.status !== 'concluida' &&
+      updated.status === 'concluida' &&
+      updated.createdByUserId !== input.userId
+    ) {
+      await this.notifications.notify({
+        ...notificationBase,
+        userId: updated.createdByUserId,
+        type: 'task.completed',
+        metadata: { taskType: updated.type },
       })
     }
 

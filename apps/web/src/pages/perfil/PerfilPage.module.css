@@ -59,16 +59,6 @@
   color: var(--color-text-primary);
 }
 
-.notifDot {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #f59e0b;
-}
-
 .topBarDivider {
   width: 1px;
   height: 24px;

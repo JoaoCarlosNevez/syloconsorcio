@@ -4,6 +4,7 @@ import { DataScope, OrganizationType, Role, ValidationError } from '@sylocrm/dom
 import { describe, expect, it, vi } from 'vitest'
 import type { MembershipContext } from '../auth/auth-context'
 import type { ILeadRepository, LeadRecord } from '../ports/lead.repository'
+import type { INotificationRepository } from '../ports/notification.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
 import type { ITaskRepository, TaskRecord } from '../ports/task.repository'
 import { CreateTaskUseCase } from './create-task.use-case'
@@ -99,6 +100,16 @@ function buildTaskRepository(overrides: Partial<ITaskRepository> = {}): ITaskRep
 
 const DUE_AT = new Date('2026-02-01T12:00:00Z')
 
+function buildNotificationRepository(): INotificationRepository {
+  return {
+    notify: vi.fn(),
+    syncTaskReminders: vi.fn(),
+    list: vi.fn(),
+    markRead: vi.fn(),
+    markAllRead: vi.fn(),
+  }
+}
+
 describe('CreateTaskUseCase', () => {
   it('defaults assignedUserId to the creator when not provided', async () => {
     const taskRepository = buildTaskRepository()
@@ -168,5 +179,57 @@ describe('CreateTaskUseCase', () => {
     expect(taskRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({ leadId: 'lead-01', type: 'Follow-up' }),
     )
+  })
+
+  it('notifies the assignee when the task is created for someone else', async () => {
+    const notifications = buildNotificationRepository()
+    const useCase = new CreateTaskUseCase(
+      buildTaskRepository(),
+      buildLeadRepository(),
+      buildOrganizationRepository(),
+      undefined,
+      notifications,
+    )
+
+    await useCase.execute({
+      userId: USER_ID,
+      membership: MEMBERSHIP,
+      assignedUserId: 'user-02',
+      type: 'Ligação',
+      title: 'Ligar pro cliente',
+      dueAt: DUE_AT,
+    })
+
+    expect(notifications.notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organizationId: ORG_ID,
+        userId: 'user-02',
+        actorUserId: USER_ID,
+        type: 'task.assigned',
+        taskId: 'task-01',
+        title: 'Ligar pro cliente',
+      }),
+    )
+  })
+
+  it('does not notify when the creator assigns the task to themselves', async () => {
+    const notifications = buildNotificationRepository()
+    const useCase = new CreateTaskUseCase(
+      buildTaskRepository(),
+      buildLeadRepository(),
+      buildOrganizationRepository(),
+      undefined,
+      notifications,
+    )
+
+    await useCase.execute({
+      userId: USER_ID,
+      membership: MEMBERSHIP,
+      type: 'Tarefa',
+      title: 'Organizar agenda',
+      dueAt: DUE_AT,
+    })
+
+    expect(notifications.notify).not.toHaveBeenCalled()
   })
 })

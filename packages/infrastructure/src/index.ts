@@ -33,3 +33,4 @@ export { DrizzleUserRepository } from './database/repositories/drizzle-user.repo
 export { DrizzleFunnelRepository } from './database/repositories/drizzle-funnel.repository'
 export { DrizzleTaskRepository } from './database/repositories/drizzle-task.repository'
 export { DrizzleActivityLogRepository } from './database/repositories/drizzle-activity-log.repository'
+export { DrizzleNotificationRepository } from './database/repositories/drizzle-notification.repository'

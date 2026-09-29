@@ -20,6 +20,7 @@ import type {
   IAuthProvider,
   ILeadRepository,
   IMembershipRepository,
+  INotificationRepository,
   IOrganizationRepository,
   ITaskRepository,
   IUserRepository,
@@ -46,6 +47,7 @@ interface TasksRouteOptions {
   taskRepository: ITaskRepository
   leadRepository: ILeadRepository
   activityLogRepository: IActivityLogRepository
+  notificationRepository: INotificationRepository
 }
 
 // Espelhado no frontend (tarefas.types.ts) — mantenha em sincronia.
@@ -111,11 +113,13 @@ export const tasksRoute: FastifyPluginAsync<TasksRouteOptions> = async (fastify,
     options.leadRepository,
     options.organizationRepository,
     options.activityLogRepository,
+    options.notificationRepository,
   )
   const updateTask = new UpdateTaskUseCase(
     options.taskRepository,
     options.organizationRepository,
     options.activityLogRepository,
+    options.notificationRepository,
   )
   const deleteTask = new DeleteTaskUseCase(
     options.taskRepository,

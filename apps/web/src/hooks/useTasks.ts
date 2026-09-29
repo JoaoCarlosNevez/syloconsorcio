@@ -30,6 +30,8 @@ export function useCreateTask(organizationId: string | null) {
     mutationFn: (payload: CreateTaskPayload) => createTask(organizationId as string, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', organizationId] })
+      // Concluir/remarcar/reatribuir muda quais lembretes o sininho mostra.
+      queryClient.invalidateQueries({ queryKey: ['notifications', organizationId] })
     },
   })
 }
@@ -41,6 +43,8 @@ export function useUpdateTask(organizationId: string | null) {
       updateTask(organizationId as string, id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', organizationId] })
+      // Concluir/remarcar/reatribuir muda quais lembretes o sininho mostra.
+      queryClient.invalidateQueries({ queryKey: ['notifications', organizationId] })
     },
   })
 }
@@ -51,6 +55,8 @@ export function useDeleteTask(organizationId: string | null) {
     mutationFn: (id: string) => deleteTask(organizationId as string, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', organizationId] })
+      // Concluir/remarcar/reatribuir muda quais lembretes o sininho mostra.
+      queryClient.invalidateQueries({ queryKey: ['notifications', organizationId] })
     },
   })
 }

@@ -33,3 +33,6 @@ export type { DbTask, NewDbTask } from './tasks'
 
 export { activityLog } from './activity-log'
 export type { DbActivityLog, NewDbActivityLog } from './activity-log'
+
+export { notifications } from './notifications'
+export type { DbNotification, NewDbNotification } from './notifications'
