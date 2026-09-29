@@ -225,8 +225,9 @@ const TIER_PALETTE: Record<Tier, { accent: string; subtle: string; muted: string
 }
 
 // Itens de navegação principal. `hiddenForRoles` restringe o item a quem não
-// tem esse Role na organização ativa — Vendedor só opera o funil (Início,
-// Kanban, Tarefas) e Ajuda; Fila/Configurações ficam de fora. `requiresPlatformAdmin`
+// tem esse Role na organização ativa — Vendedor não vê a Fila. Configurações
+// aparece pra todos, mas o Vendedor só enxerga "Minha Conta" lá dentro (ver
+// ConfigPage). `requiresPlatformAdmin`
 // restringe o item a quem tem `isPlatformAdmin` (super admin da plataforma) —
 // Administração é uma tela de operação da Sylo, não do ADMIN/MANAGER da organização.
 const NAV_ITEMS = [
@@ -234,7 +235,7 @@ const NAV_ITEMS = [
   { label: 'Kanban', path: '/app/kanban', icon: KanbanIcon },
   { label: 'Tarefas', path: '/app/tarefas', icon: TarefasIcon },
   { label: 'Fila', path: '/app/fila', icon: FilaIcon, hiddenForRoles: ['SELLER'] },
-  { label: 'Configurações', path: '/app/config', icon: ConfigIcon, hiddenForRoles: ['SELLER'] },
+  { label: 'Configurações', path: '/app/config', icon: ConfigIcon },
   { label: 'Administração', path: '/app/admin', icon: AdminIcon, requiresPlatformAdmin: true },
   { label: 'Ajuda', path: '/app/ajuda', icon: AjudaIcon },
 ] as const

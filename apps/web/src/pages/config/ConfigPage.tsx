@@ -483,7 +483,22 @@ const ORG_ITEMS: HubNavItem[] = [
 /** Integrações só aparece pra quem pode gerenciar chaves (Dono). */
 const INTEGRATIONS_PERMISSION = 'integration.manage'
 
-function HubView({ onNavigate }: { onNavigate: (v: View) => void }) {
+/** Telas de "Minha Conta" — as únicas que o Vendedor vê (ver ConfigPage). */
+const ACCOUNT_VIEWS: ReadonlySet<View> = new Set<View>([
+  'hub',
+  'preferencias',
+  'notificacoes',
+  'seguranca',
+])
+
+function HubView({
+  onNavigate,
+  showOrganization,
+}: {
+  onNavigate: (v: View) => void
+  /** Seções Organização e Plano e Cobrança — escondidas pro Vendedor. */
+  showOrganization: boolean
+}) {
   const { membership } = useActiveOrganization()
   const canManageIntegrations = membership?.permissions.includes(INTEGRATIONS_PERMISSION) ?? false
   const orgItems = ORG_ITEMS.filter((item) => item.view !== 'integracoes' || canManageIntegrations)
@@ -516,55 +531,63 @@ function HubView({ onNavigate }: { onNavigate: (v: View) => void }) {
         </div>
       </section>
 
-      {/* Organização */}
-      <section className={styles.hubSection}>
-        <div className={styles.hubSectionHeader}>
-          <span className={styles.hubSectionLabel}>Organização</span>
-        </div>
-        <div className={styles.hubCard}>
-          {orgItems.map((item, i) => (
-            <button
-              key={item.view}
-              type="button"
-              className={`${styles.hubNavItem} ${i < orgItems.length - 1 ? styles.hubNavItemBorder : ''}`}
-              onClick={() => onNavigate(item.view)}
-            >
-              <span className={styles.hubNavIcon}>{item.icon}</span>
-              <span className={styles.hubNavText}>
-                <span className={styles.hubNavLabel}>{item.label}</span>
-                <span className={styles.hubNavDesc}>{item.description}</span>
-              </span>
-              <span className={styles.hubNavChevron}>
-                <ChevronRightIcon />
-              </span>
-            </button>
-          ))}
-        </div>
-      </section>
+      {showOrganization && (
+        <>
+          {/* Organização */}
+          <section className={styles.hubSection}>
+            <div className={styles.hubSectionHeader}>
+              <span className={styles.hubSectionLabel}>Organização</span>
+            </div>
+            <div className={styles.hubCard}>
+              {orgItems.map((item, i) => (
+                <button
+                  key={item.view}
+                  type="button"
+                  className={`${styles.hubNavItem} ${i < orgItems.length - 1 ? styles.hubNavItemBorder : ''}`}
+                  onClick={() => onNavigate(item.view)}
+                >
+                  <span className={styles.hubNavIcon}>{item.icon}</span>
+                  <span className={styles.hubNavText}>
+                    <span className={styles.hubNavLabel}>{item.label}</span>
+                    <span className={styles.hubNavDesc}>{item.description}</span>
+                  </span>
+                  <span className={styles.hubNavChevron}>
+                    <ChevronRightIcon />
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
 
-      {/* Plano e Cobrança */}
-      <section className={styles.hubSection}>
-        <div className={styles.hubSectionHeader}>
-          <span className={styles.hubSectionLabel}>Plano e Cobrança</span>
-        </div>
-        <div className={styles.hubCard}>
-          <button type="button" className={styles.hubNavItem} onClick={() => onNavigate('plano')}>
-            <span className={styles.hubNavIcon}>
-              <CreditCardIcon />
-            </span>
-            <span className={styles.hubNavText}>
-              <span className={styles.hubNavLabel}>Plano e Cobrança</span>
-              <span className={styles.hubNavDesc}>
-                Plano Pro ativo · Próxima cobrança em 01/12/2024
-              </span>
-            </span>
-            <span className={styles.hubPlanBadge}>PRO</span>
-            <span className={styles.hubNavChevron}>
-              <ChevronRightIcon />
-            </span>
-          </button>
-        </div>
-      </section>
+          {/* Plano e Cobrança */}
+          <section className={styles.hubSection}>
+            <div className={styles.hubSectionHeader}>
+              <span className={styles.hubSectionLabel}>Plano e Cobrança</span>
+            </div>
+            <div className={styles.hubCard}>
+              <button
+                type="button"
+                className={styles.hubNavItem}
+                onClick={() => onNavigate('plano')}
+              >
+                <span className={styles.hubNavIcon}>
+                  <CreditCardIcon />
+                </span>
+                <span className={styles.hubNavText}>
+                  <span className={styles.hubNavLabel}>Plano e Cobrança</span>
+                  <span className={styles.hubNavDesc}>
+                    Plano Pro ativo · Próxima cobrança em 01/12/2024
+                  </span>
+                </span>
+                <span className={styles.hubPlanBadge}>PRO</span>
+                <span className={styles.hubNavChevron}>
+                  <ChevronRightIcon />
+                </span>
+              </button>
+            </div>
+          </section>
+        </>
+      )}
 
       {/* Footer */}
       <div className={styles.hubFooter}>
@@ -2847,7 +2870,14 @@ const VIEW_LABELS: Record<View, string> = {
 // ── Component ────────────────────────────────────────────────────────────────────
 
 export function ConfigPage() {
-  const [view, setView] = useState<View>('hub')
+  const [requestedView, setView] = useState<View>('hub')
+  const { membership } = useActiveOrganization()
+  // Vendedor só vê "Minha Conta". Enquanto a organização carrega, também só
+  // "Minha Conta" — melhor as seções da organização aparecerem um instante
+  // depois pra quem pode do que piscarem pra quem não pode. As rotas da API
+  // continuam exigindo as permissões de cada tela.
+  const canSeeOrganization = membership ? membership.role !== 'SELLER' : false
+  const view = canSeeOrganization || ACCOUNT_VIEWS.has(requestedView) ? requestedView : 'hub'
 
   const isHub = view === 'hub'
 
@@ -2885,14 +2915,16 @@ export function ConfigPage() {
               )}
             </div>
           </div>
-          <span className={styles.adminBadge}>
-            <ShieldIcon />
-            Acesso de Administrador
-          </span>
+          {canSeeOrganization && (
+            <span className={styles.adminBadge}>
+              <ShieldIcon />
+              Acesso de Administrador
+            </span>
+          )}
         </div>
 
         {/* View content */}
-        {view === 'hub' && <HubView onNavigate={setView} />}
+        {view === 'hub' && <HubView onNavigate={setView} showOrganization={canSeeOrganization} />}
         {view === 'equipe' && <EquipeView />}
         {view === 'plano' && <PlanoView />}
         {view === 'preferencias' && <PreferenciasView />}
