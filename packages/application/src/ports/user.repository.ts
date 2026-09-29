@@ -4,6 +4,8 @@
 // a identidade de autenticação — apenas o registro correspondente no domínio.
 // Implementação concreta: packages/infrastructure/src/database/repositories/
 
+import type { NotificationPreferences } from '../notifications/notification-preferences'
+
 export interface UserRecord {
   id: string
   email: string
@@ -15,6 +17,8 @@ export interface UserRecord {
   /** URL pública da foto de perfil (bucket user-avatars). Null = avatar padrão. */
   avatarUrl: string | null
   isPlatformAdmin: boolean
+  /** Como veio do banco (jsonb) — use resolveNotificationPreferences() pra ler. */
+  notificationPreferences: unknown
   createdAt: Date
 }
 
@@ -29,6 +33,7 @@ export interface UpdateProfileInput {
   instagramHandle?: string | null
   location?: string | null
   avatarUrl?: string | null
+  notificationPreferences?: NotificationPreferences
 }
 
 export interface IUserRepository {

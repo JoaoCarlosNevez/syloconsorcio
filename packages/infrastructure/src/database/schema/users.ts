@@ -4,7 +4,7 @@
 // O ID do Supabase Auth é reutilizado como PK desta tabela.
 // Não há mapeamento separado — o mesmo UUID serve os dois domínios.
 
-import { boolean, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { boolean, jsonb, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { pgTable } from 'drizzle-orm/pg-core'
 
 export const users = pgTable('users', {
@@ -21,6 +21,9 @@ export const users = pgTable('users', {
   // Representações (tenants). Não é um Role de Membership: é uma
   // capacidade de nível plataforma, independente de qualquer organização.
   isPlatformAdmin: boolean('is_platform_admin').notNull().default(false),
+  /** Preferências de notificação (push por tipo + som). Vazio = padrões —
+   * ver resolveNotificationPreferences em @sylocrm/application. */
+  notificationPreferences: jsonb('notification_preferences').notNull().default({}),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })

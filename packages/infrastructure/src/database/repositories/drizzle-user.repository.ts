@@ -20,6 +20,7 @@ const USER_COLUMNS = {
   location: users.location,
   avatarUrl: users.avatarUrl,
   isPlatformAdmin: users.isPlatformAdmin,
+  notificationPreferences: users.notificationPreferences,
   createdAt: users.createdAt,
 } as const
 
@@ -54,6 +55,9 @@ export class DrizzleUserRepository implements IUserRepository {
         ...(input.instagramHandle !== undefined ? { instagramHandle: input.instagramHandle } : {}),
         ...(input.location !== undefined ? { location: input.location } : {}),
         ...(input.avatarUrl !== undefined ? { avatarUrl: input.avatarUrl } : {}),
+        ...(input.notificationPreferences !== undefined
+          ? { notificationPreferences: input.notificationPreferences }
+          : {}),
         updatedAt: new Date(),
       })
       .where(eq(users.id, id))

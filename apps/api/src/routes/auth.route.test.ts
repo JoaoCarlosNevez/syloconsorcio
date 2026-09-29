@@ -211,6 +211,73 @@ describe('PATCH /auth/me', () => {
       location: 'São Paulo, SP',
     })
   })
+
+  it('saves notification preferences and returns them resolved', async () => {
+    const mockProvider: IAuthProvider = {
+      verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
+      signOut: vi.fn(),
+      createUser: vi.fn(),
+      deleteUser: vi.fn(),
+    }
+    const preferences = {
+      push: {
+        'task.assigned': true,
+        'task.due_soon': false,
+        'task.overdue': true,
+        'task.completed': false,
+      },
+      sound: false,
+    }
+    const updateProfile = vi.fn().mockResolvedValue({
+      id: MOCK_IDENTITY.id,
+      email: MOCK_IDENTITY.email,
+      name: null,
+      instagramHandle: null,
+      location: null,
+      avatarUrl: null,
+      isPlatformAdmin: false,
+      notificationPreferences: preferences,
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+    })
+    const app = buildApp({
+      authProvider: mockProvider,
+      userRepository: { findById: vi.fn(), upsert: vi.fn(), updateProfile },
+    })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/auth/me',
+      headers: { authorization: 'Bearer valid-token' },
+      payload: { notificationPreferences: preferences },
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(updateProfile).toHaveBeenCalledWith(MOCK_IDENTITY.id, {
+      notificationPreferences: preferences,
+    })
+    expect(response.json<{ notificationPreferences: unknown }>().notificationPreferences).toEqual(
+      preferences,
+    )
+  })
+
+  it('returns 400 for incomplete notification preferences', async () => {
+    const mockProvider: IAuthProvider = {
+      verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
+      signOut: vi.fn(),
+      createUser: vi.fn(),
+      deleteUser: vi.fn(),
+    }
+    const app = buildTestApp(mockProvider)
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/auth/me',
+      headers: { authorization: 'Bearer valid-token' },
+      payload: { notificationPreferences: { push: { 'task.assigned': true }, sound: true } },
+    })
+
+    expect(response.statusCode).toBe(400)
+  })
 })
 
 // ── POST /auth/me/avatar ─────────────────────────────────────────────────────

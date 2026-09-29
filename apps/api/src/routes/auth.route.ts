@@ -26,7 +26,7 @@ import type {
   UserMembership,
   UserRecord,
 } from '@sylocrm/application'
-import { STORAGE_BUCKETS } from '@sylocrm/application'
+import { STORAGE_BUCKETS, resolveNotificationPreferences } from '@sylocrm/application'
 import { Role } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
@@ -45,6 +45,17 @@ const updateProfileSchema = z.object({
     .nullable()
     .optional(),
   location: z.string().min(1).nullable().optional(),
+  notificationPreferences: z
+    .object({
+      push: z.object({
+        'task.assigned': z.boolean(),
+        'task.due_soon': z.boolean(),
+        'task.overdue': z.boolean(),
+        'task.completed': z.boolean(),
+      }),
+      sound: z.boolean(),
+    })
+    .optional(),
 })
 
 interface AuthRouteOptions {
@@ -64,6 +75,7 @@ function serializeUser(identity: { id: string; email: string }, user: UserRecord
     location: user?.location ?? null,
     avatarUrl: user?.avatarUrl ?? null,
     isPlatformAdmin: user?.isPlatformAdmin ?? false,
+    notificationPreferences: resolveNotificationPreferences(user?.notificationPreferences),
     createdAt: user?.createdAt ?? null,
   }
 }

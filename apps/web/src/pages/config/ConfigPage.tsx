@@ -4,7 +4,12 @@ import { OrganizationAvatar, Skeleton } from '@sylocrm/ui'
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { useActivityQuery } from '../../hooks/useActivity'
-import { useCurrentUser } from '../../hooks/useCurrentUser'
+import { useBrowserNotificationPermission } from '../../hooks/useBrowserNotificationPermission'
+import {
+  type NotificationPreferences,
+  useCurrentUser,
+  useUpdateMyProfile,
+} from '../../hooks/useCurrentUser'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import {
   useOrganizationSettingsQuery,
@@ -27,8 +32,11 @@ import {
   activityTimeLabel,
   describeActivity,
 } from '../../lib/activity-format'
+import type { BrowserNotificationPermission } from '../../lib/browser-notifications'
 import { validateIconFile } from '../../lib/icon-validation'
 import { formatBRL } from '../../lib/lead-adapters'
+import { playNotificationSound } from '../../lib/notification-sound'
+import type { NotificationType } from '../../lib/notifications-api'
 import { formatGoalInput, goalInputToCents } from '../../lib/sales-goals'
 import type { InvitableRole, TeamMember } from '../../lib/team-api'
 import styles from './ConfigPage.module.css'
@@ -1501,109 +1509,213 @@ function SegurancaView() {
 
 // ── Notificações view ─────────────────────────────────────────────────────────────
 
-interface NotifSetting {
-  id: string
-  label: string
-  desc: string
-  email: boolean
-  push: boolean
-  inApp: boolean
-}
-
-const NOTIF_DEFAULTS: NotifSetting[] = [
+const PUSH_EVENTS: { type: NotificationType; label: string; desc: string }[] = [
   {
-    id: 'new-lead',
-    label: 'Novo lead atribuído',
-    desc: 'Quando um lead é atribuído a você',
-    email: true,
-    push: true,
-    inApp: true,
+    type: 'task.assigned',
+    label: 'Tarefa atribuída a você',
+    desc: 'Quando alguém cria ou passa uma tarefa pra você',
   },
   {
-    id: 'task-due',
-    label: 'Tarefa próxima do vencimento',
-    desc: '24h antes do prazo',
-    email: true,
-    push: false,
-    inApp: true,
+    type: 'task.due_soon',
+    label: 'Tarefa perto do prazo',
+    desc: '1 hora antes do vencimento',
   },
   {
-    id: 'task-overdue',
-    label: 'Tarefa vencida',
-    desc: 'Quando uma tarefa passa do prazo',
-    email: true,
-    push: true,
-    inApp: true,
+    type: 'task.overdue',
+    label: 'Tarefa atrasada',
+    desc: 'Quando uma tarefa sua passa do prazo',
   },
   {
-    id: 'comment',
-    label: 'Novo comentário',
-    desc: 'Quando alguém comenta em suas tarefas',
-    email: false,
-    push: false,
-    inApp: true,
-  },
-  {
-    id: 'member-join',
-    label: 'Novo membro na equipe',
-    desc: 'Quando alguém aceita um convite',
-    email: false,
-    push: false,
-    inApp: true,
-  },
-  {
-    id: 'billing',
-    label: 'Cobrança e pagamentos',
-    desc: 'Faturas, falhas e renovações',
-    email: true,
-    push: false,
-    inApp: true,
+    type: 'task.completed',
+    label: 'Tarefa concluída',
+    desc: 'Quando outra pessoa conclui uma tarefa que você criou',
   },
 ]
 
+function BrowserPermissionStatus({
+  permission,
+  onRequest,
+}: {
+  permission: BrowserNotificationPermission
+  onRequest: () => void
+}) {
+  if (permission === 'granted') {
+    return (
+      <div className={styles.permissionRow}>
+        <span className={`${styles.permissionBadge} ${styles.permissionGranted}`}>
+          Permitidas neste navegador
+        </span>
+      </div>
+    )
+  }
+  if (permission === 'denied') {
+    return (
+      <div className={styles.permissionRow}>
+        <span className={`${styles.permissionBadge} ${styles.permissionDenied}`}>
+          Bloqueadas pelo navegador
+        </span>
+        <p className={styles.permissionHint}>
+          Pra liberar, clique no cadeado ao lado do endereço do site, permita “Notificações” e
+          recarregue a página.
+        </p>
+      </div>
+    )
+  }
+  if (permission === 'unsupported') {
+    return (
+      <div className={styles.permissionRow}>
+        <span className={styles.permissionBadge}>Não suportadas</span>
+        <p className={styles.permissionHint}>
+          Este navegador não mostra notificações. O sininho e o aviso sonoro continuam funcionando.
+        </p>
+      </div>
+    )
+  }
+  return (
+    <div className={styles.permissionRow}>
+      <span className={styles.permissionBadge}>Ainda não permitidas</span>
+      <p className={styles.permissionHint}>
+        O navegador vai perguntar se o CRM pode mostrar notificações.
+      </p>
+      <button type="button" className={styles.primaryBtn} onClick={onRequest}>
+        Permitir notificações
+      </button>
+    </div>
+  )
+}
+
 function NotificacoesView() {
-  const [notifs, setNotifs] = useState<NotifSetting[]>(NOTIF_DEFAULTS)
+  const { data: currentUser, isLoading } = useCurrentUser()
+  const updateProfile = useUpdateMyProfile()
+  const { permission, request } = useBrowserNotificationPermission()
+  const [prefs, setPrefs] = useState<NotificationPreferences | null>(null)
   const [toast, setToast] = useState('')
 
-  function toggle(id: string, channel: 'email' | 'push' | 'inApp') {
-    setNotifs((prev) => prev.map((n) => (n.id === id ? { ...n, [channel]: !n[channel] } : n)))
+  // Estado local editável, inicializado quando o perfil chega.
+  useEffect(() => {
+    if (currentUser && !prefs) setPrefs(currentUser.notificationPreferences)
+  }, [currentUser, prefs])
+
+  async function handleRequestPermission() {
+    const result = await request()
+    if (result === 'granted') setToast('Notificações do navegador permitidas!')
+    else if (result === 'denied') setToast('O navegador bloqueou as notificações.')
+  }
+
+  async function handleTestSound() {
+    const played = await playNotificationSound()
+    if (!played) setToast('Não foi possível tocar o som neste navegador.')
+  }
+
+  async function handleSave() {
+    if (!prefs) return
+    // Ligou algum push e o navegador ainda não perguntou: aproveita o clique.
+    if (permission === 'default' && Object.values(prefs.push).some(Boolean)) {
+      await request()
+    }
+    try {
+      await updateProfile.mutateAsync({ notificationPreferences: prefs })
+      setToast('Preferências de notificação salvas!')
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Não foi possível salvar as preferências.')
+    }
+  }
+
+  if (isLoading || !prefs) {
+    return (
+      <div className={styles.settingsContent}>
+        <div className={styles.settingsCard}>
+          <div className={styles.settingsCardBody}>
+            <Skeleton variant="text" width="40%" height="16px" />
+            <Skeleton variant="text" width="70%" height="12px" />
+            <Skeleton variant="rect" width="100%" height="160px" />
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className={styles.settingsContent}>
       <div className={styles.settingsCard}>
+        <div className={styles.settingsCardHeader}>
+          <div className={styles.settingsCardTitle}>Notificações do navegador</div>
+          <div className={styles.settingsCardDesc}>
+            Avisos na tela do computador quando você estiver em outra aba ou programa, com o CRM
+            aberto
+          </div>
+        </div>
+        <div className={styles.settingsCardBody}>
+          <BrowserPermissionStatus permission={permission} onRequest={handleRequestPermission} />
+        </div>
+      </div>
+
+      <div className={styles.settingsCard}>
         <div className={styles.notifHeader}>
           <span className={styles.notifHeaderLabel}>Evento</span>
-          <span className={styles.notifHeaderLabel}>E-mail</span>
           <span className={styles.notifHeaderLabel}>Push</span>
-          <span className={styles.notifHeaderLabel}>In-app</span>
         </div>
-        {notifs.map((n) => (
-          <div key={n.id} className={styles.notifRow}>
+        {PUSH_EVENTS.map((event) => (
+          <div key={event.type} className={styles.notifRow}>
             <div>
-              <div className={styles.notifRowLabel}>{n.label}</div>
-              <div className={styles.notifRowDesc}>{n.desc}</div>
+              <div className={styles.notifRowLabel}>{event.label}</div>
+              <div className={styles.notifRowDesc}>{event.desc}</div>
             </div>
-            {(['email', 'push', 'inApp'] as const).map((ch) => (
-              <div key={ch} className={styles.notifCell}>
-                <label className={styles.toggleSwitch}>
-                  <input type="checkbox" checked={n[ch]} onChange={() => toggle(n.id, ch)} />
-                  <span className={styles.toggleTrack} />
-                  <span className={styles.toggleThumb} />
-                </label>
-              </div>
-            ))}
+            <div className={styles.notifCell}>
+              <label className={styles.toggleSwitch}>
+                <input
+                  type="checkbox"
+                  aria-label={`Push: ${event.label}`}
+                  checked={prefs.push[event.type]}
+                  onChange={() =>
+                    setPrefs({
+                      ...prefs,
+                      push: { ...prefs.push, [event.type]: !prefs.push[event.type] },
+                    })
+                  }
+                />
+                <span className={styles.toggleTrack} />
+                <span className={styles.toggleThumb} />
+              </label>
+            </div>
           </div>
         ))}
+      </div>
+
+      <div className={styles.settingsCard}>
+        <div className={styles.notifRow}>
+          <div>
+            <div className={styles.notifRowLabel}>Aviso sonoro</div>
+            <div className={styles.notifRowDesc}>Toca um som quando chega uma notificação nova</div>
+          </div>
+          <div className={styles.notifCell}>
+            <label className={styles.toggleSwitch}>
+              <input
+                type="checkbox"
+                aria-label="Aviso sonoro"
+                checked={prefs.sound}
+                onChange={() => setPrefs({ ...prefs, sound: !prefs.sound })}
+              />
+              <span className={styles.toggleTrack} />
+              <span className={styles.toggleThumb} />
+            </label>
+          </div>
+        </div>
+        <div className={styles.soundTestRow}>
+          <button type="button" className={styles.secondaryBtn} onClick={handleTestSound}>
+            Testar som
+          </button>
+        </div>
       </div>
 
       <div className={styles.saveRow}>
         <button
           type="button"
           className={styles.primaryBtn}
-          onClick={() => setToast('Preferências de notificação salvas!')}
+          onClick={handleSave}
+          disabled={updateProfile.isPending}
         >
-          Salvar notificações
+          {updateProfile.isPending ? 'Salvando…' : 'Salvar notificações'}
         </button>
       </div>
 

@@ -1,8 +1,8 @@
 // useNotifications — o sininho via TanStack Query (ADR-04).
 //
-// Consulta a cada minuto (e ao voltar pra aba): é essa leitura que faz o
-// backend gerar os lembretes de prazo, então o "vence em breve" e o
-// "atrasada" aparecem sem ninguém precisar recarregar a página.
+// Consulta a cada minuto, mesmo com a aba em segundo plano, e ao voltar pra
+// aba: é essa leitura que faz o backend gerar os lembretes de prazo, então o
+// "vence em breve" e o "atrasada" aparecem sem ninguém recarregar a página.
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -24,6 +24,9 @@ export function useNotificationsQuery(organizationId: string | null) {
     queryFn: () => listNotifications(organizationId as string),
     enabled: Boolean(organizationId),
     refetchInterval: REFETCH_INTERVAL_MS,
+    // Continua consultando com a aba em segundo plano — é justamente quando a
+    // notificação do navegador e o som fazem diferença.
+    refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
   })
 }

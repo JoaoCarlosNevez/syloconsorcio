@@ -1712,7 +1712,7 @@ button.breadcrumbCurrent:hover {
 
 .notifHeader {
   display: grid;
-  grid-template-columns: 1fr repeat(3, 80px);
+  grid-template-columns: 1fr 80px;
   gap: 8px;
   padding: 10px 22px;
   background: #f8fafc;
@@ -1734,7 +1734,7 @@ button.breadcrumbCurrent:hover {
 
 .notifRow {
   display: grid;
-  grid-template-columns: 1fr repeat(3, 80px);
+  grid-template-columns: 1fr 80px;
   gap: 8px;
   align-items: center;
   padding: 13px 22px;
@@ -1760,6 +1760,50 @@ button.breadcrumbCurrent:hover {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* ── Browser notification permission */
+
+.permissionRow {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.permissionBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: var(--cfg-text-xs);
+  font-weight: 600;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-option);
+  border: 1px solid var(--color-border);
+}
+
+.permissionGranted {
+  background: var(--color-success-subtle);
+  color: var(--color-success-dark);
+  border-color: var(--color-success-border);
+}
+
+.permissionDenied {
+  background: var(--color-error-subtle);
+  color: var(--color-error-text);
+  border-color: var(--color-error-border);
+}
+
+.permissionHint {
+  margin: 0;
+  font-size: var(--cfg-text-xs);
+  color: #64748b;
+  max-width: 520px;
+}
+
+.soundTestRow {
+  padding: 0 22px 16px;
 }
 
 /* ── Password strength */

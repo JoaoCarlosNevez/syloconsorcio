@@ -7,7 +7,16 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../lib/api-client'
+import type { NotificationType } from '../lib/notifications-api'
 import { useAuth } from './useAuth'
+
+/** Configurações > Notificações — espelha NotificationPreferences no backend. */
+export interface NotificationPreferences {
+  /** Quais tipos viram notificação do navegador. */
+  push: Record<NotificationType, boolean>
+  /** Tocar aviso sonoro quando chega notificação nova. */
+  sound: boolean
+}
 
 export interface CurrentUser {
   id: string
@@ -20,6 +29,7 @@ export interface CurrentUser {
   /** URL pública da foto de perfil. Null = usa o avatar padrão. */
   avatarUrl: string | null
   isPlatformAdmin: boolean
+  notificationPreferences: NotificationPreferences
   /** ISO 8601 — quando a conta foi criada. */
   createdAt: string | null
 }
@@ -28,6 +38,7 @@ export interface UpdateProfilePayload {
   name?: string
   instagramHandle?: string | null
   location?: string | null
+  notificationPreferences?: NotificationPreferences
 }
 
 const CURRENT_USER_QUERY_KEY = ['auth', 'me'] as const

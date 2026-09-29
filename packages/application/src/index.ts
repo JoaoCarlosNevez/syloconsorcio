@@ -187,3 +187,9 @@ export {
   TASK_DUE_SOON_WINDOW_MS,
 } from './notifications/list-notifications.use-case'
 export type { ListNotificationsInput } from './notifications/list-notifications.use-case'
+export {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  NOTIFICATION_TYPES,
+  resolveNotificationPreferences,
+} from './notifications/notification-preferences'
+export type { NotificationPreferences } from './notifications/notification-preferences'
