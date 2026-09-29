@@ -29,13 +29,24 @@
   border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
-  z-index: 2;
+  /* Acima de tudo que rola por baixo — inclusive o botão do banner
+     (.editBannerBtn, z-index 2), que antes passava por cima do painel de
+     notificações aberto aqui dentro. */
+  z-index: 10;
 }
 
 .topBarActions {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* Painel do sininho: pendurado logo abaixo da barra (12px de padding + 1px de
+   borda) e alinhado à direita das ações. Seletor composto pra vencer o `top`
+   padrão do NotificationBell independente da ordem de carregamento do CSS. */
+.topBarActions .notifPanel {
+  top: calc(100% + 13px);
 }
 
 .iconBtn {

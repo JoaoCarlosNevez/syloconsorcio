@@ -108,11 +108,22 @@ const TYPE_CLASS: Record<NotificationType, string | undefined> = {
 export interface NotificationBellProps {
   /** Classe do botão na página onde o sininho aparece. */
   triggerClassName?: string
-  /** Lado em que o painel se alinha ao botão. */
+  /** Lado em que o painel se alinha. */
   align?: 'left' | 'right'
+  /** Em relação a quê o painel se posiciona: o próprio sininho (padrão) ou o
+   * container posicionado mais próximo da página — útil numa barra de ações,
+   * pra o painel alinhar com a barra e não com o ícone. */
+  anchor?: 'bell' | 'container'
+  /** Classe extra do painel, pra página ajustar a posição. */
+  panelClassName?: string
 }
 
-export function NotificationBell({ triggerClassName, align = 'right' }: NotificationBellProps) {
+export function NotificationBell({
+  triggerClassName,
+  align = 'right',
+  anchor = 'bell',
+  panelClassName,
+}: NotificationBellProps) {
   const { organizationId } = useActiveOrganization()
   const { data, isLoading, isError, refetch } = useNotificationsQuery(organizationId)
   const markRead = useMarkNotificationRead(organizationId)
@@ -185,30 +196,35 @@ export function NotificationBell({ triggerClassName, align = 'right' }: Notifica
   }
 
   return (
-    <div className={styles.root} ref={rootRef}>
-      <button
-        ref={triggerRef}
-        type="button"
-        className={triggerClassName}
-        aria-label={badge ? `Notificações (${unreadCount} não lidas)` : 'Notificações'}
-        aria-expanded={open}
-        aria-controls={open ? panelId : undefined}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <BellIcon />
-      </button>
-      {badge && (
-        <span className={styles.badge} aria-hidden="true">
-          {badge}
-        </span>
-      )}
+    <div
+      className={`${styles.root} ${anchor === 'container' ? styles.rootUnanchored : ''}`}
+      ref={rootRef}
+    >
+      <span className={styles.trigger}>
+        <button
+          ref={triggerRef}
+          type="button"
+          className={triggerClassName}
+          aria-label={badge ? `Notificações (${unreadCount} não lidas)` : 'Notificações'}
+          aria-expanded={open}
+          aria-controls={open ? panelId : undefined}
+          onClick={() => setOpen((value) => !value)}
+        >
+          <BellIcon />
+        </button>
+        {badge && (
+          <span className={styles.badge} aria-hidden="true">
+            {badge}
+          </span>
+        )}
+      </span>
 
       {open && (
         <dialog
           open
           id={panelId}
           aria-label="Notificações"
-          className={`${styles.panel} ${align === 'left' ? styles.alignLeft : styles.alignRight}`}
+          className={`${styles.panel} ${align === 'left' ? styles.alignLeft : styles.alignRight} ${panelClassName ?? ''}`}
         >
           <div className={styles.header}>
             <span className={styles.headerTitle}>Notificações</span>

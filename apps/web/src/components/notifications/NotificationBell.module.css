@@ -4,6 +4,17 @@
   flex-shrink: 0;
 }
 
+/* anchor="container": o painel se posiciona pelo container da página. */
+.rootUnanchored {
+  position: static;
+}
+
+/* O contador sempre acompanha o botão, qualquer que seja o anchor. */
+.trigger {
+  position: relative;
+  display: inline-flex;
+}
+
 .badge {
   position: absolute;
   top: -4px;
@@ -42,13 +53,18 @@
   animation: panelIn var(--duration-normal) var(--easing-out);
 }
 
+/* O CSS padrão do navegador dá `left: 0; right: 0` a todo <dialog>. Com
+   largura fixa e os dois lados definidos, o navegador ignora `right` — por
+   isso cada alinhamento zera explicitamente o lado oposto. */
 .alignRight {
+  left: auto;
   right: 0;
   transform-origin: top right;
 }
 
 .alignLeft {
   left: 0;
+  right: auto;
   transform-origin: top left;
 }
 

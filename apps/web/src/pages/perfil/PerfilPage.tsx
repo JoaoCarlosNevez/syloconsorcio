@@ -921,7 +921,12 @@ export function PerfilPage() {
         {/* ── Barra de ações ──────────────────────────────────────────────────── */}
         <div className={styles.topBar}>
           <div className={styles.topBarActions}>
-            <NotificationBell triggerClassName={styles.iconBtn} align="right" />
+            <NotificationBell
+              triggerClassName={styles.iconBtn}
+              align="right"
+              anchor="container"
+              panelClassName={styles.notifPanel}
+            />
             <button
               type="button"
               className={styles.iconBtn}
