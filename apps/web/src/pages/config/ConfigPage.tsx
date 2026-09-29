@@ -5,6 +5,7 @@ import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'r
 import { AppLayout } from '../../components/layout/AppLayout'
 import { useActivityQuery } from '../../hooks/useActivity'
 import { useBrowserNotificationPermission } from '../../hooks/useBrowserNotificationPermission'
+import { useChangePassword } from '../../hooks/useChangePassword'
 import {
   type NotificationPreferences,
   useCurrentUser,
@@ -1337,9 +1338,11 @@ function SegurancaView() {
   const [toast, setToast] = useState('')
   const [sessions, setSessions] = useState(SESSIONS)
 
+  const changePassword = useChangePassword()
+
   const strength = passwordStrength(next)
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError('')
     if (!current) {
@@ -1350,14 +1353,23 @@ function SegurancaView() {
       setError('Nova senha deve ter ao menos 8 caracteres.')
       return
     }
+    if (next === current) {
+      setError('A nova senha precisa ser diferente da atual.')
+      return
+    }
     if (next !== confirm) {
       setError('As senhas não coincidem.')
       return
     }
-    setCurrent('')
-    setNext('')
-    setConfirm('')
-    setToast('Senha alterada com sucesso!')
+    try {
+      await changePassword.mutateAsync({ currentPassword: current, newPassword: next })
+      setCurrent('')
+      setNext('')
+      setConfirm('')
+      setToast('Senha alterada! As sessões em outros dispositivos foram encerradas.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível trocar a senha.')
+    }
   }
 
   function revokeSession(id: string) {
@@ -1384,6 +1396,8 @@ function SegurancaView() {
               <input
                 id="sec-current"
                 type="password"
+                autoComplete="current-password"
+                disabled={changePassword.isPending}
                 className={styles.formInput}
                 value={current}
                 onChange={(e) => setCurrent(e.target.value)}
@@ -1398,6 +1412,8 @@ function SegurancaView() {
               <input
                 id="sec-next"
                 type="password"
+                autoComplete="new-password"
+                disabled={changePassword.isPending}
                 className={styles.formInput}
                 value={next}
                 onChange={(e) => setNext(e.target.value)}
@@ -1425,6 +1441,8 @@ function SegurancaView() {
               <input
                 id="sec-confirm"
                 type="password"
+                autoComplete="new-password"
+                disabled={changePassword.isPending}
                 className={styles.formInput}
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
@@ -1432,10 +1450,18 @@ function SegurancaView() {
                 style={{ maxWidth: 340 }}
               />
             </div>
-            {error && <span className={styles.formError}>{error}</span>}
+            {error && (
+              <span className={styles.formError} role="alert">
+                {error}
+              </span>
+            )}
             <div className={styles.saveRow}>
-              <button type="submit" className={styles.primaryBtn}>
-                Alterar senha
+              <button
+                type="submit"
+                className={styles.primaryBtn}
+                disabled={changePassword.isPending}
+              >
+                {changePassword.isPending ? 'Alterando…' : 'Alterar senha'}
               </button>
             </div>
           </form>
