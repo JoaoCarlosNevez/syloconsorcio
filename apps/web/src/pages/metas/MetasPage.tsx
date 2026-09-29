@@ -107,7 +107,6 @@ const PROXIMO_NIVEL_BENEFICIOS = [
   'Comissão extra de 5% por fechamento',
   'Acesso ao relatório de inteligência de mercado',
   'Destaque no ranking regional',
-  'Mentoria individual mensal com Sara IA',
 ]
 
 // TODO: buscar tier real do perfil via API

@@ -1,5 +1,5 @@
 // AppLayout — layout autenticado com sidebar branca.
-// Sidebar: logo, seletor de empresa, nav, Sara IA, status, sair, perfil.
+// Sidebar: logo, seletor de empresa, nav, status, sair, perfil.
 
 import { Dropdown, OrganizationAvatar } from '@sylocrm/ui'
 import type { DropdownEntry, Tier } from '@sylocrm/ui'
@@ -391,13 +391,6 @@ export function AppLayout({ children }: AppLayoutProps) {
               {label}
             </a>
           ))}
-
-          {/* Sara IA */}
-          <a href="/app/sara" className={styles.saraNavItem} onClick={navTo('/app/sara')}>
-            <img src="/sara-ia.png" alt="" aria-hidden="true" className={styles.saraAvatarSmall} />
-            <span className={styles.saraNavLabel}>Sara IA</span>
-            <span className={styles.betaBadge}>BETA</span>
-          </a>
         </nav>
 
         {/* Rodapé da sidebar */}

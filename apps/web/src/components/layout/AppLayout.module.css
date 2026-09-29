@@ -185,52 +185,6 @@
   background: var(--nav-accent, var(--color-accent));
 }
 
-/* Sara IA item */
-.saraNavItem {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 13px;
-  border-radius: 12px;
-  border: 1px solid rgba(226, 232, 240, 0.7);
-  background: rgba(248, 250, 252, 0.5);
-  cursor: pointer;
-  text-decoration: none;
-  margin-top: 4px;
-  transition: background-color var(--duration-normal);
-}
-
-.saraNavItem:hover {
-  background: rgba(241, 245, 249, 0.8);
-}
-
-.saraAvatarSmall {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  object-fit: cover;
-  object-position: center top;
-  flex-shrink: 0;
-}
-
-.saraNavLabel {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: #334155;
-  flex: 1;
-}
-
-.betaBadge {
-  font-size: 10px;
-  font-weight: var(--font-weight-bold);
-  color: #042d78;
-  background: #d1e8fa;
-  padding: 2px 6px;
-  border-radius: 4px;
-  letter-spacing: 0.04em;
-  flex-shrink: 0;
-}
-
 /* ── Rodapé da sidebar ───────────────────────────────────────────────────── */
 
 .sidebarBottom {

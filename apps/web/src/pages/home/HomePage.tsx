@@ -376,19 +376,6 @@ export function HomePage() {
                 </p>
                 <div className={styles.heroActions}>
                   <NotificationBell triggerClassName={styles.notifBtn} align="left" />
-                  <button
-                    type="button"
-                    className={styles.chamaSaraBtn}
-                    onClick={() => navigate('/app/sara')}
-                  >
-                    <img
-                      src="/sara-ia.png"
-                      alt=""
-                      aria-hidden="true"
-                      className={styles.chamaSaraBtnAvatar}
-                    />
-                    Chamar Sara IA
-                  </button>
                 </div>
               </div>
             </div>

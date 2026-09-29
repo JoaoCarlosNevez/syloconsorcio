@@ -66,7 +66,6 @@ export function AppRouter() {
           <Route path="admin" element={<AdminPage />} />
           <Route path="admin/:id" element={<AdminOrganizationDetailPage />} />
           <Route path="ajuda" element={<ComingSoonPage />} />
-          <Route path="sara" element={<ComingSoonPage />} />
           <Route path="perfil" element={<PerfilPage />} />
         </Route>
 
