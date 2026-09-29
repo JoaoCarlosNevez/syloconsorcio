@@ -52,6 +52,9 @@ const updateProfileSchema = z.object({
         'task.due_soon': z.boolean(),
         'task.overdue': z.boolean(),
         'task.completed': z.boolean(),
+        // Tipo mais novo — default pra uma aba antiga do front, que ainda não
+        // manda este campo, conseguir salvar.
+        'lead.received': z.boolean().default(true),
       }),
       sound: z.boolean(),
     })

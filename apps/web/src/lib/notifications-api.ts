@@ -4,14 +4,21 @@
 import { apiClient } from './api-client'
 import type { Task } from './tasks-api'
 
-export type NotificationType = 'task.assigned' | 'task.due_soon' | 'task.overdue' | 'task.completed'
+export type NotificationType =
+  | 'task.assigned'
+  | 'task.due_soon'
+  | 'task.overdue'
+  | 'task.completed'
+  /** Lead que chegou pelo webhook — metadata traz leadId, funnelId, source e
+   * assignedToYou; title é o nome do lead. */
+  | 'lead.received'
 
 export interface AppNotification {
   id: string
   organizationId: string
   type: NotificationType
   actor: { id: string; name: string | null; email: string; avatarUrl: string | null } | null
-  /** Título da tarefa no momento do evento. */
+  /** Título da tarefa (ou nome do lead) no momento do evento. */
   title: string
   metadata: Record<string, string | number | boolean | null>
   /** Estado atual da tarefa — null se ela passou pra outra pessoa. */

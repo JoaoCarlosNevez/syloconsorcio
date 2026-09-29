@@ -12,8 +12,17 @@
 //     agendado: o front consulta periodicamente e o lembrete aparece sozinho.
 //
 // A frase exibida é montada no frontend a partir de type + metadata.
+//
+// 'lead.received' (lead que chegou pelo webhook) não tem coluna própria: o
+// id do lead e do funil vão em metadata.leadId/funnelId, e title é o nome do
+// lead.
 
-export type NotificationType = 'task.assigned' | 'task.due_soon' | 'task.overdue' | 'task.completed'
+export type NotificationType =
+  | 'task.assigned'
+  | 'task.due_soon'
+  | 'task.overdue'
+  | 'task.completed'
+  | 'lead.received'
 
 export type NotificationMetadata = Record<string, string | number | boolean | null>
 
@@ -25,7 +34,7 @@ export interface NewNotification {
   actorUserId: string | null
   type: NotificationType
   taskId: string | null
-  /** Título da tarefa no momento do evento. */
+  /** Título da tarefa (ou nome do lead) no momento do evento. */
   title: string
   metadata?: NotificationMetadata
 }

@@ -40,6 +40,8 @@ export type ActivityAction =
   | 'organization.goal_updated'
   | 'organization.icon_updated'
   | 'organization.branding_updated'
+  | 'organization.api_key_created'
+  | 'organization.api_key_revoked'
 
 export type ActivityMetadata = Record<string, string | number | boolean | string[] | null>
 

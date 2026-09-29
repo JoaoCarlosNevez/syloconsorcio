@@ -193,3 +193,13 @@ export {
   resolveNotificationPreferences,
 } from './notifications/notification-preferences'
 export type { NotificationPreferences } from './notifications/notification-preferences'
+export type { ApiKeyRecord, IApiKeyRepository, NewApiKeyInput } from './ports/api-key.repository'
+export {
+  CreateWebhookLeadUseCase,
+  WEBHOOK_DEFAULT_SEGMENT,
+  WEBHOOK_DEFAULT_SOURCE,
+} from './leads/create-webhook-lead.use-case'
+export type {
+  CreateWebhookLeadInput,
+  CreateWebhookLeadOutput,
+} from './leads/create-webhook-lead.use-case'

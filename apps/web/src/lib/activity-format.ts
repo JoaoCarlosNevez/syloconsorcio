@@ -172,6 +172,10 @@ export function describeActivity(
       return str(m, 'secondaryColor')
         ? `alterou a cor secundária para ${(str(m, 'secondaryColor') as string).toUpperCase()}`
         : 'restaurou a cor padrão da Sylo'
+    case 'organization.api_key_created':
+      return `criou a chave de API “${entry.entityLabel ?? ''}”`
+    case 'organization.api_key_revoked':
+      return `revogou a chave de API “${entry.entityLabel ?? ''}”`
     default:
       return entry.action
   }

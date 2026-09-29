@@ -34,3 +34,4 @@ export { DrizzleFunnelRepository } from './database/repositories/drizzle-funnel.
 export { DrizzleTaskRepository } from './database/repositories/drizzle-task.repository'
 export { DrizzleActivityLogRepository } from './database/repositories/drizzle-activity-log.repository'
 export { DrizzleNotificationRepository } from './database/repositories/drizzle-notification.repository'
+export { DrizzleApiKeyRepository } from './database/repositories/drizzle-api-key.repository'

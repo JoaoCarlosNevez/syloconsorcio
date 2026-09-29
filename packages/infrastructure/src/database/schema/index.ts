@@ -36,3 +36,6 @@ export type { DbActivityLog, NewDbActivityLog } from './activity-log'
 
 export { notifications } from './notifications'
 export type { DbNotification, NewDbNotification } from './notifications'
+
+export { organizationApiKeys } from './organization-api-keys'
+export type { DbOrganizationApiKey, NewDbOrganizationApiKey } from './organization-api-keys'

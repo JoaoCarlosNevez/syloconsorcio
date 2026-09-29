@@ -30,7 +30,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { Dropdown, EmptyState, Skeleton, useToast } from '@sylocrm/ui'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
 import type { CardData, ColumnMeta } from '../../data/kanban-mock'
 import { useFunnelsQuery } from '../../hooks/useFunnels'
@@ -602,6 +602,32 @@ export function KanbanPage() {
     if (fallback) setActiveFunnelId(fallback.id)
   }, [organizationId, funnels])
 
+  // ── Abrir um lead vindo de fora (notificação de lead novo) ──────────────────
+  // A notificação navega pra cá com `{ openLeadId, funnelId }` no state. Troca
+  // pro funil do lead e abre o card assim que ele aparecer no board. Guardado
+  // em state (não só lido no mount) porque o clique pode acontecer com o
+  // Kanban já aberto — aí a página não remonta.
+  const location = useLocation()
+  const [pendingLead, setPendingLead] = useState<{
+    openLeadId: string
+    funnelId: string | null
+  } | null>(null)
+
+  useEffect(() => {
+    const state = location.state as { openLeadId?: string; funnelId?: string | null } | null
+    if (!state?.openLeadId) return
+    setPendingLead({ openLeadId: state.openLeadId, funnelId: state.funnelId ?? null })
+    // Limpa o state pra não reabrir num refresh/voltar.
+    navigate(location.pathname, { replace: true, state: null })
+  }, [location.state, location.pathname, navigate])
+
+  useEffect(() => {
+    if (!pendingLead?.funnelId) return
+    if (funnels.some((f) => f.id === pendingLead.funnelId)) {
+      setActiveFunnelId(pendingLead.funnelId)
+    }
+  }, [pendingLead, funnels])
+
   function handleSelectFunnel(id: string) {
     setActiveFunnelId(id)
     if (organizationId) {
@@ -664,6 +690,33 @@ export function KanbanPage() {
   const dragOriginColumnRef = useRef<string | null>(null)
 
   const isLoading = isLoadingLeads || !organizationId || !activeFunnelId
+
+  // Segunda metade do "abrir lead vindo de fora" (ver pendingLead acima):
+  // espera o funil certo carregar e o card entrar no board, então abre.
+  useEffect(() => {
+    if (!pendingLead || !data) return
+    const funnelReady =
+      !pendingLead.funnelId ||
+      activeFunnelId === pendingLead.funnelId ||
+      !funnels.some((f) => f.id === pendingLead.funnelId)
+    if (!funnelReady) return
+
+    if (!data.items.some((lead) => lead.id === pendingLead.openLeadId)) {
+      setPendingLead(null)
+      toast({
+        type: 'info',
+        title: 'Lead não encontrado',
+        description: 'Ele pode ter sido removido ou estar fora dos filtros atuais.',
+      })
+      return
+    }
+    const card = Object.values(board)
+      .flat()
+      .find((c) => c.id === pendingLead.openLeadId)
+    if (!card) return // o board ainda não sincronizou com `data`
+    setSelectedCard(card)
+    setPendingLead(null)
+  }, [pendingLead, data, board, activeFunnelId, funnels, toast])
 
   // Sincroniza o board local a partir dos dados reais sempre que a query
   // resolve (inclusive após criar/mover um lead, via invalidateQueries).

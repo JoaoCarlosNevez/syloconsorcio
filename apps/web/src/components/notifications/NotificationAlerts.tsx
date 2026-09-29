@@ -16,7 +16,7 @@ import { useNotificationsQuery } from '../../hooks/useNotifications'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { showBrowserNotification } from '../../lib/browser-notifications'
 import { findNewNotifications } from '../../lib/notification-alerts'
-import { describeNotification } from '../../lib/notification-format'
+import { describeNotification, notificationTarget } from '../../lib/notification-format'
 import { playNotificationSound, unlockNotificationSound } from '../../lib/notification-sound'
 
 function isUserLookingAtApp(): boolean {
@@ -74,11 +74,10 @@ export function NotificationAlerts() {
         tag: notification.id,
         title: text.headline,
         body: text.detail ? `${notification.title}\n${text.detail}` : notification.title,
-        onClick: () =>
-          navigate(
-            '/app/tarefas',
-            notification.task ? { state: { openTask: notification.task } } : {},
-          ),
+        onClick: () => {
+          const target = notificationTarget(notification)
+          navigate(target.path, target.state ? { state: target.state } : {})
+        },
       })
     }
   }, [data, organizationId, currentUser, navigate])

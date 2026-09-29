@@ -11,6 +11,7 @@ import cors from '@fastify/cors'
 import multipart from '@fastify/multipart'
 import type {
   IActivityLogRepository,
+  IApiKeyRepository,
   IAuthProvider,
   IFunnelRepository,
   ILeadProposalRepository,
@@ -26,6 +27,7 @@ import { NO_OP_ACTIVITY_LOG, NO_OP_NOTIFICATIONS } from '@sylocrm/application'
 import Fastify from 'fastify'
 import { env } from './config/env'
 import { activityRoute } from './routes/activity.route'
+import { apiKeysRoute } from './routes/api-keys.route'
 import { authRoute } from './routes/auth.route'
 import { funnelsRoute } from './routes/funnels.route'
 import { healthRoute } from './routes/health.route'
@@ -35,6 +37,7 @@ import { organizationSettingsRoute } from './routes/organization-settings.route'
 import { organizationsRoute } from './routes/organizations.route'
 import { tasksRoute } from './routes/tasks.route'
 import { teamRoute } from './routes/team.route'
+import { webhooksRoute } from './routes/webhooks.route'
 
 export interface BuildAppDeps {
   authProvider: IAuthProvider
@@ -48,6 +51,7 @@ export interface BuildAppDeps {
   taskRepository: ITaskRepository
   activityLogRepository: IActivityLogRepository
   notificationRepository: INotificationRepository
+  apiKeyRepository: IApiKeyRepository
 }
 
 /** No-op auth provider used when Supabase env vars are not configured. */
@@ -191,6 +195,19 @@ function createNoOpTaskRepository(): ITaskRepository {
   }
 }
 
+/** No-op API key repository used when database is not configured. */
+function createNoOpApiKeyRepository(): IApiKeyRepository {
+  return {
+    create: async () => {
+      throw new Error('Database not configured — cannot create API keys.')
+    },
+    listActiveByOrganization: async () => [],
+    revoke: async () => false,
+    findActiveByHash: async () => null,
+    markUsed: async () => {},
+  }
+}
+
 export function buildApp(deps?: Partial<BuildAppDeps>) {
   // Use provided deps or fall back to no-op adapters.
   // Real adapters are created in main.ts (composition root) from env vars.
@@ -206,6 +223,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     taskRepository: deps?.taskRepository ?? createNoOpTaskRepository(),
     activityLogRepository: deps?.activityLogRepository ?? NO_OP_ACTIVITY_LOG,
     notificationRepository: deps?.notificationRepository ?? NO_OP_NOTIFICATIONS,
+    apiKeyRepository: deps?.apiKeyRepository ?? createNoOpApiKeyRepository(),
   }
 
   const app = Fastify({
@@ -312,6 +330,24 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     membershipRepository: resolvedDeps.membershipRepository,
     organizationRepository: resolvedDeps.organizationRepository,
     userRepository: resolvedDeps.userRepository,
+    notificationRepository: resolvedDeps.notificationRepository,
+  })
+
+  app.register(apiKeysRoute, {
+    authProvider: resolvedDeps.authProvider,
+    membershipRepository: resolvedDeps.membershipRepository,
+    organizationRepository: resolvedDeps.organizationRepository,
+    userRepository: resolvedDeps.userRepository,
+    apiKeyRepository: resolvedDeps.apiKeyRepository,
+    activityLogRepository: resolvedDeps.activityLogRepository,
+  })
+
+  app.register(webhooksRoute, {
+    apiKeyRepository: resolvedDeps.apiKeyRepository,
+    leadRepository: resolvedDeps.leadRepository,
+    funnelRepository: resolvedDeps.funnelRepository,
+    membershipRepository: resolvedDeps.membershipRepository,
+    activityLogRepository: resolvedDeps.activityLogRepository,
     notificationRepository: resolvedDeps.notificationRepository,
   })
 

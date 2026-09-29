@@ -42,6 +42,7 @@ import { formatGoalInput, goalInputToCents } from '../../lib/sales-goals'
 import type { InvitableRole, TeamMember } from '../../lib/team-api'
 import styles from './ConfigPage.module.css'
 import { FunnelsSection } from './FunnelsSection'
+import { IntegracoesSection } from './IntegracoesSection'
 
 // ── Ícones ──────────────────────────────────────────────────────────────────────
 
@@ -324,6 +325,7 @@ type View =
   | 'seguranca'
   | 'organizacao'
   | 'atividade'
+  | 'integracoes'
 
 const ROLE_LABEL: Record<TeamMember['role'], string> = {
   ADMIN: 'Dono',
@@ -430,6 +432,27 @@ const MINHA_CONTA_ITEMS: HubNavItem[] = [
   },
 ]
 
+function PlugIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M9 2v6" />
+      <path d="M15 2v6" />
+      <path d="M6 8h12v4a6 6 0 0 1-12 0V8z" />
+      <path d="M12 18v4" />
+    </svg>
+  )
+}
+
 const ORG_ITEMS: HubNavItem[] = [
   {
     label: 'Organização',
@@ -449,9 +472,22 @@ const ORG_ITEMS: HubNavItem[] = [
     icon: <ActivityIcon />,
     view: 'atividade',
   },
+  {
+    label: 'Integrações',
+    description: 'Chaves de API e webhook de leads',
+    icon: <PlugIcon />,
+    view: 'integracoes',
+  },
 ]
 
+/** Integrações só aparece pra quem pode gerenciar chaves (Dono). */
+const INTEGRATIONS_PERMISSION = 'integration.manage'
+
 function HubView({ onNavigate }: { onNavigate: (v: View) => void }) {
+  const { membership } = useActiveOrganization()
+  const canManageIntegrations = membership?.permissions.includes(INTEGRATIONS_PERMISSION) ?? false
+  const orgItems = ORG_ITEMS.filter((item) => item.view !== 'integracoes' || canManageIntegrations)
+
   return (
     <div className={styles.hubContent}>
       {/* Minha Conta */}
@@ -486,11 +522,11 @@ function HubView({ onNavigate }: { onNavigate: (v: View) => void }) {
           <span className={styles.hubSectionLabel}>Organização</span>
         </div>
         <div className={styles.hubCard}>
-          {ORG_ITEMS.map((item, i) => (
+          {orgItems.map((item, i) => (
             <button
               key={item.view}
               type="button"
-              className={`${styles.hubNavItem} ${i < ORG_ITEMS.length - 1 ? styles.hubNavItemBorder : ''}`}
+              className={`${styles.hubNavItem} ${i < orgItems.length - 1 ? styles.hubNavItemBorder : ''}`}
               onClick={() => onNavigate(item.view)}
             >
               <span className={styles.hubNavIcon}>{item.icon}</span>
@@ -1555,6 +1591,11 @@ const PUSH_EVENTS: { type: NotificationType; label: string; desc: string }[] = [
     type: 'task.completed',
     label: 'Tarefa concluída',
     desc: 'Quando outra pessoa conclui uma tarefa que você criou',
+  },
+  {
+    type: 'lead.received',
+    label: 'Novo lead pela API',
+    desc: 'Lead atribuído a você, ou sem responsável (Dono e Supervisores)',
   },
 ]
 
@@ -2800,6 +2841,7 @@ const VIEW_LABELS: Record<View, string> = {
   seguranca: 'Segurança',
   organizacao: 'Organização',
   atividade: 'Atividade',
+  integracoes: 'Integrações',
 }
 
 // ── Component ────────────────────────────────────────────────────────────────────
@@ -2858,6 +2900,7 @@ export function ConfigPage() {
         {view === 'seguranca' && <SegurancaView />}
         {view === 'organizacao' && <OrganizacaoView />}
         {view === 'atividade' && <AtividadeView />}
+        {view === 'integracoes' && <IntegracoesSection />}
       </div>
     </AppLayout>
   )

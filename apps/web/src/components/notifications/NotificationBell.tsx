@@ -5,8 +5,8 @@
 // de cada lugar onde o sininho aparece; o contador e o painel são daqui.
 //
 // As não lidas ficam em "Novas" e as já vistas em "Visualizadas", abaixo.
-// Clicar numa notificação marca como lida e abre a tarefa em Tarefas (via
-// state `{ openTask }`, o mesmo contrato do card de Tarefas do início).
+// Clicar numa notificação marca como lida e abre o que ela aponta — a tarefa
+// em Tarefas ou o lead no Kanban (ver notificationTarget).
 
 import { Skeleton } from '@sylocrm/ui'
 import { useEffect, useId, useRef, useState } from 'react'
@@ -19,6 +19,7 @@ import {
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import {
   describeNotification,
+  notificationTarget,
   notificationTimeLabel,
   unreadBadgeLabel,
 } from '../../lib/notification-format'
@@ -86,6 +87,13 @@ function TypeIcon({ type }: { type: NotificationType }) {
           <polyline points="20 6 9 17 4 12" />
         </svg>
       )
+    case 'lead.received':
+      return (
+        <svg {...common} aria-hidden="true">
+          <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+          <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+        </svg>
+      )
   }
 }
 
@@ -94,6 +102,7 @@ const TYPE_CLASS: Record<NotificationType, string | undefined> = {
   'task.due_soon': styles.typeDueSoon,
   'task.overdue': styles.typeOverdue,
   'task.completed': styles.typeCompleted,
+  'lead.received': styles.typeLead,
 }
 
 export interface NotificationBellProps {
@@ -140,7 +149,8 @@ export function NotificationBell({ triggerClassName, align = 'right' }: Notifica
   function handleSelect(notification: AppNotification) {
     if (!notification.readAt) markRead.mutate(notification.id)
     setOpen(false)
-    navigate('/app/tarefas', notification.task ? { state: { openTask: notification.task } } : {})
+    const target = notificationTarget(notification)
+    navigate(target.path, target.state ? { state: target.state } : {})
   }
 
   const now = new Date()
@@ -236,7 +246,7 @@ export function NotificationBell({ triggerClassName, align = 'right' }: Notifica
             ) : !data || data.items.length === 0 ? (
               <div className={styles.state}>
                 <p className={styles.stateTitle}>Tudo em dia</p>
-                <p>Avisos de tarefas atribuídas, perto do prazo ou atrasadas aparecem aqui.</p>
+                <p>Avisos de tarefas e de leads novos recebidos pela API aparecem aqui.</p>
               </div>
             ) : (
               <>

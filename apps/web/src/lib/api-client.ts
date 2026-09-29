@@ -8,7 +8,9 @@
 
 import { supabase } from './supabase'
 
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001'
+/** Base da API — também exibida na documentação do webhook (Integrações). */
+export const API_URL =
+  (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001'
 
 export class ApiError extends Error {
   constructor(

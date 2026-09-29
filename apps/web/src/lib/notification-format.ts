@@ -1,6 +1,6 @@
 // Monta a frase de cada notificação do sininho a partir de type + metadata
-// (o backend só guarda dados estruturados). Ex: "Maria atribuiu a você a
-// tarefa “Ligar pro cliente”".
+// (o backend só guarda dados estruturados), e pra onde o clique leva. Ex:
+// "Maria atribuiu uma tarefa a você".
 
 import type { AppNotification } from './notifications-api'
 
@@ -56,7 +56,40 @@ export function describeNotification(
         headline: `${actorName(notification)} concluiu uma tarefa que você criou`,
         detail: null,
       }
+    case 'lead.received': {
+      const source =
+        typeof notification.metadata.source === 'string' ? notification.metadata.source : null
+      return {
+        headline:
+          notification.metadata.assignedToYou === true
+            ? 'Novo lead atribuído a você'
+            : 'Novo lead recebido, sem responsável',
+        detail: source ? `Origem: ${source}` : null,
+      }
+    }
   }
+}
+
+export interface NotificationTarget {
+  path: string
+  state?: Record<string, unknown>
+}
+
+/** Pra onde o clique numa notificação leva: a tarefa (em Tarefas) ou o lead
+ * (no Kanban, já no funil dele). */
+export function notificationTarget(notification: AppNotification): NotificationTarget {
+  if (notification.type === 'lead.received') {
+    const { leadId, funnelId } = notification.metadata
+    return typeof leadId === 'string'
+      ? {
+          path: '/app/kanban',
+          state: { openLeadId: leadId, funnelId: typeof funnelId === 'string' ? funnelId : null },
+        }
+      : { path: '/app/kanban' }
+  }
+  return notification.task
+    ? { path: '/app/tarefas', state: { openTask: notification.task } }
+    : { path: '/app/tarefas' }
 }
 
 /** "agora", "há 5 min", "há 2 h", "ontem" ou a data "25/09". */

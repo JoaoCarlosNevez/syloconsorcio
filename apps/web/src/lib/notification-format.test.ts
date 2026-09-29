@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   describeNotification,
+  notificationTarget,
   notificationTimeLabel,
   unreadBadgeLabel,
 } from './notification-format'
@@ -79,6 +80,42 @@ describe('describeNotification', () => {
       headline: 'Maria Souza concluiu uma tarefa que você criou',
       detail: null,
     })
+  })
+})
+
+describe('lead notifications', () => {
+  const lead = notification({
+    type: 'lead.received',
+    actor: null,
+    title: 'Maria Souza',
+    metadata: {
+      leadId: 'lead-01',
+      funnelId: 'funnel-01',
+      source: 'Landing page',
+      assignedToYou: true,
+    },
+  })
+
+  it('says whether the lead was assigned to the user and shows the source', () => {
+    expect(describeNotification(lead, NOW)).toEqual({
+      headline: 'Novo lead atribuído a você',
+      detail: 'Origem: Landing page',
+    })
+    expect(
+      describeNotification({ ...lead, metadata: { ...lead.metadata, assignedToYou: false } }, NOW)
+        .headline,
+    ).toBe('Novo lead recebido, sem responsável')
+  })
+
+  it('opens the lead in the Kanban, in its funnel', () => {
+    expect(notificationTarget(lead)).toEqual({
+      path: '/app/kanban',
+      state: { openLeadId: 'lead-01', funnelId: 'funnel-01' },
+    })
+  })
+
+  it('opens the task in Tarefas for task notifications', () => {
+    expect(notificationTarget(notification({ task: null }))).toEqual({ path: '/app/tarefas' })
   })
 })
 

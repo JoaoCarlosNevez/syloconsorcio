@@ -188,6 +188,11 @@
   color: var(--color-error);
 }
 
+.typeLead {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-badge-text);
+}
+
 .typeCompleted {
   background: var(--color-success-subtle);
   color: var(--color-success-text);

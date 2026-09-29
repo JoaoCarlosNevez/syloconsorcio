@@ -225,6 +225,7 @@ describe('PATCH /auth/me', () => {
         'task.due_soon': false,
         'task.overdue': true,
         'task.completed': false,
+        'lead.received': false,
       },
       sound: false,
     }

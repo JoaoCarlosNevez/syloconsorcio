@@ -35,6 +35,10 @@ export const Permission = {
    * toda tarefa que ele cria nasce (e permanece) atribuída a ele mesmo,
    * mesmo símile de LEAD_ASSIGN. */
   TASK_ASSIGN: 'task.assign',
+  /** Criar e revogar as chaves de API da organização (webhook de leads em
+   * Configurações > Integrações). Só Dono — a chave cria leads em nome da
+   * organização inteira. */
+  INTEGRATION_MANAGE: 'integration.manage',
 } as const
 
 export type Permission = (typeof Permission)[keyof typeof Permission]
