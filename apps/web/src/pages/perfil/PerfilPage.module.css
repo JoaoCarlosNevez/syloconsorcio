@@ -149,27 +149,15 @@
 .coverBanner {
   position: relative;
   height: 160px;
-  background: linear-gradient(
-    135deg,
-    #1e1b4b 0%,
-    #312e81 30%,
-    #4338ca 60%,
-    #6366f1 85%,
-    #818cf8 100%
-  );
+  /* Fundo da patente (mesmo do hero do Início) vem inline; neutro enquanto
+     carrega. */
+  background: linear-gradient(135deg, #cbd5e1, #64748b);
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
   padding: 16px;
   overflow: hidden;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-}
-
-.coverPattern {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at 80% 50%, rgba(139, 92, 246, 0.4) 0%, transparent 60%),
-    radial-gradient(ellipse at 20% 80%, rgba(99, 102, 241, 0.3) 0%, transparent 50%);
 }
 
 .editBannerBtn {

@@ -17,6 +17,7 @@ import { useSalesGoalsSummaryQuery, useUpdateMyPersonalGoal } from '../../hooks/
 import { validateIconFile } from '../../lib/icon-validation'
 import { formatGoalInput, goalInputToCents } from '../../lib/sales-goals'
 import { supabase } from '../../lib/supabase'
+import { tierBackground } from '../../lib/tier-art'
 import styles from './PerfilPage.module.css'
 
 const ROLE_LABEL: Record<'ADMIN' | 'MANAGER' | 'SELLER', string> = {
@@ -965,8 +966,10 @@ export function PerfilPage() {
         {/* ── Seção 1: Cabeçalho do perfil ────────────────────────────────────── */}
         <div className={styles.profileCard}>
           {/* Banner */}
-          <div className={styles.coverBanner}>
-            <div className={styles.coverPattern} aria-hidden="true" />
+          <div
+            className={styles.coverBanner}
+            style={membership ? { background: tierBackground(membership.tier) } : undefined}
+          >
             <button
               type="button"
               className={styles.editBannerBtn}

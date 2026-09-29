@@ -19,6 +19,7 @@ import { useSalesGoalsSummaryQuery } from '../../hooks/useTeam'
 import { formatCota } from '../../lib/lead-adapters'
 import { businessDaysRemaining, formatGoalBRL, toGoalProgressView } from '../../lib/sales-goals'
 import type { Task, TaskType } from '../../lib/tasks-api'
+import { tierBackground } from '../../lib/tier-art'
 import {
   type DisplayStatus,
   STATUS_CFG,
@@ -200,19 +201,10 @@ const HOME_TASK_STATUS_OPTIONS: { value: HomeTaskStatusFilter; label: string }[]
   { value: 'em_andamento', label: 'Em andamento' },
 ]
 
-// Arte de fundo do hero por patente. Sem arte, o hero usa o gradiente da
-// patente esmaecido.
-const TIER_BG: Partial<Record<Tier, string>> = {
-  platina: '/tier-bg-platina.webp',
-  diamante: '/tier-bg-diamante.webp',
-}
-
+// O hero esmaece pro branco à esquerda, onde ficam foto e nome.
 function heroBackground(tier: Tier): string {
   const fade = 'linear-gradient(98deg, #FFF 51.46%, rgba(255, 255, 255, 0.00) 82.99%)'
-  const art = TIER_BG[tier]
-  return art
-    ? `${fade}, url(${art}) lightgray 50% / cover no-repeat`
-    : `${fade}, ${tierGradient(tier)}`
+  return `${fade}, ${tierBackground(tier)}`
 }
 
 // ── HomePage ──────────────────────────────────────────────────────────────────
