@@ -57,14 +57,20 @@
   pointer-events: none;
 }
 
-.tierRing.turmalina {
-  background: linear-gradient(135deg, #9ef5ff, #00a6cc);
+.tierRing.bronze {
+  background: linear-gradient(135deg, #f2c29b, #9a5424);
   mask: radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 2px));
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 2px));
 }
 
-.tierRing.rubi {
-  background: linear-gradient(135deg, #ff6d70, #cc0003);
+.tierRing.prata {
+  background: linear-gradient(135deg, #e5e9f0, #6b7686);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 2px));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 2px));
+}
+
+.tierRing.ouro {
+  background: linear-gradient(135deg, #ffe083, #c08a00);
   mask: radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 2px));
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 2px));
 }

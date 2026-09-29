@@ -4,13 +4,12 @@
 // do usuário (GET /tasks?status=abertas&mine=true);
 // o restante ainda é mock, com skeleton durante carregamento.
 
-import { Dropdown, Skeleton } from '@sylocrm/ui'
+import { Dropdown, Skeleton, TIER_LABELS, tierGradient } from '@sylocrm/ui'
 import type { DropdownEntry, Tier } from '@sylocrm/ui'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { NotificationBell } from '../../components/notifications/NotificationBell'
-import { USER_TIER } from '../../data/kanban-mock'
 import { useAuth } from '../../hooks/useAuth'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { useLeadsQuery } from '../../hooks/useLeads'
@@ -201,18 +200,19 @@ const HOME_TASK_STATUS_OPTIONS: { value: HomeTaskStatusFilter; label: string }[]
   { value: 'em_andamento', label: 'Em andamento' },
 ]
 
-const TIER_GRADIENT: Record<Tier, string> = {
-  turmalina: 'linear-gradient(135deg, #9ef5ff, #00d9ff, #00a6cc)',
-  rubi: 'linear-gradient(135deg, #ff6d70, #cc0003)',
-  platina: 'linear-gradient(135deg, #9ecbff, #005ecc)',
-  diamante: 'linear-gradient(135deg, #b69eff, #4b00cc)',
-}
-
-const TIER_BG: Record<Tier, string> = {
-  turmalina: '/tier-bg-turmalina.webp',
-  rubi: '/tier-bg-rubi.webp',
+// Arte de fundo do hero por patente. Sem arte, o hero usa o gradiente da
+// patente esmaecido.
+const TIER_BG: Partial<Record<Tier, string>> = {
   platina: '/tier-bg-platina.webp',
   diamante: '/tier-bg-diamante.webp',
+}
+
+function heroBackground(tier: Tier): string {
+  const fade = 'linear-gradient(98deg, #FFF 51.46%, rgba(255, 255, 255, 0.00) 82.99%)'
+  const art = TIER_BG[tier]
+  return art
+    ? `${fade}, url(${art}) lightgray 50% / cover no-repeat`
+    : `${fade}, ${tierGradient(tier)}`
 }
 
 // ── HomePage ──────────────────────────────────────────────────────────────────
@@ -325,7 +325,7 @@ export function HomePage() {
     <AppLayout>
       <div className={styles.page}>
         {/* ── Hero de perfil ────────────────────────────────────────────── */}
-        {isLoading ? (
+        {isLoading || !membership ? (
           <div className={styles.skeletonHero}>
             <Skeleton variant="circle" width="112px" height="112px" />
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -342,14 +342,14 @@ export function HomePage() {
           <div
             className={styles.profileHero}
             style={{
-              background: `linear-gradient(98deg, #FFF 51.46%, rgba(255, 255, 255, 0.00) 82.99%), url(${TIER_BG[USER_TIER]}) lightgray 50% / cover no-repeat`,
+              background: heroBackground(membership.tier),
             }}
           >
             {/* Avatar + info (incluindo ações abaixo do nome) */}
             <div className={styles.profileLeft}>
               <div
                 className={styles.profileAvatarRing}
-                style={{ background: TIER_GRADIENT[USER_TIER] }}
+                style={{ background: tierGradient(membership.tier) }}
               >
                 <div className={styles.profileAvatarInner}>
                   <img
@@ -365,9 +365,9 @@ export function HomePage() {
                   <h1 className={styles.profileName}>{displayName}</h1>
                   <span
                     className={styles.tierPill}
-                    style={{ background: TIER_GRADIENT[USER_TIER] }}
+                    style={{ background: tierGradient(membership.tier) }}
                   >
-                    {USER_TIER.charAt(0).toUpperCase() + USER_TIER.slice(1)}
+                    {TIER_LABELS[membership.tier]}
                   </span>
                   <span className={styles.profileHandle}>{handle}</span>
                 </div>

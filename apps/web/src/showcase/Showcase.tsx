@@ -27,7 +27,7 @@ import {
   Tooltip,
   useToast,
 } from '@sylocrm/ui'
-import type { ColumnDef } from '@sylocrm/ui'
+import type { ColumnDef, Tier } from '@sylocrm/ui'
 /**
  * Design system showcase — visual test page for all UI components.
  * Not a product screen. Route: accessible via a query param or direct URL in dev.
@@ -48,7 +48,7 @@ const TABLE_COLUMNS: ColumnDef<SampleRow>[] = [
   {
     key: 'tier',
     header: 'Tier',
-    render: (r) => <TierBadge tier={r.tier as 'platina' | 'diamante' | 'rubi' | 'turmalina'} />,
+    render: (r) => <TierBadge tier={r.tier as Tier} />,
   },
   {
     key: 'status',
@@ -65,7 +65,7 @@ const TABLE_COLUMNS: ColumnDef<SampleRow>[] = [
 const TABLE_DATA: SampleRow[] = [
   { id: '1', name: 'Ana Souza', tier: 'platina', status: 'Ativo', value: 'R$ 45.000' },
   { id: '2', name: 'Carlos Lima', tier: 'diamante', status: 'Ativo', value: 'R$ 120.000' },
-  { id: '3', name: 'Maria Oliveira', tier: 'rubi', status: 'Ativo', value: 'R$ 28.000' },
+  { id: '3', name: 'Maria Oliveira', tier: 'ouro', status: 'Ativo', value: 'R$ 28.000' },
 ]
 
 function ToastDemo() {
@@ -288,10 +288,11 @@ export function Showcase() {
         {/* ── TIER BADGE ── */}
         <Section title="TierBadge">
           <Row>
+            <TierBadge tier="bronze" />
+            <TierBadge tier="prata" />
+            <TierBadge tier="ouro" />
             <TierBadge tier="platina" />
             <TierBadge tier="diamante" />
-            <TierBadge tier="rubi" />
-            <TierBadge tier="turmalina" />
           </Row>
         </Section>
 
@@ -301,7 +302,7 @@ export function Showcase() {
             <Avatar initials="AS" size="sm" />
             <Avatar initials="CL" size="md" tier="platina" />
             <Avatar initials="MO" size="lg" tier="diamante" showStatus />
-            <Avatar initials="JP" size="xl" tier="rubi" />
+            <Avatar initials="JP" size="xl" tier="ouro" />
           </Row>
         </Section>
 

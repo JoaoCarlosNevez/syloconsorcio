@@ -12,22 +12,24 @@
   box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.05);
 }
 
-/* ── Turmalina (nível 1) — azul ciano ── */
-.turmalina {
-  background: linear-gradient(to left, #9ef5ff, #00d9ff 42.75%, #00a6cc);
+/* Mesmas cores de TIER_COLORS (tiers.ts), da patente mais baixa pra mais alta. */
+
+.bronze {
+  background: linear-gradient(to left, #f2c29b, #9a5424);
 }
 
-/* ── Rubi (nível 2) — vermelho ── */
-.rubi {
-  background: linear-gradient(to left, #ff6d70, #cc0003);
+.prata {
+  background: linear-gradient(to left, #e5e9f0, #6b7686);
 }
 
-/* ── Platina (nível 3) — azul ── */
+.ouro {
+  background: linear-gradient(to left, #ffe083, #c08a00);
+}
+
 .platina {
   background: linear-gradient(to left, #9ecbff, #005ecc);
 }
 
-/* ── Diamante (nível 4) — roxo ── */
 .diamante {
   background: linear-gradient(to left, #b69eff, #4b00cc);
 }

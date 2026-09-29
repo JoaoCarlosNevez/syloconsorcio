@@ -27,6 +27,11 @@
 //                                            team.goal_update; hierarquia
 //                                            fina em
 //                                            UpdateTeamMemberSalesGoalUseCase.
+// PUT    /team/members/:userId/tier       — define a patente do membro
+//                                            (bronze → diamante). Exige
+//                                            team.tier_update; hierarquia
+//                                            fina em
+//                                            UpdateTeamMemberTierUseCase.
 // PUT    /team/me/personal-goal           — o próprio usuário define a sua
 //                                            meta pessoal (Perfil), separada
 //                                            da meta da equipe. Qualquer
@@ -55,8 +60,16 @@ import {
   RemoveTeamMemberUseCase,
   UpdateMyPersonalGoalUseCase,
   UpdateTeamMemberSalesGoalUseCase,
+  UpdateTeamMemberTierUseCase,
 } from '@sylocrm/application'
-import { AuthorizationError, ConflictError, Permission, Role } from '@sylocrm/domain'
+import {
+  AuthorizationError,
+  ConflictError,
+  MEMBER_TIERS,
+  type MemberTier,
+  Permission,
+  Role,
+} from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { createAuthMiddleware } from '../middleware/auth.middleware'
@@ -82,6 +95,10 @@ const inviteMemberSchema = z.object({
 
 const updateMemberSchema = z.object({
   salesGoalCents: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable(),
+})
+
+const updateMemberTierSchema = z.object({
+  tier: z.enum(MEMBER_TIERS as [MemberTier, ...MemberTier[]]),
 })
 
 const updatePersonalGoalSchema = z.object({
@@ -112,6 +129,10 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
     options.activityLogRepository,
   )
   const updateSalesGoal = new UpdateTeamMemberSalesGoalUseCase(
+    options.membershipRepository,
+    options.activityLogRepository,
+  )
+  const updateTier = new UpdateTeamMemberTierUseCase(
     options.membershipRepository,
     options.activityLogRepository,
   )
@@ -354,6 +375,62 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
           targetRole: target.role,
           organizationId: context.currentMembership.organizationId,
           salesGoalCents: parsed.data.salesGoalCents,
+        })
+        return reply.status(204).send()
+      } catch (error) {
+        if (error instanceof AuthorizationError) {
+          return reply.status(403).send({ error: error.message, code: error.code, status: 403 })
+        }
+        throw error
+      }
+    },
+  )
+
+  // ── PUT /team/members/:userId/tier ────────────────────────────────────────
+  fastify.put<{ Params: { userId: string } }>(
+    '/team/members/:userId/tier',
+    {
+      preHandler: [
+        authMiddleware,
+        tenantMiddleware,
+        requirePermission(Permission.TEAM_TIER_UPDATE),
+      ],
+    },
+    async (request, reply) => {
+      const parsed = updateMemberTierSchema.safeParse(request.body)
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: 'Dados inválidos.',
+          code: 'VALIDATION_ERROR',
+          status: 400,
+          details: parsed.error.flatten().fieldErrors,
+        })
+      }
+
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      const targetUserId = request.params.userId
+
+      const target = await options.membershipRepository.findByUserAndOrganization(
+        targetUserId,
+        context.currentMembership.organizationId,
+      )
+      if (!target) {
+        return reply
+          .status(404)
+          .send({ error: 'Membro não encontrado.', code: 'MEMBER_NOT_FOUND', status: 404 })
+      }
+
+      const actor = await options.userRepository.findById(context.userId)
+
+      try {
+        await updateTier.execute({
+          actorUserId: context.userId,
+          actorRole: context.currentMembership.role,
+          actorIsPlatformAdmin: actor?.isPlatformAdmin ?? false,
+          targetUserId,
+          targetRole: target.role,
+          organizationId: context.currentMembership.organizationId,
+          tier: parsed.data.tier,
         })
         return reply.status(204).send()
       } catch (error) {

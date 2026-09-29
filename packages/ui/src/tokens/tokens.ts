@@ -110,16 +110,3 @@ export const zIndex = {
   drawer: 402,
   toast: 500,
 } as const
-
-/** Tier badge color configurations — confirmed from Figma (Platina tier).
- * Rubi, Diamante, Turmalina colors are inferred from the tier system.
- * Decision: colors are assigned to maintain visual hierarchy (cold → warm).
- */
-export const tierColors = {
-  Turmalina: { from: '#f9a8d4', to: '#be185d' }, // pink — lowest tier
-  Rubi: { from: '#fca5a5', to: '#dc2626' }, // red
-  Platina: { from: '#9ecbff', to: '#005ecc' }, // blue — confirmed in Figma
-  Diamante: { from: '#c4b5fd', to: '#6d28d9' }, // purple — highest tier
-} as const
-
-export type Tier = keyof typeof tierColors

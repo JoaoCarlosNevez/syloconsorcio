@@ -1,41 +1,31 @@
 // MetasPage — progressão de nível e metas do consultor.
 //
-// Exibe os 4 níveis (Turmalina → Rubi → Platina → Diamante),
-// o nível atual destacado, as metas com barras de progresso
-// e os requisitos do próximo nível.
-// Dados são mock até integração com a API real.
+// Exibe as 5 patentes (Bronze → Prata → Ouro → Platina → Diamante), com a
+// patente atual (definida pelo gestor em Configurações → Equipe) destacada,
+// as metas com barras de progresso e os requisitos da próxima patente.
+// Metas e benefícios são mock até integração com a API real.
 
-import { ProgressBar, Skeleton, TierBadge } from '@sylocrm/ui'
+import { ProgressBar, Skeleton, TIERS, TIER_COLORS, TIER_LABELS, TierBadge } from '@sylocrm/ui'
 import type { Tier } from '@sylocrm/ui'
 import { useEffect, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
+import { useActiveOrganization } from '../../hooks/useOrganization'
 import styles from './MetasPage.module.css'
 
 // ── Definição dos níveis ──────────────────────────────────────────────────────
 
-interface TierConfig {
-  tier: Tier
-  label: string
-  emoji: string
-  descricao: string
+const TIER_DETAILS: Record<Tier, { emoji: string; descricao: string }> = {
+  bronze: { emoji: '🥉', descricao: 'Nível inicial — bem-vindo ao time' },
+  prata: { emoji: '🥈', descricao: 'Primeiros resultados consistentes' },
+  ouro: { emoji: '🥇', descricao: 'Consultores com resultado consistente' },
+  platina: { emoji: '💠', descricao: 'Alta performance e volume' },
+  diamante: { emoji: '💎', descricao: 'Elite — top consultores do time' },
 }
 
-const TIERS: TierConfig[] = [
-  {
-    tier: 'turmalina',
-    label: 'Turmalina',
-    emoji: '💎',
-    descricao: 'Nível inicial — bem-vindo ao time',
-  },
-  { tier: 'rubi', label: 'Rubi', emoji: '🔴', descricao: 'Consultores com resultado consistente' },
-  { tier: 'platina', label: 'Platina', emoji: '🔵', descricao: 'Alta performance e volume' },
-  {
-    tier: 'diamante',
-    label: 'Diamante',
-    emoji: '🟣',
-    descricao: 'Elite — top consultores do time',
-  },
-]
+/** Patente seguinte na progressão, ou null quando já está no topo. */
+function nextTier(tier: Tier): Tier | null {
+  return TIERS[TIERS.indexOf(tier) + 1] ?? null
+}
 
 // ── Mock de metas ─────────────────────────────────────────────────────────────
 
@@ -102,30 +92,24 @@ function formatMetaValor(meta: Meta): { atual: string; total: string } {
   }
 }
 
-// Próximo nível (Platina) — benefícios
+// Próxima patente — benefícios (mock)
 const PROXIMO_NIVEL_BENEFICIOS = [
   'Comissão extra de 5% por fechamento',
   'Acesso ao relatório de inteligência de mercado',
   'Destaque no ranking regional',
 ]
 
-// TODO: buscar tier real do perfil via API
-const USER_TIER: Tier = 'rubi'
-const PROXIMO_TIER: Tier = 'platina'
-// biome-ignore lint/style/noNonNullAssertion: TIERS contains all valid tier values
-const PROXIMO_TIER_CONFIG = TIERS.find((t) => t.tier === PROXIMO_TIER)!
-
 // ── Componente do stepper ─────────────────────────────────────────────────────
 
 function TierStepper({ currentTier }: { currentTier: Tier }) {
-  const currentIndex = TIERS.findIndex((t) => t.tier === currentTier)
+  const currentIndex = TIERS.indexOf(currentTier)
 
   return (
     <div className={styles.tierStepper}>
       <p className={styles.stepperTitle}>Sua progressão de nível</p>
 
       <div className={styles.stepperTrack}>
-        {TIERS.map((config, index) => {
+        {TIERS.map((tier, index) => {
           const isDone = index < currentIndex
           const isCurrent = index === currentIndex
           const isPending = index > currentIndex
@@ -134,19 +118,18 @@ function TierStepper({ currentTier }: { currentTier: Tier }) {
           const labelState = isCurrent ? 'current' : isPending ? 'pending' : ''
 
           return (
-            <div key={config.tier} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+            <div key={tier} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
               <div className={styles.stepperItem}>
                 <div
-                  className={[
-                    styles.stepperCircle,
-                    styles[circleState],
-                    isCurrent ? styles[config.tier] : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  aria-label={`Nível ${config.label}${isCurrent ? ' — nível atual' : ''}`}
+                  className={[styles.stepperCircle, styles[circleState]].join(' ')}
+                  style={
+                    isCurrent
+                      ? ({ '--tier-accent': TIER_COLORS[tier].accent } as React.CSSProperties)
+                      : undefined
+                  }
+                  aria-label={`Nível ${TIER_LABELS[tier]}${isCurrent ? ' — nível atual' : ''}`}
                 >
-                  {config.emoji}
+                  {TIER_DETAILS[tier].emoji}
                 </div>
                 <div>
                   <p
@@ -154,7 +137,7 @@ function TierStepper({ currentTier }: { currentTier: Tier }) {
                       .filter(Boolean)
                       .join(' ')}
                   >
-                    {config.label}
+                    {TIER_LABELS[tier]}
                   </p>
                   {isCurrent && <span className={styles.stepperBadge}>Atual</span>}
                 </div>
@@ -179,11 +162,16 @@ function TierStepper({ currentTier }: { currentTier: Tier }) {
 // ── MetasPage ─────────────────────────────────────────────────────────────────
 
 export function MetasPage() {
-  const [isLoading, setIsLoading] = useState(true)
+  const [isMockLoading, setIsMockLoading] = useState(true)
+  const { membership } = useActiveOrganization()
+  const isLoading = isMockLoading || !membership
+  // Só é lido depois do carregamento, quando membership já existe.
+  const currentTier: Tier = membership?.tier ?? 'bronze'
+  const proximoTier = nextTier(currentTier)
 
   // Simula carregamento — remover quando a API estiver integrada
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1500)
+    const timer = setTimeout(() => setIsMockLoading(false), 1500)
     return () => clearTimeout(timer)
   }, [])
 
@@ -212,8 +200,8 @@ export function MetasPage() {
           <div className={styles.card} style={{ padding: 28 }}>
             <Skeleton variant="text" width="200px" height="13px" style={{ marginBottom: 24 }} />
             <div style={{ display: 'flex', gap: 0, alignItems: 'center' }}>
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+              {TIERS.map((tier, i) => (
+                <div key={tier} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
                   <div
                     style={{
                       display: 'flex',
@@ -225,7 +213,7 @@ export function MetasPage() {
                     <Skeleton variant="circle" width="48px" height="48px" />
                     <Skeleton variant="text" width="64px" height="13px" />
                   </div>
-                  {i < 3 && (
+                  {i < TIERS.length - 1 && (
                     <Skeleton
                       variant="rect"
                       height="3px"
@@ -237,7 +225,7 @@ export function MetasPage() {
             </div>
           </div>
         ) : (
-          <TierStepper currentTier={USER_TIER} />
+          <TierStepper currentTier={currentTier} />
         )}
 
         {/* ── Metas + Próximo nível ─────────────────────────────────────── */}
@@ -251,11 +239,18 @@ export function MetasPage() {
                 <div>
                   <p className={styles.cardTitle}>Metas do nível atual</p>
                   <p className={styles.cardSubtitle}>
-                    Conclua as metas abaixo para avançar para <strong>Platina</strong>
+                    {proximoTier ? (
+                      <>
+                        Conclua as metas abaixo para avançar para{' '}
+                        <strong>{TIER_LABELS[proximoTier]}</strong>
+                      </>
+                    ) : (
+                      'Você está na patente mais alta — mantenha o ritmo'
+                    )}
                   </p>
                 </div>
               )}
-              {!isLoading && <TierBadge tier={USER_TIER} />}
+              {!isLoading && <TierBadge tier={currentTier} />}
             </div>
 
             {isLoading ? (
@@ -324,35 +319,47 @@ export function MetasPage() {
           ) : (
             <div className={styles.proximoCard}>
               <div className={styles.proximoHeader}>
-                <div className={styles.proximoIcone}>{PROXIMO_TIER_CONFIG.emoji}</div>
+                <div className={styles.proximoIcone}>
+                  {TIER_DETAILS[proximoTier ?? currentTier].emoji}
+                </div>
                 <div>
-                  <p className={styles.proximoNome}>Próximo: {PROXIMO_TIER_CONFIG.label}</p>
-                  <p className={styles.proximoDescricao}>{PROXIMO_TIER_CONFIG.descricao}</p>
+                  <p className={styles.proximoNome}>
+                    {proximoTier
+                      ? `Próximo: ${TIER_LABELS[proximoTier]}`
+                      : `Patente máxima: ${TIER_LABELS[currentTier]}`}
+                  </p>
+                  <p className={styles.proximoDescricao}>
+                    {TIER_DETAILS[proximoTier ?? currentTier].descricao}
+                  </p>
                 </div>
               </div>
 
-              <div className={styles.proximoDivider} />
+              {proximoTier && (
+                <>
+                  <div className={styles.proximoDivider} />
 
-              <div>
-                <p className={styles.cardSubtitle} style={{ marginBottom: 10 }}>
-                  Benefícios desbloqueados
-                </p>
-                <div className={styles.proximoBeneficios}>
-                  {PROXIMO_NIVEL_BENEFICIOS.map((beneficio) => (
-                    <div key={beneficio} className={styles.beneficioItem}>
-                      <span className={styles.beneficioCheck}>✓</span>
-                      <span>{beneficio}</span>
+                  <div>
+                    <p className={styles.cardSubtitle} style={{ marginBottom: 10 }}>
+                      Benefícios desbloqueados
+                    </p>
+                    <div className={styles.proximoBeneficios}>
+                      {PROXIMO_NIVEL_BENEFICIOS.map((beneficio) => (
+                        <div key={beneficio} className={styles.beneficioItem}>
+                          <span className={styles.beneficioCheck}>✓</span>
+                          <span>{beneficio}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
 
-              <div className={styles.proximoDivider} />
+                  <div className={styles.proximoDivider} />
 
-              <p className={styles.proximoFaltam}>
-                Faltam <span className={styles.proximoFaltamDestaque}>2 metas</span> para atingir{' '}
-                <TierBadge tier={PROXIMO_TIER} />
-              </p>
+                  <p className={styles.proximoFaltam}>
+                    Faltam <span className={styles.proximoFaltamDestaque}>2 metas</span> para
+                    atingir <TierBadge tier={proximoTier} />
+                  </p>
+                </>
+              )}
             </div>
           )}
         </div>

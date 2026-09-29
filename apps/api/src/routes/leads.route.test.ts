@@ -50,6 +50,7 @@ const SELLER_MEMBERSHIP: UserMembership = {
   organizationName: 'Representação Teste',
   organizationIconUrl: null,
   organizationSecondaryColor: null,
+  tier: 'bronze',
   role: Role.SELLER,
   status: 'ACTIVE',
 }
@@ -60,6 +61,7 @@ const MANAGER_MEMBERSHIP: UserMembership = {
   organizationName: 'Representação Teste',
   organizationIconUrl: null,
   organizationSecondaryColor: null,
+  tier: 'bronze',
   role: Role.MANAGER,
   status: 'ACTIVE',
 }
@@ -70,6 +72,7 @@ const ADMIN_MEMBERSHIP: UserMembership = {
   organizationName: 'Representação Teste',
   organizationIconUrl: null,
   organizationSecondaryColor: null,
+  tier: 'bronze',
   role: Role.ADMIN,
   status: 'ACTIVE',
 }
@@ -176,6 +179,7 @@ function buildMembershipRepository(
     deactivate: vi.fn(),
     reactivate: vi.fn(),
     updateSalesGoal: vi.fn(),
+    updateTier: vi.fn(),
     findPersonalGoal: vi.fn().mockResolvedValue(null),
     updatePersonalGoal: vi.fn(),
     removeAllForUser: vi.fn(),

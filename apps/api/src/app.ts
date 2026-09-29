@@ -90,6 +90,9 @@ function createNoOpMembershipRepository(): IMembershipRepository {
     updateSalesGoal: async () => {
       throw new Error('Database not configured — cannot update sales goals.')
     },
+    updateTier: async () => {
+      throw new Error('Database not configured — cannot update member tiers.')
+    },
     findPersonalGoal: async () => null,
     updatePersonalGoal: async () => {
       throw new Error('Database not configured — cannot update personal goals.')

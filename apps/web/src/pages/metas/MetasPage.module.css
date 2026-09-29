@@ -105,22 +105,10 @@
   opacity: 0.5;
 }
 
-/* Cores por tier */
-.stepperCircle.turmalina.current {
-  background: rgba(236, 72, 153, 0.12);
-  border-color: #be185d;
-}
-.stepperCircle.rubi.current {
-  background: rgba(239, 68, 68, 0.12);
-  border-color: #dc2626;
-}
-.stepperCircle.platina.current {
-  background: rgba(96, 165, 250, 0.12);
-  border-color: #2563eb;
-}
-.stepperCircle.diamante.current {
-  background: rgba(139, 92, 246, 0.12);
-  border-color: #7c3aed;
+/* Cor da patente atual — --tier-accent vem inline de TIER_COLORS */
+.stepperCircle.current {
+  background: color-mix(in srgb, var(--tier-accent) 12%, transparent);
+  border-color: var(--tier-accent);
 }
 
 .stepperLabel {

@@ -7,7 +7,7 @@
 // a partir do userId autenticado e do X-Organization-Id header, e pelos
 // fluxos de criação de Representação / convite de equipe.
 
-import type { OrganizationType, Role } from '@sylocrm/domain'
+import type { MemberTier, OrganizationType, Role } from '@sylocrm/domain'
 
 /**
  * Dados de membership retornados pelo repositório.
@@ -24,6 +24,8 @@ export interface UserMembership {
   organizationSecondaryColor: string | null
   role: Role
   status: 'ACTIVE' | 'INVITED' | 'SUSPENDED'
+  /** Patente do usuário nesta organização. */
+  tier: MemberTier
 }
 
 /** Membership com os dados do usuário — usado na listagem de equipe. */
@@ -36,6 +38,8 @@ export interface TeamMember {
   status: 'ACTIVE' | 'INVITED' | 'SUSPENDED'
   /** Meta de vendas na organização, em centavos de crédito. null = sem meta. */
   salesGoalCents: number | null
+  /** Patente do membro na organização. */
+  tier: MemberTier
 }
 
 /** TeamMember com os dados da organização — usado na listagem cross-org do Super Admin. */
@@ -109,6 +113,9 @@ export interface IMembershipRepository {
     organizationId: string,
     salesGoalCents: number | null,
   ): Promise<void>
+
+  /** Define a patente do membro na organização — Configurações → Equipe. */
+  updateTier(userId: string, organizationId: string, tier: MemberTier): Promise<void>
 
   /** Meta pessoal do membro na organização (definida por ele no Perfil).
    * null quando não definida ou quando o vínculo não existe. Não faz parte de

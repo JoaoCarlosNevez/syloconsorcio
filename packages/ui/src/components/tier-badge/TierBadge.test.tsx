@@ -13,14 +13,14 @@ describe('TierBadge', () => {
     expect(screen.getByText('Diamante')).toBeInTheDocument()
   })
 
-  it('renders Rubi label', () => {
-    render(<TierBadge tier="rubi" />)
-    expect(screen.getByText('Rubi')).toBeInTheDocument()
+  it('renders Bronze label', () => {
+    render(<TierBadge tier="bronze" />)
+    expect(screen.getByText('Bronze')).toBeInTheDocument()
   })
 
-  it('renders Turmalina label', () => {
-    render(<TierBadge tier="turmalina" />)
-    expect(screen.getByText('Turmalina')).toBeInTheDocument()
+  it('renders Ouro label', () => {
+    render(<TierBadge tier="ouro" />)
+    expect(screen.getByText('Ouro')).toBeInTheDocument()
   })
 
   it('applies tier class', () => {

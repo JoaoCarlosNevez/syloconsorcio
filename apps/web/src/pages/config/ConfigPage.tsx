@@ -1,6 +1,16 @@
 // ConfigPage — Configurações com três sub-páginas: Hub, Equipe, Plano e Cobrança
 
-import { OrganizationAvatar, Skeleton } from '@sylocrm/ui'
+import {
+  Avatar,
+  OrganizationAvatar,
+  Skeleton,
+  TIERS,
+  TIER_COLORS,
+  TIER_LABELS,
+  type Tier,
+  TierBadge,
+  tierGradient,
+} from '@sylocrm/ui'
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { useActivityQuery } from '../../hooks/useActivity'
@@ -24,6 +34,7 @@ import {
   useRemoveTeamMember,
   useTeamMembersQuery,
   useUpdateTeamMemberSalesGoal,
+  useUpdateTeamMemberTier,
 } from '../../hooks/useTeam'
 import type { ActivityEntityType, ActivityEntry } from '../../lib/activity-api'
 import {
@@ -707,6 +718,7 @@ function EquipeView() {
             <tr className={styles.tableHead}>
               <th className={styles.thUser}>USUÁRIO</th>
               <th className={styles.th}>FUNÇÃO</th>
+              <th className={styles.th}>PATENTE</th>
               <th className={styles.th}>STATUS</th>
               <th className={styles.th}>META DE VENDAS</th>
               <th className={styles.th} />
@@ -715,13 +727,13 @@ function EquipeView() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td className={styles.td} colSpan={5}>
+                <td className={styles.td} colSpan={6}>
                   Carregando…
                 </td>
               </tr>
             ) : paged.length === 0 ? (
               <tr>
-                <td className={styles.td} colSpan={5}>
+                <td className={styles.td} colSpan={6}>
                   Nenhum membro encontrado.
                 </td>
               </tr>
@@ -739,7 +751,12 @@ function EquipeView() {
                     onClick={() => setDetailUserId(member.userId)}
                   >
                     <td className={styles.tdUser}>
-                      <span className={styles.avatar}>{initialsForMember(member)}</span>
+                      <Avatar
+                        src={member.avatarUrl ?? undefined}
+                        initials={initialsForMember(member)}
+                        size="sm"
+                        tier={member.tier}
+                      />
                       <button
                         type="button"
                         className={styles.userInfoBtn}
@@ -756,6 +773,9 @@ function EquipeView() {
                       <span className={`${styles.roleBadge} ${roleBadgeClass(member.role)}`}>
                         {ROLE_LABEL[member.role]}
                       </span>
+                    </td>
+                    <td className={styles.td}>
+                      <TierBadge tier={member.tier} />
                     </td>
                     <td className={styles.td}>
                       <span className={styles.statusCell}>
@@ -818,7 +838,7 @@ function EquipeView() {
         <MemberDetailModal
           organizationId={organizationId}
           member={detailMember}
-          canEditGoal={
+          canEdit={
             isPlatformAdmin ||
             (detailMember.userId !== currentUser?.id &&
               membership !== null &&
@@ -2732,41 +2752,65 @@ function RemoveMemberModal({
 function MemberDetailModal({
   organizationId,
   member,
-  canEditGoal,
+  canEdit,
   onSaved,
   onClose,
 }: {
   organizationId: string
   member: TeamMember
-  canEditGoal: boolean
+  canEdit: boolean
   onSaved: (msg: string) => void
   onClose: () => void
 }) {
   const [goal, setGoal] = useState(
     member.salesGoalCents !== null ? formatGoalInput(String(member.salesGoalCents / 100)) : '',
   )
+  const [tier, setTier] = useState<Tier>(member.tier)
   const [formError, setFormError] = useState('')
   const updateGoal = useUpdateTeamMemberSalesGoal(organizationId)
+  const updateTier = useUpdateTeamMemberTier(organizationId)
+  const isSaving = updateGoal.isPending || updateTier.isPending
   const displayName = member.name ?? member.email
 
-  async function save(salesGoalCents: number | null) {
+  async function handleRemoveGoal() {
     setFormError('')
     try {
-      await updateGoal.mutateAsync({ userId: member.userId, salesGoalCents })
-      onSaved(
-        salesGoalCents === null
-          ? `Meta de ${displayName} removida.`
-          : `Meta de ${displayName} atualizada.`,
-      )
+      await updateGoal.mutateAsync({ userId: member.userId, salesGoalCents: null })
+      onSaved(`Meta de ${displayName} removida.`)
       onClose()
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Não foi possível salvar a meta.')
+      setFormError(error instanceof Error ? error.message : 'Não foi possível remover a meta.')
     }
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    save(goalInputToCents(goal))
+    setFormError('')
+    const salesGoalCents = goalInputToCents(goal)
+    const goalChanged = salesGoalCents !== member.salesGoalCents
+    const tierChanged = tier !== member.tier
+    if (!goalChanged && !tierChanged) {
+      onClose()
+      return
+    }
+    try {
+      if (tierChanged) await updateTier.mutateAsync({ userId: member.userId, tier })
+      if (goalChanged) await updateGoal.mutateAsync({ userId: member.userId, salesGoalCents })
+      onSaved(
+        tierChanged && goalChanged
+          ? `Patente e meta de ${displayName} atualizadas.`
+          : tierChanged
+            ? `${displayName} agora é ${TIER_LABELS[tier]}.`
+            : salesGoalCents === null
+              ? `Meta de ${displayName} removida.`
+              : `Meta de ${displayName} atualizada.`,
+      )
+      onClose()
+    } catch (error) {
+      setFormError(
+        error instanceof Error ? error.message : 'Não foi possível salvar as alterações.',
+      )
+    }
   }
 
   return (
@@ -2776,9 +2820,12 @@ function MemberDetailModal({
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <div className={styles.memberDetailHeader}>
-            <span className={`${styles.avatar} ${styles.avatarLg}`}>
-              {initialsForMember(member)}
-            </span>
+            <Avatar
+              src={member.avatarUrl ?? undefined}
+              initials={initialsForMember(member)}
+              size="md"
+              tier={tier}
+            />
             <div className={styles.memberDetailInfo}>
               <div className={styles.modalTitle}>{member.name ?? '—'}</div>
               <div className={styles.modalDesc}>{member.email}</div>
@@ -2798,6 +2845,43 @@ function MemberDetailModal({
         </div>
         <form onSubmit={handleSubmit}>
           <div className={styles.modalBody}>
+            <fieldset className={`${styles.formRow} ${styles.tierFieldset}`}>
+              <legend className={`${styles.formLabel} ${styles.tierLegend}`}>Patente</legend>
+              <div className={styles.tierPicker}>
+                {TIERS.map((option) => {
+                  const selected = option === tier
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      aria-pressed={selected}
+                      className={`${styles.tierOption} ${selected ? styles.tierOptionSelected : ''}`}
+                      style={
+                        selected
+                          ? { background: tierGradient(option) }
+                          : ({ '--tier-accent': TIER_COLORS[option].accent } as React.CSSProperties)
+                      }
+                      onClick={() => setTier(option)}
+                      disabled={!canEdit}
+                    >
+                      {!selected && (
+                        <span
+                          className={styles.tierOptionDot}
+                          style={{ background: tierGradient(option) }}
+                          aria-hidden="true"
+                        />
+                      )}
+                      {TIER_LABELS[option]}
+                    </button>
+                  )
+                })}
+              </div>
+              <span className={styles.formHint}>
+                {canEdit
+                  ? 'Define a cor do anel ao redor da foto e o nível exibido no perfil do membro.'
+                  : 'Só quem está acima deste membro na hierarquia pode alterar a patente.'}
+              </span>
+            </fieldset>
             <div className={styles.formRow}>
               <label className={styles.formLabel} htmlFor="member-sales-goal">
                 Meta de vendas
@@ -2812,11 +2896,11 @@ function MemberDetailModal({
                   value={goal}
                   onChange={(e) => setGoal(formatGoalInput(e.target.value))}
                   placeholder="0"
-                  disabled={!canEditGoal}
+                  disabled={!canEdit}
                 />
               </div>
               <span className={styles.formHint}>
-                {canEditGoal
+                {canEdit
                   ? 'Valor em crédito que este membro deve vender na organização. Deixe em branco para ficar sem meta.'
                   : 'Só quem está acima deste membro na hierarquia pode alterar a meta.'}
               </span>
@@ -2828,22 +2912,22 @@ function MemberDetailModal({
             )}
           </div>
           <div className={styles.modalFooter}>
-            {canEditGoal && member.salesGoalCents !== null && (
+            {canEdit && member.salesGoalCents !== null && (
               <button
                 type="button"
                 className={`${styles.dangerOutlineBtn} ${styles.modalFooterLeft}`}
-                onClick={() => save(null)}
-                disabled={updateGoal.isPending}
+                onClick={handleRemoveGoal}
+                disabled={isSaving}
               >
                 Remover meta
               </button>
             )}
             <button type="button" className={styles.secondaryBtn} onClick={onClose}>
-              {canEditGoal ? 'Cancelar' : 'Fechar'}
+              {canEdit ? 'Cancelar' : 'Fechar'}
             </button>
-            {canEditGoal && (
-              <button type="submit" className={styles.primaryBtn} disabled={updateGoal.isPending}>
-                {updateGoal.isPending ? 'Salvando…' : 'Salvar meta'}
+            {canEdit && (
+              <button type="submit" className={styles.primaryBtn} disabled={isSaving}>
+                {isSaving ? 'Salvando…' : 'Salvar'}
               </button>
             )}
           </div>

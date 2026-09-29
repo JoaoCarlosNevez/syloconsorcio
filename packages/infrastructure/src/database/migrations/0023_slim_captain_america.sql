@@ -1,0 +1,2 @@
+CREATE TYPE "public"."member_tier" AS ENUM('bronze', 'prata', 'ouro', 'platina', 'diamante');--> statement-breakpoint
+ALTER TABLE "organization_memberships" ADD COLUMN "tier" "member_tier" DEFAULT 'bronze' NOT NULL;

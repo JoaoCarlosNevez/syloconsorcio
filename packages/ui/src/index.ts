@@ -20,7 +20,9 @@ export { Badge } from './components/badge/Badge'
 export type { BadgeProps, BadgeVariant } from './components/badge/Badge'
 
 export { TierBadge } from './components/tier-badge/TierBadge'
-export type { TierBadgeProps, Tier } from './components/tier-badge/TierBadge'
+export type { TierBadgeProps } from './components/tier-badge/TierBadge'
+export { TIERS, TIER_COLORS, TIER_LABELS, tierGradient } from './components/tier-badge/tiers'
+export type { Tier } from './components/tier-badge/tiers'
 
 export { Avatar } from './components/avatar/Avatar'
 export type { AvatarProps, AvatarSize } from './components/avatar/Avatar'

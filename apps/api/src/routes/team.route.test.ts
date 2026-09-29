@@ -25,6 +25,7 @@ const ADMIN_MEMBERSHIP: UserMembership = {
   organizationName: 'Representação Teste',
   organizationIconUrl: null,
   organizationSecondaryColor: null,
+  tier: 'bronze',
   role: Role.ADMIN,
   status: 'ACTIVE',
 }
@@ -35,6 +36,7 @@ const MANAGER_MEMBERSHIP: UserMembership = {
   organizationName: 'Representação Teste',
   organizationIconUrl: null,
   organizationSecondaryColor: null,
+  tier: 'bronze',
   role: Role.MANAGER,
   status: 'ACTIVE',
 }
@@ -45,6 +47,7 @@ const SELLER_MEMBERSHIP: UserMembership = {
   organizationName: 'Representação Teste',
   organizationIconUrl: null,
   organizationSecondaryColor: null,
+  tier: 'bronze',
   role: Role.SELLER,
   status: 'ACTIVE',
 }
@@ -105,6 +108,7 @@ function buildMembershipRepository(membership: UserMembership): IMembershipRepos
     deactivate: vi.fn(),
     reactivate: vi.fn(),
     updateSalesGoal: vi.fn(),
+    updateTier: vi.fn(),
     findPersonalGoal: vi.fn().mockResolvedValue(null),
     updatePersonalGoal: vi.fn(),
     removeAllForUser: vi.fn(),
@@ -244,6 +248,7 @@ describe('DELETE /team/members/:userId', () => {
       deactivate: vi.fn(),
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
+      updateTier: vi.fn(),
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
@@ -438,6 +443,7 @@ describe('POST /team/members/:userId/reactivate', () => {
       deactivate: vi.fn(),
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
+      updateTier: vi.fn(),
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
@@ -586,6 +592,7 @@ describe('PATCH /team/members/:userId', () => {
       deactivate: vi.fn(),
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
+      updateTier: vi.fn(),
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
@@ -688,6 +695,132 @@ describe('PATCH /team/members/:userId', () => {
   })
 })
 
+describe('PUT /team/members/:userId/tier', () => {
+  const TARGET_ID = 'target-user-uuid'
+
+  function buildTierMembershipRepository(
+    actorMembership: UserMembership,
+    targetMembership: UserMembership | null,
+  ): IMembershipRepository {
+    return {
+      findActiveByUserId: vi.fn().mockResolvedValue([actorMembership]),
+      findActiveByUserAndOrganization: vi.fn().mockResolvedValue(actorMembership),
+      findByUserAndOrganization: vi
+        .fn()
+        .mockImplementation((userId: string) =>
+          Promise.resolve(userId === TARGET_ID ? targetMembership : actorMembership),
+        ),
+      findActiveByOrganizationId: vi.fn().mockResolvedValue([]),
+      findByOrganizationId: vi.fn().mockResolvedValue([]),
+      findAllActive: vi.fn().mockResolvedValue([]),
+      findAll: vi.fn().mockResolvedValue([]),
+      create: vi.fn(),
+      deactivate: vi.fn(),
+      reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
+      updateTier: vi.fn(),
+      findPersonalGoal: vi.fn().mockResolvedValue(null),
+      updatePersonalGoal: vi.fn(),
+      removeAllForUser: vi.fn(),
+    }
+  }
+
+  function putTier(app: ReturnType<typeof buildApp>, payload: unknown) {
+    return app.inject({
+      method: 'PUT',
+      url: `/team/members/${TARGET_ID}/tier`,
+      headers: AUTH_HEADERS,
+      payload: payload as Record<string, unknown>,
+    })
+  }
+
+  it('returns 403 when a SELLER tries to set a tier (missing team.tier_update)', async () => {
+    const membershipRepository = buildTierMembershipRepository(SELLER_MEMBERSHIP, SELLER_MEMBERSHIP)
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository,
+    })
+
+    const response = await putTier(app, { tier: 'ouro' })
+
+    expect(response.statusCode).toBe(403)
+    expect(membershipRepository.updateTier).not.toHaveBeenCalled()
+  })
+
+  it('returns 403 when a MANAGER tries to set the tier of another MANAGER', async () => {
+    const membershipRepository = buildTierMembershipRepository(
+      MANAGER_MEMBERSHIP,
+      MANAGER_MEMBERSHIP,
+    )
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository,
+    })
+
+    const response = await putTier(app, { tier: 'ouro' })
+
+    expect(response.statusCode).toBe(403)
+    expect(membershipRepository.updateTier).not.toHaveBeenCalled()
+  })
+
+  it('returns 400 for an unknown tier', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository: buildTierMembershipRepository(ADMIN_MEMBERSHIP, SELLER_MEMBERSHIP),
+    })
+
+    const response = await putTier(app, { tier: 'turmalina' })
+
+    expect(response.statusCode).toBe(400)
+  })
+
+  it('returns 404 when the target is not a member of the organization', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository: buildTierMembershipRepository(ADMIN_MEMBERSHIP, null),
+    })
+
+    const response = await putTier(app, { tier: 'ouro' })
+
+    expect(response.statusCode).toBe(404)
+  })
+
+  it('allows an ADMIN to set the tier of a MANAGER', async () => {
+    const membershipRepository = buildTierMembershipRepository(ADMIN_MEMBERSHIP, MANAGER_MEMBERSHIP)
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository,
+    })
+
+    const response = await putTier(app, { tier: 'diamante' })
+
+    expect(response.statusCode).toBe(204)
+    expect(membershipRepository.updateTier).toHaveBeenCalledWith(TARGET_ID, ORG_ID, 'diamante')
+  })
+
+  it('allows a MANAGER to set the tier of a SELLER', async () => {
+    const membershipRepository = buildTierMembershipRepository(
+      MANAGER_MEMBERSHIP,
+      SELLER_MEMBERSHIP,
+    )
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository,
+    })
+
+    const response = await putTier(app, { tier: 'prata' })
+
+    expect(response.statusCode).toBe(204)
+    expect(membershipRepository.updateTier).toHaveBeenCalledWith(TARGET_ID, ORG_ID, 'prata')
+  })
+})
+
 describe('GET /team/goals/summary', () => {
   it('returns 401 when Authorization header is absent', async () => {
     const app = buildTestApp(SELLER_MEMBERSHIP)
@@ -708,6 +841,7 @@ describe('GET /team/goals/summary', () => {
         role: Role.SELLER,
         status: 'ACTIVE',
         salesGoalCents: 200_000_00,
+        tier: 'bronze',
       },
       {
         userId: 'colleague-uuid',
@@ -717,6 +851,7 @@ describe('GET /team/goals/summary', () => {
         role: Role.SELLER,
         status: 'ACTIVE',
         salesGoalCents: 300_000_00,
+        tier: 'bronze',
       },
     ])
     const app = buildApp({

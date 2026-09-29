@@ -1,14 +1,14 @@
 /* PerfilPage — Perfil completo do consultor */
 
-/* Gradiente Diamante */
-:root {
-  --diamante-from: #b69eff;
-  --diamante-to: #4b00cc;
-}
+/* Cores da patente do usuário (--tier-from/--tier-to/--tier-accent): definidas
+   inline em .page a partir de TIER_COLORS; neutras enquanto carrega. */
 
 /* ── Layout ───────────────────────────────────────────────────────────────── */
 
 .page {
+  --tier-from: #cbd5e1;
+  --tier-to: #64748b;
+  --tier-accent: #64748b;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -217,7 +217,7 @@
   height: 116px;
   border-radius: 50%;
   padding: 4px;
-  background: linear-gradient(to left, var(--diamante-from), var(--diamante-to));
+  background: linear-gradient(to left, var(--tier-from), var(--tier-to));
   flex-shrink: 0;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
@@ -257,7 +257,7 @@
 .tierBadge {
   padding: 2px 10px;
   border-radius: 9999px;
-  background: linear-gradient(to left, var(--diamante-from), var(--diamante-to));
+  background: linear-gradient(to left, var(--tier-from), var(--tier-to));
   color: #fff;
   font-size: 12px;
   font-weight: var(--font-weight-bold);
@@ -345,7 +345,7 @@
 .xpFill {
   height: 100%;
   border-radius: 9999px;
-  background: linear-gradient(to left, var(--diamante-from), var(--diamante-to));
+  background: linear-gradient(to left, var(--tier-from), var(--tier-to));
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: width var(--duration-slow) var(--easing-out);
 }
@@ -428,16 +428,16 @@
 }
 
 .levelDotDone {
-  background: rgba(124, 58, 237, 0.12);
-  border: 2px solid #7c3aed;
-  color: #7c3aed;
+  background: color-mix(in srgb, var(--tier-accent) 12%, transparent);
+  border: 2px solid var(--tier-accent);
+  color: var(--tier-accent);
 }
 
 .levelDotCurrent {
-  background: linear-gradient(135deg, var(--diamante-from), var(--diamante-to));
+  background: linear-gradient(135deg, var(--tier-from), var(--tier-to));
   border: none;
   color: #fff;
-  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.15);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tier-accent) 15%, transparent);
   transform: scale(1.1);
 }
 
@@ -457,7 +457,7 @@
 }
 
 .levelLineDone {
-  background: #7c3aed;
+  background: var(--tier-accent);
 }
 
 .levelLinePending {
@@ -508,7 +508,7 @@
 }
 
 .xpSummaryValue {
-  color: #7c3aed;
+  color: var(--tier-accent);
   font-weight: var(--font-weight-semibold);
 }
 
@@ -567,7 +567,7 @@
 .recordBadge {
   padding: 4px 10px;
   border-radius: 9999px;
-  background: linear-gradient(to left, var(--diamante-from), var(--diamante-to));
+  background: linear-gradient(to left, var(--tier-from), var(--tier-to));
   color: #fff;
   font-size: 12px;
   font-weight: var(--font-weight-bold);
@@ -614,7 +614,7 @@
 
 .weekDay.today {
   background: linear-gradient(135deg, rgba(182, 158, 255, 0.2), rgba(75, 0, 204, 0.15));
-  border: 1.5px solid #7c3aed;
+  border: 1.5px solid var(--tier-accent);
 }
 
 .weekDay.pending {
@@ -629,7 +629,7 @@
 }
 
 .weekDay.today .weekDayLabel {
-  color: #7c3aed;
+  color: var(--tier-accent);
   font-weight: var(--font-weight-bold);
 }
 
@@ -645,12 +645,12 @@
 }
 
 .weekDay.done .weekDayCheck {
-  background: #7c3aed;
+  background: var(--tier-accent);
   color: #fff;
 }
 
 .weekDay.today .weekDayCheck {
-  background: #7c3aed;
+  background: var(--tier-accent);
   color: #fff;
 }
 
@@ -664,7 +664,7 @@
   padding: 12px;
   border: none;
   border-radius: var(--radius-lg);
-  background: linear-gradient(to left, var(--diamante-from), var(--diamante-to));
+  background: linear-gradient(to left, var(--tier-from), var(--tier-to));
   color: #fff;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
@@ -764,7 +764,7 @@
 
 .badgeProgressFill {
   height: 100%;
-  background: linear-gradient(to left, var(--diamante-from), var(--diamante-to));
+  background: linear-gradient(to left, var(--tier-from), var(--tier-to));
   border-radius: 9999px;
 }
 

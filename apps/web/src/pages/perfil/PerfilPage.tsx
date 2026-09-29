@@ -1,6 +1,6 @@
 // PerfilPage — Perfil completo do consultor: nível, XP, ofensiva e conquistas.
 
-import { OrganizationAvatar } from '@sylocrm/ui'
+import { OrganizationAvatar, TIER_COLORS, TIER_LABELS } from '@sylocrm/ui'
 import { type ChangeEvent, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
@@ -798,6 +798,7 @@ const ACTIVITY_TYPES = [
 export function PerfilPage() {
   const { user } = useAuth()
   const { data: currentUser } = useCurrentUser()
+  const { membership } = useActiveOrganization()
   const emailPrefix = user?.email?.split('@')[0] ?? 'consultor'
   const fallbackName = emailPrefix.replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
   const [selectedBadge, setSelectedBadge] = useState<BadgeData | null>(null)
@@ -917,7 +918,18 @@ export function PerfilPage() {
           {activityToast}
         </div>
       )}
-      <div className={styles.page}>
+      <div
+        className={styles.page}
+        style={
+          membership
+            ? ({
+                '--tier-from': TIER_COLORS[membership.tier].from,
+                '--tier-to': TIER_COLORS[membership.tier].to,
+                '--tier-accent': TIER_COLORS[membership.tier].accent,
+              } as React.CSSProperties)
+            : undefined
+        }
+      >
         {/* ── Barra de ações ──────────────────────────────────────────────────── */}
         <div className={styles.topBar}>
           <div className={styles.topBarActions}>
@@ -979,7 +991,9 @@ export function PerfilPage() {
               <div className={styles.profileInfo}>
                 <div className={styles.profileNameRow}>
                   <h1 className={styles.profileName}>{displayName}</h1>
-                  <span className={styles.tierBadge}>Diamante</span>
+                  {membership && (
+                    <span className={styles.tierBadge}>{TIER_LABELS[membership.tier]}</span>
+                  )}
                   <span className={styles.profileHandle}>{displayHandle}</span>
                 </div>
                 <div className={styles.profileMetaRow}>

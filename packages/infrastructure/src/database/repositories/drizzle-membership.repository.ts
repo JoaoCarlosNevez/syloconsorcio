@@ -13,7 +13,7 @@ import type {
   TeamMember,
   UserMembership,
 } from '@sylocrm/application'
-import type { OrganizationType, Role } from '@sylocrm/domain'
+import type { MemberTier, OrganizationType, Role } from '@sylocrm/domain'
 import { and, eq } from 'drizzle-orm'
 import type { Database } from '../client'
 import { organizationMemberships, organizations, users } from '../schema'
@@ -26,6 +26,7 @@ const MEMBERSHIP_COLUMNS = {
   organizationIsWhiteLabel: organizations.isWhiteLabel,
   role: organizationMemberships.role,
   status: organizationMemberships.status,
+  tier: organizationMemberships.tier,
 } as const
 
 function toUserMembership(row: {
@@ -36,6 +37,7 @@ function toUserMembership(row: {
   organizationIsWhiteLabel: boolean
   role: string
   status: string
+  tier: MemberTier
 }): UserMembership {
   const branding = row.organizationBranding as OrganizationBranding | null
   return {
@@ -51,6 +53,7 @@ function toUserMembership(row: {
       : null,
     role: row.role as Role,
     status: row.status as UserMembership['status'],
+    tier: row.tier,
   }
 }
 
@@ -123,6 +126,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         role: organizationMemberships.role,
         status: organizationMemberships.status,
         salesGoalCents: organizationMemberships.salesGoalCents,
+        tier: organizationMemberships.tier,
       })
       .from(organizationMemberships)
       .innerJoin(users, eq(organizationMemberships.userId, users.id))
@@ -146,6 +150,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         role: organizationMemberships.role,
         status: organizationMemberships.status,
         salesGoalCents: organizationMemberships.salesGoalCents,
+        tier: organizationMemberships.tier,
       })
       .from(organizationMemberships)
       .innerJoin(users, eq(organizationMemberships.userId, users.id))
@@ -164,6 +169,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         role: organizationMemberships.role,
         status: organizationMemberships.status,
         salesGoalCents: organizationMemberships.salesGoalCents,
+        tier: organizationMemberships.tier,
         organizationId: organizationMemberships.organizationId,
         organizationName: organizations.name,
       })
@@ -185,6 +191,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         role: organizationMemberships.role,
         status: organizationMemberships.status,
         salesGoalCents: organizationMemberships.salesGoalCents,
+        tier: organizationMemberships.tier,
         organizationId: organizationMemberships.organizationId,
         organizationName: organizations.name,
       })
@@ -235,6 +242,18 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
     await this.db
       .update(organizationMemberships)
       .set({ salesGoalCents, updatedAt: new Date() })
+      .where(
+        and(
+          eq(organizationMemberships.userId, userId),
+          eq(organizationMemberships.organizationId, organizationId),
+        ),
+      )
+  }
+
+  async updateTier(userId: string, organizationId: string, tier: MemberTier): Promise<void> {
+    await this.db
+      .update(organizationMemberships)
+      .set({ tier, updatedAt: new Date() })
       .where(
         and(
           eq(organizationMemberships.userId, userId),

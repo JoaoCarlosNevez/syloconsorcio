@@ -99,6 +99,7 @@ function buildMembershipRepository(): IMembershipRepository {
     deactivate: vi.fn(),
     reactivate: vi.fn(),
     updateSalesGoal: vi.fn(),
+    updateTier: vi.fn(),
     findPersonalGoal: vi.fn().mockResolvedValue(null),
     updatePersonalGoal: vi.fn(),
     removeAllForUser: vi.fn(),

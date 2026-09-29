@@ -20,6 +20,7 @@ function member(userId: string, salesGoalCents: number | null): TeamMember {
     role: Role.SELLER,
     status: 'ACTIVE',
     salesGoalCents,
+    tier: 'bronze',
   }
 }
 

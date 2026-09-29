@@ -27,7 +27,7 @@ import type {
   UserRecord,
 } from '@sylocrm/application'
 import { STORAGE_BUCKETS, resolveNotificationPreferences } from '@sylocrm/application'
-import { Role } from '@sylocrm/domain'
+import { DEFAULT_MEMBER_TIER, Role } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { buildMembershipContext } from '../auth/membership-context'
@@ -218,6 +218,7 @@ export const authRoute: FastifyPluginAsync<AuthRouteOptions> = async (fastify, o
           : null,
         role: Role.ADMIN,
         status: 'ACTIVE',
+        tier: DEFAULT_MEMBER_TIER,
       }))
 
     return {

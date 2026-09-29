@@ -36,6 +36,7 @@ export type ActivityAction =
   | 'team.member_removed'
   | 'team.member_reactivated'
   | 'team.goal_updated'
+  | 'team.tier_updated'
   | 'organization.updated'
   | 'organization.goal_updated'
   | 'organization.icon_updated'

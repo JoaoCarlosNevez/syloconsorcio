@@ -1,11 +1,10 @@
 // AppLayout — layout autenticado com sidebar branca.
 // Sidebar: logo, seletor de empresa, nav, status, sair, perfil.
 
-import { Dropdown, OrganizationAvatar } from '@sylocrm/ui'
+import { Dropdown, OrganizationAvatar, TIER_COLORS, TIER_LABELS } from '@sylocrm/ui'
 import type { DropdownEntry, Tier } from '@sylocrm/ui'
 import { type ReactNode, useLayoutEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { USER_TIER } from '../../data/kanban-mock'
 import { useAuth } from '../../hooks/useAuth'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { useActiveOrganization } from '../../hooks/useOrganization'
@@ -200,28 +199,18 @@ function SairIcon() {
 
 // ── Dados fixos ────────────────────────────────────────────────────────────────
 
-const TIER_BORDER_COLOR: Record<Tier, string> = {
-  turmalina: '#00a6cc',
-  rubi: '#ff6d70',
-  platina: '#005ecc',
-  diamante: '#b69eff',
-}
-
-const TIER_LABELS: Record<Tier, string> = {
-  turmalina: 'Turmalina',
-  rubi: 'Rubi',
-  platina: 'Platina',
-  diamante: 'Diamante',
-}
-
-// Paleta de cores por tier injetada como CSS custom properties no sidebar.
+// Paleta da patente injetada como CSS custom properties no sidebar.
 // O menu (--nav-*) usa a cor secundária White Label quando a organização
-// ativa tem uma; senão, a do tier.
-const TIER_PALETTE: Record<Tier, { accent: string; subtle: string; muted: string }> = {
-  turmalina: { accent: '#00a6cc', subtle: 'rgba(0,166,204,0.10)', muted: 'rgba(0,166,204,0.06)' },
-  rubi: { accent: '#e03135', subtle: 'rgba(224,49,53,0.10)', muted: 'rgba(224,49,53,0.06)' },
-  platina: { accent: '#005ecc', subtle: 'rgba(0,94,204,0.10)', muted: 'rgba(0,94,204,0.06)' },
-  diamante: { accent: '#7c3aed', subtle: 'rgba(124,58,237,0.10)', muted: 'rgba(124,58,237,0.06)' },
+// ativa tem uma; senão, a da patente.
+// Enquanto as memberships carregam não há patente — o CSS cai nos fallbacks.
+function tierPaletteVars(tier: Tier | null): Record<string, string> {
+  if (!tier) return {}
+  const { accent } = TIER_COLORS[tier]
+  return {
+    '--tier-accent': accent,
+    '--tier-subtle': `color-mix(in srgb, ${accent} 10%, transparent)`,
+    '--tier-muted': `color-mix(in srgb, ${accent} 6%, transparent)`,
+  }
 }
 
 // Itens de navegação principal. `hiddenForRoles` restringe o item a quem não
@@ -267,7 +256,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     currentUser?.name ??
     (user?.user_metadata?.full_name as string | undefined) ??
     deriveDisplayName(user?.email)
-  const palette = TIER_PALETTE[USER_TIER]
+  const tier = membership?.tier ?? null
 
   async function handleSignOut() {
     await signOut()
@@ -305,9 +294,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         className={styles.sidebar}
         style={
           {
-            '--tier-accent': palette.accent,
-            '--tier-subtle': palette.subtle,
-            '--tier-muted': palette.muted,
+            ...tierPaletteVars(tier),
             ...(brandColor
               ? {
                   '--nav-accent': 'var(--color-accent)',
@@ -315,12 +302,14 @@ export function AppLayout({ children }: AppLayoutProps) {
                   '--nav-subtle': 'color-mix(in srgb, var(--color-accent) 12%, transparent)',
                   '--nav-muted': 'color-mix(in srgb, var(--color-accent) 6%, transparent)',
                 }
-              : {
-                  '--nav-accent': palette.accent,
-                  '--nav-text': palette.accent,
-                  '--nav-subtle': palette.subtle,
-                  '--nav-muted': palette.muted,
-                }),
+              : tier
+                ? {
+                    '--nav-accent': 'var(--tier-accent)',
+                    '--nav-text': 'var(--tier-accent)',
+                    '--nav-subtle': 'var(--tier-subtle)',
+                    '--nav-muted': 'var(--tier-muted)',
+                  }
+                : {}),
           } as React.CSSProperties
         }
       >
@@ -418,7 +407,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           >
             <div
               className={styles.userCardAvatarWrap}
-              style={{ borderColor: TIER_BORDER_COLOR[USER_TIER] }}
+              style={{ borderColor: tier ? TIER_COLORS[tier].accent : 'transparent' }}
             >
               <img
                 src={currentUser?.avatarUrl ?? '/default-avatar.svg'}
@@ -428,7 +417,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             </div>
             <div className={styles.userCardInfo}>
               <p className={styles.userCardName}>{displayName}</p>
-              <p className={styles.userCardTier}>{TIER_LABELS[USER_TIER]}</p>
+              <p className={styles.userCardTier}>{tier ? TIER_LABELS[tier] : ''}</p>
             </div>
             <ChevronDownIcon />
           </button>

@@ -18,6 +18,7 @@ const MEMBERSHIP: MembershipContext = {
   organizationName: 'Representação Teste',
   organizationIconUrl: null,
   organizationSecondaryColor: null,
+  tier: 'bronze',
   role: Role.SELLER,
   dataScope: DataScope.OWN,
   permissions: [],

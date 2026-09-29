@@ -27,7 +27,7 @@ import type {
   IUserRepository,
   UserMembership,
 } from '@sylocrm/application'
-import { Role } from '@sylocrm/domain'
+import { DEFAULT_MEMBER_TIER, Role } from '@sylocrm/domain'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { AuthErrorCode } from '../auth/errors'
 import { buildMembershipContext } from '../auth/membership-context'
@@ -101,6 +101,7 @@ export function createTenantMiddleware(
               : null,
             role: Role.ADMIN,
             status: 'ACTIVE',
+            tier: DEFAULT_MEMBER_TIER,
           } satisfies UserMembership
         }
       }

@@ -24,6 +24,7 @@ const MANAGER_MEMBERSHIP: UserMembership = {
   organizationName: 'Representação Teste',
   organizationIconUrl: null,
   organizationSecondaryColor: null,
+  tier: 'bronze',
   role: Role.MANAGER,
   status: 'ACTIVE',
 }
@@ -65,6 +66,7 @@ function buildMembershipRepository(membership: UserMembership): IMembershipRepos
     deactivate: vi.fn(),
     reactivate: vi.fn(),
     updateSalesGoal: vi.fn(),
+    updateTier: vi.fn(),
     findPersonalGoal: vi.fn().mockResolvedValue(null),
     updatePersonalGoal: vi.fn(),
     removeAllForUser: vi.fn(),

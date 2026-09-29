@@ -1,5 +1,6 @@
 // useTeam — server state da equipe da organização ativa (ADR-04).
 
+import type { Tier } from '@sylocrm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   type InviteTeamMemberPayload,
@@ -10,6 +11,7 @@ import {
   removeTeamMember,
   updateMyPersonalGoal,
   updateTeamMemberSalesGoal,
+  updateTeamMemberTier,
 } from '../lib/team-api'
 
 export function useTeamMembersQuery(organizationId: string | null) {
@@ -67,6 +69,20 @@ export function useUpdateTeamMemberSalesGoal(organizationId: string | null) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['team', 'members', organizationId] })
       queryClient.invalidateQueries({ queryKey: ['team', 'goals', 'summary', organizationId] })
+    },
+  })
+}
+
+export function useUpdateTeamMemberTier(organizationId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ userId, tier }: { userId: string; tier: Tier }) =>
+      updateTeamMemberTier(organizationId as string, userId, tier),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team', 'members', organizationId] })
+      // A patente do próprio usuário vem de /auth/memberships (sidebar, início,
+      // perfil) — o Super Admin pode estar alterando a própria.
+      queryClient.invalidateQueries({ queryKey: ['auth', 'memberships'] })
     },
   })
 }

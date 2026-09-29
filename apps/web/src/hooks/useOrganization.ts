@@ -9,6 +9,7 @@
 // um useState local não propagaria a troca de organização feita na sidebar
 // para o restante da árvore (cada componente teria seu próprio estado isolado).
 
+import type { Tier } from '@sylocrm/ui'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
 import { apiClient } from '../lib/api-client'
@@ -22,6 +23,8 @@ export interface MembershipSummary {
   /** Cor secundária White Label (#RRGGBB), null = âmbar padrão da Sylo. */
   organizationSecondaryColor: string | null
   role: 'ADMIN' | 'MANAGER' | 'SELLER'
+  /** Patente do usuário nesta organização (Configurações → Equipe). */
+  tier: Tier
   dataScope: 'own' | 'representation' | 'master' | 'incorporadora'
   permissions: string[]
 }

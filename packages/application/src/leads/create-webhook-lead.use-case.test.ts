@@ -102,6 +102,7 @@ const MEMBER: TeamMember = {
   role: Role.SELLER,
   status: 'ACTIVE',
   salesGoalCents: null,
+  tier: 'bronze',
 }
 
 function buildMembershipRepository(members: TeamMember[] = [MEMBER]): IMembershipRepository {

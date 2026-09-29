@@ -56,10 +56,14 @@ se o usuário pedir explicitamente (ex: pra revisar algo pontual antes de mescla
 
 ## Design System
 
-- Tier 1 — **Turmalina**: gradiente `#9EF5FF → #00D9FF → #00A6CC`
-- Tier 2 — **Rubi**: gradiente `#FF6D70 → #CC0003`
-- Tier 3 — **Platina**: gradiente `#9ECBFF → #005ECC`
-- Tier 4 — **Diamante**: gradiente `#B69EFF → #4B00CC`
+Patentes (tiers) do membro, definidas pelo gestor em Configurações → Equipe.
+Fonte única de cores/rótulos: `packages/ui/src/components/tier-badge/tiers.ts`.
+
+- Tier 1 — **Bronze**: gradiente `#F2C29B → #9A5424`
+- Tier 2 — **Prata**: gradiente `#E5E9F0 → #6B7686`
+- Tier 3 — **Ouro**: gradiente `#FFE083 → #C08A00`
+- Tier 4 — **Platina**: gradiente `#9ECBFF → #005ECC`
+- Tier 5 — **Diamante**: gradiente `#B69EFF → #4B00CC`
 
 Arquivo Figma: `u9GSQPJHgNmTY64fgFXkFT` (SYLOAPP)
 

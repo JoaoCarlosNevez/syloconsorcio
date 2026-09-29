@@ -14,6 +14,7 @@
 //   - Use cases recebem AuthenticatedContext e usam currentMembership para autorizar
 
 import type { DataScope } from '@sylocrm/domain'
+import type { MemberTier } from '@sylocrm/domain'
 import type { OrganizationType } from '@sylocrm/domain'
 import type { Permission } from '@sylocrm/domain'
 import type { Role } from '@sylocrm/domain'
@@ -31,6 +32,8 @@ export interface MembershipContext {
   organizationSecondaryColor: string | null
   /** Papel do usuário nesta organização específica */
   role: Role
+  /** Patente do usuário nesta organização (Configurações → Equipe) */
+  tier: MemberTier
   /** Alcance de dados calculado a partir do tipo da org + role */
   dataScope: DataScope
   /** Ações autorizadas para este contexto de membership */

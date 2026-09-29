@@ -15,6 +15,16 @@ export const membershipStatusEnum = pgEnum('membership_status', ['ACTIVE', 'INVI
 
 export const roleEnum = pgEnum('role', ['ADMIN', 'MANAGER', 'SELLER'])
 
+// Patente do membro (ver MemberTier em @sylocrm/domain), da mais baixa pra
+// mais alta.
+export const memberTierEnum = pgEnum('member_tier', [
+  'bronze',
+  'prata',
+  'ouro',
+  'platina',
+  'diamante',
+])
+
 export const organizationMemberships = pgTable(
   'organization_memberships',
   {
@@ -35,6 +45,9 @@ export const organizationMemberships = pgTable(
     // dele, independente (e muitas vezes maior) da meta acima, que é definida
     // pelo gestor e compõe a Meta da Representação. Centavos; null = sem meta.
     personalGoalCents: bigint('personal_goal_cents', { mode: 'number' }),
+    // Patente do membro nesta organização, definida pelo gestor em
+    // Configurações → Equipe. Todo mundo começa em Bronze.
+    tier: memberTierEnum('tier').notNull().default('bronze'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },

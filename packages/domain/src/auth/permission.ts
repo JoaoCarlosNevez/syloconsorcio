@@ -23,6 +23,9 @@ export const Permission = {
    * hierarquia fina (só papéis abaixo do seu) é aplicada em
    * UpdateTeamMemberSalesGoalUseCase. */
   TEAM_GOAL_UPDATE: 'team.goal_update',
+  /** Definir a patente de um membro da equipe — mesma hierarquia fina da
+   * meta, aplicada em UpdateTeamMemberTierUseCase. */
+  TEAM_TIER_UPDATE: 'team.tier_update',
   REPORTS_READ: 'reports.read',
   ORGANIZATION_UPDATE: 'organization.update',
   /** Ver o log de atividades da organização (Configurações > Atividade). */

@@ -162,6 +162,13 @@
       "when": 1790690659141,
       "tag": "0022_lush_reavers",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790711241640,
+      "tag": "0023_slim_captain_america",
+      "breakpoints": true
     }
   ]
 }

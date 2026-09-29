@@ -74,6 +74,20 @@ describe('describeActivity', () => {
     )
     expect(text).toBe('removeu a meta de Bruno')
   })
+
+  it('describes a tier change with the tier label', () => {
+    const text = describeActivity(
+      entry({
+        action: 'team.tier_updated',
+        entityType: 'team',
+        entityId: 'user-02',
+        entityLabel: null,
+        metadata: { tier: 'ouro' },
+      }),
+      memberName,
+    )
+    expect(text).toBe('definiu a patente de Bruno como Ouro')
+  })
 })
 
 describe('activityDayLabel', () => {

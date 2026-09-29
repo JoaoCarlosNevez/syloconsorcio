@@ -28,6 +28,9 @@ const MANAGER_PERMISSIONS: readonly Permission[] = [
   // Supervisor define a meta só de Vendedores — hierarquia fina em
   // UpdateTeamMemberSalesGoalUseCase.
   Permission.TEAM_GOAL_UPDATE,
+  // Supervisor define a patente só de Vendedores — hierarquia fina em
+  // UpdateTeamMemberTierUseCase.
+  Permission.TEAM_TIER_UPDATE,
   Permission.TASK_READ,
   Permission.TASK_CREATE,
   Permission.TASK_UPDATE,

@@ -49,9 +49,6 @@ export interface ColumnMeta {
   countText: string
 }
 
-// Tier do usuário autenticado — fonte única de verdade para toda a UI
-export const USER_TIER = 'diamante' as const
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** Extrai segmento e valor da string de cota. Ex: 'Cota R$ 350.000 (Imobiliário)' */

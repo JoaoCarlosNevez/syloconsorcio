@@ -13,7 +13,7 @@ export interface OrganizationAvatarProps {
 }
 
 // Paleta com bom contraste pra texto branco em cima — mesma linguagem visual
-// dos tiers de gamificação (turmalina/rubi/platina/diamante) mas com mais variação.
+// das patentes de gamificação (bronze → diamante) mas com mais variação.
 const PALETTE = [
   '#0EA5E9', // sky
   '#8B5CF6', // violet

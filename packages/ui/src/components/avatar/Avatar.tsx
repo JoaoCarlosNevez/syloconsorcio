@@ -1,5 +1,5 @@
 import type { ImgHTMLAttributes } from 'react'
-import type { Tier } from '../tier-badge/TierBadge'
+import type { Tier } from '../tier-badge/tiers'
 import styles from './Avatar.module.css'
 
 export type AvatarSize = 'sm' | 'md' | 'lg' | 'xl'
