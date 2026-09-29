@@ -68,6 +68,16 @@
   transform-origin: top left;
 }
 
+/* placement="beside": fixo na viewport, ao lado do sininho (left/bottom vêm
+   inline, calculados a partir do botão). */
+.panelBeside {
+  position: fixed;
+  top: auto;
+  right: auto;
+  max-height: min(480px, calc(100vh - 32px));
+  transform-origin: bottom left;
+}
+
 @keyframes panelIn {
   from {
     opacity: 0;

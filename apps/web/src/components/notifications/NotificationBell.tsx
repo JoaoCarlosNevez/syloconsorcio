@@ -7,9 +7,14 @@
 // As não lidas ficam em "Novas" e as já vistas em "Visualizadas", abaixo.
 // Clicar numa notificação marca como lida e abre o que ela aponta — a tarefa
 // em Tarefas ou o lead no Kanban (ver notificationTarget).
+//
+// placement="beside" (menu lateral): o painel abre ao lado do sininho, fora do
+// menu. Vai num portal com position: fixed porque o menu tem overflow e é
+// sticky — dentro dele o painel seria cortado e ficaria atrás da página.
 
 import { Skeleton } from '@sylocrm/ui'
-import { useEffect, useId, useRef, useState } from 'react'
+import { type CSSProperties, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import {
   useMarkAllNotificationsRead,
@@ -116,6 +121,20 @@ export interface NotificationBellProps {
   anchor?: 'bell' | 'container'
   /** Classe extra do painel, pra página ajustar a posição. */
   panelClassName?: string
+  /** Onde o painel abre: abaixo do sininho (padrão) ou ao lado dele, com as
+   * bases alinhadas — pro sininho no rodapé do menu lateral. */
+  placement?: 'below' | 'beside'
+}
+
+// Distância entre o sininho e o painel no placement="beside".
+const BESIDE_GAP_PX = 12
+
+function besidePosition(trigger: HTMLElement): CSSProperties {
+  const rect = trigger.getBoundingClientRect()
+  return {
+    left: rect.right + BESIDE_GAP_PX,
+    bottom: Math.max(window.innerHeight - rect.bottom, BESIDE_GAP_PX),
+  }
 }
 
 export function NotificationBell({
@@ -123,6 +142,7 @@ export function NotificationBell({
   align = 'right',
   anchor = 'bell',
   panelClassName,
+  placement = 'below',
 }: NotificationBellProps) {
   const { organizationId } = useActiveOrganization()
   const { data, isLoading, isError, refetch } = useNotificationsQuery(organizationId)
@@ -133,7 +153,10 @@ export function NotificationBell({
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDialogElement>(null)
   const panelId = useId()
+  const [besideStyle, setBesideStyle] = useState<CSSProperties>({})
+  const isBeside = placement === 'beside'
 
   const unreadCount = data?.unreadCount ?? 0
   const badge = unreadBadgeLabel(unreadCount)
@@ -141,7 +164,11 @@ export function NotificationBell({
   useEffect(() => {
     if (!open) return
     function onMouseDown(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
+      const target = event.target as Node
+      // No placement="beside" o painel está num portal, fora do rootRef.
+      if (!rootRef.current?.contains(target) && !panelRef.current?.contains(target)) {
+        setOpen(false)
+      }
     }
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
@@ -156,6 +183,17 @@ export function NotificationBell({
       document.removeEventListener('keydown', onKeyDown)
     }
   }, [open])
+
+  // Posiciona o painel "beside" antes de pintar, e de novo se a janela mudar.
+  useLayoutEffect(() => {
+    if (!open || !isBeside) return
+    function place() {
+      if (triggerRef.current) setBesideStyle(besidePosition(triggerRef.current))
+    }
+    place()
+    window.addEventListener('resize', place)
+    return () => window.removeEventListener('resize', place)
+  }, [open, isBeside])
 
   function handleSelect(notification: AppNotification) {
     if (!notification.readAt) markRead.mutate(notification.id)
@@ -195,6 +233,73 @@ export function NotificationBell({
     )
   }
 
+  const panel = (
+    <dialog
+      ref={panelRef}
+      open
+      id={panelId}
+      aria-label="Notificações"
+      className={`${styles.panel} ${
+        isBeside ? styles.panelBeside : align === 'left' ? styles.alignLeft : styles.alignRight
+      } ${panelClassName ?? ''}`}
+      style={isBeside ? besideStyle : undefined}
+    >
+      <div className={styles.header}>
+        <span className={styles.headerTitle}>Notificações</span>
+        {unreadCount > 0 && (
+          <button type="button" className={styles.markAllBtn} onClick={() => markAllRead.mutate()}>
+            Marcar todas como lidas
+          </button>
+        )}
+      </div>
+
+      <div className={styles.body}>
+        {isLoading ? (
+          <ul className={styles.list} aria-hidden="true">
+            {[0, 1, 2].map((key) => (
+              <li key={key} className={styles.skeletonRow}>
+                <Skeleton variant="circle" width="32px" height="32px" />
+                <div className={styles.skeletonText}>
+                  <Skeleton variant="text" width="75%" height="14px" />
+                  <Skeleton variant="text" width="50%" height="12px" />
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : isError ? (
+          <div className={styles.state}>
+            <p>Não foi possível carregar as notificações.</p>
+            <button type="button" className={styles.retryBtn} onClick={() => refetch()}>
+              Tentar de novo
+            </button>
+          </div>
+        ) : !data || data.items.length === 0 ? (
+          <div className={styles.state}>
+            <p className={styles.stateTitle}>Tudo em dia</p>
+            <p>Avisos de tarefas e de leads novos recebidos pela API aparecem aqui.</p>
+          </div>
+        ) : (
+          <>
+            {unreadItems.length > 0 ? (
+              <section aria-label="Novas">
+                <h3 className={styles.sectionTitle}>Novas</h3>
+                <ul className={styles.list}>{unreadItems.map(renderItem)}</ul>
+              </section>
+            ) : (
+              <p className={styles.noNew}>Nenhuma notificação nova.</p>
+            )}
+            {readItems.length > 0 && (
+              <section aria-label="Visualizadas" className={styles.readSection}>
+                <h3 className={styles.sectionTitle}>Visualizadas</h3>
+                <ul className={styles.list}>{readItems.map(renderItem)}</ul>
+              </section>
+            )}
+          </>
+        )}
+      </div>
+    </dialog>
+  )
+
   return (
     <div
       className={`${styles.root} ${anchor === 'container' ? styles.rootUnanchored : ''}`}
@@ -219,72 +324,7 @@ export function NotificationBell({
         )}
       </span>
 
-      {open && (
-        <dialog
-          open
-          id={panelId}
-          aria-label="Notificações"
-          className={`${styles.panel} ${align === 'left' ? styles.alignLeft : styles.alignRight} ${panelClassName ?? ''}`}
-        >
-          <div className={styles.header}>
-            <span className={styles.headerTitle}>Notificações</span>
-            {unreadCount > 0 && (
-              <button
-                type="button"
-                className={styles.markAllBtn}
-                onClick={() => markAllRead.mutate()}
-              >
-                Marcar todas como lidas
-              </button>
-            )}
-          </div>
-
-          <div className={styles.body}>
-            {isLoading ? (
-              <ul className={styles.list} aria-hidden="true">
-                {[0, 1, 2].map((key) => (
-                  <li key={key} className={styles.skeletonRow}>
-                    <Skeleton variant="circle" width="32px" height="32px" />
-                    <div className={styles.skeletonText}>
-                      <Skeleton variant="text" width="75%" height="14px" />
-                      <Skeleton variant="text" width="50%" height="12px" />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : isError ? (
-              <div className={styles.state}>
-                <p>Não foi possível carregar as notificações.</p>
-                <button type="button" className={styles.retryBtn} onClick={() => refetch()}>
-                  Tentar de novo
-                </button>
-              </div>
-            ) : !data || data.items.length === 0 ? (
-              <div className={styles.state}>
-                <p className={styles.stateTitle}>Tudo em dia</p>
-                <p>Avisos de tarefas e de leads novos recebidos pela API aparecem aqui.</p>
-              </div>
-            ) : (
-              <>
-                {unreadItems.length > 0 ? (
-                  <section aria-label="Novas">
-                    <h3 className={styles.sectionTitle}>Novas</h3>
-                    <ul className={styles.list}>{unreadItems.map(renderItem)}</ul>
-                  </section>
-                ) : (
-                  <p className={styles.noNew}>Nenhuma notificação nova.</p>
-                )}
-                {readItems.length > 0 && (
-                  <section aria-label="Visualizadas" className={styles.readSection}>
-                    <h3 className={styles.sectionTitle}>Visualizadas</h3>
-                    <ul className={styles.list}>{readItems.map(renderItem)}</ul>
-                  </section>
-                )}
-              </>
-            )}
-          </div>
-        </dialog>
-      )}
+      {open && (isBeside ? createPortal(panel, document.body) : panel)}
     </div>
   )
 }

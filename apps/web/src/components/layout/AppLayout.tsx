@@ -9,6 +9,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { applyBrandColor } from '../../lib/brand-theme'
+import { NotificationBell } from '../notifications/NotificationBell'
 import styles from './AppLayout.module.css'
 
 function deriveDisplayName(email: string | undefined): string {
@@ -392,11 +393,14 @@ export function AppLayout({ children }: AppLayoutProps) {
             <span className={styles.vendedorSla}>99.8% SLA</span>
           </div>
 
-          {/* Sair */}
-          <button type="button" className={styles.logoutButton} onClick={handleSignOut}>
-            <SairIcon />
-            <span>Sair</span>
-          </button>
+          {/* Sair + sininho de notificações */}
+          <div className={styles.sidebarActions}>
+            <button type="button" className={styles.logoutButton} onClick={handleSignOut}>
+              <SairIcon />
+              <span>Sair</span>
+            </button>
+            <NotificationBell triggerClassName={styles.sidebarBellBtn} placement="beside" />
+          </div>
 
           {/* Perfil */}
           <button
