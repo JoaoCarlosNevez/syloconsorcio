@@ -366,6 +366,27 @@ describe('UpdateLeadUseCase', () => {
     expect(leadRepository.update).not.toHaveBeenCalled()
   })
 
+  it('skips the phone uniqueness check when the phone is resent unchanged', async () => {
+    const leadRepository = buildLeadRepository({
+      findByPhone: vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, id: 'lead-copy' }),
+    })
+    const useCase = new UpdateLeadUseCase(
+      leadRepository,
+      buildOrganizationRepository(),
+      buildFunnelRepository(),
+    )
+
+    await useCase.execute({
+      id: 'lead-01',
+      userId: 'user-01',
+      membership: MEMBERSHIP,
+      changes: { name: 'Novo nome', phone: SAMPLE_LEAD.phone },
+    })
+
+    expect(leadRepository.findByPhone).not.toHaveBeenCalled()
+    expect(leadRepository.update).toHaveBeenCalled()
+  })
+
   it('does not record an assignment change when assignedUserId is unset', async () => {
     const leadRepository = buildLeadRepository()
     const useCase = new UpdateLeadUseCase(

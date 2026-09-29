@@ -82,10 +82,23 @@ export class UpdateLeadUseCase implements UseCase<UpdateLeadUseCaseInput, LeadRe
       this.organizationRepository,
     )
 
-    if (input.changes.phone !== undefined) {
+    const isReassigning = input.changes.assignedUserId !== undefined
+    const isMarkingWon = input.changes.won === true
+    // Estado anterior — base da validação de telefone e de Ganho, do histórico
+    // de atribuição e dos eventos do log de atividades.
+    const before = await this.leadRepository.findById(input.id, scope)
+
+    // Só valida unicidade se o telefone mudou de fato: o modal de edição sempre
+    // reenvia o telefone, e cópias do lead em outros funis (duplicateLeadRecord)
+    // compartilham o mesmo número — validar sempre travaria qualquer edição.
+    const newPhone = input.changes.phone
+    if (
+      newPhone !== undefined &&
+      newPhone.replace(/\D/g, '') !== before?.phone.replace(/\D/g, '')
+    ) {
       const existing = await this.leadRepository.findByPhone(
         input.membership.organizationId,
-        input.changes.phone,
+        newPhone,
         input.id,
       )
       if (existing) {
@@ -94,12 +107,6 @@ export class UpdateLeadUseCase implements UseCase<UpdateLeadUseCaseInput, LeadRe
         ])
       }
     }
-
-    const isReassigning = input.changes.assignedUserId !== undefined
-    const isMarkingWon = input.changes.won === true
-    // Estado anterior — base da validação de Ganho, do histórico de
-    // atribuição e dos eventos do log de atividades.
-    const before = await this.leadRepository.findById(input.id, scope)
 
     let wonFunnel: FunnelRecord | null = null
     if (isMarkingWon && before) {
