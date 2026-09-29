@@ -16,6 +16,10 @@ import docs from './IntegracoesSection.module.css'
 
 const WEBHOOK_URL = `${API_URL}/webhooks/leads`
 
+// Espelham WEBHOOK_RATE_LIMIT em apps/api/src/routes/webhooks.route.ts.
+const WEBHOOK_LIMIT_PER_KEY = 60
+const WEBHOOK_LIMIT_WITHOUT_KEY = 10
+
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString('pt-BR', {
     day: '2-digit',
@@ -367,6 +371,12 @@ const RESPONSES: { status: string; code: string; description: string }[] = [
       'Já existe um lead com esse telefone. Nada é criado; o corpo traz o lead existente em "lead".',
   },
   {
+    status: '429',
+    code: 'RATE_LIMITED',
+    description:
+      'Limite de requisições atingido (veja "Limites"). Espere os segundos de "retryAfterSeconds" (ou do header Retry-After) e reenvie.',
+  },
+  {
     status: '500',
     code: '—',
     description: 'Erro inesperado do nosso lado. Pode tentar de novo depois.',
@@ -526,8 +536,35 @@ function WebhookDocsCard({ organizationId }: { organizationId: string | null }) 
               ganha a data de “último uso”.
             </li>
             <li>
+              Avisa no sininho quem precisa saber: o responsável, ou Dono e Supervisores quando o
+              lead chega sem responsável.
+            </li>
+            <li>
               Telefones repetidos não criam lead novo (resposta 409) — é seguro reenviar o mesmo
               formulário.
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h3 className={docs.docTitle}>Limites</h3>
+          <ul className={docs.list}>
+            <li>
+              Até <strong>{WEBHOOK_LIMIT_PER_KEY} requisições por minuto por chave</strong>. Cada
+              chave tem o próprio limite — crie uma por integração.
+            </li>
+            <li>
+              Requisições sem chave ou com chave inválida: até {WEBHOOK_LIMIT_WITHOUT_KEY} por
+              minuto, por endereço IP.
+            </li>
+            <li>
+              Toda resposta traz os headers <code>X-RateLimit-Limit</code>,{' '}
+              <code>X-RateLimit-Remaining</code> e <code>X-RateLimit-Reset</code> (segundos até
+              zerar). Ao passar do limite, a resposta é 429 com <code>Retry-After</code>.
+            </li>
+            <li>
+              Pra importar muitos leads de uma vez, envie em sequência respeitando o limite em vez
+              de disparar tudo junto.
             </li>
           </ul>
         </section>

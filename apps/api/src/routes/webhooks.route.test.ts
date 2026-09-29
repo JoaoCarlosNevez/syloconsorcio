@@ -14,6 +14,7 @@ import type {
 import { describe, expect, it, vi } from 'vitest'
 import { buildApp } from '../app'
 import { hashApiKey } from '../lib/api-keys'
+import { WEBHOOK_RATE_LIMIT } from './webhooks.route'
 
 const ORG_ID = 'org-rep-01'
 const VALID_KEY = 'sylo_chave-valida-de-teste'
@@ -221,5 +222,64 @@ describe('POST /webhooks/leads', () => {
     expect(response.json<{ details: Record<string, string[]> }>().details).toHaveProperty(
       'assignedUserEmail',
     )
+  })
+})
+
+describe('POST /webhooks/leads — rate limit', () => {
+  it(`allows ${WEBHOOK_RATE_LIMIT.perKey} requests per minute per key, then answers 429`, async () => {
+    const leadRepository = buildLeadRepository()
+    const app = buildTestApp(undefined, leadRepository)
+    const send = () =>
+      app.inject({
+        method: 'POST',
+        url: '/webhooks/leads',
+        headers: { 'x-api-key': VALID_KEY },
+        payload: PAYLOAD,
+      })
+
+    for (let i = 0; i < WEBHOOK_RATE_LIMIT.perKey; i++) {
+      expect((await send()).statusCode).toBe(201)
+    }
+    const limited = await send()
+
+    expect(limited.statusCode).toBe(429)
+    expect(limited.json()).toEqual(expect.objectContaining({ code: 'RATE_LIMITED', status: 429 }))
+    expect(limited.json<{ retryAfterSeconds: number }>().retryAfterSeconds).toBeGreaterThan(0)
+    expect(limited.headers['retry-after']).toBeDefined()
+    expect(leadRepository.create).toHaveBeenCalledTimes(WEBHOOK_RATE_LIMIT.perKey)
+  })
+
+  it('limits requests without a valid key by IP, with a lower limit', async () => {
+    const app = buildTestApp()
+    const send = (key: string) =>
+      app.inject({
+        method: 'POST',
+        url: '/webhooks/leads',
+        headers: { 'x-api-key': key },
+        payload: PAYLOAD,
+      })
+
+    for (let i = 0; i < WEBHOOK_RATE_LIMIT.perIpWithoutKey; i++) {
+      // Chaves diferentes a cada tentativa não escapam do limite por IP.
+      expect((await send(`sylo_inventada-${i}`)).statusCode).toBe(401)
+    }
+    expect((await send('sylo_mais-uma')).statusCode).toBe(429)
+
+    // Quem tem chave válida continua passando — o contador é outro.
+    expect((await send(VALID_KEY)).statusCode).toBe(201)
+  })
+
+  it('looks the key up only once per request', async () => {
+    const apiKeyRepository = buildApiKeyRepository()
+    const app = buildTestApp(apiKeyRepository)
+
+    await app.inject({
+      method: 'POST',
+      url: '/webhooks/leads',
+      headers: { 'x-api-key': VALID_KEY },
+      payload: PAYLOAD,
+    })
+
+    expect(apiKeyRepository.findActiveByHash).toHaveBeenCalledTimes(1)
   })
 })
