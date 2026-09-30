@@ -622,7 +622,7 @@ const HISTORY_TAB_LABEL: Record<HistoryTab, string> = {
 
 interface FeedItem {
   id: string
-  kind: 'created' | 'assignment' | 'comment'
+  kind: 'created' | 'assignment' | 'comment' | 'proposal'
   timestamp: string
   source?: string
   changedByName?: string
@@ -632,9 +632,17 @@ interface FeedItem {
   text?: string
 }
 
+/** Resumo da proposta no histórico: "Entrada R$ 20.000 · 24x · Tabela X". */
+function describeProposalForHistory(proposal: LeadProposal): string {
+  const parts = [`Entrada R$ ${formatBRL(proposal.downPaymentCents)}`, `${proposal.termMonths}x`]
+  if (proposal.tableName) parts.push(proposal.tableName)
+  return parts.join(' · ')
+}
+
 function buildHistoryFeed(
   card: CardData,
   history: LeadHistory | undefined,
+  proposals: LeadProposal[] | undefined,
   members: TeamMember[] | undefined,
   currentUserId: string | undefined,
 ): FeedItem[] {
@@ -661,6 +669,21 @@ function buildHistoryFeed(
       authorName:
         comment.userId === currentUserId ? 'Você' : resolveAgent(comment.userId, members).name,
       text: comment.text,
+    })
+  }
+
+  for (const proposal of proposals ?? []) {
+    items.push({
+      id: `proposal-${proposal.id}`,
+      kind: 'proposal',
+      timestamp: proposal.createdAt,
+      // Propostas antigas podem não ter autor — aí o "por" some.
+      authorName: !proposal.createdByUserId
+        ? undefined
+        : proposal.createdByUserId === currentUserId
+          ? 'Você'
+          : resolveAgent(proposal.createdByUserId, members).name,
+      text: describeProposalForHistory(proposal),
     })
   }
 
@@ -1420,7 +1443,13 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
   const isAtLastStage = lastStage !== undefined && card.stageId === lastStage.id
   const otherFunnels = funnels.filter((f) => f.id !== funnel.id)
   const responsible = resolveAgent(card.assignedUserId, members)
-  const historyFeed = buildHistoryFeed(card, history, members, currentUser?.id)
+  const historyFeed = buildHistoryFeed(
+    card,
+    history,
+    proposalsData?.proposals,
+    members,
+    currentUser?.id,
+  )
   const filteredHistoryFeed = filterHistoryFeed(historyFeed, historyTab)
 
   return (
@@ -2574,12 +2603,15 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                               ? `${styles.timelineIcon} ${styles.timelineIconComment}`
                               : item.kind === 'created'
                                 ? `${styles.timelineIcon} ${styles.timelineIconCreated}`
-                                : `${styles.timelineIcon} ${styles.timelineIconSystem}`
+                                : item.kind === 'proposal'
+                                  ? `${styles.timelineIcon} ${styles.timelineIconProposal}`
+                                  : `${styles.timelineIcon} ${styles.timelineIconSystem}`
                           }
                         >
                           {item.kind === 'comment' && <CommentIcon />}
                           {item.kind === 'assignment' && <LightningIcon />}
                           {item.kind === 'created' && <CheckIcon />}
+                          {item.kind === 'proposal' && <TrophyIcon />}
                         </div>
                         {i < filteredHistoryFeed.length - 1 && (
                           <div className={styles.timelineConnector} />
@@ -2592,7 +2624,9 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                               ? 'Lead criado'
                               : item.kind === 'assignment'
                                 ? 'Responsável alterado'
-                                : 'Comentário'}
+                                : item.kind === 'proposal'
+                                  ? 'Proposta gerada'
+                                  : 'Comentário'}
                           </span>
                           <span className={styles.timelineDate}>
                             {formatHistoryTimestamp(item.timestamp)}
@@ -2606,7 +2640,8 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                           </p>
                         )}
 
-                        {item.kind === 'comment' && (
+                        {(item.kind === 'comment' ||
+                          (item.kind === 'proposal' && item.authorName)) && (
                           <p className={styles.timelineBody}>
                             por <strong className={styles.timelineBold}>{item.authorName}</strong>
                           </p>
@@ -2617,6 +2652,10 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                             {item.fromName} →{' '}
                             <strong className={styles.timelineBold}>{item.toName}</strong>
                           </div>
+                        )}
+
+                        {item.kind === 'proposal' && item.text && (
+                          <div className={styles.timelineDetail}>{item.text}</div>
                         )}
 
                         {item.kind === 'comment' && item.text && (

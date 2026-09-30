@@ -27,6 +27,7 @@ const SHARED_PROPOSAL: SharedLeadProposalRecord = {
   termMonths: 24,
   tableName: 'Tabela Imóvel 2026',
   installments: [{ from: 1, to: 24, amountCents: 3_500_00 }],
+  createdByUserId: 'user-sharer',
   shareToken: 'tok_abcdefghijklmnopqrstuvwx',
   sharedByUserId: 'user-sharer',
   viewCount: 0,

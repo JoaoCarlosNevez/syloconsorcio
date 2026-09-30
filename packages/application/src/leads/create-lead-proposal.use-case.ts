@@ -88,6 +88,7 @@ export class CreateLeadProposalUseCase
       termMonths: input.termMonths,
       tableName: input.tableName ?? null,
       installments,
+      createdByUserId: input.userId,
     })
 
     await this.activityLog.record({

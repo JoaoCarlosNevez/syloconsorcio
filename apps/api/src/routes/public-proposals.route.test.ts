@@ -27,6 +27,7 @@ const PROPOSAL: SharedLeadProposalRecord = {
   termMonths: 24,
   tableName: null,
   installments: [{ from: 1, to: 24, amountCents: 3_500_00 }],
+  createdByUserId: 'user-01',
   shareToken: TOKEN,
   sharedByUserId: 'user-01',
   viewCount: 0,

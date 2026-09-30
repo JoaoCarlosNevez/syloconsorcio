@@ -31,6 +31,8 @@ export interface LeadProposalRecord {
   tableName: string | null
   /** Faixas em ordem, cobrindo 1..termMonths; null nas propostas antigas. */
   installments: ProposalInstallmentRange[] | null
+  /** Quem gerou a simulação; null nas propostas antigas sem autor conhecido. */
+  createdByUserId: string | null
   /** Token do link público (/p/:token); null até alguém gerar o link. */
   shareToken: string | null
   /** Quantas vezes o link público foi aberto. */
@@ -53,6 +55,7 @@ export interface NewLeadProposalInput {
   termMonths: number
   tableName: string | null
   installments: ProposalInstallmentRange[] | null
+  createdByUserId: string
 }
 
 export interface ILeadProposalRepository {

@@ -55,6 +55,7 @@ const SAMPLE_PROPOSAL: LeadProposalRecord = {
   termMonths: 24,
   tableName: null,
   installments: null,
+  createdByUserId: null,
   shareToken: null,
   viewCount: 0,
   lastViewedAt: null,

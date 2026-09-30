@@ -32,6 +32,11 @@ export const leadProposals = pgTable('lead_proposals', {
   // 1..termMonths (validado no CreateLeadProposalUseCase). Opcional —
   // propostas antigas não têm.
   installments: jsonb('installments').$type<ProposalInstallmentRange[]>(),
+  // Quem gerou a simulação — aparece no histórico do lead. Null nas propostas
+  // anteriores à coluna cujo autor não foi achado no activity_log.
+  createdByUserId: uuid('created_by_user_id').references(() => users.id, {
+    onDelete: 'set null',
+  }),
   // Link público da proposta (/p/:token) — token aleatório, gerado só quando
   // o vendedor pede o link. Quem abrir o link vê a proposta sem login, então
   // o token é a única proteção: nunca derive dele nada previsível.

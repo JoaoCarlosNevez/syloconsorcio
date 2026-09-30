@@ -118,6 +118,7 @@ const SAMPLE_PROPOSAL: LeadProposalRecord = {
   termMonths: 24,
   tableName: 'Tabela Imóvel 2026',
   installments: [{ from: 1, to: 24, amountCents: 2_000_00 }],
+  createdByUserId: 'user-uuid',
   shareToken: null,
   viewCount: 0,
   lastViewedAt: null,
@@ -1153,6 +1154,7 @@ describe('POST /leads/:id/proposals', () => {
         termMonths: 24,
         tableName: null,
         installments: null,
+        createdByUserId: 'user-uuid',
       }),
     )
   })

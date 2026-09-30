@@ -188,6 +188,8 @@ export interface LeadProposal {
   tableName: string | null
   /** Faixas de parcelas em ordem, cobrindo 1..termMonths; null nas antigas. */
   installments: ProposalInstallmentRange[] | null
+  /** Quem gerou a simulação; null nas propostas antigas sem autor conhecido. */
+  createdByUserId: string | null
   /** Token do link público (/p/:token); null até alguém gerar o link. */
   shareToken: string | null
   /** Quantas vezes o cliente abriu o link. */

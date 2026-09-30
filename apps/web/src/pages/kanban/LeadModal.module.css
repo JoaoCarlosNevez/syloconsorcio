@@ -1136,6 +1136,12 @@
   color: #fff;
 }
 
+.timelineIconProposal {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-badge-text);
+  box-shadow: 0 0 0 2px var(--color-accent-border-badge);
+}
+
 .timelineIconComment {
   background: #dbeafe;
   color: #2563eb;

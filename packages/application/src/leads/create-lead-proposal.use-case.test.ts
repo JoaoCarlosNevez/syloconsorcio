@@ -142,6 +142,7 @@ describe('CreateLeadProposalUseCase', () => {
       termMonths: 24,
       tableName: null,
       installments: null,
+      createdByUserId: 'user-01',
     })
   })
 
