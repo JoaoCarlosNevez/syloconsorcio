@@ -117,6 +117,9 @@ export class DrizzleLeadRepository implements ILeadRepository {
     if (filter.stageId) {
       conditions.push(eq(leads.stageId, filter.stageId))
     }
+    if (filter.assignedTo) {
+      conditions.push(eq(leads.assignedUserId, filter.assignedTo))
+    }
     if (filter.tags && filter.tags.length > 0) {
       // Overlap (OR): retorna leads que tenham QUALQUER uma das tags pedidas.
       conditions.push(arrayOverlaps(leads.tags, filter.tags))

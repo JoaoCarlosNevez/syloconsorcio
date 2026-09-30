@@ -54,6 +54,8 @@ export interface ListLeadsParams {
   outcome?: OutcomeFilter
   /** Retorna leads que tenham QUALQUER uma destas tags (overlap, não AND). */
   tags?: string[]
+  /** Só leads deste responsável — exige lead.assign (acima de Vendedor). */
+  assignedTo?: string
 }
 
 export interface CreateLeadPayload {
@@ -104,6 +106,7 @@ function toQueryString(params: ListLeadsParams): string {
   if (params.pageSize) search.set('pageSize', String(params.pageSize))
   if (params.outcome) search.set('outcome', params.outcome)
   if (params.tags && params.tags.length > 0) search.set('tags', params.tags.join(','))
+  if (params.assignedTo) search.set('assignedTo', params.assignedTo)
   const qs = search.toString()
   return qs ? `?${qs}` : ''
 }

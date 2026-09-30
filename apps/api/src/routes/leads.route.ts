@@ -119,6 +119,9 @@ const listQuerySchema = z.object({
   // Lista separada por vírgula (?tags=Quente,Frio) — mais simples de montar
   // no client e de parsear aqui do que depender do parser de query arrays.
   tags: z.string().optional(),
+  // Filtro por responsável do Kanban — só pra quem enxerga leads de outros
+  // (lead.assign: Dono e Supervisor).
+  assignedTo: z.string().uuid().optional(),
 })
 
 const createCommentSchema = z.object({
@@ -220,6 +223,17 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
         })
       }
 
+      if (
+        parsed.data.assignedTo !== undefined &&
+        !context.currentMembership.permissions.includes(Permission.LEAD_ASSIGN)
+      ) {
+        return reply.status(403).send({
+          error: 'Ação não autorizada. Permissão necessária: lead.assign.',
+          code: AuthErrorCode.PERMISSION_DENIED,
+          status: 403,
+        })
+      }
+
       return listLeads.execute({
         userId: context.userId,
         membership: context.currentMembership,
@@ -229,6 +243,7 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
         page: parsed.data.page,
         pageSize: parsed.data.pageSize,
         outcome: parsed.data.outcome,
+        assignedTo: parsed.data.assignedTo,
         tags: parsed.data.tags
           ?.split(',')
           .map((t) => t.trim())

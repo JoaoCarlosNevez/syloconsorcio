@@ -26,6 +26,8 @@ export interface ListLeadsInput {
   pageSize?: number
   outcome?: LeadOutcomeFilter
   tags?: string[]
+  /** Só leads deste responsável. A rota exige lead.assign pra usar. */
+  assignedTo?: string
 }
 
 export class ListLeadsUseCase implements UseCase<ListLeadsInput, LeadListPage> {
@@ -52,6 +54,7 @@ export class ListLeadsUseCase implements UseCase<ListLeadsInput, LeadListPage> {
         search: input.search,
         outcome: input.outcome,
         tags: input.tags,
+        assignedTo: input.assignedTo,
       },
       page,
       pageSize,

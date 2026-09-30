@@ -205,6 +205,25 @@ function TagIcon() {
   )
 }
 
+function UserIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  )
+}
+
 function TransferIcon() {
   return (
     <svg
@@ -576,6 +595,10 @@ export function KanbanPage() {
   const navigate = useNavigate()
   const { organizationId, membership } = useActiveOrganization()
   const canViewLost = membership?.permissions.includes('lead.manage_lost') ?? false
+  // Filtrar por vendedor é pra quem enxerga os leads da equipe (Dono e
+  // Supervisor) — o Vendedor só vê os próprios.
+  const canFilterByAssignee = membership?.permissions.includes('lead.assign') ?? false
+  const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null)
   const [outcomeFilter, setOutcomeFilter] = useState<OutcomeFilter>('aberto')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -650,15 +673,26 @@ export function KanbanPage() {
   // pageSize=100: suficiente para o volume inicial do MVP. Lazy loading por
   // coluna (AGENTS.md §12) fica para quando o volume real exigir — ver nota
   // de status do projeto.
+  const { data: teamData } = useTeamMembersQuery(organizationId)
+  const members = teamData?.members ?? []
+  // Vendedores do filtro: membros ativos, em ordem alfabética.
+  const assigneeOptions = members
+    .filter((m) => m.status === 'ACTIVE')
+    .map((m) => ({ userId: m.userId, label: m.name ?? m.email }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'))
+  // Ignora uma seleção que não existe na organização ativa (ex: trocou de org).
+  const activeAssignee =
+    canFilterByAssignee && assigneeOptions.some((o) => o.userId === assigneeFilter)
+      ? assigneeFilter
+      : null
   const { data, isLoading: isLoadingLeads } = useLeadsQuery(organizationId, {
     pageSize: 100,
     funnelId: activeFunnelId ?? undefined,
     outcome: outcomeFilter,
     tags: selectedTags,
+    assignedTo: activeAssignee ?? undefined,
   })
   const updateLead = useUpdateLead(organizationId)
-  const { data: teamData } = useTeamMembersQuery(organizationId)
-  const members = teamData?.members ?? []
   const { data: settingsData } = useOrganizationSettingsQuery(organizationId)
   const leadTags = settingsData?.organization.leadTags ?? []
   const { toast } = useToast()
@@ -953,6 +987,33 @@ export function KanbanPage() {
                   onSelect: () => setOutcomeFilter(outcome),
                 }))}
             />
+            {canFilterByAssignee && (
+              <Dropdown
+                trigger={
+                  <span
+                    className={`${styles.filterBtn} ${activeAssignee ? styles.filterBtnActive : ''}`}
+                  >
+                    <UserIcon />
+                    {assigneeOptions.find((o) => o.userId === activeAssignee)?.label ??
+                      'Todos os vendedores'}
+                    <ChevronDownIcon />
+                  </span>
+                }
+                items={[
+                  {
+                    key: 'all',
+                    label: 'Todos os vendedores',
+                    onSelect: () => setAssigneeFilter(null),
+                  },
+                  { key: 'assignee-label', type: 'label', label: 'Responsável' },
+                  ...assigneeOptions.map((option) => ({
+                    key: option.userId,
+                    label: option.label,
+                    onSelect: () => setAssigneeFilter(option.userId),
+                  })),
+                ]}
+              />
+            )}
             <div className={styles.tagFilterWrapper} ref={tagFilterRef}>
               <button
                 type="button"

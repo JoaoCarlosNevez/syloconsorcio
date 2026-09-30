@@ -105,6 +105,9 @@ export interface LeadListFilter extends LeadScopeFilter {
   outcome?: LeadOutcomeFilter
   /** Retorna leads que tenham QUALQUER uma destas tags (overlap, não AND). */
   tags?: string[]
+  /** Filtro opcional por responsável (filtro do Kanban, acima de Vendedor) —
+   * diferente de assignedUserId, que é o escopo obrigatório do DataScope.OWN. */
+  assignedTo?: string
 }
 
 export interface LeadListPage {

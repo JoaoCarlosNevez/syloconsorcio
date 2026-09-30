@@ -354,6 +354,50 @@ describe('GET /leads', () => {
     )
   })
 
+  it('returns 403 when a SELLER filters by assignedTo (missing lead.assign)', async () => {
+    const leadRepository = buildLeadRepository()
+    const app = buildTestApp({ membership: SELLER_MEMBERSHIP, leadRepository })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/leads?assignedTo=${OTHER_USER_ID}`,
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(403)
+    expect(leadRepository.list).not.toHaveBeenCalled()
+  })
+
+  it('returns 400 when assignedTo is not a uuid', async () => {
+    const app = buildTestApp({ membership: MANAGER_MEMBERSHIP })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/leads?assignedTo=fulano',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(400)
+  })
+
+  it('lets a MANAGER filter leads by assignedTo', async () => {
+    const leadRepository = buildLeadRepository()
+    const app = buildTestApp({ membership: MANAGER_MEMBERSHIP, leadRepository })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/leads?assignedTo=${OTHER_USER_ID}`,
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(leadRepository.list).toHaveBeenCalledWith(
+      expect.objectContaining({ assignedTo: OTHER_USER_ID }),
+      expect.anything(),
+      expect.anything(),
+    )
+  })
+
   it('allows a SELLER to request outcome=ganho', async () => {
     const leadRepository = buildLeadRepository()
     const app = buildTestApp({ membership: SELLER_MEMBERSHIP, leadRepository })
