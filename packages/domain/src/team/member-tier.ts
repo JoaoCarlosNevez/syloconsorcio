@@ -3,6 +3,9 @@
 // Definida pelo gestor em Configurações → Equipe, pertence à Membership (o
 // mesmo usuário pode ter patentes diferentes em organizações diferentes).
 // A ordem abaixo é a da progressão: Bronze é o nível inicial, Diamante o topo.
+// Só Vendedores têm patente (ver roleHasTier) — Dono e Supervisor não.
+
+import { Role } from '../auth/role'
 
 export const MemberTier = {
   BRONZE: 'bronze',
@@ -19,3 +22,8 @@ export const MEMBER_TIERS: readonly MemberTier[] = Object.values(MemberTier)
 
 /** Patente de quem acabou de entrar na organização. */
 export const DEFAULT_MEMBER_TIER: MemberTier = MemberTier.BRONZE
+
+/** Só o Vendedor tem patente; pra Dono e Supervisor ela não existe. */
+export function roleHasTier(role: Role): boolean {
+  return role === Role.SELLER
+}

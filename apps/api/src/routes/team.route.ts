@@ -69,6 +69,7 @@ import {
   type MemberTier,
   Permission,
   Role,
+  ValidationError,
 } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
@@ -434,6 +435,13 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
         })
         return reply.status(204).send()
       } catch (error) {
+        if (error instanceof ValidationError) {
+          return reply.status(400).send({
+            error: 'Só vendedores têm patente.',
+            code: 'TIER_ONLY_FOR_SELLERS',
+            status: 400,
+          })
+        }
         if (error instanceof AuthorizationError) {
           return reply.status(403).send({ error: error.message, code: error.code, status: 403 })
         }

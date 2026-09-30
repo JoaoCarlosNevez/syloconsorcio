@@ -10,6 +10,7 @@ import type { Tier } from '@sylocrm/ui'
 import { useEffect, useState } from 'react'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { useActiveOrganization } from '../../hooks/useOrganization'
+import { visibleTier } from '../../lib/tier-art'
 import styles from './MetasPage.module.css'
 
 // ── Definição dos níveis ──────────────────────────────────────────────────────
@@ -165,9 +166,9 @@ export function MetasPage() {
   const [isMockLoading, setIsMockLoading] = useState(true)
   const { membership } = useActiveOrganization()
   const isLoading = isMockLoading || !membership
-  // Só é lido depois do carregamento, quando membership já existe.
-  const currentTier: Tier = membership?.tier ?? 'bronze'
-  const proximoTier = nextTier(currentTier)
+  // Só Vendedor tem patente — pra Dono/Supervisor a página mostra só as metas.
+  const currentTier = membership ? visibleTier(membership) : null
+  const proximoTier = currentTier ? nextTier(currentTier) : null
 
   // Simula carregamento — remover quando a API estiver integrada
   useEffect(() => {
@@ -225,7 +226,7 @@ export function MetasPage() {
             </div>
           </div>
         ) : (
-          <TierStepper currentTier={currentTier} />
+          currentTier && <TierStepper currentTier={currentTier} />
         )}
 
         {/* ── Metas + Próximo nível ─────────────────────────────────────── */}
@@ -239,7 +240,9 @@ export function MetasPage() {
                 <div>
                   <p className={styles.cardTitle}>Metas do nível atual</p>
                   <p className={styles.cardSubtitle}>
-                    {proximoTier ? (
+                    {!currentTier ? (
+                      'Acompanhe suas metas do mês'
+                    ) : proximoTier ? (
                       <>
                         Conclua as metas abaixo para avançar para{' '}
                         <strong>{TIER_LABELS[proximoTier]}</strong>
@@ -250,7 +253,7 @@ export function MetasPage() {
                   </p>
                 </div>
               )}
-              {!isLoading && <TierBadge tier={currentTier} />}
+              {!isLoading && currentTier && <TierBadge tier={currentTier} />}
             </div>
 
             {isLoading ? (
@@ -316,7 +319,7 @@ export function MetasPage() {
                 </div>
               ))}
             </div>
-          ) : (
+          ) : currentTier ? (
             <div className={styles.proximoCard}>
               <div className={styles.proximoHeader}>
                 <div className={styles.proximoIcone}>
@@ -361,7 +364,7 @@ export function MetasPage() {
                 </>
               )}
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </AppLayout>

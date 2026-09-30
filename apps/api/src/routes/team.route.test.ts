@@ -789,8 +789,23 @@ describe('PUT /team/members/:userId/tier', () => {
     expect(response.statusCode).toBe(404)
   })
 
-  it('allows an ADMIN to set the tier of a MANAGER', async () => {
+  it('returns 400 when an ADMIN sets the tier of a MANAGER (only sellers have tiers)', async () => {
     const membershipRepository = buildTierMembershipRepository(ADMIN_MEMBERSHIP, MANAGER_MEMBERSHIP)
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository,
+    })
+
+    const response = await putTier(app, { tier: 'diamante' })
+
+    expect(response.statusCode).toBe(400)
+    expect(response.json().code).toBe('TIER_ONLY_FOR_SELLERS')
+    expect(membershipRepository.updateTier).not.toHaveBeenCalled()
+  })
+
+  it('allows an ADMIN to set the tier of a SELLER', async () => {
+    const membershipRepository = buildTierMembershipRepository(ADMIN_MEMBERSHIP, SELLER_MEMBERSHIP)
     const app = buildApp({
       authProvider: buildAuthProvider(),
       userRepository: buildUserRepository(),

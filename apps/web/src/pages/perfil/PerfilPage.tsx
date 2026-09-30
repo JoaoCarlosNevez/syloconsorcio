@@ -17,7 +17,7 @@ import { useSalesGoalsSummaryQuery, useUpdateMyPersonalGoal } from '../../hooks/
 import { validateIconFile } from '../../lib/icon-validation'
 import { formatGoalInput, goalInputToCents } from '../../lib/sales-goals'
 import { supabase } from '../../lib/supabase'
-import { tierBackground } from '../../lib/tier-art'
+import { tierBackground, visibleTier } from '../../lib/tier-art'
 import styles from './PerfilPage.module.css'
 
 const ROLE_LABEL: Record<'ADMIN' | 'MANAGER' | 'SELLER', string> = {
@@ -800,6 +800,8 @@ export function PerfilPage() {
   const { user } = useAuth()
   const { data: currentUser } = useCurrentUser()
   const { membership } = useActiveOrganization()
+  // Só Vendedor tem patente — Dono/Supervisor ficam com anel e capa neutros.
+  const tier = membership ? visibleTier(membership) : null
   const emailPrefix = user?.email?.split('@')[0] ?? 'consultor'
   const fallbackName = emailPrefix.replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
   const [selectedBadge, setSelectedBadge] = useState<BadgeData | null>(null)
@@ -922,10 +924,10 @@ export function PerfilPage() {
       <div
         className={styles.page}
         style={
-          membership
+          tier
             ? ({
-                '--tier-from': TIER_COLORS[membership.tier].from,
-                '--tier-to': TIER_COLORS[membership.tier].to,
+                '--tier-from': TIER_COLORS[tier].from,
+                '--tier-to': TIER_COLORS[tier].to,
               } as React.CSSProperties)
             : undefined
         }
@@ -968,7 +970,7 @@ export function PerfilPage() {
           {/* Banner */}
           <div
             className={styles.coverBanner}
-            style={membership ? { background: tierBackground(membership.tier) } : undefined}
+            style={tier ? { background: tierBackground(tier) } : undefined}
           >
             <button
               type="button"
@@ -993,9 +995,7 @@ export function PerfilPage() {
               <div className={styles.profileInfo}>
                 <div className={styles.profileNameRow}>
                   <h1 className={styles.profileName}>{displayName}</h1>
-                  {membership && (
-                    <span className={styles.tierBadge}>{TIER_LABELS[membership.tier]}</span>
-                  )}
+                  {tier && <span className={styles.tierBadge}>{TIER_LABELS[tier]}</span>}
                   <span className={styles.profileHandle}>{displayHandle}</span>
                 </div>
                 <div className={styles.profileMetaRow}>

@@ -51,6 +51,7 @@ import { playNotificationSound } from '../../lib/notification-sound'
 import type { NotificationType } from '../../lib/notifications-api'
 import { formatGoalInput, goalInputToCents } from '../../lib/sales-goals'
 import type { InvitableRole, TeamMember } from '../../lib/team-api'
+import { visibleTier } from '../../lib/tier-art'
 import styles from './ConfigPage.module.css'
 import { FunnelsSection } from './FunnelsSection'
 import { IntegracoesSection } from './IntegracoesSection'
@@ -755,7 +756,7 @@ function EquipeView() {
                         src={member.avatarUrl ?? undefined}
                         initials={initialsForMember(member)}
                         size="sm"
-                        tier={member.tier}
+                        tier={visibleTier(member) ?? undefined}
                       />
                       <button
                         type="button"
@@ -775,7 +776,11 @@ function EquipeView() {
                       </span>
                     </td>
                     <td className={styles.td}>
-                      <TierBadge tier={member.tier} />
+                      {visibleTier(member) ? (
+                        <TierBadge tier={member.tier} />
+                      ) : (
+                        <span className={styles.goalEmpty}>—</span>
+                      )}
                     </td>
                     <td className={styles.td}>
                       <span className={styles.statusCell}>
@@ -2766,6 +2771,8 @@ function MemberDetailModal({
     member.salesGoalCents !== null ? formatGoalInput(String(member.salesGoalCents / 100)) : '',
   )
   const [tier, setTier] = useState<Tier>(member.tier)
+  // Só Vendedor tem patente — pra Dono/Supervisor o seletor nem aparece.
+  const hasTier = visibleTier(member) !== null
   const [formError, setFormError] = useState('')
   const updateGoal = useUpdateTeamMemberSalesGoal(organizationId)
   const updateTier = useUpdateTeamMemberTier(organizationId)
@@ -2788,7 +2795,7 @@ function MemberDetailModal({
     setFormError('')
     const salesGoalCents = goalInputToCents(goal)
     const goalChanged = salesGoalCents !== member.salesGoalCents
-    const tierChanged = tier !== member.tier
+    const tierChanged = hasTier && tier !== member.tier
     if (!goalChanged && !tierChanged) {
       onClose()
       return
@@ -2824,7 +2831,7 @@ function MemberDetailModal({
               src={member.avatarUrl ?? undefined}
               initials={initialsForMember(member)}
               size="md"
-              tier={tier}
+              tier={hasTier ? tier : undefined}
             />
             <div className={styles.memberDetailInfo}>
               <div className={styles.modalTitle}>{member.name ?? '—'}</div>
@@ -2845,43 +2852,47 @@ function MemberDetailModal({
         </div>
         <form onSubmit={handleSubmit}>
           <div className={styles.modalBody}>
-            <fieldset className={`${styles.formRow} ${styles.tierFieldset}`}>
-              <legend className={`${styles.formLabel} ${styles.tierLegend}`}>Patente</legend>
-              <div className={styles.tierPicker}>
-                {TIERS.map((option) => {
-                  const selected = option === tier
-                  return (
-                    <button
-                      key={option}
-                      type="button"
-                      aria-pressed={selected}
-                      className={`${styles.tierOption} ${selected ? styles.tierOptionSelected : ''}`}
-                      style={
-                        selected
-                          ? { background: tierGradient(option) }
-                          : ({ '--tier-accent': TIER_COLORS[option].accent } as React.CSSProperties)
-                      }
-                      onClick={() => setTier(option)}
-                      disabled={!canEdit}
-                    >
-                      {!selected && (
-                        <span
-                          className={styles.tierOptionDot}
-                          style={{ background: tierGradient(option) }}
-                          aria-hidden="true"
-                        />
-                      )}
-                      {TIER_LABELS[option]}
-                    </button>
-                  )
-                })}
-              </div>
-              <span className={styles.formHint}>
-                {canEdit
-                  ? 'Define a cor do anel ao redor da foto e o nível exibido no perfil do membro.'
-                  : 'Só quem está acima deste membro na hierarquia pode alterar a patente.'}
-              </span>
-            </fieldset>
+            {hasTier && (
+              <fieldset className={`${styles.formRow} ${styles.tierFieldset}`}>
+                <legend className={`${styles.formLabel} ${styles.tierLegend}`}>Patente</legend>
+                <div className={styles.tierPicker}>
+                  {TIERS.map((option) => {
+                    const selected = option === tier
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        aria-pressed={selected}
+                        className={`${styles.tierOption} ${selected ? styles.tierOptionSelected : ''}`}
+                        style={
+                          selected
+                            ? { background: tierGradient(option) }
+                            : ({
+                                '--tier-accent': TIER_COLORS[option].accent,
+                              } as React.CSSProperties)
+                        }
+                        onClick={() => setTier(option)}
+                        disabled={!canEdit}
+                      >
+                        {!selected && (
+                          <span
+                            className={styles.tierOptionDot}
+                            style={{ background: tierGradient(option) }}
+                            aria-hidden="true"
+                          />
+                        )}
+                        {TIER_LABELS[option]}
+                      </button>
+                    )
+                  })}
+                </div>
+                <span className={styles.formHint}>
+                  {canEdit
+                    ? 'Define a cor do anel ao redor da foto e o nível exibido no perfil do membro.'
+                    : 'Só quem está acima deste membro na hierarquia pode alterar a patente.'}
+                </span>
+              </fieldset>
+            )}
             <div className={styles.formRow}>
               <label className={styles.formLabel} htmlFor="member-sales-goal">
                 Meta de vendas

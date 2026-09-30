@@ -9,6 +9,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { applyBrandColor } from '../../lib/brand-theme'
+import { visibleTier } from '../../lib/tier-art'
 import { NotificationBell } from '../notifications/NotificationBell'
 import styles from './AppLayout.module.css'
 
@@ -203,7 +204,13 @@ function SairIcon() {
 // Paleta da patente injetada como CSS custom properties no sidebar.
 // O menu (--nav-*) usa a cor secundária White Label quando a organização
 // ativa tem uma; senão, a da patente.
-// Enquanto as memberships carregam não há patente — o CSS cai nos fallbacks.
+const ROLE_LABEL: Record<'ADMIN' | 'MANAGER' | 'SELLER', string> = {
+  ADMIN: 'Dono',
+  MANAGER: 'Supervisor',
+  SELLER: 'Vendedor',
+}
+
+// Enquanto as memberships carregam (ou pra quem não tem patente) não há patente — o CSS cai nos fallbacks.
 function tierPaletteVars(tier: Tier | null): Record<string, string> {
   if (!tier) return {}
   const { accent } = TIER_COLORS[tier]
@@ -257,7 +264,8 @@ export function AppLayout({ children }: AppLayoutProps) {
     currentUser?.name ??
     (user?.user_metadata?.full_name as string | undefined) ??
     deriveDisplayName(user?.email)
-  const tier = membership?.tier ?? null
+  // Só Vendedor tem patente — pra Dono/Supervisor o cartão mostra o papel.
+  const tier = membership ? visibleTier(membership) : null
 
   async function handleSignOut() {
     await signOut()
@@ -421,7 +429,9 @@ export function AppLayout({ children }: AppLayoutProps) {
             </div>
             <div className={styles.userCardInfo}>
               <p className={styles.userCardName}>{displayName}</p>
-              <p className={styles.userCardTier}>{tier ? TIER_LABELS[tier] : ''}</p>
+              <p className={styles.userCardTier}>
+                {tier ? TIER_LABELS[tier] : membership ? ROLE_LABEL[membership.role] : ''}
+              </p>
             </div>
             <ChevronDownIcon />
           </button>

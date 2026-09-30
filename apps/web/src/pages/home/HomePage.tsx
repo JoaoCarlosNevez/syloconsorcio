@@ -4,7 +4,7 @@
 // do usuário (GET /tasks?status=abertas&mine=true);
 // o restante ainda é mock, com skeleton durante carregamento.
 
-import { Dropdown, Skeleton, TIER_LABELS, tierGradient } from '@sylocrm/ui'
+import { Dropdown, Skeleton, TIER_LABELS } from '@sylocrm/ui'
 import type { DropdownEntry, Tier } from '@sylocrm/ui'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -20,7 +20,7 @@ import { useSalesGoalsSummaryQuery } from '../../hooks/useTeam'
 import { formatCota } from '../../lib/lead-adapters'
 import { businessDaysRemaining, formatGoalBRL, toGoalProgressView } from '../../lib/sales-goals'
 import type { Task, TaskType } from '../../lib/tasks-api'
-import { tierBackground } from '../../lib/tier-art'
+import { tierBackground, tierRingGradient, visibleTier } from '../../lib/tier-art'
 import {
   type DisplayStatus,
   STATUS_CFG,
@@ -203,7 +203,7 @@ const HOME_TASK_STATUS_OPTIONS: { value: HomeTaskStatusFilter; label: string }[]
 ]
 
 // O hero esmaece pro branco à esquerda, onde ficam foto e nome.
-function heroBackground(tier: Tier): string {
+function heroBackground(tier: Tier | null): string {
   const fade = 'linear-gradient(98deg, #FFF 51.46%, rgba(255, 255, 255, 0.00) 82.99%)'
   return `${fade}, ${tierBackground(tier)}`
 }
@@ -337,14 +337,14 @@ export function HomePage() {
           <div
             className={styles.profileHero}
             style={{
-              background: heroBackground(membership.tier),
+              background: heroBackground(visibleTier(membership)),
             }}
           >
             {/* Avatar + info (incluindo ações abaixo do nome) */}
             <div className={styles.profileLeft}>
               <div
                 className={styles.profileAvatarRing}
-                style={{ background: tierGradient(membership.tier) }}
+                style={{ background: tierRingGradient(visibleTier(membership)) }}
               >
                 <div className={styles.profileAvatarInner}>
                   <img
@@ -358,12 +358,14 @@ export function HomePage() {
               <div className={styles.profileInfo}>
                 <div className={styles.profileNameRow}>
                   <h1 className={styles.profileName}>{displayName}</h1>
-                  <span
-                    className={styles.tierPill}
-                    style={{ background: tierGradient(membership.tier) }}
-                  >
-                    {TIER_LABELS[membership.tier]}
-                  </span>
+                  {visibleTier(membership) && (
+                    <span
+                      className={styles.tierPill}
+                      style={{ background: tierRingGradient(visibleTier(membership)) }}
+                    >
+                      {TIER_LABELS[membership.tier]}
+                    </span>
+                  )}
                   <span className={styles.profileHandle}>{handle}</span>
                 </div>
                 <p className={styles.profileMeta}>
