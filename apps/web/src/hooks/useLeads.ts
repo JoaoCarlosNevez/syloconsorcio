@@ -4,6 +4,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   type CreateLeadPayload,
+  type CreateLeadProposalPayload,
   type LeadHistory,
   type LeadListPage,
   type LeadProposal,
@@ -115,7 +116,7 @@ export function useLeadProposalsQuery(organizationId: string | null, leadId: str
 export function useCreateLeadProposal(organizationId: string | null, leadId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (payload: { downPaymentCents: number; termMonths: number }) =>
+    mutationFn: (payload: CreateLeadProposalPayload) =>
       createLeadProposal(organizationId as string, leadId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: leadProposalsQueryKey(organizationId, leadId) })

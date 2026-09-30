@@ -16,6 +16,8 @@ export interface LeadProposalRecord {
   leadId: string
   downPaymentCents: number
   termMonths: number
+  /** Nome da tabela da administradora usada na simulação; null nas antigas. */
+  tableName: string | null
   createdAt: Date
 }
 
@@ -23,6 +25,7 @@ export interface NewLeadProposalInput {
   leadId: string
   downPaymentCents: number
   termMonths: number
+  tableName: string | null
 }
 
 export interface ILeadProposalRepository {

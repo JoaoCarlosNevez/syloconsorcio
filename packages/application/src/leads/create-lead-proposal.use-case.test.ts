@@ -133,7 +133,30 @@ describe('CreateLeadProposalUseCase', () => {
       leadId: 'lead-01',
       downPaymentCents: 20_000_00,
       termMonths: 24,
+      tableName: null,
     })
+  })
+
+  it('stores the table name used in the simulation', async () => {
+    const leadProposalRepository = buildLeadProposalRepository()
+    const useCase = new CreateLeadProposalUseCase(
+      buildLeadRepository(),
+      buildOrganizationRepository(),
+      leadProposalRepository,
+    )
+
+    await useCase.execute({
+      leadId: 'lead-01',
+      userId: 'user-01',
+      membership: MEMBERSHIP,
+      downPaymentCents: 20_000_00,
+      termMonths: 24,
+      tableName: 'Tabela Imóvel 2026',
+    })
+
+    expect(leadProposalRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ tableName: 'Tabela Imóvel 2026' }),
+    )
   })
 
   it('rejects a down payment greater than or equal to the lead value', async () => {

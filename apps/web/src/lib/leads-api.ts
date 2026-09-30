@@ -185,6 +185,8 @@ export interface LeadProposal {
   leadId: string
   downPaymentCents: number
   termMonths: number
+  /** Nome da tabela da administradora usada na simulação; null nas antigas. */
+  tableName: string | null
   createdAt: string
 }
 
@@ -197,10 +199,16 @@ export function listLeadProposals(
   })
 }
 
+export interface CreateLeadProposalPayload {
+  downPaymentCents: number
+  termMonths: number
+  tableName?: string | null
+}
+
 export function createLeadProposal(
   organizationId: string,
   leadId: string,
-  payload: { downPaymentCents: number; termMonths: number },
+  payload: CreateLeadProposalPayload,
 ): Promise<LeadProposal> {
   return apiClient.post<LeadProposal>(`/leads/${leadId}/proposals`, payload, { organizationId })
 }

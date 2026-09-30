@@ -169,6 +169,13 @@
       "when": 1790711241640,
       "tag": "0023_slim_captain_america",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790736740273,
+      "tag": "0024_lying_killer_shrike",
+      "breakpoints": true
     }
   ]
 }

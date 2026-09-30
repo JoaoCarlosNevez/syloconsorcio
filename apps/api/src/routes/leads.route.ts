@@ -107,6 +107,14 @@ const updateLeadSchema = z.object({
 const createProposalSchema = z.object({
   downPaymentCents: z.number().int().nonnegative(),
   termMonths: z.number().int().positive(),
+  // Nome da tabela da administradora — opcional; vazio vira null.
+  tableName: z
+    .string()
+    .trim()
+    .max(120)
+    .nullable()
+    .optional()
+    .transform((value) => value || null),
 })
 
 const listQuerySchema = z.object({
@@ -449,6 +457,7 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
           membership: context.currentMembership,
           downPaymentCents: parsed.data.downPaymentCents,
           termMonths: parsed.data.termMonths,
+          tableName: parsed.data.tableName,
         })
 
         if (!proposal) {

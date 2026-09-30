@@ -116,6 +116,7 @@ const SAMPLE_PROPOSAL: LeadProposalRecord = {
   leadId: 'lead-01',
   downPaymentCents: 5_000_00,
   termMonths: 24,
+  tableName: 'Tabela Imóvel 2026',
   createdAt: new Date('2026-01-05T00:00:00Z'),
 }
 
@@ -1089,8 +1090,43 @@ describe('POST /leads/:id/proposals', () => {
 
     expect(response.statusCode).toBe(201)
     expect(leadProposalRepository.create).toHaveBeenCalledWith(
-      expect.objectContaining({ leadId: 'lead-01', downPaymentCents: 5_000_00, termMonths: 24 }),
+      expect.objectContaining({
+        leadId: 'lead-01',
+        downPaymentCents: 5_000_00,
+        termMonths: 24,
+        tableName: null,
+      }),
     )
+  })
+
+  it('stores the table name, trimmed, when sent', async () => {
+    const leadProposalRepository = buildLeadProposalRepository()
+    const app = buildTestApp({ leadProposalRepository })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/leads/lead-01/proposals',
+      headers: AUTH_HEADERS,
+      payload: { downPaymentCents: 5_000_00, termMonths: 24, tableName: '  Tabela Imóvel 2026 ' },
+    })
+
+    expect(response.statusCode).toBe(201)
+    expect(leadProposalRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ tableName: 'Tabela Imóvel 2026' }),
+    )
+  })
+
+  it('returns 400 when the table name is too long', async () => {
+    const app = buildTestApp({})
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/leads/lead-01/proposals',
+      headers: AUTH_HEADERS,
+      payload: { downPaymentCents: 5_000_00, termMonths: 24, tableName: 'x'.repeat(121) },
+    })
+
+    expect(response.statusCode).toBe(400)
   })
 })
 

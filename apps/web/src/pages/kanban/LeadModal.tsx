@@ -679,7 +679,12 @@ const MARITAL_STATUS_OPTIONS = [
 type SimulationState =
   | { status: 'idle' }
   | { status: 'loading'; durationMs: number }
-  | { status: 'approved'; downPaymentCents: number; termMonths: number }
+  | {
+      status: 'approved'
+      downPaymentCents: number
+      termMonths: number
+      tableName: string | null
+    }
 
 const SIMULATION_MIN_MS = 30_000
 const SIMULATION_MAX_MS = 60_000
@@ -776,7 +781,11 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
   const [simulationFormOpen, setSimulationFormOpen] = useState(false)
   const [qualificationGapFields, setQualificationGapFields] = useState<QualificationFieldDef[]>([])
   const [gapForm, setGapForm] = useState<AttrsForm>(() => buildAttrsForm(card))
-  const [simulationParams, setSimulationParams] = useState({ downPayment: '', termMonths: '' })
+  const [simulationParams, setSimulationParams] = useState({
+    tableName: '',
+    downPayment: '',
+    termMonths: '',
+  })
   const [analysisStepIndex, setAnalysisStepIndex] = useState(0)
 
   useEffect(() => {
@@ -1034,15 +1043,15 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
     }
   }
 
-  function startSimulation(downPaymentCents: number, termMonths: number) {
+  function startSimulation(downPaymentCents: number, termMonths: number, tableName: string | null) {
     const delayMs = SIMULATION_MIN_MS + Math.random() * (SIMULATION_MAX_MS - SIMULATION_MIN_MS)
     setSimulation({ status: 'loading', durationMs: delayMs })
     simulationTimer.current = setTimeout(() => {
       createLeadProposal.mutate(
-        { downPaymentCents, termMonths },
+        { downPaymentCents, termMonths, tableName },
         {
           onSuccess: () => {
-            setSimulation({ status: 'approved', downPaymentCents, termMonths })
+            setSimulation({ status: 'approved', downPaymentCents, termMonths, tableName })
           },
           onError: (error) => {
             setSimulation({ status: 'idle' })
@@ -1063,7 +1072,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
   function handleSimulate() {
     setGapForm(buildAttrsForm(card))
     setQualificationGapFields(missingQualificationFields(card))
-    setSimulationParams({ downPayment: '', termMonths: '' })
+    setSimulationParams({ tableName: '', downPayment: '', termMonths: '' })
     setSimulationFormOpen(true)
   }
 
@@ -1073,6 +1082,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
 
   function handleSubmitSimulationForm() {
     const downPaymentCents = parseValueToCents(simulationParams.downPayment)
+    const tableName = simulationParams.tableName.trim() || null
     const termMonths = simulationParams.termMonths.trim()
       ? Number.parseInt(simulationParams.termMonths, 10)
       : null
@@ -1102,7 +1112,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
 
     function proceed() {
       setSimulationFormOpen(false)
-      startSimulation(downPaymentCents as number, termMonths as number)
+      startSimulation(downPaymentCents as number, termMonths as number, tableName)
     }
 
     if (qualificationPayload) {
@@ -1729,6 +1739,14 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                             A proposta de <strong>{card.name}</strong> foi pré-aprovada com sucesso.
                           </p>
                           <div className={styles.simApprovedSummary}>
+                            {simulation.tableName && (
+                              <div className={styles.simApprovedItem}>
+                                <span className={styles.simApprovedLabel}>Tabela</span>
+                                <span className={styles.simApprovedValue}>
+                                  {simulation.tableName}
+                                </span>
+                              </div>
+                            )}
                             <div className={styles.simApprovedItem}>
                               <span className={styles.simApprovedLabel}>Valor da Cota</span>
                               <span className={styles.simApprovedValue}>
@@ -1779,6 +1797,9 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                           <div className={styles.simHeader}>
                             <div>
                               <h3 className={styles.simTitle}>{card.cota}</h3>
+                              {proposal.tableName && (
+                                <p className={styles.simValue}>Tabela: {proposal.tableName}</p>
+                              )}
                               <p className={styles.simValue}>
                                 Entrada: R$ {formatBRL(proposal.downPaymentCents)}
                               </p>
@@ -2628,11 +2649,29 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
           >
             <h2 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 4px' }}>Nova Simulação</h2>
             <p style={{ fontSize: 13, color: '#475569', margin: '0 0 16px' }}>
-              Entrada e prazo valem só pra esta proposta.
+              Tabela, entrada e prazo valem só pra esta proposta.
               {qualificationGapFields.length > 0 &&
                 ' Também falta completar a Ficha de Qualificação do cliente.'}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label
+                  htmlFor="sim-table-name"
+                  style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}
+                >
+                  Nome da Tabela
+                </label>
+                <input
+                  id="sim-table-name"
+                  className={styles.attrInput}
+                  placeholder="Ex: Tabela Imóvel 2026"
+                  maxLength={120}
+                  value={simulationParams.tableName}
+                  onChange={(e) =>
+                    setSimulationParams((prev) => ({ ...prev, tableName: e.target.value }))
+                  }
+                />
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <label
                   htmlFor="sim-down-payment"

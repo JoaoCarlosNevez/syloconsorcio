@@ -135,7 +135,7 @@ export function describeActivity(
     case 'lead.comment_added':
       return `comentou no lead ${label}${str(m, 'preview') ? `: ${quoted(str(m, 'preview'))}` : ''}`
     case 'lead.proposal_created':
-      return `criou uma simulação para o lead ${label} · entrada ${money(num(m, 'downPaymentCents'))} em ${num(m, 'termMonths') ?? '—'} meses`
+      return `criou uma simulação para o lead ${label}${str(m, 'tableName') ? ` na tabela ${quoted(str(m, 'tableName'))}` : ''} · entrada ${money(num(m, 'downPaymentCents'))} em ${num(m, 'termMonths') ?? '—'} meses`
     case 'task.created':
       return `criou a tarefa ${label}${str(m, 'type') ? ` (${str(m, 'type')})` : ''}${str(m, 'leadName') ? ` para o lead ${quoted(str(m, 'leadName'))}` : ''}`
     case 'task.updated':

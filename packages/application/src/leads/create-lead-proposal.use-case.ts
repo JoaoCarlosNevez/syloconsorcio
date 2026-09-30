@@ -19,6 +19,8 @@ export interface CreateLeadProposalInput {
   membership: MembershipContext
   downPaymentCents: number
   termMonths: number
+  /** Nome da tabela da administradora (opcional). */
+  tableName?: string | null
 }
 
 export class CreateLeadProposalUseCase
@@ -53,6 +55,7 @@ export class CreateLeadProposalUseCase
       leadId: input.leadId,
       downPaymentCents: input.downPaymentCents,
       termMonths: input.termMonths,
+      tableName: input.tableName ?? null,
     })
 
     await this.activityLog.record({
@@ -62,7 +65,11 @@ export class CreateLeadProposalUseCase
       entityType: 'lead',
       entityId: lead.id,
       entityLabel: lead.name,
-      metadata: { downPaymentCents: input.downPaymentCents, termMonths: input.termMonths },
+      metadata: {
+        downPaymentCents: input.downPaymentCents,
+        termMonths: input.termMonths,
+        tableName: input.tableName ?? null,
+      },
     })
 
     return proposal

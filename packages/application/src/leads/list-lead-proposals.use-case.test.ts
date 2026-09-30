@@ -53,6 +53,7 @@ const SAMPLE_PROPOSAL: LeadProposalRecord = {
   leadId: 'lead-01',
   downPaymentCents: 20_000_00,
   termMonths: 24,
+  tableName: null,
   createdAt: new Date('2026-01-05T00:00:00Z'),
 }
 

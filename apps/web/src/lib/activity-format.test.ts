@@ -90,6 +90,22 @@ describe('describeActivity', () => {
   })
 })
 
+describe('describeActivity — simulações', () => {
+  it('mentions the table name when the simulation has one', () => {
+    const text = describeActivity(
+      entry({
+        action: 'lead.proposal_created',
+        entityType: 'lead',
+        entityId: 'lead-01',
+        entityLabel: 'Maria',
+        metadata: { downPaymentCents: 5_000_00, termMonths: 24, tableName: 'Tabela Imóvel 2026' },
+      }),
+      memberName,
+    )
+    expect(text).toContain('na tabela “Tabela Imóvel 2026”')
+  })
+})
+
 describe('activityDayLabel', () => {
   it('labels today and yesterday', () => {
     const now = new Date(2026, 8, 25, 15, 0)
