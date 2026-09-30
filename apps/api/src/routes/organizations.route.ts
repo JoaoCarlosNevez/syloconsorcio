@@ -17,6 +17,7 @@
 
 import type {
   IAuthProvider,
+  IFunnelRepository,
   IMembershipRepository,
   IOrganizationRepository,
   IStorageProvider,
@@ -41,6 +42,7 @@ interface OrganizationsRouteOptions {
   userRepository: IUserRepository
   organizationRepository: IOrganizationRepository
   membershipRepository: IMembershipRepository
+  funnelRepository: IFunnelRepository
   storageProvider: IStorageProvider
 }
 
@@ -88,6 +90,7 @@ export const organizationsRoute: FastifyPluginAsync<OrganizationsRouteOptions> =
     options.userRepository,
     options.organizationRepository,
     options.membershipRepository,
+    options.funnelRepository,
   )
 
   const createPlatformUser = new CreatePlatformUserUseCase(

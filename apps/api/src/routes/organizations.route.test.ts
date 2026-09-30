@@ -8,6 +8,7 @@
 
 import type {
   IAuthProvider,
+  IFunnelRepository,
   IMembershipRepository,
   IOrganizationRepository,
   IStorageProvider,
@@ -106,6 +107,29 @@ function buildMembershipRepository(): IMembershipRepository {
   }
 }
 
+function buildFunnelRepository(): IFunnelRepository {
+  return {
+    listByOrganization: vi.fn().mockResolvedValue([]),
+    findById: vi.fn().mockResolvedValue(null),
+    create: vi.fn().mockImplementation((input: { organizationId: string; name: string }) =>
+      Promise.resolve({
+        id: 'funnel-uuid',
+        organizationId: input.organizationId,
+        name: input.name,
+        isDefault: true,
+        duplicateToFunnelId: null,
+        stages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
+    ),
+    update: vi.fn().mockResolvedValue(null),
+    delete: vi.fn().mockResolvedValue(false),
+    countLeadsByStage: vi.fn().mockResolvedValue(0),
+    countLeadsByFunnel: vi.fn().mockResolvedValue(0),
+  }
+}
+
 const validPayload = {
   organizationName: 'Nova Representação',
   ownerName: 'Dono',
@@ -123,6 +147,7 @@ describe('POST /organizations', () => {
       userRepository: buildUserRepository(true),
       organizationRepository: buildOrganizationRepository(),
       membershipRepository: buildMembershipRepository(),
+      funnelRepository: buildFunnelRepository(),
     })
 
     const response = await app.inject({
@@ -140,6 +165,7 @@ describe('POST /organizations', () => {
       userRepository: buildUserRepository(false),
       organizationRepository: buildOrganizationRepository(),
       membershipRepository: buildMembershipRepository(),
+      funnelRepository: buildFunnelRepository(),
     })
 
     const response = await app.inject({
@@ -160,6 +186,7 @@ describe('POST /organizations', () => {
       userRepository: buildUserRepository(true),
       organizationRepository: buildOrganizationRepository(),
       membershipRepository: buildMembershipRepository(),
+      funnelRepository: buildFunnelRepository(),
     })
 
     const response = await app.inject({
@@ -178,6 +205,7 @@ describe('POST /organizations', () => {
       userRepository: buildUserRepository(true),
       organizationRepository: buildOrganizationRepository(),
       membershipRepository: buildMembershipRepository(),
+      funnelRepository: buildFunnelRepository(),
     })
 
     const response = await app.inject({
@@ -194,11 +222,13 @@ describe('POST /organizations', () => {
     const authProvider = buildAuthProvider()
     const organizationRepository = buildOrganizationRepository()
     const membershipRepository = buildMembershipRepository()
+    const funnelRepository = buildFunnelRepository()
     const app = buildApp({
       authProvider,
       userRepository: buildUserRepository(true),
       organizationRepository,
       membershipRepository,
+      funnelRepository,
     })
 
     const response = await app.inject({
@@ -214,16 +244,22 @@ describe('POST /organizations', () => {
     expect(body.owner).toBeNull()
     expect(authProvider.createUser).not.toHaveBeenCalled()
     expect(membershipRepository.create).not.toHaveBeenCalled()
+    // Mesmo sem dono, a organização nasce com o funil padrão.
+    expect(funnelRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ organizationId: 'org-uuid', isDefault: true }),
+    )
   })
 
   it('creates the organization and its owner when the caller is a platform admin', async () => {
     const organizationRepository = buildOrganizationRepository()
     const membershipRepository = buildMembershipRepository()
+    const funnelRepository = buildFunnelRepository()
     const app = buildApp({
       authProvider: buildAuthProvider(),
       userRepository: buildUserRepository(true),
       organizationRepository,
       membershipRepository,
+      funnelRepository,
     })
 
     const response = await app.inject({
@@ -244,6 +280,9 @@ describe('POST /organizations', () => {
     expect(membershipRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({ organizationId: 'org-uuid', role: 'ADMIN' }),
     )
+    expect(funnelRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ organizationId: 'org-uuid', name: 'Padrão', isDefault: true }),
+    )
   })
 
   it('returns 409 when the owner email is already registered', async () => {
@@ -255,6 +294,7 @@ describe('POST /organizations', () => {
       userRepository: buildUserRepository(true),
       organizationRepository: buildOrganizationRepository(),
       membershipRepository: buildMembershipRepository(),
+      funnelRepository: buildFunnelRepository(),
     })
 
     const response = await app.inject({

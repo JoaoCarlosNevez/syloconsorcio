@@ -3,6 +3,9 @@
 // organização é criada — o dono entra depois por CreatePlatformUserUseCase
 // (Administração → Criar usuário, papel Dono).
 //
+// Toda organização nasce com o funil padrão (DEFAULT_FUNNEL_STAGES) — sem funil
+// o Kanban fica vazio e não dá pra criar lead.
+//
 // A checagem de "é Super Admin" acontece na camada HTTP (requirePlatformAdmin
 // middleware) — este use case assume que a chamada já foi autorizada.
 //
@@ -12,7 +15,9 @@
 
 import { OrganizationType, Role } from '@sylocrm/domain'
 import { generateTemporaryPassword } from '../auth/generate-temporary-password'
+import { DEFAULT_FUNNEL_NAME, DEFAULT_FUNNEL_STAGES } from '../funnels/default-funnel'
 import type { AuthIdentity, IAuthProvider } from '../ports/auth.provider'
+import type { IFunnelRepository } from '../ports/funnel.repository'
 import type { IMembershipRepository } from '../ports/membership.repository'
 import type { IOrganizationRepository, OrganizationRecord } from '../ports/organization.repository'
 import type { UseCase } from '../ports/use-case'
@@ -38,6 +43,7 @@ export class CreateRepresentationUseCase
     private readonly userRepository: IUserRepository,
     private readonly organizationRepository: IOrganizationRepository,
     private readonly membershipRepository: IMembershipRepository,
+    private readonly funnelRepository: IFunnelRepository,
   ) {}
 
   async execute(input: CreateRepresentationInput): Promise<CreateRepresentationOutput> {
@@ -49,6 +55,13 @@ export class CreateRepresentationUseCase
       name: input.organizationName,
       type: OrganizationType.REPRESENTACAO,
       parentOrganizationId: null,
+    })
+
+    await this.funnelRepository.create({
+      organizationId: organization.id,
+      name: DEFAULT_FUNNEL_NAME,
+      stages: [...DEFAULT_FUNNEL_STAGES],
+      isDefault: true,
     })
 
     if (owner) {

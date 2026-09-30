@@ -302,6 +302,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     userRepository: resolvedDeps.userRepository,
     organizationRepository: resolvedDeps.organizationRepository,
     membershipRepository: resolvedDeps.membershipRepository,
+    funnelRepository: resolvedDeps.funnelRepository,
     storageProvider: resolvedDeps.storageProvider,
   })
 
