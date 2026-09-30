@@ -7,6 +7,7 @@
 import type {
   ITaskRepository,
   NewTaskInput,
+  TaskCountFilter,
   TaskListFilter,
   TaskListPage,
   TaskRecord,
@@ -14,7 +15,7 @@ import type {
   TaskStatus,
   UpdateTaskInput,
 } from '@sylocrm/application'
-import { and, asc, eq, ilike, inArray, ne, sql } from 'drizzle-orm'
+import { and, asc, count, eq, gte, ilike, inArray, lt, ne, sql } from 'drizzle-orm'
 import type { Database } from '../client'
 import { type DbTask, tasks } from '../schema'
 
@@ -152,5 +153,23 @@ export class DrizzleTaskRepository implements ITaskRepository {
       .returning({ id: tasks.id })
 
     return rows.length > 0
+  }
+
+  async count(filter: TaskCountFilter): Promise<number> {
+    const conditions = [
+      eq(tasks.organizationId, filter.organizationId),
+      eq(tasks.assignedUserId, filter.assignedUserId),
+      eq(tasks.type, filter.type),
+      gte(tasks.dueAt, filter.dueFrom),
+      lt(tasks.dueAt, filter.dueTo),
+    ]
+    if (filter.status) conditions.push(eq(tasks.status, filter.status))
+
+    const rows = await this.db
+      .select({ total: count() })
+      .from(tasks)
+      .where(and(...conditions))
+
+    return rows[0]?.total ?? 0
   }
 }

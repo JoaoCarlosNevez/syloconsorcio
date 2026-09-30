@@ -146,6 +146,7 @@ function buildLeadRepository(overrides: Partial<ILeadRepository> = {}): ILeadRep
     listComments: vi.fn(),
     createComment: vi.fn(),
     sumWonValueCentsInDefaultFunnel: vi.fn().mockResolvedValue(0),
+    countWonInDefaultFunnel: vi.fn().mockResolvedValue(0),
     findByPhone: vi.fn().mockResolvedValue(null),
     ...overrides,
   }
@@ -158,6 +159,7 @@ function buildTaskRepository(overrides: Partial<ITaskRepository> = {}): ITaskRep
     create: vi.fn().mockResolvedValue(SAMPLE_TASK),
     update: vi.fn().mockResolvedValue(SAMPLE_TASK),
     delete: vi.fn().mockResolvedValue(true),
+    count: vi.fn().mockResolvedValue(0),
     ...overrides,
   }
 }

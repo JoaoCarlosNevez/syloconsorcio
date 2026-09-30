@@ -12,6 +12,7 @@ import { AppLayout } from '../../components/layout/AppLayout'
 import { NotificationBell } from '../../components/notifications/NotificationBell'
 import { useAuth } from '../../hooks/useAuth'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
+import { useMyMonthlyStatsQuery } from '../../hooks/useDashboard'
 import { useLeadsQuery } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { useTasksQuery } from '../../hooks/useTasks'
@@ -269,6 +270,8 @@ export function HomePage() {
   const { data: currentUser } = useCurrentUser()
   const { data: goalsSummary, isLoading: isGoalsLoading } =
     useSalesGoalsSummaryQuery(organizationId)
+  const { data: monthlyStats, isLoading: isMonthlyStatsLoading } =
+    useMyMonthlyStatsQuery(organizationId)
 
   const personalGoal = toGoalProgressView(
     goalsSummary?.personal ?? { goalCents: null, achievedCents: 0 },
@@ -700,8 +703,8 @@ export function HomePage() {
             </div>
           )}
 
-          {/* ── KPIs inferiores ───────────────────────────────────────── */}
-          {isLoading ? (
+          {/* ── KPIs inferiores — números do mês do usuário logado ─────── */}
+          {isLoading || isMonthlyStatsLoading || !monthlyStats ? (
             <div className={styles.skeletonKpiGrid}>
               {[0, 1, 2, 3].map((i) => (
                 <div key={i} className={styles.skeletonKpiCard}>
@@ -724,7 +727,7 @@ export function HomePage() {
             <div className={styles.kpiGrid}>
               <div className={styles.kpiCard}>
                 <div className={styles.kpiTopRow}>
-                  <span className={styles.kpiLabel}>Cartas em Andamento</span>
+                  <span className={styles.kpiLabel}>Agendamentos do Mês</span>
                   <span className={styles.kpiIconSlot}>
                     <svg
                       width="16"
@@ -737,23 +740,54 @@ export function HomePage() {
                       strokeLinejoin="round"
                       aria-hidden="true"
                     >
-                      <rect x="2" y="7" width="20" height="14" rx="2" />
-                      <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-                      <line x1="12" y1="12" x2="12" y2="16" />
-                      <line x1="10" y1="14" x2="14" y2="14" />
+                      <rect x="3" y="4" width="18" height="18" rx="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
                     </svg>
                   </span>
                 </div>
-                <span className={styles.kpiValue}>439</span>
-                <span className={styles.kpiDesc}>Propostas ativas no funil geral</span>
-                <span className={`${styles.kpiAccent} ${styles.kpiAccentGreen}`}>
-                  +14 novas nesta semana
+                <span className={styles.kpiValue}>{monthlyStats.meetingsScheduled}</span>
+                <span className={styles.kpiDesc}>Reuniões marcadas para este mês</span>
+              </div>
+
+              <div className={styles.kpiCard}>
+                <div className={styles.kpiTopRow}>
+                  <span className={styles.kpiLabel}>Visitas Realizadas</span>
+                  <span className={styles.kpiIconSlot}>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.75}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                      <polyline points="22 4 12 14.01 9 11.01" />
+                    </svg>
+                  </span>
+                </div>
+                <span className={styles.kpiValue}>{monthlyStats.meetingsCompleted}</span>
+                <span className={styles.kpiDesc}>
+                  Reuniões concluídas de {monthlyStats.meetingsScheduled} agendadas
                 </span>
+                {monthlyStats.meetingsScheduled > 0 && (
+                  <span className={`${styles.kpiAccent} ${styles.kpiAccentGreen}`}>
+                    {Math.round(
+                      (monthlyStats.meetingsCompleted / monthlyStats.meetingsScheduled) * 100,
+                    )}
+                    % realizadas
+                  </span>
+                )}
               </div>
 
               <div className={styles.kpiCard}>
                 <div className={styles.kpiTopRow}>
-                  <span className={styles.kpiLabel}>Novos Leads de Consórcio</span>
+                  <span className={styles.kpiLabel}>Valor Total Ganho</span>
                   <span className={styles.kpiIconSlot}>
                     <svg
                       width="16"
@@ -766,44 +800,16 @@ export function HomePage() {
                       strokeLinejoin="round"
                       aria-hidden="true"
                     >
-                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                      <circle cx="9" cy="7" r="4" />
-                      <line x1="19" y1="8" x2="19" y2="14" />
-                      <line x1="22" y1="11" x2="16" y2="11" />
+                      <line x1="12" y1="1" x2="12" y2="23" />
+                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                     </svg>
                   </span>
                 </div>
-                <span className={styles.kpiValue}>26</span>
-                <span className={styles.kpiDesc}>Aguardando primeiro contato</span>
-              </div>
-
-              <div className={styles.kpiCard}>
-                <div className={styles.kpiTopRow}>
-                  <span className={styles.kpiLabel}>Volume Contemplado</span>
-                  <span className={styles.kpiIconSlot}>
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={1.75}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <polyline points="20 12 20 22 4 22 4 12" />
-                      <rect x="2" y="7" width="20" height="5" />
-                      <line x1="12" y1="22" x2="12" y2="7" />
-                      <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
-                      <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
-                    </svg>
-                  </span>
-                </div>
-                <span className={styles.kpiValue}>R$ 1,25M</span>
-                <span className={styles.kpiDesc}>Taxa média de lance: 34%</span>
-                <span className={`${styles.kpiAccent} ${styles.kpiAccentGreen}`}>
-                  9 cartas liberadas este mês
+                <span className={styles.kpiValue}>{formatGoalBRL(monthlyStats.wonTotalCents)}</span>
+                <span className={styles.kpiDesc}>
+                  {monthlyStats.wonCount === 1
+                    ? '1 venda ganha no mês'
+                    : `${monthlyStats.wonCount} vendas ganhas no mês`}
                 </span>
               </div>
 
@@ -827,10 +833,15 @@ export function HomePage() {
                     </svg>
                   </span>
                 </div>
-                <span className={styles.kpiValue}>R$ 185.000</span>
-                <span className={styles.kpiDesc}>Meta média: R$ 160.000</span>
-                <span className={`${styles.kpiAccent} ${styles.kpiAccentPositive}`}>
-                  +8.2% vs mês anterior
+                <span className={styles.kpiValue}>
+                  {monthlyStats.averageTicketCents !== null
+                    ? formatGoalBRL(monthlyStats.averageTicketCents)
+                    : '—'}
+                </span>
+                <span className={styles.kpiDesc}>
+                  {monthlyStats.averageTicketCents !== null
+                    ? 'Valor médio por venda ganha no mês'
+                    : 'Nenhuma venda ganha no mês ainda'}
                 </span>
               </div>
             </div>

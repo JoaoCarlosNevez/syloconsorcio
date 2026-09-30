@@ -661,9 +661,6 @@
 .kpiAccentGreen {
   color: #10b981;
 }
-.kpiAccentPositive {
-  color: var(--color-text-secondary);
-}
 
 /* ── Skeletons ───────────────────────────────────────────────────────────── */
 

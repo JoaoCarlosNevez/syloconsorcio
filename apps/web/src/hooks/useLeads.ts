@@ -38,6 +38,7 @@ export function useCreateLead(organizationId: string | null) {
     mutationFn: (payload: CreateLeadPayload) => createLead(organizationId as string, payload),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['leads', organizationId] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'me', 'monthly', organizationId] })
     },
   })
 }
@@ -49,6 +50,7 @@ export function useUpdateLead(organizationId: string | null) {
       updateLead(organizationId as string, id, payload),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['leads', organizationId] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'me', 'monthly', organizationId] })
     },
   })
 }
@@ -59,6 +61,7 @@ export function useDeleteLead(organizationId: string | null) {
     mutationFn: (id: string) => deleteLead(organizationId as string, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads', organizationId] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'me', 'monthly', organizationId] })
     },
   })
 }
@@ -70,6 +73,7 @@ export function useDuplicateLead(organizationId: string | null) {
       duplicateLead(organizationId as string, id, targetFunnelId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads', organizationId] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'me', 'monthly', organizationId] })
     },
   })
 }

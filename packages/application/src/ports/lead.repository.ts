@@ -195,4 +195,9 @@ export interface ILeadRepository {
    * "passar o bastão" no pós-venda) não contam, pra não somar a mesma venda
    * duas vezes. Com assignedUserId, soma só os leads daquele responsável. */
   sumWonValueCentsInDefaultFunnel(filter: WonValueFilter): Promise<number>
+
+  /** Quantos leads do funil padrão foram marcados como Ganho em [wonFrom,
+   * wonTo) — mesmo recorte de sumWonValueCentsInDefaultFunnel (base do tíquete
+   * médio do início). */
+  countWonInDefaultFunnel(filter: WonValueFilter): Promise<number>
 }

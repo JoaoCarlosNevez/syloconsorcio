@@ -69,6 +69,7 @@ export type {
   TaskScopeFilter,
   TaskListFilter,
   TaskListPage,
+  TaskCountFilter,
   TaskStatus,
   TaskStatusFilter,
 } from './ports/task.repository'
@@ -206,3 +207,9 @@ export type {
   CreateWebhookLeadInput,
   CreateWebhookLeadOutput,
 } from './leads/create-webhook-lead.use-case'
+
+export { GetMyMonthlyStatsUseCase } from './dashboard/get-my-monthly-stats.use-case'
+export type {
+  GetMyMonthlyStatsInput,
+  MyMonthlyStats,
+} from './dashboard/get-my-monthly-stats.use-case'

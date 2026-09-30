@@ -198,6 +198,7 @@ function buildLeadRepository(overrides: Partial<ILeadRepository> = {}): ILeadRep
     listComments: vi.fn().mockResolvedValue([]),
     createComment: vi.fn().mockResolvedValue(SAMPLE_COMMENT),
     sumWonValueCentsInDefaultFunnel: vi.fn().mockResolvedValue(0),
+    countWonInDefaultFunnel: vi.fn().mockResolvedValue(0),
     findByPhone: vi.fn().mockResolvedValue(null),
     ...overrides,
   }

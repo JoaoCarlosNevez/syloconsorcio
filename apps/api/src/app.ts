@@ -29,6 +29,7 @@ import { env } from './config/env'
 import { activityRoute } from './routes/activity.route'
 import { apiKeysRoute } from './routes/api-keys.route'
 import { authRoute } from './routes/auth.route'
+import { dashboardRoute } from './routes/dashboard.route'
 import { funnelsRoute } from './routes/funnels.route'
 import { healthRoute } from './routes/health.route'
 import { leadsRoute } from './routes/leads.route'
@@ -121,6 +122,7 @@ function createNoOpLeadRepository(): ILeadRepository {
     },
     findByPhone: async () => null,
     sumWonValueCentsInDefaultFunnel: async () => 0,
+    countWonInDefaultFunnel: async () => 0,
   }
 }
 
@@ -195,6 +197,7 @@ function createNoOpTaskRepository(): ITaskRepository {
     },
     update: async () => null,
     delete: async () => false,
+    count: async () => 0,
   }
 }
 
@@ -300,6 +303,15 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     organizationRepository: resolvedDeps.organizationRepository,
     membershipRepository: resolvedDeps.membershipRepository,
     storageProvider: resolvedDeps.storageProvider,
+  })
+
+  app.register(dashboardRoute, {
+    authProvider: resolvedDeps.authProvider,
+    userRepository: resolvedDeps.userRepository,
+    membershipRepository: resolvedDeps.membershipRepository,
+    organizationRepository: resolvedDeps.organizationRepository,
+    taskRepository: resolvedDeps.taskRepository,
+    leadRepository: resolvedDeps.leadRepository,
   })
 
   app.register(teamRoute, {

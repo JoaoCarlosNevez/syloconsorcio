@@ -17,6 +17,7 @@ import type { ILeadRepository } from '../ports/lead.repository'
 import type { IMembershipRepository } from '../ports/membership.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
 import type { UseCase } from '../ports/use-case'
+import { currentMonthInBrasilia } from '../shared/current-month-in-brasilia'
 
 export interface GetSalesGoalsSummaryInput {
   organizationId: string
@@ -41,23 +42,6 @@ export interface SalesGoalsSummary {
   periodEnd: Date
   personal: PersonalGoalProgress
   organization: SalesGoalProgress
-}
-
-// Brasília é UTC-3 fixo desde o fim do horário de verão (2019).
-const BRASILIA_UTC_OFFSET_HOURS = 3
-
-function currentMonthInBrasilia(now: Date): { start: Date; end: Date } {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Sao_Paulo',
-    year: 'numeric',
-    month: 'numeric',
-  }).formatToParts(now)
-  const year = Number(parts.find((p) => p.type === 'year')?.value)
-  const month = Number(parts.find((p) => p.type === 'month')?.value) - 1
-  return {
-    start: new Date(Date.UTC(year, month, 1, BRASILIA_UTC_OFFSET_HOURS)),
-    end: new Date(Date.UTC(year, month + 1, 1, BRASILIA_UTC_OFFSET_HOURS)),
-  }
 }
 
 export class GetSalesGoalsSummaryUseCase

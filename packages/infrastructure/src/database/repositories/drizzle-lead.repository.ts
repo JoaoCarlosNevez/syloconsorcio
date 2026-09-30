@@ -20,8 +20,10 @@ import type {
   WonValueFilter,
 } from '@sylocrm/application'
 import {
+  type SQL,
   and,
   arrayOverlaps,
+  count,
   desc,
   eq,
   gte,
@@ -88,6 +90,19 @@ function buildScopeConditions(scope: LeadScopeFilter) {
   if (scope.assignedUserId) {
     conditions.push(eq(leads.assignedUserId, scope.assignedUserId))
   }
+  return conditions
+}
+
+/** Leads do funil padrão marcados como Ganho no intervalo (e do responsável,
+ * se informado) — recorte das metas de vendas e dos cards do início. */
+function wonInDefaultFunnelConditions(filter: WonValueFilter): SQL[] {
+  const conditions = [
+    eq(leads.organizationId, filter.organizationId),
+    eq(funnels.isDefault, true),
+    gte(leads.wonAt, filter.wonFrom),
+    lt(leads.wonAt, filter.wonTo),
+  ]
+  if (filter.assignedUserId) conditions.push(eq(leads.assignedUserId, filter.assignedUserId))
   return conditions
 }
 
@@ -242,22 +257,24 @@ export class DrizzleLeadRepository implements ILeadRepository {
   }
 
   async sumWonValueCentsInDefaultFunnel(filter: WonValueFilter): Promise<number> {
-    const conditions = [
-      eq(leads.organizationId, filter.organizationId),
-      eq(funnels.isDefault, true),
-      gte(leads.wonAt, filter.wonFrom),
-      lt(leads.wonAt, filter.wonTo),
-    ]
-    if (filter.assignedUserId) conditions.push(eq(leads.assignedUserId, filter.assignedUserId))
-
     // sum() de integer vira bigint no Postgres, que o driver devolve como string.
     const rows = await this.db
       .select({ total: sql<string>`coalesce(sum(${leads.valueCents}), 0)` })
       .from(leads)
       .innerJoin(funnels, eq(leads.funnelId, funnels.id))
-      .where(and(...conditions))
+      .where(and(...wonInDefaultFunnelConditions(filter)))
 
     return Number(rows[0]?.total ?? 0)
+  }
+
+  async countWonInDefaultFunnel(filter: WonValueFilter): Promise<number> {
+    const rows = await this.db
+      .select({ total: count() })
+      .from(leads)
+      .innerJoin(funnels, eq(leads.funnelId, funnels.id))
+      .where(and(...wonInDefaultFunnelConditions(filter)))
+
+    return rows[0]?.total ?? 0
   }
 
   async delete(id: string, scope: LeadScopeFilter): Promise<boolean> {

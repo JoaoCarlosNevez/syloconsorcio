@@ -68,6 +68,18 @@ export interface TaskListFilter extends TaskScopeFilter {
   search?: string
 }
 
+/** Contagem das tarefas de um responsável por tipo e prazo — cards do início. */
+export interface TaskCountFilter {
+  organizationId: string
+  assignedUserId: string
+  type: string
+  /** Prazo (dueAt) em [dueFrom, dueTo). */
+  dueFrom: Date
+  dueTo: Date
+  /** Só tarefas neste status; ausente = qualquer status. */
+  status?: TaskStatus
+}
+
 export interface TaskListPage {
   items: TaskRecord[]
   total: number
@@ -89,4 +101,6 @@ export interface ITaskRepository {
 
   /** Retorna false se a tarefa não existir ou estiver fora do escopo. */
   delete(id: string, scope: TaskScopeFilter): Promise<boolean>
+
+  count(filter: TaskCountFilter): Promise<number>
 }
