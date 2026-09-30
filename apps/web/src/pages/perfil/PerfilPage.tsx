@@ -813,7 +813,7 @@ export function PerfilPage() {
   const displayHandle = currentUser?.instagramHandle
     ? `@${currentUser.instagramHandle}`
     : `@${emailPrefix}`
-  const displayLocation = currentUser?.location ?? 'São Paulo, SP'
+  const displayLocation = currentUser?.location ?? 'São Paulo'
   const memberSince = formatMemberSince(currentUser?.createdAt ?? null)
 
   return (
@@ -999,7 +999,9 @@ export function PerfilPage() {
                   <span className={styles.profileHandle}>{displayHandle}</span>
                 </div>
                 <div className={styles.profileMetaRow}>
-                  <span className={styles.profileMeta}>Equipe de Porthis, {displayLocation}</span>
+                  <span className={styles.profileMeta}>
+                    Equipe de {membership?.organizationName ?? 'Sylo'}, {displayLocation}
+                  </span>
                   {memberSince && (
                     <>
                       <span className={styles.profileMetaDot} aria-hidden="true" />
