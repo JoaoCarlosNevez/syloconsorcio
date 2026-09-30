@@ -3,8 +3,10 @@
 
 import { Button, Input, Modal, useToast } from '@sylocrm/ui'
 import { type FormEvent, useState } from 'react'
+import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import { useCreatePlatformUser, useOrganizationsQuery } from '../../hooks/useOrganizations'
 import type { CreatePlatformUserPayload } from '../../lib/organizations-api'
+import { buildWelcomeMessage, copyLabel } from '../../lib/welcome-message'
 import styles from './AdminPage.module.css'
 
 const ROLE_LABEL: Record<CreatePlatformUserPayload['role'], string> = {
@@ -23,7 +25,13 @@ export interface CreatePlatformUserModalProps {
 export function CreatePlatformUserModal({ open, onClose }: CreatePlatformUserModalProps) {
   const [form, setForm] = useState<CreatePlatformUserPayload>(initialForm)
   const [formError, setFormError] = useState<string | null>(null)
-  const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null)
+  const [credentials, setCredentials] = useState<{
+    name: string
+    email: string
+    password: string
+    organizationName: string | null
+  } | null>(null)
+  const { copiedKey, failedKey, copy } = useCopyToClipboard()
   const { data: organizationsData } = useOrganizationsQuery()
   const createPlatformUser = useCreatePlatformUser()
   const { toast } = useToast()
@@ -60,7 +68,12 @@ export function CreatePlatformUserModal({ open, onClose }: CreatePlatformUserMod
         email: form.email.trim(),
         role: form.role,
       })
-      setCredentials({ email: form.email.trim(), password: result.member.temporaryPassword })
+      setCredentials({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        password: result.member.temporaryPassword,
+        organizationName: organizations.find((o) => o.id === form.organizationId)?.name ?? null,
+      })
       toast({ type: 'success', title: 'Usuário criado com sucesso' })
     } catch (error) {
       toast({
@@ -85,11 +98,22 @@ export function CreatePlatformUserModal({ open, onClose }: CreatePlatformUserMod
               type="button"
               variant="secondary"
               size="sm"
-              onClick={() => navigator.clipboard.writeText(credentials.password)}
+              onClick={() => copy('password', credentials.password)}
             >
-              Copiar senha
+              {copyLabel('password', 'Copiar senha', copiedKey, failedKey)}
             </Button>
           </div>
+        </div>
+        <div className={styles.welcomeMessageBlock}>
+          <span className={styles.selectLabel}>Mensagem para enviar</span>
+          <pre className={styles.welcomeMessage}>{buildWelcomeMessage(credentials)}</pre>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => copy('message', buildWelcomeMessage(credentials))}
+          >
+            {copyLabel('message', 'Copiar mensagem', copiedKey, failedKey)}
+          </Button>
         </div>
         <div className={styles.modalActions}>
           <Button type="button" onClick={handleClose}>

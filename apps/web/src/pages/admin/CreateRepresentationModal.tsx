@@ -4,7 +4,9 @@
 
 import { Button, Input, Modal, useToast } from '@sylocrm/ui'
 import { type FormEvent, useState } from 'react'
+import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import { useCreateRepresentation } from '../../hooks/useOrganizations'
+import { buildWelcomeMessage, copyLabel } from '../../lib/welcome-message'
 import styles from './AdminPage.module.css'
 
 const initialForm = { organizationName: '', ownerName: '', ownerEmail: '' }
@@ -17,7 +19,13 @@ export interface CreateRepresentationModalProps {
 export function CreateRepresentationModal({ open, onClose }: CreateRepresentationModalProps) {
   const [form, setForm] = useState(initialForm)
   const [formError, setFormError] = useState<string | null>(null)
-  const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null)
+  const [credentials, setCredentials] = useState<{
+    name: string
+    email: string
+    password: string
+    organizationName: string | null
+  } | null>(null)
+  const { copiedKey, failedKey, copy } = useCopyToClipboard()
   const createRepresentation = useCreateRepresentation()
   const { toast } = useToast()
 
@@ -54,7 +62,12 @@ export function CreateRepresentationModal({ open, onClose }: CreateRepresentatio
         ...(ownerName && ownerEmail ? { ownerName, ownerEmail } : {}),
       })
       if (result.owner) {
-        setCredentials({ email: result.owner.email, password: result.owner.temporaryPassword })
+        setCredentials({
+          name: ownerName,
+          email: result.owner.email,
+          password: result.owner.temporaryPassword,
+          organizationName: result.organization.name,
+        })
         toast({ type: 'success', title: 'Representação criada com sucesso' })
       } else {
         toast({
@@ -87,11 +100,22 @@ export function CreateRepresentationModal({ open, onClose }: CreateRepresentatio
               type="button"
               variant="secondary"
               size="sm"
-              onClick={() => navigator.clipboard.writeText(credentials.password)}
+              onClick={() => copy('password', credentials.password)}
             >
-              Copiar senha
+              {copyLabel('password', 'Copiar senha', copiedKey, failedKey)}
             </Button>
           </div>
+        </div>
+        <div className={styles.welcomeMessageBlock}>
+          <span className={styles.selectLabel}>Mensagem para enviar</span>
+          <pre className={styles.welcomeMessage}>{buildWelcomeMessage(credentials)}</pre>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => copy('message', buildWelcomeMessage(credentials))}
+          >
+            {copyLabel('message', 'Copiar mensagem', copiedKey, failedKey)}
+          </Button>
         </div>
         <div className={styles.modalActions}>
           <Button type="button" onClick={handleClose}>

@@ -16,6 +16,7 @@ import { AppLayout } from '../../components/layout/AppLayout'
 import { useActivityQuery } from '../../hooks/useActivity'
 import { useBrowserNotificationPermission } from '../../hooks/useBrowserNotificationPermission'
 import { useChangePassword } from '../../hooks/useChangePassword'
+import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import {
   type NotificationPreferences,
   useCurrentUser,
@@ -52,6 +53,7 @@ import type { NotificationType } from '../../lib/notifications-api'
 import { formatGoalInput, goalInputToCents } from '../../lib/sales-goals'
 import type { InvitableRole, TeamMember } from '../../lib/team-api'
 import { visibleTier } from '../../lib/tier-art'
+import { buildWelcomeMessage, copyLabel } from '../../lib/welcome-message'
 import styles from './ConfigPage.module.css'
 import { FunnelsSection } from './FunnelsSection'
 import { IntegracoesSection } from './IntegracoesSection'
@@ -2573,8 +2575,14 @@ function InviteModal({
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<InvitableRole>(invitableRoles[0] ?? 'SELLER')
   const [formError, setFormError] = useState('')
-  const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null)
+  const [credentials, setCredentials] = useState<{
+    name: string
+    email: string
+    password: string
+  } | null>(null)
   const inviteMember = useInviteTeamMember(organizationId)
+  const { membership } = useActiveOrganization()
+  const { copiedKey, failedKey, copy } = useCopyToClipboard()
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -2591,13 +2599,21 @@ function InviteModal({
         email: email.trim(),
         role,
       })
-      setCredentials({ email: email.trim(), password: result.member.temporaryPassword })
+      setCredentials({
+        name: name.trim(),
+        email: email.trim(),
+        password: result.member.temporaryPassword,
+      })
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'Não foi possível criar o usuário.')
     }
   }
 
   if (credentials) {
+    const welcomeMessage = buildWelcomeMessage({
+      ...credentials,
+      organizationName: membership?.organizationName ?? null,
+    })
     return (
       // biome-ignore lint/a11y/useKeyWithClickEvents: overlay backdrop
       <div className={styles.modalOverlay} onClick={onClose}>
@@ -2619,11 +2635,22 @@ function InviteModal({
                 <button
                   type="button"
                   className={styles.secondaryBtn}
-                  onClick={() => navigator.clipboard.writeText(credentials.password)}
+                  onClick={() => copy('password', credentials.password)}
                 >
-                  Copiar senha
+                  {copyLabel('password', 'Copiar senha', copiedKey, failedKey)}
                 </button>
               </div>
+            </div>
+            <div className={styles.welcomeMessageBlock}>
+              <span className={styles.formLabel}>Mensagem para enviar</span>
+              <pre className={styles.welcomeMessage}>{welcomeMessage}</pre>
+              <button
+                type="button"
+                className={styles.primaryBtn}
+                onClick={() => copy('message', welcomeMessage)}
+              >
+                {copyLabel('message', 'Copiar mensagem', copiedKey, failedKey)}
+              </button>
             </div>
           </div>
           <div className={styles.modalFooter}>

@@ -562,6 +562,27 @@ button.breadcrumbCurrent:hover {
   background: #f8fafc;
 }
 
+.welcomeMessageBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.welcomeMessage {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  font-family: inherit;
+  font-size: var(--cfg-text-sm);
+  line-height: 1.5;
+  color: #334155;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .credentialsRow {
   display: flex;
   align-items: center;
