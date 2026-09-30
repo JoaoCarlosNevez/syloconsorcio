@@ -1,5 +1,7 @@
 // CreateRepresentationUseCase — Super Admin cria uma nova Representação (tenant)
-// e define seu dono inicial (Membership ADMIN).
+// e, opcionalmente, seu dono inicial (Membership ADMIN). Sem dono, só a
+// organização é criada — o dono entra depois por CreatePlatformUserUseCase
+// (Administração → Criar usuário, papel Dono).
 //
 // A checagem de "é Super Admin" acontece na camada HTTP (requirePlatformAdmin
 // middleware) — este use case assume que a chamada já foi autorizada.
@@ -18,13 +20,14 @@ import type { IUserRepository } from '../ports/user.repository'
 
 export interface CreateRepresentationInput {
   organizationName: string
-  ownerName: string
-  ownerEmail: string
+  /** null = criar só a organização, sem dono por enquanto. */
+  owner: { name: string; email: string } | null
 }
 
 export interface CreateRepresentationOutput {
   organization: OrganizationRecord
-  owner: AuthIdentity & { temporaryPassword: string }
+  /** null quando a organização foi criada sem dono. */
+  owner: (AuthIdentity & { temporaryPassword: string }) | null
 }
 
 export class CreateRepresentationUseCase
@@ -38,18 +41,9 @@ export class CreateRepresentationUseCase
   ) {}
 
   async execute(input: CreateRepresentationInput): Promise<CreateRepresentationOutput> {
-    const temporaryPassword = generateTemporaryPassword()
-
-    const identity = await this.authProvider.createUser({
-      email: input.ownerEmail,
-      password: temporaryPassword,
-    })
-
-    await this.userRepository.upsert({
-      id: identity.id,
-      email: identity.email,
-      name: input.ownerName,
-    })
+    // O login do dono é criado antes da organização: se o e-mail já existir
+    // (ConflictError), nada fica pela metade.
+    const owner = input.owner ? await this.createOwnerIdentity(input.owner) : null
 
     const organization = await this.organizationRepository.create({
       name: input.organizationName,
@@ -57,12 +51,27 @@ export class CreateRepresentationUseCase
       parentOrganizationId: null,
     })
 
-    await this.membershipRepository.create({
-      userId: identity.id,
-      organizationId: organization.id,
-      role: Role.ADMIN,
-    })
+    if (owner) {
+      await this.membershipRepository.create({
+        userId: owner.id,
+        organizationId: organization.id,
+        role: Role.ADMIN,
+      })
+    }
 
-    return { organization, owner: { ...identity, temporaryPassword } }
+    return { organization, owner }
+  }
+
+  private async createOwnerIdentity(owner: {
+    name: string
+    email: string
+  }): Promise<AuthIdentity & { temporaryPassword: string }> {
+    const temporaryPassword = generateTemporaryPassword()
+    const identity = await this.authProvider.createUser({
+      email: owner.email,
+      password: temporaryPassword,
+    })
+    await this.userRepository.upsert({ id: identity.id, email: identity.email, name: owner.name })
+    return { ...identity, temporaryPassword }
   }
 }

@@ -166,10 +166,54 @@ describe('POST /organizations', () => {
       method: 'POST',
       url: '/organizations',
       headers: AUTH_HEADERS,
-      payload: { organizationName: 'Só o nome' },
+      payload: { ownerName: 'Dono', ownerEmail: 'dono@empresa.com' },
     })
 
     expect(response.statusCode).toBe(400)
+  })
+
+  it('returns 400 when only one of the owner fields is sent', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      organizationRepository: buildOrganizationRepository(),
+      membershipRepository: buildMembershipRepository(),
+    })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/organizations',
+      headers: AUTH_HEADERS,
+      payload: { organizationName: 'Nova Representação', ownerName: 'Dono' },
+    })
+
+    expect(response.statusCode).toBe(400)
+  })
+
+  it('creates only the organization when no owner is sent', async () => {
+    const authProvider = buildAuthProvider()
+    const organizationRepository = buildOrganizationRepository()
+    const membershipRepository = buildMembershipRepository()
+    const app = buildApp({
+      authProvider,
+      userRepository: buildUserRepository(true),
+      organizationRepository,
+      membershipRepository,
+    })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/organizations',
+      headers: AUTH_HEADERS,
+      payload: { organizationName: 'Só a organização' },
+    })
+
+    expect(response.statusCode).toBe(201)
+    const body = response.json<{ organization: { type: string }; owner: null }>()
+    expect(body.organization.type).toBe('REPRESENTACAO')
+    expect(body.owner).toBeNull()
+    expect(authProvider.createUser).not.toHaveBeenCalled()
+    expect(membershipRepository.create).not.toHaveBeenCalled()
   })
 
   it('creates the organization and its owner when the caller is a platform admin', async () => {

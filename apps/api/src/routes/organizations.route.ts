@@ -1,6 +1,7 @@
 // Rotas de organizações — painel de Administração do Super Admin da plataforma.
 //
-// POST   /organizations             — cria uma Representação independente + dono (ADMIN)
+// POST   /organizations             — cria uma Representação independente e, se
+//                                      informado, o dono (ADMIN) — dono opcional
 // GET    /organizations             — lista todas as organizações
 // PATCH  /organizations/:id         — edita nome
 // POST   /organizations/:id/icon    — envia o ícone (upload para Supabase Storage)
@@ -43,11 +44,17 @@ interface OrganizationsRouteOptions {
   storageProvider: IStorageProvider
 }
 
-const createRepresentationSchema = z.object({
-  organizationName: z.string().min(1),
-  ownerName: z.string().min(1),
-  ownerEmail: z.string().email(),
-})
+// Dono opcional: manda nome e e-mail juntos, ou nenhum dos dois.
+const createRepresentationSchema = z
+  .object({
+    organizationName: z.string().trim().min(1),
+    ownerName: z.string().trim().min(1).optional(),
+    ownerEmail: z.string().trim().email().optional(),
+  })
+  .refine((data) => (data.ownerName === undefined) === (data.ownerEmail === undefined), {
+    message: 'Informe nome e e-mail do dono, ou deixe os dois em branco.',
+    path: ['ownerEmail'],
+  })
 
 const updateOrganizationSchema = z.object({
   name: z.string().min(1).optional(),
@@ -183,14 +190,23 @@ export const organizationsRoute: FastifyPluginAsync<OrganizationsRouteOptions> =
       }
 
       try {
-        const result = await createRepresentation.execute(parsed.data)
+        const { organizationName, ownerName, ownerEmail } = parsed.data
+        const result = await createRepresentation.execute({
+          organizationName,
+          owner:
+            ownerName !== undefined && ownerEmail !== undefined
+              ? { name: ownerName, email: ownerEmail }
+              : null,
+        })
         return reply.status(201).send({
           organization: result.organization,
-          owner: {
-            id: result.owner.id,
-            email: result.owner.email,
-            temporaryPassword: result.owner.temporaryPassword,
-          },
+          owner: result.owner
+            ? {
+                id: result.owner.id,
+                email: result.owner.email,
+                temporaryPassword: result.owner.temporaryPassword,
+              }
+            : null,
         })
       } catch (error) {
         if (error instanceof ConflictError) {

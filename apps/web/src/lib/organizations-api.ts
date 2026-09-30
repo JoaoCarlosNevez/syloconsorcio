@@ -32,15 +32,17 @@ export interface Organization {
   salesGoalCents: number | null
 }
 
+/** Dono opcional: nome e e-mail juntos, ou nenhum dos dois (só a organização). */
 export interface CreateRepresentationPayload {
   organizationName: string
-  ownerName: string
-  ownerEmail: string
+  ownerName?: string
+  ownerEmail?: string
 }
 
 export interface CreateRepresentationResult {
   organization: Organization
-  owner: { id: string; email: string; temporaryPassword: string }
+  /** null quando a organização foi criada sem dono. */
+  owner: { id: string; email: string; temporaryPassword: string } | null
 }
 
 /** Membro de qualquer organização da plataforma — visão cross-org do Super Admin. */

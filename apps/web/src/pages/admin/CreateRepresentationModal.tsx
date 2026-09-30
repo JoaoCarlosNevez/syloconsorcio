@@ -1,4 +1,6 @@
 // CreateRepresentationModal — Super Admin cria uma nova Representação (tenant).
+// O dono é opcional: sem ele, só a organização é criada, e o dono entra depois
+// por "Criar usuário" com o papel Dono.
 
 import { Button, Input, Modal, useToast } from '@sylocrm/ui'
 import { type FormEvent, useState } from 'react'
@@ -34,19 +36,34 @@ export function CreateRepresentationModal({ open, onClose }: CreateRepresentatio
     e.preventDefault()
     setFormError(null)
 
-    if (!form.organizationName.trim() || !form.ownerName.trim() || !form.ownerEmail.trim()) {
-      setFormError('Preencha todos os campos.')
+    const organizationName = form.organizationName.trim()
+    const ownerName = form.ownerName.trim()
+    const ownerEmail = form.ownerEmail.trim()
+    if (!organizationName) {
+      setFormError('Informe o nome da Representação.')
+      return
+    }
+    if (Boolean(ownerName) !== Boolean(ownerEmail)) {
+      setFormError('Informe nome e e-mail do dono, ou deixe os dois em branco.')
       return
     }
 
     try {
       const result = await createRepresentation.mutateAsync({
-        organizationName: form.organizationName.trim(),
-        ownerName: form.ownerName.trim(),
-        ownerEmail: form.ownerEmail.trim(),
+        organizationName,
+        ...(ownerName && ownerEmail ? { ownerName, ownerEmail } : {}),
       })
-      setCredentials({ email: result.owner.email, password: result.owner.temporaryPassword })
-      toast({ type: 'success', title: 'Representação criada com sucesso' })
+      if (result.owner) {
+        setCredentials({ email: result.owner.email, password: result.owner.temporaryPassword })
+        toast({ type: 'success', title: 'Representação criada com sucesso' })
+      } else {
+        toast({
+          type: 'success',
+          title: 'Representação criada sem dono',
+          description: 'Adicione o dono depois em "Criar usuário", com o papel Dono.',
+        })
+        handleClose()
+      }
     } catch (error) {
       toast({
         type: 'error',
@@ -99,17 +116,16 @@ export function CreateRepresentationModal({ open, onClose }: CreateRepresentatio
           required
         />
         <Input
-          label="Nome do dono"
+          label="Nome do dono (opcional)"
           value={form.ownerName}
           onChange={(e) => updateField('ownerName', e.target.value)}
-          required
         />
         <Input
-          label="E-mail do dono"
+          label="E-mail do dono (opcional)"
           type="email"
           value={form.ownerEmail}
           onChange={(e) => updateField('ownerEmail', e.target.value)}
-          required
+          helperText="Sem dono agora? Deixe em branco e crie depois em “Criar usuário”, com o papel Dono."
         />
         {formError && (
           <span role="alert" className={styles.formError}>
