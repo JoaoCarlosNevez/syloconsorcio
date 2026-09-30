@@ -22,6 +22,7 @@ describe('resolveNotificationPreferences', () => {
         'task.overdue': false,
         'task.completed': true,
         'lead.received': true,
+        'proposal.viewed': true,
       },
       sound: false,
     })

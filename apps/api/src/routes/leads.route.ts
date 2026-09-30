@@ -21,6 +21,10 @@
 //                              prazo são por-proposta (lead.update) — os dados
 //                              de qualificação do cliente ficam no próprio
 //                              lead (profissão, renda, estado civil, CPF).
+// POST   /leads/:id/proposals/:proposalId/share — gera (ou devolve) o token do
+//                              link público da proposta, pra mandar pro
+//                              cliente (lead.read). A página pública é
+//                              public-proposals.route.ts.
 //
 // Todas as rotas rodam authMiddleware → tenantMiddleware → requirePermission,
 // nessa ordem. `organizationId` do lead nunca vem do corpo da requisição —
@@ -46,6 +50,7 @@ import {
   GetLeadUseCase,
   ListLeadProposalsUseCase,
   ListLeadsUseCase,
+  ShareLeadProposalUseCase,
   UpdateLeadUseCase,
 } from '@sylocrm/application'
 import { Permission, ValidationError } from '@sylocrm/domain'
@@ -204,6 +209,11 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
     options.activityLogRepository,
   )
   const listLeadProposals = new ListLeadProposalsUseCase(
+    options.leadRepository,
+    options.organizationRepository,
+    options.leadProposalRepository,
+  )
+  const shareLeadProposal = new ShareLeadProposalUseCase(
     options.leadRepository,
     options.organizationRepository,
     options.leadProposalRepository,
@@ -422,6 +432,34 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
         }
         throw error
       }
+    },
+  )
+
+  // ── POST /leads/:id/proposals/:proposalId/share ──────────────────────────
+  fastify.post<{ Params: { id: string; proposalId: string } }>(
+    '/leads/:id/proposals/:proposalId/share',
+    {
+      preHandler: [authMiddleware, tenantMiddleware, requirePermission(Permission.LEAD_READ)],
+    },
+    async (request, reply) => {
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      const notFound = {
+        error: 'Proposta não encontrada.',
+        code: 'PROPOSAL_NOT_FOUND',
+        status: 404,
+      }
+      if (!z.string().uuid().safeParse(request.params.proposalId).success) {
+        return reply.status(404).send(notFound)
+      }
+
+      const result = await shareLeadProposal.execute({
+        leadId: request.params.id,
+        proposalId: request.params.proposalId,
+        userId: context.userId,
+        membership: context.currentMembership,
+      })
+      if (!result) return reply.status(404).send(notFound)
+      return result
     },
   )
 

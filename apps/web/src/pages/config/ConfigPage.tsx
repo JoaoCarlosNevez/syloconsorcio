@@ -1647,6 +1647,11 @@ const PUSH_EVENTS: { type: NotificationType; label: string; desc: string }[] = [
     label: 'Novo lead pela API',
     desc: 'Lead atribuído a você, ou sem responsável (Dono e Supervisores)',
   },
+  {
+    type: 'proposal.viewed',
+    label: 'Cliente abriu a proposta',
+    desc: 'Quando o cliente abre o link de uma proposta que você mandou',
+  },
 ]
 
 function BrowserPermissionStatus({

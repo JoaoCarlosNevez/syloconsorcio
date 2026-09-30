@@ -12,11 +12,13 @@ import {
 export interface ProposalPdfData {
   organizationName: string
   consultantName: string | null
+  /** Só o nome é obrigatório — o PDF baixado pelo link público não tem os
+   * dados pessoais do cliente. Campos vazios não aparecem. */
   client: {
     name: string
-    cpf: string | null
-    phone: string
-    email: string | null
+    cpf?: string | null
+    phone?: string | null
+    email?: string | null
   }
   cota: string
   valueCents: number
@@ -95,12 +97,13 @@ export async function downloadProposalPdf(data: ProposalPdfData): Promise<void> 
 
   // ── Cliente ──────────────────────────────────────────────────────────────
   section('Cliente')
-  fields([
+  const clientFields: [string, string | null | undefined][] = [
     ['Nome', data.client.name],
-    ['CPF', data.client.cpf ?? '—'],
-    ['Telefone', data.client.phone || '—'],
-    ['E-mail', data.client.email ?? '—'],
-  ])
+    ['CPF', data.client.cpf],
+    ['Telefone', data.client.phone],
+    ['E-mail', data.client.email],
+  ]
+  fields(clientFields.filter((pair): pair is [string, string] => Boolean(pair[1])))
 
   // ── Proposta ─────────────────────────────────────────────────────────────
   section('Proposta')

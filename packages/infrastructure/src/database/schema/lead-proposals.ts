@@ -4,8 +4,9 @@
 // de qualificação em leads.ts (profissão, renda, estado civil, CPF — do
 // cliente, compartilhados), valor de entrada e prazo são específicos de CADA
 // proposta: o mesmo lead pode ter várias propostas com entrada/prazo
-// diferentes. Só inserts — uma proposta nunca é editada, só substituída por
-// uma nova simulação (ver LeadModal, aba Simulações).
+// diferentes. Os valores nunca são editados — uma proposta é substituída por
+// uma nova simulação (ver LeadModal, aba Simulações); só o compartilhamento
+// (link público e aberturas) é atualizado depois.
 //
 // Parcelas NÃO são calculadas: calcular parcela de consórcio de verdade exige
 // taxa de administração, fundo de reserva e seguro (nenhum modelado ainda). O
@@ -15,6 +16,7 @@
 import type { ProposalInstallmentRange } from '@sylocrm/application'
 import { integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { leads } from './leads'
+import { users } from './users'
 
 export const leadProposals = pgTable('lead_proposals', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -30,6 +32,16 @@ export const leadProposals = pgTable('lead_proposals', {
   // 1..termMonths (validado no CreateLeadProposalUseCase). Opcional —
   // propostas antigas não têm.
   installments: jsonb('installments').$type<ProposalInstallmentRange[]>(),
+  // Link público da proposta (/p/:token) — token aleatório, gerado só quando
+  // o vendedor pede o link. Quem abrir o link vê a proposta sem login, então
+  // o token é a única proteção: nunca derive dele nada previsível.
+  shareToken: text('share_token').unique(),
+  sharedByUserId: uuid('shared_by_user_id').references(() => users.id, {
+    onDelete: 'set null',
+  }),
+  // Aberturas do link público pelo cliente.
+  viewCount: integer('view_count').notNull().default(0),
+  lastViewedAt: timestamp('last_viewed_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 

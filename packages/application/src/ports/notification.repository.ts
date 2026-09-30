@@ -16,6 +16,10 @@
 // 'lead.received' (lead que chegou pelo webhook) não tem coluna própria: o
 // id do lead e do funil vão em metadata.leadId/funnelId, e title é o nome do
 // lead.
+//
+// 'proposal.viewed' (cliente abriu o link público da proposta) segue o mesmo
+// formato: metadata.leadId/funnelId/proposalId/viewedAt, title é o nome do
+// lead.
 
 export type NotificationType =
   | 'task.assigned'
@@ -23,6 +27,7 @@ export type NotificationType =
   | 'task.overdue'
   | 'task.completed'
   | 'lead.received'
+  | 'proposal.viewed'
 
 export type NotificationMetadata = Record<string, string | number | boolean | null>
 

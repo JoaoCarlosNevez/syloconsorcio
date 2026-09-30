@@ -61,6 +61,7 @@ export type {
   LeadProposalRecord,
   NewLeadProposalInput,
   ProposalInstallmentRange,
+  SharedLeadProposalRecord,
 } from './ports/lead-proposal.repository'
 export type {
   ITaskRepository,
@@ -98,6 +99,19 @@ export { ListLeadProposalsUseCase } from './leads/list-lead-proposals.use-case'
 export type { ListLeadProposalsInput } from './leads/list-lead-proposals.use-case'
 export { CreateLeadProposalUseCase } from './leads/create-lead-proposal.use-case'
 export type { CreateLeadProposalInput } from './leads/create-lead-proposal.use-case'
+export { ShareLeadProposalUseCase } from './leads/share-lead-proposal.use-case'
+export type {
+  ShareLeadProposalInput,
+  ShareLeadProposalOutput,
+} from './leads/share-lead-proposal.use-case'
+export {
+  VIEW_NOTIFICATION_COOLDOWN_MS,
+  ViewSharedProposalUseCase,
+} from './leads/view-shared-proposal.use-case'
+export type {
+  SharedProposalView,
+  ViewSharedProposalInput,
+} from './leads/view-shared-proposal.use-case'
 
 export { ListTasksUseCase } from './tasks/list-tasks.use-case'
 export type { ListTasksInput } from './tasks/list-tasks.use-case'

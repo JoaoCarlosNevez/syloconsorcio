@@ -4,7 +4,9 @@
 // Definido na camada Application (o consumidor define o contrato).
 // Implementação concreta: packages/infrastructure/src/database/repositories/
 //
-// Uma proposta é imutável (só create + list) — entrada e prazo são
+// Uma proposta é imutável nos valores (entrada, prazo, parcelas) — o que muda
+// depois de criada é só o compartilhamento: o link público (shareToken) e o
+// registro de quando o cliente abriu (viewCount/lastViewedAt) — entrada e prazo são
 // específicos de cada proposta, diferente dos dados de qualificação em
 // lead.repository.ts (profissão, renda, estado civil, CPF), que são do
 // cliente e compartilhados por todas as propostas do lead.
@@ -29,7 +31,20 @@ export interface LeadProposalRecord {
   tableName: string | null
   /** Faixas em ordem, cobrindo 1..termMonths; null nas propostas antigas. */
   installments: ProposalInstallmentRange[] | null
+  /** Token do link público (/p/:token); null até alguém gerar o link. */
+  shareToken: string | null
+  /** Quantas vezes o link público foi aberto. */
+  viewCount: number
+  lastViewedAt: Date | null
   createdAt: Date
+}
+
+/** Proposta encontrada pelo link público — com o que falta pra montar a
+ * página sem usuário logado. */
+export interface SharedLeadProposalRecord extends LeadProposalRecord {
+  organizationId: string
+  /** Quem gerou o link — avisado da abertura se o lead não tiver responsável. */
+  sharedByUserId: string | null
 }
 
 export interface NewLeadProposalInput {
@@ -45,4 +60,15 @@ export interface ILeadProposalRepository {
   listByLead(leadId: string): Promise<LeadProposalRecord[]>
 
   create(input: NewLeadProposalInput): Promise<LeadProposalRecord>
+
+  findById(id: string): Promise<LeadProposalRecord | null>
+
+  /** Gera o token do link público se a proposta ainda não tiver um, e devolve
+   * o token (o mesmo nas chamadas seguintes — o link não muda). */
+  enableSharing(id: string, sharedByUserId: string): Promise<string>
+
+  findByShareToken(token: string): Promise<SharedLeadProposalRecord | null>
+
+  /** Conta uma abertura do link público. */
+  recordView(id: string, viewedAt: Date): Promise<void>
 }

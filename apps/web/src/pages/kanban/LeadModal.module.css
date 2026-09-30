@@ -1647,6 +1647,27 @@
   margin: 2px 0 16px;
 }
 
+.simCardActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.simViewsOpened,
+.simViewsPending {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.simViewsOpened {
+  color: var(--color-success-text);
+}
+
+.simViewsPending {
+  color: var(--color-text-muted);
+}
+
 .simApprovedInstallments {
   font-size: 13px;
   color: #334155;

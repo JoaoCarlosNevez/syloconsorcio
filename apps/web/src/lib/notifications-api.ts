@@ -12,6 +12,9 @@ export type NotificationType =
   /** Lead que chegou pelo webhook — metadata traz leadId, funnelId, source e
    * assignedToYou; title é o nome do lead. */
   | 'lead.received'
+  /** Cliente abriu o link público da proposta — metadata traz leadId,
+   * funnelId, proposalId e viewedAt; title é o nome do lead. */
+  | 'proposal.viewed'
 
 export interface AppNotification {
   id: string

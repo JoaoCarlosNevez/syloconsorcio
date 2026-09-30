@@ -99,6 +99,13 @@ function TypeIcon({ type }: { type: NotificationType }) {
           <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
         </svg>
       )
+    case 'proposal.viewed':
+      return (
+        <svg {...common} aria-hidden="true">
+          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      )
   }
 }
 
@@ -108,6 +115,7 @@ const TYPE_CLASS: Record<NotificationType, string | undefined> = {
   'task.overdue': styles.typeOverdue,
   'task.completed': styles.typeCompleted,
   'lead.received': styles.typeLead,
+  'proposal.viewed': styles.typeProposal,
 }
 
 export interface NotificationBellProps {

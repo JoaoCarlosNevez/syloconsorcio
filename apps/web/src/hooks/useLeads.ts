@@ -18,6 +18,7 @@ import {
   getLeadHistory,
   listLeadProposals,
   listLeads,
+  shareLeadProposal,
   updateLead,
 } from '../lib/leads-api'
 
@@ -110,6 +111,17 @@ export function useLeadProposalsQuery(organizationId: string | null, leadId: str
     queryKey: leadProposalsQueryKey(organizationId, leadId),
     queryFn: () => listLeadProposals(organizationId as string, leadId),
     enabled: Boolean(organizationId) && Boolean(leadId),
+  })
+}
+
+export function useShareLeadProposal(organizationId: string | null, leadId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (proposalId: string) =>
+      shareLeadProposal(organizationId as string, leadId, proposalId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: leadProposalsQueryKey(organizationId, leadId) })
+    },
   })
 }
 

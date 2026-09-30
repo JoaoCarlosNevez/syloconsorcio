@@ -2,6 +2,7 @@
 //
 // Estrutura:
 //   /login        → público; redireciona para /app se já autenticado
+//   /p/:token     → público; proposta enviada ao cliente por link
 //   /app/*        → protegido (requer autenticação via ProtectedRoute)
 //   *             → 404 (redireciona para /login)
 //
@@ -41,6 +42,11 @@ const AdminOrganizationDetailPage = lazy(() =>
 const TarefasPage = lazy(() =>
   import('../pages/tarefas/TarefasPage').then((m) => ({ default: m.TarefasPage })),
 )
+const PublicProposalPage = lazy(() =>
+  import('../pages/proposta/PublicProposalPage').then((m) => ({
+    default: m.PublicProposalPage,
+  })),
+)
 const ConfigPage = lazy(() =>
   import('../pages/config/ConfigPage').then((m) => ({ default: m.ConfigPage })),
 )
@@ -51,6 +57,7 @@ export function AppRouter() {
       <Routes>
         {/* Rota pública */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/p/:token" element={<PublicProposalPage />} />
 
         {/* Rotas protegidas */}
         <Route path="/app" element={<ProtectedRoute />}>

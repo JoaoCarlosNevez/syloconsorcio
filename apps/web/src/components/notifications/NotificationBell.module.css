@@ -219,6 +219,11 @@
   color: var(--color-accent-badge-text);
 }
 
+.typeProposal {
+  background: var(--color-info-subtle);
+  color: var(--color-info-text);
+}
+
 .typeCompleted {
   background: var(--color-success-subtle);
   color: var(--color-success-text);

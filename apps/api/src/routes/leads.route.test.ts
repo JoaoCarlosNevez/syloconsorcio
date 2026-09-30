@@ -118,6 +118,9 @@ const SAMPLE_PROPOSAL: LeadProposalRecord = {
   termMonths: 24,
   tableName: 'Tabela Imóvel 2026',
   installments: [{ from: 1, to: 24, amountCents: 2_000_00 }],
+  shareToken: null,
+  viewCount: 0,
+  lastViewedAt: null,
   createdAt: new Date('2026-01-05T00:00:00Z'),
 }
 
@@ -235,6 +238,10 @@ function buildLeadProposalRepository(
   return {
     listByLead: vi.fn().mockResolvedValue([]),
     create: vi.fn().mockResolvedValue(SAMPLE_PROPOSAL),
+    findById: vi.fn().mockResolvedValue(SAMPLE_PROPOSAL),
+    enableSharing: vi.fn().mockResolvedValue('tok_abcdefghijklmnopqrstuvwx'),
+    findByShareToken: vi.fn().mockResolvedValue(null),
+    recordView: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   }
 }
@@ -1036,6 +1043,55 @@ describe('GET /leads/:id/proposals', () => {
 })
 
 // ── POST /leads/:id/proposals ───────────────────────────────────────────────
+
+describe('POST /leads/:id/proposals/:proposalId/share', () => {
+  const PROPOSAL_ID = '6f1c2b8e-4a7d-4c1e-9f3a-2b5d8e7c1a90'
+
+  it('returns the share token of a proposal of the lead', async () => {
+    const leadProposalRepository = buildLeadProposalRepository({
+      findById: vi.fn().mockResolvedValue({ ...SAMPLE_PROPOSAL, id: PROPOSAL_ID }),
+    })
+    const app = buildTestApp({ leadProposalRepository })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/leads/lead-01/proposals/${PROPOSAL_ID}/share`,
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toEqual({ shareToken: 'tok_abcdefghijklmnopqrstuvwx' })
+    expect(leadProposalRepository.enableSharing).toHaveBeenCalledWith(PROPOSAL_ID, IDENTITY.id)
+  })
+
+  it('returns 404 when the proposal belongs to another lead', async () => {
+    const leadProposalRepository = buildLeadProposalRepository({
+      findById: vi.fn().mockResolvedValue({ ...SAMPLE_PROPOSAL, leadId: 'other-lead' }),
+    })
+    const app = buildTestApp({ leadProposalRepository })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/leads/lead-01/proposals/${PROPOSAL_ID}/share`,
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(404)
+    expect(leadProposalRepository.enableSharing).not.toHaveBeenCalled()
+  })
+
+  it('returns 404 for a malformed proposal id', async () => {
+    const app = buildTestApp({})
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/leads/lead-01/proposals/not-a-uuid/share',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(404)
+  })
+})
 
 describe('POST /leads/:id/proposals', () => {
   it('returns 400 when required fields are missing', async () => {

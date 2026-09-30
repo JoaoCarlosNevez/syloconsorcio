@@ -2,14 +2,16 @@
 //
 // ADR-02: Drizzle é o único ORM. Seleção explícita de colunas (AGENTS.md §10).
 
+import { randomBytes } from 'node:crypto'
 import type {
   ILeadProposalRepository,
   LeadProposalRecord,
   NewLeadProposalInput,
+  SharedLeadProposalRecord,
 } from '@sylocrm/application'
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 import type { Database } from '../client'
-import { leadProposals } from '../schema'
+import { leadProposals, leads } from '../schema'
 
 const LEAD_PROPOSAL_COLUMNS = {
   id: leadProposals.id,
@@ -18,8 +20,16 @@ const LEAD_PROPOSAL_COLUMNS = {
   termMonths: leadProposals.termMonths,
   tableName: leadProposals.tableName,
   installments: leadProposals.installments,
+  shareToken: leadProposals.shareToken,
+  viewCount: leadProposals.viewCount,
+  lastViewedAt: leadProposals.lastViewedAt,
   createdAt: leadProposals.createdAt,
 } as const
+
+/** 24 bytes aleatórios → 32 caracteres base64url; impossível de adivinhar. */
+function generateShareToken(): string {
+  return randomBytes(24).toString('base64url')
+}
 
 export class DrizzleLeadProposalRepository implements ILeadProposalRepository {
   constructor(private readonly db: Database) {}
@@ -47,5 +57,53 @@ export class DrizzleLeadProposalRepository implements ILeadProposalRepository {
     const row = rows[0]
     if (!row) throw new Error('Failed to create lead proposal: no row returned')
     return row
+  }
+
+  async findById(id: string): Promise<LeadProposalRecord | null> {
+    const rows = await this.db
+      .select(LEAD_PROPOSAL_COLUMNS)
+      .from(leadProposals)
+      .where(eq(leadProposals.id, id))
+      .limit(1)
+    return rows[0] ?? null
+  }
+
+  async enableSharing(id: string, sharedByUserId: string): Promise<string> {
+    // Só grava se ainda não houver token — duas abas gerando o link ao mesmo
+    // tempo ficam com o mesmo token (o segundo UPDATE não casa).
+    await this.db
+      .update(leadProposals)
+      .set({ shareToken: generateShareToken(), sharedByUserId })
+      .where(and(eq(leadProposals.id, id), isNull(leadProposals.shareToken)))
+
+    const rows = await this.db
+      .select({ shareToken: leadProposals.shareToken })
+      .from(leadProposals)
+      .where(eq(leadProposals.id, id))
+      .limit(1)
+    const token = rows[0]?.shareToken
+    if (!token) throw new Error('Failed to enable proposal sharing: proposal not found')
+    return token
+  }
+
+  async findByShareToken(token: string): Promise<SharedLeadProposalRecord | null> {
+    const rows = await this.db
+      .select({
+        ...LEAD_PROPOSAL_COLUMNS,
+        organizationId: leads.organizationId,
+        sharedByUserId: leadProposals.sharedByUserId,
+      })
+      .from(leadProposals)
+      .innerJoin(leads, eq(leads.id, leadProposals.leadId))
+      .where(eq(leadProposals.shareToken, token))
+      .limit(1)
+    return rows[0] ?? null
+  }
+
+  async recordView(id: string, viewedAt: Date): Promise<void> {
+    await this.db
+      .update(leadProposals)
+      .set({ viewCount: sql`${leadProposals.viewCount} + 1`, lastViewedAt: viewedAt })
+      .where(eq(leadProposals.id, id))
   }
 }

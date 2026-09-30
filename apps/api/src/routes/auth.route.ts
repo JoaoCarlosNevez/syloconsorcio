@@ -55,6 +55,7 @@ const updateProfileSchema = z.object({
         // Tipo mais novo — default pra uma aba antiga do front, que ainda não
         // manda este campo, conseguir salvar.
         'lead.received': z.boolean().default(true),
+        'proposal.viewed': z.boolean().default(true),
       }),
       sound: z.boolean(),
     })

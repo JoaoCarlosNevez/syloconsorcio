@@ -12,6 +12,7 @@ import {
   useDuplicateLead,
   useLeadHistoryQuery,
   useLeadProposalsQuery,
+  useShareLeadProposal,
   useUpdateLead,
 } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
@@ -29,7 +30,12 @@ import {
   resolveAgent,
   resolveCardOutcome,
 } from '../../lib/lead-adapters'
-import type { CreateLeadProposalPayload, LeadHistory, LeadProposal } from '../../lib/leads-api'
+import {
+  type CreateLeadProposalPayload,
+  type LeadHistory,
+  type LeadProposal,
+  proposalShareUrl,
+} from '../../lib/leads-api'
 import {
   EMPTY_INSTALLMENT_ROW,
   type InstallmentRow,
@@ -38,6 +44,7 @@ import {
   installmentRowStarts,
 } from '../../lib/proposal-installments'
 import { downloadProposalPdf } from '../../lib/proposal-pdf'
+import { describeProposalViews } from '../../lib/proposal-share'
 import type { CreateTaskPayload, Task, TaskType, UpdateTaskPayload } from '../../lib/tasks-api'
 import type { TeamMember } from '../../lib/team-api'
 import { TaskFormModal } from '../tarefas/TaskFormModal'
@@ -503,6 +510,25 @@ function DownloadIcon() {
   )
 }
 
+function LinkIcon() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  )
+}
+
 function CommentIcon() {
   return (
     <svg
@@ -852,6 +878,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
   const createComment = useCreateLeadComment(organizationId, card.id)
   const { data: proposalsData } = useLeadProposalsQuery(organizationId, card.id)
   const createLeadProposal = useCreateLeadProposal(organizationId, card.id)
+  const shareLeadProposal = useShareLeadProposal(organizationId, card.id)
   const { data: leadTasksData } = useTasksQuery(organizationId, {
     leadId: card.id,
     status: 'todos',
@@ -1112,6 +1139,36 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
         title: 'Não foi possível gerar o PDF',
         description: error instanceof Error ? error.message : undefined,
       })
+    }
+  }
+
+  /** Gera o link público (se ainda não existir) e copia pro vendedor colar
+   * no WhatsApp/e-mail. Quando o cliente abrir, chega notificação no sininho. */
+  async function handleCopyProposalLink(proposal: LeadProposal) {
+    let url: string
+    try {
+      const shareToken =
+        proposal.shareToken ?? (await shareLeadProposal.mutateAsync(proposal.id)).shareToken
+      url = proposalShareUrl(shareToken)
+    } catch (error) {
+      toast({
+        type: 'error',
+        title: 'Não foi possível gerar o link',
+        description: error instanceof Error ? error.message : undefined,
+      })
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      toast({
+        type: 'success',
+        title: 'Link da proposta copiado',
+        description: 'Você recebe uma notificação quando o cliente abrir.',
+      })
+    } catch {
+      // Clipboard bloqueado (permissão/contexto inseguro) — mostra o link pra
+      // copiar na mão.
+      toast({ type: 'info', title: 'Copie o link da proposta', description: url })
     }
   }
 
@@ -1870,6 +1927,15 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                             <button
                               type="button"
                               className={styles.simSecBtn}
+                              onClick={() => handleCopyProposalLink(simulation.proposal)}
+                              disabled={shareLeadProposal.isPending}
+                            >
+                              <LinkIcon />
+                              Copiar link
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.simSecBtn}
                               onClick={handleResetSimulation}
                             >
                               Nova simulação
@@ -1920,7 +1986,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                               </div>
                             </div>
                           </div>
-                          <div>
+                          <div className={styles.simCardActions}>
                             <button
                               type="button"
                               className={styles.simSecBtn}
@@ -1929,6 +1995,26 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                               <DownloadIcon />
                               Baixar PDF
                             </button>
+                            <button
+                              type="button"
+                              className={styles.simSecBtn}
+                              onClick={() => handleCopyProposalLink(proposal)}
+                              disabled={shareLeadProposal.isPending}
+                            >
+                              <LinkIcon />
+                              Copiar link
+                            </button>
+                            {describeProposalViews(proposal) && (
+                              <span
+                                className={
+                                  proposal.viewCount > 0
+                                    ? styles.simViewsOpened
+                                    : styles.simViewsPending
+                                }
+                              >
+                                {describeProposalViews(proposal)}
+                              </span>
+                            )}
                           </div>
                         </div>
                       ))

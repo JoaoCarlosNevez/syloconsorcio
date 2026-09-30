@@ -67,6 +67,14 @@ export function describeNotification(
         detail: source ? `Origem: ${source}` : null,
       }
     }
+    case 'proposal.viewed': {
+      const viewedAt =
+        typeof notification.metadata.viewedAt === 'string' ? notification.metadata.viewedAt : null
+      return {
+        headline: 'Cliente abriu a proposta',
+        detail: viewedAt ? `Aberta ${formatDueAt(viewedAt, now)}` : null,
+      }
+    }
   }
 }
 
@@ -78,7 +86,7 @@ export interface NotificationTarget {
 /** Pra onde o clique numa notificação leva: a tarefa (em Tarefas) ou o lead
  * (no Kanban, já no funil dele). */
 export function notificationTarget(notification: AppNotification): NotificationTarget {
-  if (notification.type === 'lead.received') {
+  if (notification.type === 'lead.received' || notification.type === 'proposal.viewed') {
     const { leadId, funnelId } = notification.metadata
     return typeof leadId === 'string'
       ? {

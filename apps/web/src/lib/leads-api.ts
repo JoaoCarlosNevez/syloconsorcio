@@ -176,10 +176,9 @@ export function createLeadComment(
   return apiClient.post<LeadComment>(`/leads/${leadId}/comments`, { text }, { organizationId })
 }
 
-/** Proposta/simulação de crédito aprovada — entrada e prazo são por-proposta
- * (o mesmo lead pode ter várias, com valores diferentes). Sem valor de
- * parcela de propósito — calcular parcela de consórcio de verdade exige taxa
- * de administração, fundo de reserva e seguro, nenhum modelado ainda. */
+/** Proposta/simulação de crédito aprovada — entrada, prazo e parcelas são
+ * por-proposta (o mesmo lead pode ter várias, com valores diferentes). As
+ * parcelas são digitadas pelo vendedor, não calculadas. */
 export interface LeadProposal {
   id: string
   leadId: string
@@ -189,6 +188,11 @@ export interface LeadProposal {
   tableName: string | null
   /** Faixas de parcelas em ordem, cobrindo 1..termMonths; null nas antigas. */
   installments: ProposalInstallmentRange[] | null
+  /** Token do link público (/p/:token); null até alguém gerar o link. */
+  shareToken: string | null
+  /** Quantas vezes o cliente abriu o link. */
+  viewCount: number
+  lastViewedAt: string | null
   createdAt: string
 }
 
@@ -221,4 +225,42 @@ export function createLeadProposal(
   payload: CreateLeadProposalPayload,
 ): Promise<LeadProposal> {
   return apiClient.post<LeadProposal>(`/leads/${leadId}/proposals`, payload, { organizationId })
+}
+
+/** Gera (ou devolve o já existente) token do link público da proposta. */
+export function shareLeadProposal(
+  organizationId: string,
+  leadId: string,
+  proposalId: string,
+): Promise<{ shareToken: string }> {
+  return apiClient.post<{ shareToken: string }>(
+    `/leads/${leadId}/proposals/${proposalId}/share`,
+    undefined,
+    { organizationId },
+  )
+}
+
+/** URL que o vendedor manda pro cliente. */
+export function proposalShareUrl(shareToken: string): string {
+  return `${window.location.origin}/p/${shareToken}`
+}
+
+/** Proposta como o cliente vê pelo link — sem dados pessoais além do nome. */
+export interface PublicProposal {
+  organization: { name: string; iconUrl: string | null }
+  consultantName: string | null
+  client: { name: string }
+  segment: string
+  quotaCount: number
+  valueCents: number
+  tableName: string | null
+  downPaymentCents: number
+  termMonths: number
+  installments: ProposalInstallmentRange[] | null
+  createdAt: string
+}
+
+/** Sem login — abrir conta como uma visualização e avisa o vendedor. */
+export function getPublicProposal(token: string): Promise<PublicProposal> {
+  return apiClient.get<PublicProposal>(`/public/proposals/${encodeURIComponent(token)}`)
 }

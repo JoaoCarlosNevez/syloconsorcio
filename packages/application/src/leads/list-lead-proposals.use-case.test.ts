@@ -55,6 +55,9 @@ const SAMPLE_PROPOSAL: LeadProposalRecord = {
   termMonths: 24,
   tableName: null,
   installments: null,
+  shareToken: null,
+  viewCount: 0,
+  lastViewedAt: null,
   createdAt: new Date('2026-01-05T00:00:00Z'),
 }
 
@@ -91,6 +94,10 @@ function buildLeadProposalRepository(
   return {
     listByLead: vi.fn().mockResolvedValue([SAMPLE_PROPOSAL]),
     create: vi.fn(),
+    findById: vi.fn(),
+    enableSharing: vi.fn(),
+    findByShareToken: vi.fn(),
+    recordView: vi.fn(),
     ...overrides,
   }
 }

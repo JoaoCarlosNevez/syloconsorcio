@@ -86,9 +86,16 @@ function buildLeadProposalRepository(
         Promise.resolve({
           id: 'proposal-01',
           createdAt: new Date('2026-01-05T00:00:00Z'),
+          shareToken: null,
+          viewCount: 0,
+          lastViewedAt: null,
           ...input,
         }),
     ),
+    findById: vi.fn(),
+    enableSharing: vi.fn(),
+    findByShareToken: vi.fn(),
+    recordView: vi.fn(),
     ...overrides,
   }
 }

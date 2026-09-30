@@ -36,6 +36,7 @@ import { leadsRoute } from './routes/leads.route'
 import { notificationsRoute } from './routes/notifications.route'
 import { organizationSettingsRoute } from './routes/organization-settings.route'
 import { organizationsRoute } from './routes/organizations.route'
+import { publicProposalsRoute } from './routes/public-proposals.route'
 import { tasksRoute } from './routes/tasks.route'
 import { teamRoute } from './routes/team.route'
 import { webhooksRoute } from './routes/webhooks.route'
@@ -184,6 +185,12 @@ function createNoOpLeadProposalRepository(): ILeadProposalRepository {
     create: async () => {
       throw new Error('Database not configured — cannot create lead proposals.')
     },
+    findById: async () => null,
+    enableSharing: async () => {
+      throw new Error('Database not configured — cannot share lead proposals.')
+    },
+    findByShareToken: async () => null,
+    recordView: async () => {},
   }
 }
 
@@ -275,6 +282,14 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     funnelRepository: resolvedDeps.funnelRepository,
     leadProposalRepository: resolvedDeps.leadProposalRepository,
     activityLogRepository: resolvedDeps.activityLogRepository,
+  })
+
+  app.register(publicProposalsRoute, {
+    leadProposalRepository: resolvedDeps.leadProposalRepository,
+    leadRepository: resolvedDeps.leadRepository,
+    organizationRepository: resolvedDeps.organizationRepository,
+    userRepository: resolvedDeps.userRepository,
+    notificationRepository: resolvedDeps.notificationRepository,
   })
 
   app.register(funnelsRoute, {

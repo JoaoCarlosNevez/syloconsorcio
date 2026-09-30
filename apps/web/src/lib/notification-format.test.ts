@@ -135,3 +135,31 @@ describe('unreadBadgeLabel', () => {
     expect(unreadBadgeLabel(12)).toBe('9+')
   })
 })
+
+describe('proposal notifications', () => {
+  const viewed = notification({
+    type: 'proposal.viewed',
+    actor: null,
+    title: 'Maria Souza',
+    metadata: {
+      leadId: 'lead-01',
+      funnelId: 'funnel-01',
+      proposalId: 'proposal-01',
+      viewedAt: new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate(), 14, 32).toISOString(),
+    },
+  })
+
+  it('says the client opened the proposal and when', () => {
+    expect(describeNotification(viewed, NOW)).toEqual({
+      headline: 'Cliente abriu a proposta',
+      detail: 'Aberta hoje às 14:32',
+    })
+  })
+
+  it('opens the lead in the Kanban', () => {
+    expect(notificationTarget(viewed)).toEqual({
+      path: '/app/kanban',
+      state: { openLeadId: 'lead-01', funnelId: 'funnel-01' },
+    })
+  })
+})
