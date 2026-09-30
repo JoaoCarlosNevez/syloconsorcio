@@ -29,7 +29,15 @@ import {
   resolveAgent,
   resolveCardOutcome,
 } from '../../lib/lead-adapters'
-import type { LeadHistory } from '../../lib/leads-api'
+import type { CreateLeadProposalPayload, LeadHistory, LeadProposal } from '../../lib/leads-api'
+import {
+  EMPTY_INSTALLMENT_ROW,
+  type InstallmentRow,
+  buildInstallmentRanges,
+  describeInstallments,
+  installmentRowStarts,
+} from '../../lib/proposal-installments'
+import { downloadProposalPdf } from '../../lib/proposal-pdf'
 import type { CreateTaskPayload, Task, TaskType, UpdateTaskPayload } from '../../lib/tasks-api'
 import type { TeamMember } from '../../lib/team-api'
 import { TaskFormModal } from '../tarefas/TaskFormModal'
@@ -475,6 +483,26 @@ function LightningIcon() {
   )
 }
 
+function DownloadIcon() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  )
+}
+
 function CommentIcon() {
   return (
     <svg
@@ -679,12 +707,7 @@ const MARITAL_STATUS_OPTIONS = [
 type SimulationState =
   | { status: 'idle' }
   | { status: 'loading'; durationMs: number }
-  | {
-      status: 'approved'
-      downPaymentCents: number
-      termMonths: number
-      tableName: string | null
-    }
+  | { status: 'approved'; proposal: LeadProposal }
 
 const SIMULATION_MIN_MS = 30_000
 const SIMULATION_MAX_MS = 60_000
@@ -781,10 +804,16 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
   const [simulationFormOpen, setSimulationFormOpen] = useState(false)
   const [qualificationGapFields, setQualificationGapFields] = useState<QualificationFieldDef[]>([])
   const [gapForm, setGapForm] = useState<AttrsForm>(() => buildAttrsForm(card))
-  const [simulationParams, setSimulationParams] = useState({
+  const [simulationParams, setSimulationParams] = useState<{
+    tableName: string
+    downPayment: string
+    termMonths: string
+    installmentRows: InstallmentRow[]
+  }>({
     tableName: '',
     downPayment: '',
     termMonths: '',
+    installmentRows: [EMPTY_INSTALLMENT_ROW],
   })
   const [analysisStepIndex, setAnalysisStepIndex] = useState(0)
 
@@ -1043,27 +1072,70 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
     }
   }
 
-  function startSimulation(downPaymentCents: number, termMonths: number, tableName: string | null) {
+  function startSimulation(payload: CreateLeadProposalPayload) {
     const delayMs = SIMULATION_MIN_MS + Math.random() * (SIMULATION_MAX_MS - SIMULATION_MIN_MS)
     setSimulation({ status: 'loading', durationMs: delayMs })
     simulationTimer.current = setTimeout(() => {
-      createLeadProposal.mutate(
-        { downPaymentCents, termMonths, tableName },
-        {
-          onSuccess: () => {
-            setSimulation({ status: 'approved', downPaymentCents, termMonths, tableName })
-          },
-          onError: (error) => {
-            setSimulation({ status: 'idle' })
-            toast({
-              type: 'error',
-              title: 'Não foi possível registrar a proposta',
-              description: error instanceof Error ? error.message : undefined,
-            })
-          },
+      createLeadProposal.mutate(payload, {
+        onSuccess: (proposal) => {
+          setSimulation({ status: 'approved', proposal })
         },
-      )
+        onError: (error) => {
+          setSimulation({ status: 'idle' })
+          toast({
+            type: 'error',
+            title: 'Não foi possível registrar a proposta',
+            description: error instanceof Error ? error.message : undefined,
+          })
+        },
+      })
     }, delayMs)
+  }
+
+  async function handleDownloadProposalPdf(proposal: LeadProposal) {
+    try {
+      await downloadProposalPdf({
+        organizationName: membership?.organizationName ?? '',
+        consultantName: card.assignedUserId ? responsible.name : null,
+        client: { name: card.name, cpf: card.cpf, phone: card.phone, email: card.email },
+        cota: card.cota,
+        valueCents: card.valueCents,
+        tableName: proposal.tableName,
+        downPaymentCents: proposal.downPaymentCents,
+        termMonths: proposal.termMonths,
+        installments: proposal.installments,
+        createdAt: new Date(proposal.createdAt),
+      })
+    } catch (error) {
+      toast({
+        type: 'error',
+        title: 'Não foi possível gerar o PDF',
+        description: error instanceof Error ? error.message : undefined,
+      })
+    }
+  }
+
+  function updateInstallmentRow(index: number, patch: Partial<InstallmentRow>) {
+    setSimulationParams((prev) => ({
+      ...prev,
+      installmentRows: prev.installmentRows.map((row, i) =>
+        i === index ? { ...row, ...patch } : row,
+      ),
+    }))
+  }
+
+  function addInstallmentRow() {
+    setSimulationParams((prev) => ({
+      ...prev,
+      installmentRows: [...prev.installmentRows, EMPTY_INSTALLMENT_ROW],
+    }))
+  }
+
+  function removeInstallmentRow(index: number) {
+    setSimulationParams((prev) => ({
+      ...prev,
+      installmentRows: prev.installmentRows.filter((_, i) => i !== index),
+    }))
   }
 
   /** Sempre abre o formulário — entrada e prazo são pedidos em toda simulação
@@ -1072,7 +1144,12 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
   function handleSimulate() {
     setGapForm(buildAttrsForm(card))
     setQualificationGapFields(missingQualificationFields(card))
-    setSimulationParams({ tableName: '', downPayment: '', termMonths: '' })
+    setSimulationParams({
+      tableName: '',
+      downPayment: '',
+      termMonths: '',
+      installmentRows: [EMPTY_INSTALLMENT_ROW],
+    })
     setSimulationFormOpen(true)
   }
 
@@ -1095,6 +1172,11 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
       toast({ type: 'error', title: 'O valor de entrada precisa ser menor que o valor da cota.' })
       return
     }
+    const installments = buildInstallmentRanges(simulationParams.installmentRows, termMonths)
+    if (!installments.ok) {
+      toast({ type: 'error', title: installments.error })
+      return
+    }
 
     const qualificationPayload =
       qualificationGapFields.length > 0 ? buildAttrsPayload(gapForm) : null
@@ -1112,7 +1194,12 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
 
     function proceed() {
       setSimulationFormOpen(false)
-      startSimulation(downPaymentCents as number, termMonths as number, tableName)
+      startSimulation({
+        downPaymentCents: downPaymentCents as number,
+        termMonths: termMonths as number,
+        tableName,
+        installments: installments.ok ? installments.ranges : null,
+      })
     }
 
     if (qualificationPayload) {
@@ -1739,11 +1826,11 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                             A proposta de <strong>{card.name}</strong> foi pré-aprovada com sucesso.
                           </p>
                           <div className={styles.simApprovedSummary}>
-                            {simulation.tableName && (
+                            {simulation.proposal.tableName && (
                               <div className={styles.simApprovedItem}>
                                 <span className={styles.simApprovedLabel}>Tabela</span>
                                 <span className={styles.simApprovedValue}>
-                                  {simulation.tableName}
+                                  {simulation.proposal.tableName}
                                 </span>
                               </div>
                             )}
@@ -1756,23 +1843,38 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                             <div className={styles.simApprovedItem}>
                               <span className={styles.simApprovedLabel}>Entrada</span>
                               <span className={styles.simApprovedValue}>
-                                R$ {formatBRL(simulation.downPaymentCents)}
+                                R$ {formatBRL(simulation.proposal.downPaymentCents)}
                               </span>
                             </div>
                             <div className={styles.simApprovedItem}>
                               <span className={styles.simApprovedLabel}>Prazo</span>
                               <span className={styles.simApprovedValue}>
-                                {simulation.termMonths}x
+                                {simulation.proposal.termMonths}x
                               </span>
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            className={styles.simSecBtn}
-                            onClick={handleResetSimulation}
-                          >
-                            Nova simulação
-                          </button>
+                          {simulation.proposal.installments && (
+                            <p className={styles.simApprovedInstallments}>
+                              Parcelas: {describeInstallments(simulation.proposal.installments)}
+                            </p>
+                          )}
+                          <div className={styles.simApprovedActions}>
+                            <button
+                              type="button"
+                              className={styles.pdfBtn}
+                              onClick={() => handleDownloadProposalPdf(simulation.proposal)}
+                            >
+                              <DownloadIcon />
+                              Baixar PDF da proposta
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.simSecBtn}
+                              onClick={handleResetSimulation}
+                            >
+                              Nova simulação
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1803,6 +1905,11 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                               <p className={styles.simValue}>
                                 Entrada: R$ {formatBRL(proposal.downPaymentCents)}
                               </p>
+                              {proposal.installments && (
+                                <p className={styles.simValue}>
+                                  Parcelas: {describeInstallments(proposal.installments)}
+                                </p>
+                              )}
                             </div>
                             <div className={styles.simParcelGroup}>
                               <span className={styles.simParcelLabel}>Prazo</span>
@@ -1812,6 +1919,16 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                                 </span>
                               </div>
                             </div>
+                          </div>
+                          <div>
+                            <button
+                              type="button"
+                              className={styles.simSecBtn}
+                              onClick={() => handleDownloadProposalPdf(proposal)}
+                            >
+                              <DownloadIcon />
+                              Baixar PDF
+                            </button>
                           </div>
                         </div>
                       ))
@@ -2642,14 +2759,16 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
               background: '#fff',
               borderRadius: 12,
               padding: 24,
-              width: 380,
+              width: 420,
               maxWidth: '90vw',
+              maxHeight: '90vh',
+              overflowY: 'auto',
               boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
             }}
           >
             <h2 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 4px' }}>Nova Simulação</h2>
             <p style={{ fontSize: 13, color: '#475569', margin: '0 0 16px' }}>
-              Tabela, entrada e prazo valem só pra esta proposta.
+              Tabela, entrada, prazo e parcelas valem só pra esta proposta.
               {qualificationGapFields.length > 0 &&
                 ' Também falta completar a Ficha de Qualificação do cliente.'}
             </p>
@@ -2714,6 +2833,69 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                   }
                 />
               </div>
+              <fieldset className={styles.simInstallments}>
+                <legend className={styles.simInstallmentsLegend}>Valor das Parcelas</legend>
+                {simulationParams.installmentRows.map((row, index) => {
+                  const start = installmentRowStarts(simulationParams.installmentRows)[index]
+                  const isLast = index === simulationParams.installmentRows.length - 1
+                  const isOnly = simulationParams.installmentRows.length === 1
+                  return (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: linhas sem id, só por posição
+                    <div key={index} className={styles.simInstallmentRow}>
+                      <span className={styles.simInstallmentText}>
+                        {isOnly
+                          ? 'Todas as parcelas'
+                          : isLast
+                            ? `Da ${start}ª em diante`
+                            : `Da ${start}ª até a`}
+                      </span>
+                      {!isLast && (
+                        <input
+                          aria-label={`Faixa ${index + 1}: até a parcela`}
+                          className={`${styles.attrInput} ${styles.simInstallmentUntil}`}
+                          inputMode="numeric"
+                          placeholder="12"
+                          value={row.until}
+                          onChange={(e) =>
+                            updateInstallmentRow(index, {
+                              until: e.target.value.replace(/[^0-9]/g, ''),
+                            })
+                          }
+                        />
+                      )}
+                      <input
+                        aria-label={`Faixa ${index + 1}: valor da parcela`}
+                        className={`${styles.attrInput} ${styles.simInstallmentAmount}`}
+                        inputMode="numeric"
+                        placeholder="R$"
+                        value={row.amount}
+                        onChange={(e) =>
+                          updateInstallmentRow(index, { amount: formatMoneyInput(e.target.value) })
+                        }
+                      />
+                      {!isOnly && (
+                        <button
+                          type="button"
+                          className={styles.simInstallmentRemove}
+                          aria-label={`Remover faixa ${index + 1}`}
+                          onClick={() => removeInstallmentRow(index)}
+                        >
+                          <TrashIcon />
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
+                <button
+                  type="button"
+                  className={styles.simInstallmentAdd}
+                  onClick={addInstallmentRow}
+                  disabled={simulationParams.installmentRows.length >= 24}
+                >
+                  <PlusIcon />
+                  Valor diferente a partir de uma parcela
+                </button>
+              </fieldset>
               {qualificationGapFields.map((def) => (
                 <div key={def.key} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <label

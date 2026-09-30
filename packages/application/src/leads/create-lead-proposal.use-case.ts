@@ -1,13 +1,18 @@
 // CreateLeadProposalUseCase — registra uma proposta/simulação de crédito
-// aprovada pro lead. Sem valor de parcela de propósito (ver nota em
-// schema/lead-proposals.ts) — só valida que a entrada é menor que o valor da
-// cota, checado aqui contra o valueCents real do lead, nunca confiado ao
-// cliente.
+// aprovada pro lead. Valida que a entrada é menor que o valor da cota (checado
+// contra o valueCents real do lead, nunca confiado ao cliente) e que as faixas
+// de parcelas, quando enviadas, cobrem exatamente 1..termMonths sem buracos.
+// O valor das parcelas é digitado pelo vendedor, não calculado (ver nota em
+// schema/lead-proposals.ts).
 
 import { ValidationError } from '@sylocrm/domain'
 import type { MembershipContext } from '../auth/auth-context'
 import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activity-log.repository'
-import type { ILeadProposalRepository, LeadProposalRecord } from '../ports/lead-proposal.repository'
+import type {
+  ILeadProposalRepository,
+  LeadProposalRecord,
+  ProposalInstallmentRange,
+} from '../ports/lead-proposal.repository'
 import type { ILeadRepository } from '../ports/lead.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
 import type { UseCase } from '../ports/use-case'
@@ -21,6 +26,26 @@ export interface CreateLeadProposalInput {
   termMonths: number
   /** Nome da tabela da administradora (opcional). */
   tableName?: string | null
+  /** Faixas de parcelas (opcional nas chamadas antigas). */
+  installments?: ProposalInstallmentRange[] | null
+}
+
+/** Mensagem de erro quando as faixas não cobrem 1..termMonths em sequência,
+ * ou null quando estão ok. */
+function installmentsError(ranges: ProposalInstallmentRange[], termMonths: number): string | null {
+  if (ranges.length === 0) return 'Informe o valor das parcelas.'
+  let expectedFrom = 1
+  for (const range of ranges) {
+    if (range.from !== expectedFrom || range.to < range.from) {
+      return 'As faixas de parcelas precisam ser sequenciais, começando na 1ª.'
+    }
+    if (range.amountCents <= 0) return 'O valor da parcela precisa ser maior que zero.'
+    expectedFrom = range.to + 1
+  }
+  if (expectedFrom - 1 !== termMonths) {
+    return 'As faixas de parcelas precisam terminar na última parcela do prazo.'
+  }
+  return null
 }
 
 export class CreateLeadProposalUseCase
@@ -51,11 +76,18 @@ export class CreateLeadProposalUseCase
       ])
     }
 
+    const installments = input.installments ?? null
+    if (installments) {
+      const message = installmentsError(installments, input.termMonths)
+      if (message) throw new ValidationError([{ field: 'installments', message }])
+    }
+
     const proposal = await this.leadProposalRepository.create({
       leadId: input.leadId,
       downPaymentCents: input.downPaymentCents,
       termMonths: input.termMonths,
       tableName: input.tableName ?? null,
+      installments,
     })
 
     await this.activityLog.record({

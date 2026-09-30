@@ -60,6 +60,7 @@ export type {
   ILeadProposalRepository,
   LeadProposalRecord,
   NewLeadProposalInput,
+  ProposalInstallmentRange,
 } from './ports/lead-proposal.repository'
 export type {
   ITaskRepository,

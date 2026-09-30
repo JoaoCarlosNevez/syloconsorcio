@@ -134,7 +134,67 @@ describe('CreateLeadProposalUseCase', () => {
       downPaymentCents: 20_000_00,
       termMonths: 24,
       tableName: null,
+      installments: null,
     })
+  })
+
+  it('stores installment ranges that cover the whole term', async () => {
+    const leadProposalRepository = buildLeadProposalRepository()
+    const useCase = new CreateLeadProposalUseCase(
+      buildLeadRepository(),
+      buildOrganizationRepository(),
+      leadProposalRepository,
+    )
+    const installments = [
+      { from: 1, to: 12, amountCents: 1_500_00 },
+      { from: 13, to: 24, amountCents: 1_200_00 },
+    ]
+
+    await useCase.execute({
+      leadId: 'lead-01',
+      userId: 'user-01',
+      membership: MEMBERSHIP,
+      downPaymentCents: 20_000_00,
+      termMonths: 24,
+      installments,
+    })
+
+    expect(leadProposalRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ installments }),
+    )
+  })
+
+  it.each([
+    ['do not start at the first installment', [{ from: 2, to: 24, amountCents: 1_000_00 }]],
+    [
+      'leave a gap',
+      [
+        { from: 1, to: 10, amountCents: 1_000_00 },
+        { from: 12, to: 24, amountCents: 900_00 },
+      ],
+    ],
+    ['stop before the end of the term', [{ from: 1, to: 20, amountCents: 1_000_00 }]],
+    ['go past the end of the term', [{ from: 1, to: 30, amountCents: 1_000_00 }]],
+    ['are empty', []],
+  ])('rejects installment ranges that %s', async (_label, installments) => {
+    const leadProposalRepository = buildLeadProposalRepository()
+    const useCase = new CreateLeadProposalUseCase(
+      buildLeadRepository(),
+      buildOrganizationRepository(),
+      leadProposalRepository,
+    )
+
+    await expect(
+      useCase.execute({
+        leadId: 'lead-01',
+        userId: 'user-01',
+        membership: MEMBERSHIP,
+        downPaymentCents: 20_000_00,
+        termMonths: 24,
+        installments,
+      }),
+    ).rejects.toThrow(ValidationError)
+    expect(leadProposalRepository.create).not.toHaveBeenCalled()
   })
 
   it('stores the table name used in the simulation', async () => {

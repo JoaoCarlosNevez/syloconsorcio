@@ -117,6 +117,7 @@ const SAMPLE_PROPOSAL: LeadProposalRecord = {
   downPaymentCents: 5_000_00,
   termMonths: 24,
   tableName: 'Tabela Imóvel 2026',
+  installments: [{ from: 1, to: 24, amountCents: 2_000_00 }],
   createdAt: new Date('2026-01-05T00:00:00Z'),
 }
 
@@ -1095,8 +1096,47 @@ describe('POST /leads/:id/proposals', () => {
         downPaymentCents: 5_000_00,
         termMonths: 24,
         tableName: null,
+        installments: null,
       }),
     )
+  })
+
+  it('passes the installment ranges to the use case', async () => {
+    const leadProposalRepository = buildLeadProposalRepository()
+    const app = buildTestApp({ leadProposalRepository })
+    const installments = [
+      { from: 1, to: 12, amountCents: 1_500_00 },
+      { from: 13, to: 24, amountCents: 1_200_00 },
+    ]
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/leads/lead-01/proposals',
+      headers: AUTH_HEADERS,
+      payload: { downPaymentCents: 5_000_00, termMonths: 24, installments },
+    })
+
+    expect(response.statusCode).toBe(201)
+    expect(leadProposalRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ installments }),
+    )
+  })
+
+  it('returns 400 when an installment amount is not positive', async () => {
+    const app = buildTestApp({})
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/leads/lead-01/proposals',
+      headers: AUTH_HEADERS,
+      payload: {
+        downPaymentCents: 5_000_00,
+        termMonths: 24,
+        installments: [{ from: 1, to: 24, amountCents: 0 }],
+      },
+    })
+
+    expect(response.statusCode).toBe(400)
   })
 
   it('stores the table name, trimmed, when sent', async () => {

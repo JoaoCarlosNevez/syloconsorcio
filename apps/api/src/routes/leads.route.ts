@@ -115,6 +115,19 @@ const createProposalSchema = z.object({
     .nullable()
     .optional()
     .transform((value) => value || null),
+  // Faixas de parcelas — a sequência 1..termMonths é validada no use case.
+  installments: z
+    .array(
+      z.object({
+        from: z.number().int().positive(),
+        to: z.number().int().positive(),
+        amountCents: z.number().int().positive(),
+      }),
+    )
+    .min(1)
+    .max(24)
+    .nullable()
+    .optional(),
 })
 
 const listQuerySchema = z.object({
@@ -458,6 +471,7 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
           downPaymentCents: parsed.data.downPaymentCents,
           termMonths: parsed.data.termMonths,
           tableName: parsed.data.tableName,
+          installments: parsed.data.installments ?? null,
         })
 
         if (!proposal) {

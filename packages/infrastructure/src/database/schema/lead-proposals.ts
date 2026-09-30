@@ -7,12 +7,13 @@
 // diferentes. Só inserts — uma proposta nunca é editada, só substituída por
 // uma nova simulação (ver LeadModal, aba Simulações).
 //
-// Sem valor de parcela de propósito: calcular parcela de consórcio de verdade
-// exige taxa de administração, fundo de reserva e seguro (nenhum modelado
-// ainda) — por enquanto a "aprovação" é só o efeito visual pedido, sem número
-// financeiro incorreto na tela.
+// Parcelas NÃO são calculadas: calcular parcela de consórcio de verdade exige
+// taxa de administração, fundo de reserva e seguro (nenhum modelado ainda). O
+// vendedor digita o valor que a tabela da administradora dá, em faixas (ex:
+// da 1ª à 12ª R$ 1.500, as demais R$ 1.200) — ver installments abaixo.
 
-import { integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import type { ProposalInstallmentRange } from '@sylocrm/application'
+import { integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { leads } from './leads'
 
 export const leadProposals = pgTable('lead_proposals', {
@@ -25,6 +26,10 @@ export const leadProposals = pgTable('lead_proposals', {
   // Nome da tabela da administradora usada na simulação (ex: "Tabela Imóvel
   // 2026"). Opcional — propostas antigas não têm.
   tableName: text('table_name'),
+  // Faixas de parcelas [{ from, to, amountCents }], em ordem e cobrindo
+  // 1..termMonths (validado no CreateLeadProposalUseCase). Opcional —
+  // propostas antigas não têm.
+  installments: jsonb('installments').$type<ProposalInstallmentRange[]>(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 

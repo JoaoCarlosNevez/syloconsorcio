@@ -187,7 +187,16 @@ export interface LeadProposal {
   termMonths: number
   /** Nome da tabela da administradora usada na simulação; null nas antigas. */
   tableName: string | null
+  /** Faixas de parcelas em ordem, cobrindo 1..termMonths; null nas antigas. */
+  installments: ProposalInstallmentRange[] | null
   createdAt: string
+}
+
+/** Da parcela `from` até a `to` (inclusive), todas com o mesmo valor. */
+export interface ProposalInstallmentRange {
+  from: number
+  to: number
+  amountCents: number
 }
 
 export function listLeadProposals(
@@ -203,6 +212,7 @@ export interface CreateLeadProposalPayload {
   downPaymentCents: number
   termMonths: number
   tableName?: string | null
+  installments?: ProposalInstallmentRange[] | null
 }
 
 export function createLeadProposal(

@@ -17,6 +17,7 @@ const LEAD_PROPOSAL_COLUMNS = {
   downPaymentCents: leadProposals.downPaymentCents,
   termMonths: leadProposals.termMonths,
   tableName: leadProposals.tableName,
+  installments: leadProposals.installments,
   createdAt: leadProposals.createdAt,
 } as const
 
@@ -39,6 +40,7 @@ export class DrizzleLeadProposalRepository implements ILeadProposalRepository {
         downPaymentCents: input.downPaymentCents,
         termMonths: input.termMonths,
         tableName: input.tableName,
+        installments: input.installments,
       })
       .returning(LEAD_PROPOSAL_COLUMNS)
 
