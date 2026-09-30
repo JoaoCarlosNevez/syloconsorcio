@@ -20,6 +20,7 @@ import { useSalesGoalsSummaryQuery } from '../../hooks/useTeam'
 import { formatCota } from '../../lib/lead-adapters'
 import { businessDaysRemaining, formatGoalBRL, toGoalProgressView } from '../../lib/sales-goals'
 import type { Task, TaskType } from '../../lib/tasks-api'
+import { teamLine } from '../../lib/team-line'
 import { tierBackground, tierRingGradient, visibleTier } from '../../lib/tier-art'
 import {
   type DisplayStatus,
@@ -291,7 +292,6 @@ export function HomePage() {
   const handle = currentUser?.instagramHandle
     ? `@${currentUser.instagramHandle}`
     : `@${emailPrefix}`
-  const displayLocation = currentUser?.location ?? 'São Paulo'
 
   useEffect(() => {
     const t = setTimeout(() => setIsLoading(false), 1500)
@@ -369,7 +369,7 @@ export function HomePage() {
                   <span className={styles.profileHandle}>{handle}</span>
                 </div>
                 <p className={styles.profileMeta}>
-                  Equipe de {membership?.organizationName ?? 'Sylo'}, {displayLocation}
+                  {teamLine(membership?.organizationName, currentUser?.location ?? null)}
                 </p>
                 <div className={styles.heroActions}>
                   <NotificationBell triggerClassName={styles.notifBtn} align="left" />

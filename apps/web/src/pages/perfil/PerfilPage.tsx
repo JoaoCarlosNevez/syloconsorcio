@@ -17,6 +17,7 @@ import { useSalesGoalsSummaryQuery, useUpdateMyPersonalGoal } from '../../hooks/
 import { validateIconFile } from '../../lib/icon-validation'
 import { formatGoalInput, goalInputToCents } from '../../lib/sales-goals'
 import { supabase } from '../../lib/supabase'
+import { teamLine } from '../../lib/team-line'
 import { tierBackground, visibleTier } from '../../lib/tier-art'
 import styles from './PerfilPage.module.css'
 
@@ -813,7 +814,6 @@ export function PerfilPage() {
   const displayHandle = currentUser?.instagramHandle
     ? `@${currentUser.instagramHandle}`
     : `@${emailPrefix}`
-  const displayLocation = currentUser?.location ?? 'São Paulo'
   const memberSince = formatMemberSince(currentUser?.createdAt ?? null)
 
   return (
@@ -1000,7 +1000,7 @@ export function PerfilPage() {
                 </div>
                 <div className={styles.profileMetaRow}>
                   <span className={styles.profileMeta}>
-                    Equipe de {membership?.organizationName ?? 'Sylo'}, {displayLocation}
+                    {teamLine(membership?.organizationName, currentUser?.location ?? null)}
                   </span>
                   {memberSince && (
                     <>
