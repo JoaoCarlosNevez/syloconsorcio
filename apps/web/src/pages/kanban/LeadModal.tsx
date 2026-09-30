@@ -2397,122 +2397,130 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                 )}
               </div>
 
-              {/* Card: Tarefas */}
-              <div className={styles.card}>
-                <div className={styles.taskHeader}>
-                  <div>
-                    <h2 className={styles.taskTitle}>Tarefas</h2>
-                    <p className={styles.taskSubtitle}>
-                      Acompanhe contatos telefônicos, envio de simulações e visitas presenciais.
-                    </p>
+              {/* Card: Tarefas — fica fora da aba Simulações, que já é longa. */}
+              {activeTab !== 'simulacoes' && (
+                <div className={styles.card}>
+                  <div className={styles.taskHeader}>
+                    <div>
+                      <h2 className={styles.taskTitle}>Tarefas</h2>
+                      <p className={styles.taskSubtitle}>
+                        Acompanhe contatos telefônicos, envio de simulações e visitas presenciais.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.newTaskBtn}
+                      onClick={() => setTaskFormOpen(true)}
+                    >
+                      <PlusIcon />
+                      Nova Tarefa
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    className={styles.newTaskBtn}
-                    onClick={() => setTaskFormOpen(true)}
-                  >
-                    <PlusIcon />
-                    Nova Tarefa
-                  </button>
-                </div>
 
-                {/* Quick chips */}
-                <div className={styles.chipsRow}>
-                  <span className={styles.chipsLabel}>Criar rápido:</span>
-                  <button
-                    type="button"
-                    className={styles.chip}
-                    disabled={createTask.isPending}
-                    onClick={() =>
-                      handleQuickCreateTask('Ligação', `Ligação de follow-up com ${card.name}`, 24)
-                    }
-                  >
-                    <PhoneIcon />
-                    Ligação de Follow-up
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.chip}
-                    disabled={createTask.isPending}
-                    onClick={() =>
-                      handleQuickCreateTask('Simulação', `Simular lance para ${card.name}`, 24)
-                    }
-                  >
-                    <CalendarIcon />
-                    Simulação de Lance
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.chip}
-                    disabled={createTask.isPending}
-                    onClick={() => handleQuickCreateTask('Reunião', `Reunião com ${card.name}`, 48)}
-                  >
-                    <CalendarIcon />
-                    Agendar Reunião
-                  </button>
-                </div>
+                  {/* Quick chips */}
+                  <div className={styles.chipsRow}>
+                    <span className={styles.chipsLabel}>Criar rápido:</span>
+                    <button
+                      type="button"
+                      className={styles.chip}
+                      disabled={createTask.isPending}
+                      onClick={() =>
+                        handleQuickCreateTask(
+                          'Ligação',
+                          `Ligação de follow-up com ${card.name}`,
+                          24,
+                        )
+                      }
+                    >
+                      <PhoneIcon />
+                      Ligação de Follow-up
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.chip}
+                      disabled={createTask.isPending}
+                      onClick={() =>
+                        handleQuickCreateTask('Simulação', `Simular lance para ${card.name}`, 24)
+                      }
+                    >
+                      <CalendarIcon />
+                      Simulação de Lance
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.chip}
+                      disabled={createTask.isPending}
+                      onClick={() =>
+                        handleQuickCreateTask('Reunião', `Reunião com ${card.name}`, 48)
+                      }
+                    >
+                      <CalendarIcon />
+                      Agendar Reunião
+                    </button>
+                  </div>
 
-                {/* Lista de tarefas */}
-                <div className={styles.taskList}>
-                  {leadTasks.length === 0 && (
-                    <p className={styles.attrValueMuted}>
-                      Nenhuma tarefa criada pra este lead ainda.
-                    </p>
-                  )}
-                  {leadTasks.map((task) => {
-                    const urgent = displayStatus(task) === 'atrasada'
-                    const badge = TASK_TYPE_BADGES[task.type]
-                    return (
-                      <button
-                        key={task.id}
-                        type="button"
-                        className={urgent ? styles.taskItemUrgent : styles.taskItem}
-                        onClick={() => setTaskDetail(task)}
-                        style={{ cursor: 'pointer', width: '100%', textAlign: 'left' }}
-                      >
-                        <div className={styles.taskLeft}>
-                          {/* biome-ignore lint/a11y/useKeyWithClickEvents: mouse-only shortcut — completing via TaskModal's "Concluir" button stays keyboard-accessible */}
-                          <span
-                            className={styles.taskCheckbox}
-                            title={
-                              task.status === 'concluida' ? 'Reabrir tarefa' : 'Concluir tarefa'
-                            }
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleToggleTaskComplete(task)
-                            }}
-                          />
-                          <div className={styles.taskContent}>
-                            <span className={styles.taskItemTitle}>{task.title}</span>
-                            <div className={styles.taskMeta}>
-                              <span className={urgent ? styles.taskTimeUrgent : styles.taskTime}>
-                                <ClockIcon />
-                                {formatTaskDateTime(task.dueAt)}
-                              </span>
-                              <span className={styles.taskMetaDot}>•</span>
-                              <span className={styles.taskMetaText}>
-                                Resp: {resolveAgent(task.assignedUserId, members).name}
-                              </span>
+                  {/* Lista de tarefas */}
+                  <div className={styles.taskList}>
+                    {leadTasks.length === 0 && (
+                      <p className={styles.attrValueMuted}>
+                        Nenhuma tarefa criada pra este lead ainda.
+                      </p>
+                    )}
+                    {leadTasks.map((task) => {
+                      const urgent = displayStatus(task) === 'atrasada'
+                      const badge = TASK_TYPE_BADGES[task.type]
+                      return (
+                        <button
+                          key={task.id}
+                          type="button"
+                          className={urgent ? styles.taskItemUrgent : styles.taskItem}
+                          onClick={() => setTaskDetail(task)}
+                          style={{ cursor: 'pointer', width: '100%', textAlign: 'left' }}
+                        >
+                          <div className={styles.taskLeft}>
+                            {/* biome-ignore lint/a11y/useKeyWithClickEvents: mouse-only shortcut — completing via TaskModal's "Concluir" button stays keyboard-accessible */}
+                            <span
+                              className={styles.taskCheckbox}
+                              title={
+                                task.status === 'concluida' ? 'Reabrir tarefa' : 'Concluir tarefa'
+                              }
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleToggleTaskComplete(task)
+                              }}
+                            />
+                            <div className={styles.taskContent}>
+                              <span className={styles.taskItemTitle}>{task.title}</span>
+                              <div className={styles.taskMeta}>
+                                <span className={urgent ? styles.taskTimeUrgent : styles.taskTime}>
+                                  <ClockIcon />
+                                  {formatTaskDateTime(task.dueAt)}
+                                </span>
+                                <span className={styles.taskMetaDot}>•</span>
+                                <span className={styles.taskMetaText}>
+                                  Resp: {resolveAgent(task.assignedUserId, members).name}
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className={styles.taskRight}>
-                          <span
-                            className={styles.priorityBadgeNormal}
-                            style={{
-                              background: badge.bg,
-                              borderColor: badge.border,
-                              color: badge.color,
-                            }}
-                          >
-                            {badge.label}
-                          </span>
-                        </div>
-                      </button>
-                    )
-                  })}
+                          <div className={styles.taskRight}>
+                            <span
+                              className={styles.priorityBadgeNormal}
+                              style={{
+                                background: badge.bg,
+                                borderColor: badge.border,
+                                color: badge.color,
+                              }}
+                            >
+                              {badge.label}
+                            </span>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Coluna direita — Histórico (conteúdo real) */}
