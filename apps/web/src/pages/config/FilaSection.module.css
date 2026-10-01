@@ -1,3 +1,33 @@
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.statusDot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.statusOn {
+  background: var(--color-success-subtle);
+  border: 1px solid var(--color-success-border);
+  color: var(--color-success-text);
+}
+
+.statusOff {
+  background: var(--color-accent-subtle);
+  border: 1px solid var(--color-accent-border-badge);
+  color: var(--color-accent-badge-text);
+}
+
 .muted {
   margin: 0;
   font-size: 13px;

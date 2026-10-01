@@ -47,12 +47,14 @@ export function FilaSection() {
   const activeMembers = (teamData?.members ?? []).filter((m) => m.status === 'ACTIVE')
 
   // Preenche o formulário uma vez, quando a configuração chega. Fila nunca
-  // configurada: já sugere todos os vendedores.
+  // configurada: já sugere ligada e com todos os vendedores — quem abre esta
+  // tela pela primeira vez quer ligar a fila (desligada por padrão, ela já
+  // foi salva assim sem querer).
   useEffect(() => {
     if (form || !data || !teamData) return
     const neverConfigured = !data.settings.enabled && data.settings.memberUserIds.length === 0
     setForm({
-      enabled: data.settings.enabled,
+      enabled: neverConfigured || data.settings.enabled,
       timeoutMinutes: String(data.settings.timeoutMinutes),
       memberUserIds: neverConfigured
         ? teamData.members
@@ -127,7 +129,14 @@ export function FilaSection() {
     updateQueue.mutate(
       { enabled: form.enabled, timeoutMinutes, memberUserIds: form.memberUserIds },
       {
-        onSuccess: () => toast({ type: 'success', title: 'Fila de leads salva' }),
+        onSuccess: ({ settings }) =>
+          settings.enabled
+            ? toast({ type: 'success', title: 'Fila de leads ligada e salva' })
+            : toast({
+                type: 'warning',
+                title: 'Fila salva, mas desligada',
+                description: 'Os leads do webhook não vão passar pela fila até você ligá-la.',
+              }),
         onError: (error) =>
           toast({
             type: 'error',
@@ -151,6 +160,16 @@ export function FilaSection() {
           </div>
         </div>
         <div className={styles.settingsCardBody}>
+          {data && (
+            <output
+              className={`${fila.status} ${data.settings.enabled ? fila.statusOn : fila.statusOff}`}
+            >
+              <span className={fila.statusDot} />
+              {data.settings.enabled
+                ? `Ligada — os leads do webhook estão sendo distribuídos (${data.queue.length} na fila).`
+                : 'Desligada — os leads do webhook não estão passando pela fila.'}
+            </output>
+          )}
           <div className={styles.notifRow}>
             <div>
               <div className={styles.notifRowLabel}>Distribuir leads pela fila</div>
