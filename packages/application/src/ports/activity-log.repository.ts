@@ -81,6 +81,10 @@ export interface ActivityRecord {
 export interface ActivityListFilter {
   organizationId: string
   entityType?: ActivityEntityType
+  /** Só os eventos de uma entidade (ex: o histórico de um lead). */
+  entityId?: string
+  /** Só estas ações. */
+  actions?: ActivityAction[]
 }
 
 export interface ActivityListPage {

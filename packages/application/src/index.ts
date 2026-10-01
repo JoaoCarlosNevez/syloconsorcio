@@ -90,7 +90,11 @@ export type { UpdateLeadUseCaseInput } from './leads/update-lead.use-case'
 export { DeleteLeadUseCase } from './leads/delete-lead.use-case'
 export type { DeleteLeadInput } from './leads/delete-lead.use-case'
 export { GetLeadHistoryUseCase } from './leads/get-lead-history.use-case'
-export type { GetLeadHistoryInput, LeadHistory } from './leads/get-lead-history.use-case'
+export type {
+  GetLeadHistoryInput,
+  LeadHistory,
+  LeadStageChange,
+} from './leads/get-lead-history.use-case'
 export { CreateLeadCommentUseCase } from './leads/create-lead-comment.use-case'
 export type { CreateLeadCommentInput } from './leads/create-lead-comment.use-case'
 export { DuplicateLeadUseCase } from './leads/duplicate-lead.use-case'

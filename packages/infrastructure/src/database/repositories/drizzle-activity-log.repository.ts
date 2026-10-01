@@ -12,7 +12,7 @@ import type {
   IActivityLogRepository,
   NewActivityEntry,
 } from '@sylocrm/application'
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import type { Database } from '../client'
 import { activityLog, users } from '../schema'
 
@@ -38,6 +38,8 @@ export class DrizzleActivityLogRepository implements IActivityLogRepository {
   ): Promise<ActivityListPage> {
     const conditions = [eq(activityLog.organizationId, filter.organizationId)]
     if (filter.entityType) conditions.push(eq(activityLog.entityType, filter.entityType))
+    if (filter.entityId) conditions.push(eq(activityLog.entityId, filter.entityId))
+    if (filter.actions?.length) conditions.push(inArray(activityLog.action, filter.actions))
     const where = and(...conditions)
 
     const [rows, countRows] = await Promise.all([

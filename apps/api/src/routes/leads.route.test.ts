@@ -12,6 +12,7 @@
 // Usa buildApp() com todos os repositórios mockados via DI — sem banco real.
 
 import type {
+  IActivityLogRepository,
   IAuthProvider,
   IFunnelRepository,
   ILeadProposalRepository,
@@ -252,8 +253,12 @@ function buildTestApp(options: {
   leadRepository?: ILeadRepository
   funnelRepository?: IFunnelRepository
   leadProposalRepository?: ILeadProposalRepository
+  activityLogRepository?: IActivityLogRepository
 }) {
   return buildApp({
+    ...(options.activityLogRepository
+      ? { activityLogRepository: options.activityLogRepository }
+      : {}),
     authProvider: buildAuthProvider(),
     membershipRepository: buildMembershipRepository(options.membership),
     leadRepository: options.leadRepository ?? buildLeadRepository(),
@@ -625,6 +630,55 @@ describe('GET /leads/:id/history', () => {
     const body = response.json<{ assignmentHistory: unknown[]; comments: unknown[] }>()
     expect(body.assignmentHistory).toHaveLength(1)
     expect(body.comments).toHaveLength(1)
+  })
+
+  it('includes the stage changes from the activity log, with who moved the lead', async () => {
+    const list = vi.fn().mockResolvedValue({
+      items: [
+        {
+          id: 'act-01',
+          organizationId: ORG_ID,
+          actor: { id: IDENTITY.id, name: 'Vendedor', email: IDENTITY.email, avatarUrl: null },
+          action: 'lead.stage_changed',
+          entityType: 'lead',
+          entityId: 'lead-01',
+          entityLabel: 'Fulano de Tal',
+          metadata: { fromStage: 'Lead', toStage: 'Atendimento', funnelName: 'Vendas' },
+          createdAt: new Date('2026-01-04T00:00:00Z'),
+        },
+      ],
+      total: 1,
+      page: 1,
+      pageSize: 200,
+    })
+    const app = buildTestApp({ activityLogRepository: { record: vi.fn(), list } })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/leads/lead-01/history',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(list).toHaveBeenCalledWith(
+      {
+        organizationId: ORG_ID,
+        entityType: 'lead',
+        entityId: 'lead-01',
+        actions: ['lead.stage_changed'],
+      },
+      1,
+      200,
+    )
+    expect(response.json<{ stageChanges: unknown[] }>().stageChanges).toEqual([
+      {
+        id: 'act-01',
+        changedAt: '2026-01-04T00:00:00.000Z',
+        changedByUserId: IDENTITY.id,
+        fromStage: 'Lead',
+        toStage: 'Atendimento',
+      },
+    ])
   })
 })
 

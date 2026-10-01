@@ -10,7 +10,8 @@
 //                              `lost: true` marca como Perdido (some do board); `lost: false`
 //                              reabre e exige lead.manage_lost (Vendedor não tem).
 // DELETE /leads/:id          — remove um lead dentro do escopo (lead.delete)
-// GET    /leads/:id/history  — histórico de atribuição + comentários (lead.read)
+// GET    /leads/:id/history  — histórico de atribuição, comentários e
+//                              mudanças de etapa (lead.read)
 // POST   /leads/:id/comments — adiciona um comentário/anotação interna (lead.update)
 // POST   /leads/:id/duplicate — cria uma cópia do lead em outro funil ("passar
 //                              o bastão pra outro setor" — lead.create). Ver
@@ -180,6 +181,7 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
   const getLeadHistory = new GetLeadHistoryUseCase(
     options.leadRepository,
     options.organizationRepository,
+    options.activityLogRepository,
   )
   const createLead = new CreateLeadUseCase(
     options.leadRepository,

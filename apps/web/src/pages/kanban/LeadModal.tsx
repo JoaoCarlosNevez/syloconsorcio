@@ -622,7 +622,7 @@ const HISTORY_TAB_LABEL: Record<HistoryTab, string> = {
 
 interface FeedItem {
   id: string
-  kind: 'created' | 'assignment' | 'comment' | 'proposal'
+  kind: 'created' | 'assignment' | 'comment' | 'proposal' | 'stage'
   timestamp: string
   source?: string
   changedByName?: string
@@ -658,6 +658,21 @@ function buildHistoryFeed(
       changedByName: resolveAgent(change.changedByUserId, members).name,
       fromName: resolveAgent(change.fromUserId, members).name,
       toName: resolveAgent(change.toUserId, members).name,
+    })
+  }
+
+  for (const change of history?.stageChanges ?? []) {
+    items.push({
+      id: `stage-${change.id}`,
+      kind: 'stage',
+      timestamp: change.changedAt,
+      changedByName: !change.changedByUserId
+        ? undefined
+        : change.changedByUserId === currentUserId
+          ? 'Você'
+          : resolveAgent(change.changedByUserId, members).name,
+      fromName: change.fromStage ?? 'Etapa removida',
+      toName: change.toStage ?? 'Etapa removida',
     })
   }
 
@@ -2612,6 +2627,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                           {item.kind === 'assignment' && <LightningIcon />}
                           {item.kind === 'created' && <CheckIcon />}
                           {item.kind === 'proposal' && <TrophyIcon />}
+                          {item.kind === 'stage' && <FlagIcon />}
                         </div>
                         {i < filteredHistoryFeed.length - 1 && (
                           <div className={styles.timelineConnector} />
@@ -2626,14 +2642,17 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                                 ? 'Responsável alterado'
                                 : item.kind === 'proposal'
                                   ? 'Proposta gerada'
-                                  : 'Comentário'}
+                                  : item.kind === 'stage'
+                                    ? 'Etapa alterada'
+                                    : 'Comentário'}
                           </span>
                           <span className={styles.timelineDate}>
                             {formatHistoryTimestamp(item.timestamp)}
                           </span>
                         </div>
 
-                        {item.kind === 'assignment' && (
+                        {(item.kind === 'assignment' ||
+                          (item.kind === 'stage' && item.changedByName)) && (
                           <p className={styles.timelineBody}>
                             por{' '}
                             <strong className={styles.timelineBold}>{item.changedByName}</strong>
@@ -2647,7 +2666,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                           </p>
                         )}
 
-                        {item.kind === 'assignment' && (
+                        {(item.kind === 'assignment' || item.kind === 'stage') && (
                           <div className={styles.timelineDetail}>
                             {item.fromName} →{' '}
                             <strong className={styles.timelineBold}>{item.toName}</strong>

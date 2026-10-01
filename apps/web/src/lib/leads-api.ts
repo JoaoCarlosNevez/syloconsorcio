@@ -159,9 +159,21 @@ export interface LeadComment {
   createdAt: string
 }
 
+/** Lead movido de etapa — nomes como eram na hora da mudança. */
+export interface LeadStageChange {
+  id: string
+  changedAt: string
+  /** null se quem moveu foi removido da plataforma. */
+  changedByUserId: string | null
+  fromStage: string | null
+  toStage: string | null
+}
+
 export interface LeadHistory {
   assignmentHistory: AssignmentHistoryEntry[]
   comments: LeadComment[]
+  /** Mais recente primeiro; só desde que o log de atividades existe. */
+  stageChanges: LeadStageChange[]
 }
 
 export function getLeadHistory(organizationId: string, leadId: string): Promise<LeadHistory> {
