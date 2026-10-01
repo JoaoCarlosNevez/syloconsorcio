@@ -12,7 +12,6 @@ import {
   tierGradient,
 } from '@sylocrm/ui'
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react'
-import { useLocation } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { useActivityQuery } from '../../hooks/useActivity'
 import { useBrowserNotificationPermission } from '../../hooks/useBrowserNotificationPermission'
@@ -3041,10 +3040,7 @@ const VIEW_LABELS: Record<View, string> = {
 // ── Component ────────────────────────────────────────────────────────────────────
 
 export function ConfigPage() {
-  // O item "Fila" do menu lateral chega aqui com { view: 'fila' } no state.
-  const location = useLocation()
-  const initialView = (location.state as { view?: View } | null)?.view ?? 'hub'
-  const [requestedView, setView] = useState<View>(initialView)
+  const [requestedView, setView] = useState<View>('hub')
   const { membership } = useActiveOrganization()
   // Vendedor só vê "Minha Conta". Enquanto a organização carrega, também só
   // "Minha Conta" — melhor as seções da organização aparecerem um instante

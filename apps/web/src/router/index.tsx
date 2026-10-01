@@ -68,10 +68,6 @@ export function AppRouter() {
           <Route path="tarefas" element={<TarefasPage />} />
           {/* Equipe (era uma página própria) virou uma aba dentro de Configurações */}
           <Route path="usuarios" element={<Navigate to="/app/config" replace />} />
-          <Route
-            path="fila"
-            element={<Navigate to="/app/config" replace state={{ view: 'fila' }} />}
-          />
           <Route path="config" element={<ConfigPage />} />
           <Route path="admin" element={<AdminPage />} />
           <Route path="admin/:id" element={<AdminOrganizationDetailPage />} />

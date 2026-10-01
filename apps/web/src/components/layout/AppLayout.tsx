@@ -70,23 +70,6 @@ function TarefasIcon() {
     </svg>
   )
 }
-function FilaIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-    </svg>
-  )
-}
 function ConfigIcon() {
   return (
     <svg
@@ -221,17 +204,15 @@ function tierPaletteVars(tier: Tier | null): Record<string, string> {
   }
 }
 
-// Itens de navegação principal. `hiddenForRoles` restringe o item a quem não
-// tem esse Role na organização ativa — Vendedor não vê a Fila. Configurações
-// aparece pra todos, mas o Vendedor só enxerga "Minha Conta" lá dentro (ver
-// ConfigPage). `requiresPlatformAdmin`
+// Itens de navegação principal. Configurações aparece pra todos, mas o
+// Vendedor só enxerga "Minha Conta" lá dentro (ver ConfigPage). A Fila de
+// Leads fica em Configurações, não no menu. `requiresPlatformAdmin`
 // restringe o item a quem tem `isPlatformAdmin` (super admin da plataforma) —
 // Administração é uma tela de operação da Sylo, não do ADMIN/MANAGER da organização.
 const NAV_ITEMS = [
   { label: 'Início', path: '/app/home', icon: InicioIcon },
   { label: 'Kanban', path: '/app/kanban', icon: KanbanIcon },
   { label: 'Tarefas', path: '/app/tarefas', icon: TarefasIcon },
-  { label: 'Fila', path: '/app/fila', icon: FilaIcon, hiddenForRoles: ['SELLER'] },
   { label: 'Configurações', path: '/app/config', icon: ConfigIcon },
   { label: 'Administração', path: '/app/admin', icon: AdminIcon, requiresPlatformAdmin: true },
   { label: 'Ajuda', path: '/app/ajuda', icon: AjudaIcon },
@@ -369,11 +350,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         {/* Navegação */}
         <nav className={styles.nav} aria-label="Navegação principal">
           {NAV_ITEMS.filter(
-            (item) =>
-              (!('hiddenForRoles' in item) ||
-                !membership ||
-                !(item.hiddenForRoles as readonly string[]).includes(membership.role)) &&
-              (!('requiresPlatformAdmin' in item) || currentUser?.isPlatformAdmin === true),
+            (item) => !('requiresPlatformAdmin' in item) || currentUser?.isPlatformAdmin === true,
           ).map(({ label, path, icon: Icon }) => (
             <a
               key={path}
