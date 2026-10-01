@@ -12,6 +12,10 @@ import {
   WEBHOOK_DEFAULT_SEGMENT,
   WEBHOOK_DEFAULT_SOURCE,
 } from './create-webhook-lead.use-case'
+import type {
+  OfferLeadToQueueStatus,
+  OfferLeadToQueueUseCase,
+} from './offer-lead-to-queue.use-case'
 
 const ORG_ID = 'org-01'
 const FUNNEL_ID = 'funnel-01'
@@ -118,6 +122,7 @@ function buildUseCase(
   }),
   membershipRepository: IMembershipRepository = buildMembershipRepository(),
   notifications?: INotificationRepository,
+  offerLeadToQueue: OfferLeadToQueueUseCase | null = null,
 ) {
   return new CreateWebhookLeadUseCase(
     new CreateLeadUseCase(leadRepository, funnelRepository),
@@ -125,7 +130,14 @@ function buildUseCase(
     funnelRepository,
     membershipRepository,
     notifications,
+    offerLeadToQueue,
   )
+}
+
+function buildQueue(status: OfferLeadToQueueStatus): OfferLeadToQueueUseCase {
+  return {
+    execute: vi.fn().mockResolvedValue({ status, lead: null }),
+  } as unknown as OfferLeadToQueueUseCase
 }
 
 function buildNotificationRepository(): INotificationRepository {
@@ -289,6 +301,39 @@ describe('CreateWebhookLeadUseCase — notifications', () => {
     expect(notifications.notify).toHaveBeenCalledWith(
       expect.objectContaining({ metadata: expect.objectContaining({ assignedToYou: false }) }),
     )
+  })
+
+  it('sends an unassigned lead to the queue instead of warning owners and managers', async () => {
+    const notifications = buildNotificationRepository()
+    const queue = buildQueue('offered')
+
+    const result = await buildUseCase(
+      buildLeadRepository(),
+      undefined,
+      buildMembershipRepository([MEMBER, OWNER, MANAGER]),
+      notifications,
+      queue,
+    ).execute(INPUT)
+
+    expect(queue.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ organizationId: ORG_ID, leadId: result.lead.id }),
+    )
+    expect(notifications.notify).not.toHaveBeenCalled()
+  })
+
+  it('warns owners and managers when the queue has no one to offer to', async () => {
+    const notifications = buildNotificationRepository()
+
+    await buildUseCase(
+      buildLeadRepository(),
+      undefined,
+      buildMembershipRepository([MEMBER, OWNER, MANAGER]),
+      notifications,
+      buildQueue('unavailable'),
+    ).execute(INPUT)
+
+    const recipients = vi.mocked(notifications.notify).mock.calls.map(([n]) => n.userId)
+    expect(recipients.sort()).toEqual(['user-manager', 'user-owner'])
   })
 
   it('does not notify anyone for a repeated phone', async () => {

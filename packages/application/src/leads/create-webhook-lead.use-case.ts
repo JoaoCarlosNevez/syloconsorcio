@@ -9,23 +9,25 @@
 //     (`created: false`), pra quem integra poder tratar como "já cadastrado".
 // O resto (primeiro estágio, log de atividades) é o CreateLeadUseCase.
 //
-// Depois de criar, avisa no sininho ('lead.received'): o responsável, se
-// houver; senão, Dono e Supervisores ativos — quem distribui os leads.
+// Depois de criar:
+//   - com responsável: avisa ele no sininho ('lead.received');
+//   - sem responsável e com a Fila de Leads ligada: oferece ao próximo da
+//     fila (OfferLeadToQueueUseCase), que precisa aceitar no prazo;
+//   - senão: avisa Dono e Supervisores ativos — quem distribui os leads.
 
-import { Role, ValidationError } from '@sylocrm/domain'
+import { ValidationError } from '@sylocrm/domain'
 import type { IFunnelRepository } from '../ports/funnel.repository'
 import type { ILeadRepository, LeadRecord } from '../ports/lead.repository'
 import type { IMembershipRepository, TeamMember } from '../ports/membership.repository'
 import { type INotificationRepository, NO_OP_NOTIFICATIONS } from '../ports/notification.repository'
 import type { UseCase } from '../ports/use-case'
 import type { CreateLeadUseCase } from './create-lead.use-case'
+import { notifyLeadDistributors } from './notify-lead-distributors'
+import type { OfferLeadToQueueUseCase } from './offer-lead-to-queue.use-case'
 
 /** Usados quando o webhook não informa segmento/origem. */
 export const WEBHOOK_DEFAULT_SEGMENT = 'Não informado'
 export const WEBHOOK_DEFAULT_SOURCE = 'Webhook'
-
-/** Quem é avisado de um lead que chegou sem responsável. */
-const DISTRIBUTOR_ROLES: ReadonlySet<Role> = new Set([Role.ADMIN, Role.MANAGER])
 
 export interface CreateWebhookLeadInput {
   organizationId: string
@@ -55,6 +57,10 @@ export class CreateWebhookLeadUseCase
     private readonly funnelRepository: IFunnelRepository,
     private readonly membershipRepository: IMembershipRepository,
     private readonly notifications: INotificationRepository = NO_OP_NOTIFICATIONS,
+    /** Sem fila (testes, API sem banco), o lead sem responsável vai direto
+     * pro aviso de Dono/Supervisores. */
+    private readonly offerLeadToQueue: OfferLeadToQueueUseCase | null = null,
+    private readonly clock: () => Date = () => new Date(),
   ) {}
 
   async execute(input: CreateWebhookLeadInput): Promise<CreateWebhookLeadOutput> {
@@ -82,13 +88,10 @@ export class CreateWebhookLeadUseCase
       notes: input.notes ?? null,
     })
 
-    const recipients = lead.assignedUserId
-      ? [lead.assignedUserId]
-      : activeMembers.filter((m) => DISTRIBUTOR_ROLES.has(m.role)).map((m) => m.userId)
-    for (const userId of recipients) {
+    if (lead.assignedUserId) {
       await this.notifications.notify({
         organizationId: lead.organizationId,
-        userId,
+        userId: lead.assignedUserId,
         actorUserId: null,
         type: 'lead.received',
         taskId: null,
@@ -97,9 +100,21 @@ export class CreateWebhookLeadUseCase
           leadId: lead.id,
           funnelId: lead.funnelId,
           source: lead.source,
-          assignedToYou: lead.assignedUserId === userId,
+          assignedToYou: true,
         },
       })
+      return { created: true, lead }
+    }
+
+    const queued = this.offerLeadToQueue
+      ? await this.offerLeadToQueue.execute({
+          organizationId: lead.organizationId,
+          leadId: lead.id,
+          now: this.clock(),
+        })
+      : null
+    if (queued?.status !== 'offered') {
+      await notifyLeadDistributors(lead, this.membershipRepository, this.notifications)
     }
 
     return { created: true, lead }

@@ -93,6 +93,7 @@ function TypeIcon({ type }: { type: NotificationType }) {
         </svg>
       )
     case 'lead.received':
+    case 'lead.offered':
       return (
         <svg {...common} aria-hidden="true">
           <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
@@ -115,6 +116,7 @@ const TYPE_CLASS: Record<NotificationType, string | undefined> = {
   'task.overdue': styles.typeOverdue,
   'task.completed': styles.typeCompleted,
   'lead.received': styles.typeLead,
+  'lead.offered': styles.typeLead,
   'proposal.viewed': styles.typeProposal,
 }
 

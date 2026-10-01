@@ -31,6 +31,8 @@ const MANAGER_PERMISSIONS: readonly Permission[] = [
   // Supervisor define a patente só de Vendedores — hierarquia fina em
   // UpdateTeamMemberTierUseCase.
   Permission.TEAM_TIER_UPDATE,
+  // Supervisor também distribui leads — configura a fila do webhook.
+  Permission.LEAD_QUEUE_MANAGE,
   Permission.TASK_READ,
   Permission.TASK_CREATE,
   Permission.TASK_UPDATE,

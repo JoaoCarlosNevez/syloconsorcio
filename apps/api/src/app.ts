@@ -15,6 +15,7 @@ import type {
   IAuthProvider,
   IFunnelRepository,
   ILeadProposalRepository,
+  ILeadQueueRepository,
   ILeadRepository,
   IMembershipRepository,
   INotificationRepository,
@@ -23,7 +24,11 @@ import type {
   ITaskRepository,
   IUserRepository,
 } from '@sylocrm/application'
-import { NO_OP_ACTIVITY_LOG, NO_OP_NOTIFICATIONS } from '@sylocrm/application'
+import {
+  DEFAULT_LEAD_QUEUE_TIMEOUT_MINUTES,
+  NO_OP_ACTIVITY_LOG,
+  NO_OP_NOTIFICATIONS,
+} from '@sylocrm/application'
 import Fastify from 'fastify'
 import { env } from './config/env'
 import { activityRoute } from './routes/activity.route'
@@ -32,6 +37,7 @@ import { authRoute } from './routes/auth.route'
 import { dashboardRoute } from './routes/dashboard.route'
 import { funnelsRoute } from './routes/funnels.route'
 import { healthRoute } from './routes/health.route'
+import { leadQueueRoute } from './routes/lead-queue.route'
 import { leadsRoute } from './routes/leads.route'
 import { notificationsRoute } from './routes/notifications.route'
 import { organizationSettingsRoute } from './routes/organization-settings.route'
@@ -54,6 +60,7 @@ export interface BuildAppDeps {
   activityLogRepository: IActivityLogRepository
   notificationRepository: INotificationRepository
   apiKeyRepository: IApiKeyRepository
+  leadQueueRepository: ILeadQueueRepository
 }
 
 /** No-op auth provider used when Supabase env vars are not configured. */
@@ -221,6 +228,32 @@ function createNoOpApiKeyRepository(): IApiKeyRepository {
   }
 }
 
+/** No-op lead queue repository used when database is not configured — a fila
+ * fica sempre desligada. */
+function createNoOpLeadQueueRepository(): ILeadQueueRepository {
+  return {
+    getSettings: async (organizationId) => ({
+      organizationId,
+      enabled: false,
+      timeoutMinutes: DEFAULT_LEAD_QUEUE_TIMEOUT_MINUTES,
+      memberUserIds: [],
+    }),
+    saveSettings: async () => {
+      throw new Error('Database not configured — cannot save the lead queue.')
+    },
+    listQueue: async () => [],
+    markOffered: async () => {},
+    listOfferedUserIds: async () => [],
+    createOffer: async () => {
+      throw new Error('Database not configured — cannot create lead offers.')
+    },
+    findOffer: async () => null,
+    resolveOffer: async () => null,
+    claimExpiredOffers: async () => [],
+    listPendingOffers: async () => [],
+  }
+}
+
 export function buildApp(deps?: Partial<BuildAppDeps>) {
   // Use provided deps or fall back to no-op adapters.
   // Real adapters are created in main.ts (composition root) from env vars.
@@ -237,6 +270,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     activityLogRepository: deps?.activityLogRepository ?? NO_OP_ACTIVITY_LOG,
     notificationRepository: deps?.notificationRepository ?? NO_OP_NOTIFICATIONS,
     apiKeyRepository: deps?.apiKeyRepository ?? createNoOpApiKeyRepository(),
+    leadQueueRepository: deps?.leadQueueRepository ?? createNoOpLeadQueueRepository(),
   }
 
   const app = Fastify({
@@ -282,6 +316,16 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     funnelRepository: resolvedDeps.funnelRepository,
     leadProposalRepository: resolvedDeps.leadProposalRepository,
     activityLogRepository: resolvedDeps.activityLogRepository,
+  })
+
+  app.register(leadQueueRoute, {
+    authProvider: resolvedDeps.authProvider,
+    membershipRepository: resolvedDeps.membershipRepository,
+    organizationRepository: resolvedDeps.organizationRepository,
+    userRepository: resolvedDeps.userRepository,
+    leadRepository: resolvedDeps.leadRepository,
+    leadQueueRepository: resolvedDeps.leadQueueRepository,
+    notificationRepository: resolvedDeps.notificationRepository,
   })
 
   app.register(publicProposalsRoute, {
@@ -380,6 +424,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     membershipRepository: resolvedDeps.membershipRepository,
     activityLogRepository: resolvedDeps.activityLogRepository,
     notificationRepository: resolvedDeps.notificationRepository,
+    leadQueueRepository: resolvedDeps.leadQueueRepository,
   })
 
   return app

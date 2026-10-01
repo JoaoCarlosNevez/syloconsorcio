@@ -24,12 +24,17 @@ import type {
   IActivityLogRepository,
   IApiKeyRepository,
   IFunnelRepository,
+  ILeadQueueRepository,
   ILeadRepository,
   IMembershipRepository,
   INotificationRepository,
   LeadRecord,
 } from '@sylocrm/application'
-import { CreateLeadUseCase, CreateWebhookLeadUseCase } from '@sylocrm/application'
+import {
+  CreateLeadUseCase,
+  CreateWebhookLeadUseCase,
+  OfferLeadToQueueUseCase,
+} from '@sylocrm/application'
 import type { ApiKeyRecord } from '@sylocrm/application'
 import { ValidationError } from '@sylocrm/domain'
 import type { FastifyPluginAsync, FastifyRequest } from 'fastify'
@@ -43,6 +48,7 @@ interface WebhooksRouteOptions {
   membershipRepository: IMembershipRepository
   activityLogRepository: IActivityLogRepository
   notificationRepository: INotificationRepository
+  leadQueueRepository: ILeadQueueRepository
 }
 
 const webhookLeadSchema = z.object({
@@ -116,6 +122,12 @@ export const webhooksRoute: FastifyPluginAsync<WebhooksRouteOptions> = async (fa
     options.funnelRepository,
     options.membershipRepository,
     options.notificationRepository,
+    // Lead sem responsável vai pra Fila de Leads quando ela está ligada.
+    new OfferLeadToQueueUseCase(
+      options.leadQueueRepository,
+      options.leadRepository,
+      options.notificationRepository,
+    ),
   )
 
   // ── POST /webhooks/leads ──────────────────────────────────────────────────

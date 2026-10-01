@@ -12,6 +12,7 @@ import {
   tierGradient,
 } from '@sylocrm/ui'
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { useActivityQuery } from '../../hooks/useActivity'
 import { useBrowserNotificationPermission } from '../../hooks/useBrowserNotificationPermission'
@@ -55,6 +56,7 @@ import type { InvitableRole, TeamMember } from '../../lib/team-api'
 import { visibleTier } from '../../lib/tier-art'
 import { buildWelcomeMessage, copyLabel } from '../../lib/welcome-message'
 import styles from './ConfigPage.module.css'
+import { FilaSection } from './FilaSection'
 import { FunnelsSection } from './FunnelsSection'
 import { IntegracoesSection } from './IntegracoesSection'
 
@@ -340,6 +342,7 @@ type View =
   | 'organizacao'
   | 'atividade'
   | 'integracoes'
+  | 'fila'
 
 const ROLE_LABEL: Record<TeamMember['role'], string> = {
   ADMIN: 'Dono',
@@ -467,6 +470,27 @@ function PlugIcon() {
   )
 }
 
+function QueueIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M17 2l4 4-4 4" />
+      <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+      <path d="M7 22l-4-4 4-4" />
+      <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+    </svg>
+  )
+}
+
 const ORG_ITEMS: HubNavItem[] = [
   {
     label: 'Organização',
@@ -492,7 +516,16 @@ const ORG_ITEMS: HubNavItem[] = [
     icon: <PlugIcon />,
     view: 'integracoes',
   },
+  {
+    label: 'Fila de Leads',
+    description: 'Rodízio dos leads do webhook entre os vendedores',
+    icon: <QueueIcon />,
+    view: 'fila',
+  },
 ]
+
+/** Fila de Leads só aparece pra quem pode configurá-la (Dono e Supervisor). */
+const QUEUE_PERMISSION = 'lead_queue.manage'
 
 /** Integrações só aparece pra quem pode gerenciar chaves (Dono). */
 const INTEGRATIONS_PERMISSION = 'integration.manage'
@@ -515,7 +548,12 @@ function HubView({
 }) {
   const { membership } = useActiveOrganization()
   const canManageIntegrations = membership?.permissions.includes(INTEGRATIONS_PERMISSION) ?? false
-  const orgItems = ORG_ITEMS.filter((item) => item.view !== 'integracoes' || canManageIntegrations)
+  const canManageQueue = membership?.permissions.includes(QUEUE_PERMISSION) ?? false
+  const orgItems = ORG_ITEMS.filter(
+    (item) =>
+      (item.view !== 'integracoes' || canManageIntegrations) &&
+      (item.view !== 'fila' || canManageQueue),
+  )
 
   return (
     <div className={styles.hubContent}>
@@ -1646,6 +1684,11 @@ const PUSH_EVENTS: { type: NotificationType; label: string; desc: string }[] = [
     type: 'lead.received',
     label: 'Novo lead pela API',
     desc: 'Lead atribuído a você, ou sem responsável (Dono e Supervisores)',
+  },
+  {
+    type: 'lead.offered',
+    label: 'Lead da fila pra você',
+    desc: 'A Fila de Leads te ofereceu um lead — aceite antes do prazo',
   },
   {
     type: 'proposal.viewed',
@@ -2992,12 +3035,16 @@ const VIEW_LABELS: Record<View, string> = {
   organizacao: 'Organização',
   atividade: 'Atividade',
   integracoes: 'Integrações',
+  fila: 'Fila de Leads',
 }
 
 // ── Component ────────────────────────────────────────────────────────────────────
 
 export function ConfigPage() {
-  const [requestedView, setView] = useState<View>('hub')
+  // O item "Fila" do menu lateral chega aqui com { view: 'fila' } no state.
+  const location = useLocation()
+  const initialView = (location.state as { view?: View } | null)?.view ?? 'hub'
+  const [requestedView, setView] = useState<View>(initialView)
   const { membership } = useActiveOrganization()
   // Vendedor só vê "Minha Conta". Enquanto a organização carrega, também só
   // "Minha Conta" — melhor as seções da organização aparecerem um instante
@@ -3060,6 +3107,7 @@ export function ConfigPage() {
         {view === 'organizacao' && <OrganizacaoView />}
         {view === 'atividade' && <AtividadeView />}
         {view === 'integracoes' && <IntegracoesSection />}
+        {view === 'fila' && <FilaSection />}
       </div>
     </AppLayout>
   )

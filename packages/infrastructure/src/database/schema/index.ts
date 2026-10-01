@@ -39,3 +39,6 @@ export type { DbNotification, NewDbNotification } from './notifications'
 
 export { organizationApiKeys } from './organization-api-keys'
 export type { DbOrganizationApiKey, NewDbOrganizationApiKey } from './organization-api-keys'
+
+export { leadOffers, leadQueueMembers, leadQueueSettings } from './lead-queue'
+export type { DbLeadOffer } from './lead-queue'

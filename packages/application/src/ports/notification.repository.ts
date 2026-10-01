@@ -17,6 +17,11 @@
 // id do lead e do funil vão em metadata.leadId/funnelId, e title é o nome do
 // lead.
 //
+// 'lead.offered' (a fila de distribuição ofereceu um lead do webhook ao
+// usuário) traz metadata.leadId/funnelId/offerId/expiresAt — o usuário
+// precisa aceitar até expiresAt. 'lead.received' com metadata.queueExhausted
+// avisa Dono/Supervisores que ninguém da fila aceitou.
+//
 // 'proposal.viewed' (cliente abriu o link público da proposta) segue o mesmo
 // formato: metadata.leadId/funnelId/proposalId/viewedAt, title é o nome do
 // lead.
@@ -27,6 +32,7 @@ export type NotificationType =
   | 'task.overdue'
   | 'task.completed'
   | 'lead.received'
+  | 'lead.offered'
   | 'proposal.viewed'
 
 export type NotificationMetadata = Record<string, string | number | boolean | null>

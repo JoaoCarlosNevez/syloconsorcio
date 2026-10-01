@@ -61,10 +61,20 @@ export function describeNotification(
         typeof notification.metadata.source === 'string' ? notification.metadata.source : null
       return {
         headline:
-          notification.metadata.assignedToYou === true
-            ? 'Novo lead atribuído a você'
-            : 'Novo lead recebido, sem responsável',
+          notification.metadata.queueExhausted === true
+            ? 'Ninguém da fila aceitou o lead'
+            : notification.metadata.assignedToYou === true
+              ? 'Novo lead atribuído a você'
+              : 'Novo lead recebido, sem responsável',
         detail: source ? `Origem: ${source}` : null,
+      }
+    }
+    case 'lead.offered': {
+      const expiresAt =
+        typeof notification.metadata.expiresAt === 'string' ? notification.metadata.expiresAt : null
+      return {
+        headline: 'Novo lead pra você na fila',
+        detail: expiresAt ? `Aceite até ${formatDueAt(expiresAt, now)}` : null,
       }
     }
     case 'proposal.viewed': {
@@ -86,6 +96,9 @@ export interface NotificationTarget {
 /** Pra onde o clique numa notificação leva: a tarefa (em Tarefas) ou o lead
  * (no Kanban, já no funil dele). */
 export function notificationTarget(notification: AppNotification): NotificationTarget {
+  // O lead só fica visível pro vendedor depois de aceito — o aceite é no card
+  // do LeadOfferPrompt, que aparece em qualquer página.
+  if (notification.type === 'lead.offered') return { path: '/app/kanban' }
   if (notification.type === 'lead.received' || notification.type === 'proposal.viewed') {
     const { leadId, funnelId } = notification.metadata
     return typeof leadId === 'string'

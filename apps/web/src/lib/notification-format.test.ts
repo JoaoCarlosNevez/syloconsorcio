@@ -163,3 +163,40 @@ describe('proposal notifications', () => {
     })
   })
 })
+
+describe('lead queue notifications', () => {
+  it('tells the seller a lead is waiting and until when to accept', () => {
+    const offered = notification({
+      type: 'lead.offered',
+      actor: null,
+      title: 'Fulano',
+      metadata: {
+        leadId: 'lead-01',
+        funnelId: 'funnel-01',
+        offerId: 'offer-01',
+        expiresAt: new Date(2026, 8, 28, 10, 5).toISOString(),
+      },
+    })
+    expect(describeNotification(offered, NOW)).toEqual({
+      headline: 'Novo lead pra você na fila',
+      detail: 'Aceite até hoje às 10:05',
+    })
+    expect(notificationTarget(offered)).toEqual({ path: '/app/kanban' })
+  })
+
+  it('warns managers when no one in the queue accepted', () => {
+    const exhausted = notification({
+      type: 'lead.received',
+      actor: null,
+      title: 'Fulano',
+      metadata: {
+        leadId: 'lead-01',
+        funnelId: 'funnel-01',
+        source: 'Webhook',
+        assignedToYou: false,
+        queueExhausted: true,
+      },
+    })
+    expect(describeNotification(exhausted, NOW).headline).toBe('Ninguém da fila aceitou o lead')
+  })
+})

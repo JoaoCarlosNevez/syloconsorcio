@@ -6,11 +6,13 @@
 // It creates the concrete adapters and injects them into the app factory.
 
 import 'dotenv/config'
+import { OfferLeadToQueueUseCase, ProcessExpiredLeadOffersUseCase } from '@sylocrm/application'
 import {
   DrizzleActivityLogRepository,
   DrizzleApiKeyRepository,
   DrizzleFunnelRepository,
   DrizzleLeadProposalRepository,
+  DrizzleLeadQueueRepository,
   DrizzleLeadRepository,
   DrizzleMembershipRepository,
   DrizzleNotificationRepository,
@@ -23,6 +25,7 @@ import {
 } from '@sylocrm/infrastructure'
 import { buildApp } from './app'
 import { env } from './config/env'
+import { startLeadOfferExpiryWorker } from './workers/lead-offer-expiry'
 
 // Create infrastructure adapters when env vars are present
 const authProvider =
@@ -49,6 +52,7 @@ const taskRepository = database ? new DrizzleTaskRepository(database) : undefine
 const activityLogRepository = database ? new DrizzleActivityLogRepository(database) : undefined
 const notificationRepository = database ? new DrizzleNotificationRepository(database) : undefined
 const apiKeyRepository = database ? new DrizzleApiKeyRepository(database) : undefined
+const leadQueueRepository = database ? new DrizzleLeadQueueRepository(database) : undefined
 
 const storageProvider =
   env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY
@@ -71,11 +75,27 @@ const app = buildApp({
   activityLogRepository,
   notificationRepository,
   apiKeyRepository,
+  leadQueueRepository,
 })
+
+// Fila de Leads: passa adiante os leads que ninguém aceitou no prazo. O
+// worker sobe depois do listen; o hook de onClose precisa ser registrado antes.
+let stopLeadOfferWorker: (() => void) | null = null
+app.addHook('onClose', async () => stopLeadOfferWorker?.())
 
 try {
   await app.listen({ port: env.PORT, host: env.HOST })
 } catch (err) {
   app.log.error(err)
   process.exit(1)
+}
+
+if (leadQueueRepository && leadRepository && membershipRepository) {
+  const processExpiredLeadOffers = new ProcessExpiredLeadOffersUseCase(
+    leadQueueRepository,
+    new OfferLeadToQueueUseCase(leadQueueRepository, leadRepository, notificationRepository),
+    membershipRepository,
+    notificationRepository,
+  )
+  stopLeadOfferWorker = startLeadOfferExpiryWorker(processExpiredLeadOffers, app.log)
 }

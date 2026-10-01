@@ -42,6 +42,9 @@ export const Permission = {
    * Configurações > Integrações). Só Dono — a chave cria leads em nome da
    * organização inteira. */
   INTEGRATION_MANAGE: 'integration.manage',
+  /** Configurar a fila de distribuição dos leads do webhook (Configurações >
+   * Fila de Leads): ligar/desligar, tempo pra aceitar e quem participa. */
+  LEAD_QUEUE_MANAGE: 'lead_queue.manage',
 } as const
 
 export type Permission = (typeof Permission)[keyof typeof Permission]

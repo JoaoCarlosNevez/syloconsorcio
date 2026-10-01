@@ -15,6 +15,7 @@ export const NOTIFICATION_TYPES: readonly NotificationType[] = [
   'task.overdue',
   'task.completed',
   'lead.received',
+  'lead.offered',
   'proposal.viewed',
 ]
 
@@ -30,6 +31,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
     'task.overdue': true,
     'task.completed': true,
     'lead.received': true,
+    'lead.offered': true,
     'proposal.viewed': true,
   },
   sound: true,

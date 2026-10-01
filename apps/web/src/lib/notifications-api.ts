@@ -12,6 +12,9 @@ export type NotificationType =
   /** Lead que chegou pelo webhook — metadata traz leadId, funnelId, source e
    * assignedToYou; title é o nome do lead. */
   | 'lead.received'
+  /** A Fila de Leads ofereceu um lead ao usuário — metadata traz leadId,
+   * funnelId, offerId e expiresAt (prazo pra aceitar). */
+  | 'lead.offered'
   /** Cliente abriu o link público da proposta — metadata traz leadId,
    * funnelId, proposalId e viewedAt; title é o nome do lead. */
   | 'proposal.viewed'

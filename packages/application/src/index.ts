@@ -99,6 +99,35 @@ export { ListLeadProposalsUseCase } from './leads/list-lead-proposals.use-case'
 export type { ListLeadProposalsInput } from './leads/list-lead-proposals.use-case'
 export { CreateLeadProposalUseCase } from './leads/create-lead-proposal.use-case'
 export type { CreateLeadProposalInput } from './leads/create-lead-proposal.use-case'
+export { DEFAULT_LEAD_QUEUE_TIMEOUT_MINUTES } from './ports/lead-queue.repository'
+export type {
+  ILeadQueueRepository,
+  LeadOfferRecord,
+  LeadOfferStatus,
+  LeadQueueMember,
+  LeadQueueSettings,
+  NewLeadOfferInput,
+} from './ports/lead-queue.repository'
+export { OfferLeadToQueueUseCase } from './leads/offer-lead-to-queue.use-case'
+export type {
+  OfferLeadToQueueInput,
+  OfferLeadToQueueOutput,
+  OfferLeadToQueueStatus,
+} from './leads/offer-lead-to-queue.use-case'
+export { ProcessExpiredLeadOffersUseCase } from './leads/process-expired-lead-offers.use-case'
+export { RespondLeadOfferUseCase } from './leads/respond-lead-offer.use-case'
+export type {
+  RespondLeadOfferInput,
+  RespondLeadOfferOutput,
+} from './leads/respond-lead-offer.use-case'
+export { ListMyLeadOffersUseCase } from './leads/list-my-lead-offers.use-case'
+export type { MyLeadOffer } from './leads/list-my-lead-offers.use-case'
+export {
+  GetLeadQueueUseCase,
+  LEAD_QUEUE_TIMEOUT_LIMITS,
+  UpdateLeadQueueSettingsUseCase,
+} from './leads/lead-queue-settings.use-case'
+export type { LeadQueueOverview } from './leads/lead-queue-settings.use-case'
 export { ShareLeadProposalUseCase } from './leads/share-lead-proposal.use-case'
 export type {
   ShareLeadProposalInput,
