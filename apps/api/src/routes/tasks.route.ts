@@ -51,7 +51,7 @@ interface TasksRouteOptions {
 }
 
 // Espelhado no frontend (tarefas.types.ts) — mantenha em sincronia.
-const TASK_TYPES = ['Ligação', 'Reunião', 'Follow-up', 'Tarefa', 'Simulação'] as const
+const TASK_TYPES = ['Ligação', 'Reunião', 'Visita', 'Follow-up', 'Tarefa', 'Simulação'] as const
 const TASK_STATUSES = ['pendente', 'em_andamento', 'concluida'] as const
 
 const createTaskSchema = z.object({
@@ -61,6 +61,8 @@ const createTaskSchema = z.object({
   title: z.string().min(1),
   notes: z.string().nullable().optional(),
   dueAt: z.string().datetime(),
+  // 'concluida' registra algo que já aconteceu ("Registrar agora" no lead).
+  status: z.enum(TASK_STATUSES).optional(),
 })
 
 const updateTaskSchema = z.object({
@@ -181,6 +183,7 @@ export const tasksRoute: FastifyPluginAsync<TasksRouteOptions> = async (fastify,
           title: parsed.data.title,
           notes: parsed.data.notes,
           dueAt: new Date(parsed.data.dueAt),
+          status: parsed.data.status,
         })
         return reply.status(201).send(task)
       } catch (error) {

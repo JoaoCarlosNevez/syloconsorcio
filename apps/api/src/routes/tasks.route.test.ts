@@ -287,6 +287,23 @@ describe('POST /tasks', () => {
     expect(response.statusCode).toBe(400)
   })
 
+  it('accepts a Visita registered as already done', async () => {
+    const taskRepository = buildTaskRepository()
+    const app = buildTestApp({ taskRepository })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/tasks',
+      headers: AUTH_HEADERS,
+      payload: { ...validPayload, type: 'Visita', status: 'concluida' },
+    })
+
+    expect(response.statusCode).toBe(201)
+    expect(taskRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'Visita', status: 'concluida' }),
+    )
+  })
+
   it('returns 400 for an unknown task type', async () => {
     const app = buildTestApp({})
 

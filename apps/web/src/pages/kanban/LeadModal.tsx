@@ -1331,17 +1331,51 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
     handleSimulate()
   }
 
-  function handleQuickCreateTask(type: TaskType, title: string, hoursFromNow: number) {
+  /** "Criar rápido": tarefa pendente pra amanhã, no mesmo horário de agora. */
+  function handleQuickCreateTask(type: TaskType, title: string) {
     if (!currentUser) return
-    const dueAt = new Date(Date.now() + hoursFromNow * 60 * 60 * 1000).toISOString()
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
     createTask.mutate(
-      { leadId: card.id, assignedUserId: currentUser.id, type, title, dueAt },
       {
-        onSuccess: () => toast({ type: 'success', title: 'Tarefa criada' }),
+        leadId: card.id,
+        assignedUserId: currentUser.id,
+        type,
+        title,
+        dueAt: tomorrow.toISOString(),
+      },
+      {
+        onSuccess: () => toast({ type: 'success', title: 'Tarefa criada pra amanhã' }),
         onError: (error) => {
           toast({
             type: 'error',
             title: 'Não foi possível criar a tarefa',
+            description: error instanceof Error ? error.message : undefined,
+          })
+        },
+      },
+    )
+  }
+
+  /** "Registrar agora": algo que acabou de acontecer (o cliente veio fazer
+   * uma visita, a ligação foi feita) — tarefa já concluída, agora. */
+  function handleRegisterDoneTask(type: TaskType, title: string) {
+    if (!currentUser) return
+    createTask.mutate(
+      {
+        leadId: card.id,
+        assignedUserId: currentUser.id,
+        type,
+        title,
+        dueAt: new Date().toISOString(),
+        status: 'concluida',
+      },
+      {
+        onSuccess: () => toast({ type: 'success', title: `${type} registrada como feita` }),
+        onError: (error) => {
+          toast({
+            type: 'error',
+            title: 'Não foi possível registrar',
             description: error instanceof Error ? error.message : undefined,
           })
         },
@@ -2469,11 +2503,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                       className={styles.chip}
                       disabled={createTask.isPending}
                       onClick={() =>
-                        handleQuickCreateTask(
-                          'Ligação',
-                          `Ligação de follow-up com ${card.name}`,
-                          24,
-                        )
+                        handleQuickCreateTask('Ligação', `Ligação de follow-up com ${card.name}`)
                       }
                     >
                       <PhoneIcon />
@@ -2484,7 +2514,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                       className={styles.chip}
                       disabled={createTask.isPending}
                       onClick={() =>
-                        handleQuickCreateTask('Simulação', `Simular lance para ${card.name}`, 24)
+                        handleQuickCreateTask('Simulação', `Simular lance para ${card.name}`)
                       }
                     >
                       <CalendarIcon />
@@ -2494,12 +2524,33 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                       type="button"
                       className={styles.chip}
                       disabled={createTask.isPending}
-                      onClick={() =>
-                        handleQuickCreateTask('Reunião', `Reunião com ${card.name}`, 48)
-                      }
+                      onClick={() => handleQuickCreateTask('Reunião', `Reunião com ${card.name}`)}
                     >
                       <CalendarIcon />
                       Agendar Reunião
+                    </button>
+                  </div>
+
+                  {/* Registrar o que acabou de acontecer — tarefa já concluída, agora */}
+                  <div className={styles.chipsRow}>
+                    <span className={styles.chipsLabel}>Registrar agora:</span>
+                    <button
+                      type="button"
+                      className={styles.chipDone}
+                      disabled={createTask.isPending}
+                      onClick={() => handleRegisterDoneTask('Visita', `Visita de ${card.name}`)}
+                    >
+                      <HomeIcon />
+                      Visita feita
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.chipDone}
+                      disabled={createTask.isPending}
+                      onClick={() => handleRegisterDoneTask('Ligação', `Ligação com ${card.name}`)}
+                    >
+                      <PhoneIcon />
+                      Ligação feita
                     </button>
                   </div>
 

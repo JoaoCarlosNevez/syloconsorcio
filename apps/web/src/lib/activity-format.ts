@@ -137,7 +137,8 @@ export function describeActivity(
     case 'lead.proposal_created':
       return `criou uma simulação para o lead ${label}${str(m, 'tableName') ? ` na tabela ${quoted(str(m, 'tableName'))}` : ''} · entrada ${money(num(m, 'downPaymentCents'))} em ${num(m, 'termMonths') ?? '—'} meses`
     case 'task.created':
-      return `criou a tarefa ${label}${str(m, 'type') ? ` (${str(m, 'type')})` : ''}${str(m, 'leadName') ? ` para o lead ${quoted(str(m, 'leadName'))}` : ''}`
+      // Criada já concluída = algo registrado depois de feito ("Registrar agora").
+      return `${str(m, 'status') === 'concluida' ? 'registrou como feita' : 'criou'} a tarefa ${label}${str(m, 'type') ? ` (${str(m, 'type')})` : ''}${str(m, 'leadName') ? ` para o lead ${quoted(str(m, 'leadName'))}` : ''}`
     case 'task.updated':
       return `editou a tarefa ${label}${fieldList(m, TASK_FIELD_LABEL)}`
     case 'task.completed':

@@ -113,3 +113,19 @@ describe('activityDayLabel', () => {
     expect(activityDayLabel(new Date(2026, 8, 24, 23, 0).toISOString(), now)).toBe('Ontem')
   })
 })
+
+describe('describeActivity — tarefas registradas', () => {
+  it('says the task was registered as done when it was created completed', () => {
+    const text = describeActivity(
+      entry({
+        action: 'task.created',
+        entityType: 'task',
+        entityId: 'task-01',
+        entityLabel: 'Visita de Maria',
+        metadata: { type: 'Visita', leadName: 'Maria', status: 'concluida' },
+      }),
+      memberName,
+    )
+    expect(text.startsWith('registrou como feita a tarefa')).toBe(true)
+  })
+})

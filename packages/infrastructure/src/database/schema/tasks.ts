@@ -10,8 +10,8 @@
 // ficaria com o status errado até alguém tocar nela de novo.
 //
 // type é texto livre (não pg enum), mesmo padrão de leads.segment/source —
-// os 5 valores hoje (Ligação, Reunião, Follow-up, Tarefa, Simulação) são só
-// sugeridos pela UI.
+// os 6 valores hoje (Ligação, Reunião, Visita, Follow-up, Tarefa, Simulação)
+// são só sugeridos pela UI.
 
 import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { leads } from './leads'

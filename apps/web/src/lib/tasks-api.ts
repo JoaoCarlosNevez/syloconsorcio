@@ -3,7 +3,7 @@
 
 import { apiClient } from './api-client'
 
-export type TaskType = 'Ligação' | 'Reunião' | 'Follow-up' | 'Tarefa' | 'Simulação'
+export type TaskType = 'Ligação' | 'Reunião' | 'Visita' | 'Follow-up' | 'Tarefa' | 'Simulação'
 export type TaskStatus = 'pendente' | 'em_andamento' | 'concluida'
 
 /** 'atrasada' é derivado no backend (não concluída + prazo já vencido) —
@@ -50,6 +50,8 @@ export interface CreateTaskPayload {
   title: string
   notes?: string | null
   dueAt: string
+  /** 'concluida' registra algo que já aconteceu; padrão 'pendente'. */
+  status?: TaskStatus
 }
 
 export interface UpdateTaskPayload {

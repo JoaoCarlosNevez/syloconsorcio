@@ -106,6 +106,7 @@ export class DrizzleTaskRepository implements ITaskRepository {
         title: input.title,
         notes: input.notes ?? null,
         dueAt: input.dueAt,
+        status: input.status ?? 'pendente',
       })
       .returning(TASK_COLUMNS)
 

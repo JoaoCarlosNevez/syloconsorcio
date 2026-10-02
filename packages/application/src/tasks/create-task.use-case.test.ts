@@ -112,6 +112,49 @@ function buildNotificationRepository(): INotificationRepository {
 }
 
 describe('CreateTaskUseCase', () => {
+  it('creates pending tasks by default', async () => {
+    const taskRepository = buildTaskRepository()
+    const useCase = new CreateTaskUseCase(
+      taskRepository,
+      buildLeadRepository(),
+      buildOrganizationRepository(),
+    )
+
+    await useCase.execute({
+      userId: USER_ID,
+      membership: MEMBERSHIP,
+      type: 'Ligação',
+      title: 'Ligar pro cliente',
+      dueAt: DUE_AT,
+    })
+
+    expect(taskRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'pendente' }),
+    )
+  })
+
+  it('registers something already done as a completed task', async () => {
+    const taskRepository = buildTaskRepository()
+    const useCase = new CreateTaskUseCase(
+      taskRepository,
+      buildLeadRepository(),
+      buildOrganizationRepository(),
+    )
+
+    await useCase.execute({
+      userId: USER_ID,
+      membership: MEMBERSHIP,
+      type: 'Visita',
+      title: 'Visita do cliente',
+      dueAt: DUE_AT,
+      status: 'concluida',
+    })
+
+    expect(taskRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'Visita', status: 'concluida', dueAt: DUE_AT }),
+    )
+  })
+
   it('defaults assignedUserId to the creator when not provided', async () => {
     const taskRepository = buildTaskRepository()
     const useCase = new CreateTaskUseCase(

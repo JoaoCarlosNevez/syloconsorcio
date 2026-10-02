@@ -40,6 +40,9 @@ export interface NewTaskInput {
   title: string
   notes?: string | null
   dueAt: Date
+  /** Padrão 'pendente'. 'concluida' registra algo que já aconteceu (ex: a
+   * visita que o cliente acabou de fazer). */
+  status?: TaskStatus
 }
 
 export interface UpdateTaskInput {

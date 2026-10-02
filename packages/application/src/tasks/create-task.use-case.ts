@@ -14,7 +14,7 @@ import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activi
 import type { ILeadRepository } from '../ports/lead.repository'
 import { type INotificationRepository, NO_OP_NOTIFICATIONS } from '../ports/notification.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
-import type { ITaskRepository, TaskRecord } from '../ports/task.repository'
+import type { ITaskRepository, TaskRecord, TaskStatus } from '../ports/task.repository'
 import type { UseCase } from '../ports/use-case'
 
 export interface CreateTaskInput {
@@ -26,6 +26,8 @@ export interface CreateTaskInput {
   title: string
   notes?: string | null
   dueAt: Date
+  /** 'concluida' registra algo já feito (botões "Registrar agora" do lead). */
+  status?: TaskStatus
 }
 
 export class CreateTaskUseCase implements UseCase<CreateTaskInput, TaskRecord> {
@@ -61,6 +63,7 @@ export class CreateTaskUseCase implements UseCase<CreateTaskInput, TaskRecord> {
       title: input.title,
       notes: input.notes ?? null,
       dueAt: input.dueAt,
+      status: input.status ?? 'pendente',
     })
 
     await this.activityLog.record({
@@ -75,6 +78,7 @@ export class CreateTaskUseCase implements UseCase<CreateTaskInput, TaskRecord> {
         dueAt: task.dueAt.toISOString(),
         leadName,
         assignedUserId: task.assignedUserId,
+        status: task.status,
       },
     })
 
