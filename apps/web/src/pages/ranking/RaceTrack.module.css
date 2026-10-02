@@ -69,9 +69,9 @@
 /* A pista: asfalto com faixa tracejada. --track-usable deixa espaço pro
    carrinho não passar da bandeira. */
 .track {
-  --track-usable: 0.92;
+  --track-usable: 0.85;
   position: relative;
-  height: 84px;
+  height: 88px;
   border-radius: 12px;
   background: linear-gradient(180deg, #475569, #334155);
   overflow: visible;
@@ -111,14 +111,16 @@
   bottom: 6px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   transition: left 1.2s ease-out;
 }
 
 .racerAvatar {
-  width: 42px;
-  height: 42px;
-  margin-bottom: -6px;
+  width: 40px;
+  height: 40px;
+  /* Em cima do cockpit (x ≈ 50 de 104 no desenho, carro com 132px). */
+  margin-left: 44px;
+  margin-bottom: -16px;
   border: 3px solid;
   border-radius: 50%;
   background: #fff;

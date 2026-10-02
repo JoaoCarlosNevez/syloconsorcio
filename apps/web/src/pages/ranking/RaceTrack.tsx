@@ -23,21 +23,35 @@ const CAR_COLORS = [
 
 const WEEK_DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
+/** Carro de F1 de perfil, virado pra chegada. A foto do vendedor fica no
+ * cockpit, no lugar do capacete. */
 function Car({ color }: { color: string }) {
   return (
-    <svg className={styles.car} width="76" height="36" viewBox="0 0 64 30" aria-hidden="true">
+    <svg className={styles.car} width="132" height="43" viewBox="0 0 104 34" aria-hidden="true">
+      {/* Asa traseira */}
+      <rect x="1" y="4" width="15" height="4" rx="1" fill={color} />
+      <rect x="4" y="7" width="4" height="13" fill="#1f2937" />
+      {/* Carroceria */}
       <path
-        d="M6 20 L10 12 Q12 9 16 9 L36 9 Q40 9 43 12 L49 17 L58 18 Q62 19 62 23 L62 24 L4 24 L4 22 Q4 20 6 20 Z"
+        d="M6 22 L8 16 L26 15 L38 11 L50 10 L56 12 L60 16 L84 20 L97 23 Q100 24 100 26 L100 27 L6 27 Z"
         fill={color}
         stroke="rgba(15,23,42,0.35)"
-        strokeWidth="1"
+        strokeWidth="0.8"
       />
-      <path d="M17 11 L24 11 L24 17 L13 17 Z" fill="#e0f2fe" />
-      <path d="M27 11 L36 11 Q38 11 40 13 L44 17 L27 17 Z" fill="#e0f2fe" />
-      <circle cx="16" cy="24" r="5" fill="#1f2937" />
-      <circle cx="16" cy="24" r="2" fill="#9ca3af" />
-      <circle cx="49" cy="24" r="5" fill="#1f2937" />
-      <circle cx="49" cy="24" r="2" fill="#9ca3af" />
+      {/* Entrada de ar e sidepod */}
+      <path d="M30 18 L44 14 L46 22 L30 23 Z" fill="rgba(15,23,42,0.35)" />
+      {/* Faixa */}
+      <path d="M58 20 L96 25 L96 26 L58 22 Z" fill="#fff" opacity="0.85" />
+      {/* Cockpit (a foto entra aqui) */}
+      <path d="M44 11 L54 11 L57 15 L44 15 Z" fill="#0f172a" />
+      {/* Asa dianteira */}
+      <rect x="84" y="27" width="19" height="3" rx="1" fill={color} />
+      <rect x="99" y="23" width="4" height="7" rx="1" fill="#1f2937" />
+      {/* Pneus */}
+      <circle cx="20" cy="25" r="8.5" fill="#111827" />
+      <circle cx="20" cy="25" r="3.5" fill="#6b7280" />
+      <circle cx="80" cy="26" r="7" fill="#111827" />
+      <circle cx="80" cy="26" r="3" fill="#6b7280" />
     </svg>
   )
 }
