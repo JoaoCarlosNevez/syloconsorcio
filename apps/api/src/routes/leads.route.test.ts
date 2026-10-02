@@ -632,7 +632,7 @@ describe('GET /leads/:id/history', () => {
     expect(body.comments).toHaveLength(1)
   })
 
-  it('includes the stage changes from the activity log, with who moved the lead', async () => {
+  it('includes stage and outcome changes from the activity log, with who did them', async () => {
     const list = vi.fn().mockResolvedValue({
       items: [
         {
@@ -646,8 +646,19 @@ describe('GET /leads/:id/history', () => {
           metadata: { fromStage: 'Lead', toStage: 'Atendimento', funnelName: 'Vendas' },
           createdAt: new Date('2026-01-04T00:00:00Z'),
         },
+        {
+          id: 'act-02',
+          organizationId: ORG_ID,
+          actor: { id: IDENTITY.id, name: 'Vendedor', email: IDENTITY.email, avatarUrl: null },
+          action: 'lead.won',
+          entityType: 'lead',
+          entityId: 'lead-01',
+          entityLabel: 'Fulano de Tal',
+          metadata: { valueCents: 350_000_00 },
+          createdAt: new Date('2026-01-05T00:00:00Z'),
+        },
       ],
-      total: 1,
+      total: 2,
       page: 1,
       pageSize: 200,
     })
@@ -665,10 +676,10 @@ describe('GET /leads/:id/history', () => {
         organizationId: ORG_ID,
         entityType: 'lead',
         entityId: 'lead-01',
-        actions: ['lead.stage_changed'],
+        actions: ['lead.stage_changed', 'lead.won', 'lead.lost', 'lead.reopened'],
       },
       1,
-      200,
+      300,
     )
     expect(response.json<{ stageChanges: unknown[] }>().stageChanges).toEqual([
       {
@@ -677,6 +688,16 @@ describe('GET /leads/:id/history', () => {
         changedByUserId: IDENTITY.id,
         fromStage: 'Lead',
         toStage: 'Atendimento',
+      },
+    ])
+    expect(response.json<{ outcomeChanges: unknown[] }>().outcomeChanges).toEqual([
+      {
+        id: 'act-02',
+        changedAt: '2026-01-05T00:00:00.000Z',
+        changedByUserId: IDENTITY.id,
+        outcome: 'won',
+        valueCents: 350_000_00,
+        reopenedFrom: null,
       },
     ])
   })

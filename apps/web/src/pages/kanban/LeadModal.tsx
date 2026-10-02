@@ -622,7 +622,7 @@ const HISTORY_TAB_LABEL: Record<HistoryTab, string> = {
 
 interface FeedItem {
   id: string
-  kind: 'created' | 'assignment' | 'comment' | 'proposal' | 'stage' | 'task'
+  kind: 'created' | 'assignment' | 'comment' | 'proposal' | 'stage' | 'task' | 'outcome'
   timestamp: string
   source?: string
   changedByName?: string
@@ -632,7 +632,15 @@ interface FeedItem {
   text?: string
   /** kind 'task': a tarefa concluída — clicar abre ela pra comentar. */
   task?: Task
+  /** kind 'outcome': ganho, perdido ou reaberto. */
+  outcome?: 'won' | 'lost' | 'reopened'
 }
+
+const OUTCOME_TITLE = {
+  won: 'Lead ganho',
+  lost: 'Lead perdido',
+  reopened: 'Lead reaberto',
+} as const
 
 /** Título da tarefa concluída no histórico: "Ligação feita", "Visita feita"… */
 function doneTaskLabel(type: TaskType): string {
@@ -683,6 +691,26 @@ function buildHistoryFeed(
           : resolveAgent(task.assignedUserId, members).name,
       text: task.notes?.trim() || undefined,
       task,
+    })
+  }
+
+  for (const change of history?.outcomeChanges ?? []) {
+    items.push({
+      id: `outcome-${change.id}`,
+      kind: 'outcome',
+      timestamp: change.changedAt,
+      outcome: change.outcome,
+      changedByName: !change.changedByUserId
+        ? undefined
+        : change.changedByUserId === currentUserId
+          ? 'Você'
+          : resolveAgent(change.changedByUserId, members).name,
+      text:
+        change.outcome === 'reopened'
+          ? `Estava marcado como ${change.reopenedFrom === 'won' ? 'ganho' : 'perdido'}`
+          : change.outcome === 'won' && change.valueCents
+            ? `Venda de R$ ${formatBRL(change.valueCents)}`
+            : undefined,
     })
   }
 
@@ -2766,7 +2794,11 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                                   ? `${styles.timelineIcon} ${styles.timelineIconProposal}`
                                   : item.kind === 'task'
                                     ? `${styles.timelineIcon} ${styles.timelineIconTask}`
-                                    : `${styles.timelineIcon} ${styles.timelineIconSystem}`
+                                    : item.kind === 'outcome' && item.outcome === 'won'
+                                      ? `${styles.timelineIcon} ${styles.timelineIconWon}`
+                                      : item.kind === 'outcome' && item.outcome === 'lost'
+                                        ? `${styles.timelineIcon} ${styles.timelineIconLost}`
+                                        : `${styles.timelineIcon} ${styles.timelineIconSystem}`
                           }
                         >
                           {item.kind === 'comment' && <CommentIcon />}
@@ -2774,6 +2806,14 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                           {item.kind === 'created' && <CheckIcon />}
                           {item.kind === 'proposal' && <TrophyIcon />}
                           {item.kind === 'stage' && <FlagIcon />}
+                          {item.kind === 'outcome' &&
+                            (item.outcome === 'won' ? (
+                              <TrophyIcon />
+                            ) : item.outcome === 'lost' ? (
+                              <ThumbsDownIcon />
+                            ) : (
+                              <RefreshIcon />
+                            ))}
                           {item.kind === 'task' &&
                             (item.task?.type === 'Ligação' ? (
                               <PhoneIcon />
@@ -2798,9 +2838,11 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                                   ? 'Proposta gerada'
                                   : item.kind === 'stage'
                                     ? 'Etapa alterada'
-                                    : item.kind === 'task' && item.task
-                                      ? doneTaskLabel(item.task.type)
-                                      : 'Comentário'}
+                                    : item.kind === 'outcome' && item.outcome
+                                      ? OUTCOME_TITLE[item.outcome]
+                                      : item.kind === 'task' && item.task
+                                        ? doneTaskLabel(item.task.type)
+                                        : 'Comentário'}
                           </span>
                           <span className={styles.timelineDate}>
                             {formatHistoryTimestamp(item.timestamp)}
@@ -2808,7 +2850,8 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                         </div>
 
                         {(item.kind === 'assignment' ||
-                          (item.kind === 'stage' && item.changedByName)) && (
+                          ((item.kind === 'stage' || item.kind === 'outcome') &&
+                            item.changedByName)) && (
                           <p className={styles.timelineBody}>
                             por{' '}
                             <strong className={styles.timelineBold}>{item.changedByName}</strong>
@@ -2828,6 +2871,10 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                             {item.fromName} →{' '}
                             <strong className={styles.timelineBold}>{item.toName}</strong>
                           </div>
+                        )}
+
+                        {item.kind === 'outcome' && item.text && (
+                          <div className={styles.timelineDetail}>{item.text}</div>
                         )}
 
                         {item.kind === 'proposal' && item.text && (

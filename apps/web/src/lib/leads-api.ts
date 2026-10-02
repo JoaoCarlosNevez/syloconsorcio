@@ -174,6 +174,18 @@ export interface LeadHistory {
   comments: LeadComment[]
   /** Mais recente primeiro; só desde que o log de atividades existe. */
   stageChanges: LeadStageChange[]
+  /** Ganho/perdido/reaberto — mais recente primeiro; só desde o log. */
+  outcomeChanges: LeadOutcomeChange[]
+}
+
+export interface LeadOutcomeChange {
+  id: string
+  changedAt: string
+  changedByUserId: string | null
+  outcome: 'won' | 'lost' | 'reopened'
+  /** Valor do lead na hora (ganho/perdido). */
+  valueCents: number | null
+  reopenedFrom: 'won' | 'lost' | null
 }
 
 export function getLeadHistory(organizationId: string, leadId: string): Promise<LeadHistory> {

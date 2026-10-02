@@ -1218,6 +1218,17 @@
   box-shadow: 0 0 0 2px var(--color-accent-border-badge);
 }
 
+.timelineIconWon {
+  background: var(--color-success-text);
+  color: #fff;
+}
+
+.timelineIconLost {
+  background: #fef2f2;
+  color: #dc2626;
+  box-shadow: 0 0 0 2px #fecaca;
+}
+
 .timelineIconTask {
   background: var(--color-success-subtle);
   color: var(--color-success-text);

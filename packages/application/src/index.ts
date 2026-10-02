@@ -93,6 +93,7 @@ export { GetLeadHistoryUseCase } from './leads/get-lead-history.use-case'
 export type {
   GetLeadHistoryInput,
   LeadHistory,
+  LeadOutcomeChange,
   LeadStageChange,
 } from './leads/get-lead-history.use-case'
 export { CreateLeadCommentUseCase } from './leads/create-lead-comment.use-case'
