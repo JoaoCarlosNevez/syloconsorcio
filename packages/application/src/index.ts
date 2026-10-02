@@ -271,6 +271,7 @@ export type {
   GetSalesRankingInput,
   SalesRanking,
   SalesRankingEntry,
+  SalesRankingPeriod,
 } from './dashboard/get-sales-ranking.use-case'
 export { GetMyMonthlyStatsUseCase } from './dashboard/get-my-monthly-stats.use-case'
 export type {

@@ -9,7 +9,7 @@
 //                             de trabalho, recorde e a semana atual (ver
 //                             GetMyStreakUseCase). Do usuário, em todas as
 //                             organizações.
-// GET /dashboard/ranking    — ranking do mês dos Vendedores da organização
+// GET /dashboard/ranking    — ranking (?period=week|month, padrão mês) dos Vendedores da organização
 //                             ativa (valor e clientes ganhos, meta, ofensiva) +
 //                             meta da operação. Qualquer papel — é o painel
 //                             aberto a partir do início (GetSalesRankingUseCase).
@@ -31,6 +31,7 @@ import {
   GetSalesRankingUseCase,
 } from '@sylocrm/application'
 import type { FastifyPluginAsync } from 'fastify'
+import { z } from 'zod'
 import { createAuthMiddleware } from '../middleware/auth.middleware'
 import { createTenantMiddleware } from '../middleware/tenant.middleware'
 
@@ -43,6 +44,8 @@ interface DashboardRouteOptions {
   leadRepository: ILeadRepository
   streakRepository: IStreakRepository
 }
+
+const rankingQuerySchema = z.object({ period: z.enum(['week', 'month']).optional() })
 
 export const dashboardRoute: FastifyPluginAsync<DashboardRouteOptions> = async (
   fastify,
@@ -70,10 +73,17 @@ export const dashboardRoute: FastifyPluginAsync<DashboardRouteOptions> = async (
   fastify.get(
     '/dashboard/ranking',
     { preHandler: [authMiddleware, tenantMiddleware] },
-    async (request) => {
+    async (request, reply) => {
+      const query = rankingQuerySchema.safeParse(request.query)
+      if (!query.success) {
+        return reply
+          .status(400)
+          .send({ error: 'Período inválido.', code: 'VALIDATION_ERROR', status: 400 })
+      }
       const context = request.authContext as NonNullable<typeof request.authContext>
       const ranking = await getSalesRanking.execute({
         organizationId: context.currentMembership.organizationId,
+        period: query.data.period,
       })
       return {
         ...ranking,

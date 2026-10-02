@@ -96,4 +96,19 @@ describe('GetSalesRankingUseCase', () => {
     ]).execute({ organizationId: 'org-01', now: NOW })
     expect(fromMembers.organization.goalCents).toBe(150_00)
   })
+
+  it('ranks by what was won this week, keeping the goal on the month', async () => {
+    const ranking = await setup([
+      member('ana', Role.SELLER, { salesGoalCents: 400_000_00 }),
+    ]).execute({
+      organizationId: 'org-01',
+      period: 'week',
+      now: NOW,
+    })
+
+    expect(ranking.period).toBe('week')
+    expect(ranking.periodStart).toEqual(new Date('2026-09-28T03:00:00Z'))
+    expect(ranking.periodEnd).toEqual(new Date('2026-10-05T03:00:00Z'))
+    expect(ranking.sellers[0]).toMatchObject({ goalCents: 400_000_00, monthWonCents: 300_000_00 })
+  })
 })

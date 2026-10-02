@@ -1,9 +1,10 @@
-// GetSalesRankingUseCase — ranking do mês (pódio + classificação), aberto a
-// qualquer papel a partir do início.
+// GetSalesRankingUseCase — ranking da semana ou do mês (pódio +
+// classificação), aberto a qualquer papel a partir do início.
 //
 // Entram os Vendedores ativos da organização. Pra cada um: leads ganhos no
-// mês (quantidade e valor, funil padrão — mesmo recorte da "Meta da
-// Representação"), a meta dele definida pelo gestor e a ofensiva atual.
+// período (quantidade e valor, funil padrão — mesmo recorte da "Meta da
+// Representação"), a meta do mês definida pelo gestor (com o ganho do mês,
+// que é o que a meta mede — mesmo no ranking da semana) e a ofensiva atual.
 // Ordem: valor ganho; empate → mais clientes ganhos → maior ofensiva →
 // nome.
 //
@@ -18,10 +19,15 @@ import type { IOrganizationRepository } from '../ports/organization.repository'
 import type { IStreakRepository } from '../ports/streak.repository'
 import type { UseCase } from '../ports/use-case'
 import { currentMonthInBrasilia } from '../shared/current-month-in-brasilia'
+import { currentWeekInBrasilia } from '../shared/current-week-in-brasilia'
 import { computeStreak } from './get-my-streak.use-case'
+
+export type SalesRankingPeriod = 'week' | 'month'
 
 export interface GetSalesRankingInput {
   organizationId: string
+  /** Padrão: mês. */
+  period?: SalesRankingPeriod
   now?: Date
 }
 
@@ -30,16 +36,21 @@ export interface SalesRankingEntry {
   name: string
   avatarUrl: string | null
   tier: MemberTier
+  /** Ganhos no período escolhido. */
   wonCount: number
   wonCents: number
   /** Meta do mês definida pelo gestor; null = sem meta. */
   goalCents: number | null
+  /** Ganho no mês — o progresso da meta usa este, em qualquer período. */
+  monthWonCents: number
   streakDays: number
 }
 
 export interface SalesRanking {
+  period: SalesRankingPeriod
   periodStart: Date
   periodEnd: Date
+  /** Sempre o mês — a meta da operação é mensal. */
   organization: {
     name: string
     goalCents: number | null
@@ -59,8 +70,15 @@ export class GetSalesRankingUseCase implements UseCase<GetSalesRankingInput, Sal
 
   async execute(input: GetSalesRankingInput): Promise<SalesRanking> {
     const now = input.now ?? new Date()
-    const { start, end } = currentMonthInBrasilia(now)
-    const month = { organizationId: input.organizationId, wonFrom: start, wonTo: end }
+    const period = input.period ?? 'month'
+    const monthRange = currentMonthInBrasilia(now)
+    const { start, end } = period === 'week' ? currentWeekInBrasilia(now) : monthRange
+    const month = {
+      organizationId: input.organizationId,
+      wonFrom: monthRange.start,
+      wonTo: monthRange.end,
+    }
+    const range = { organizationId: input.organizationId, wonFrom: start, wonTo: end }
 
     const [organization, members, achievedCents] = await Promise.all([
       this.organizationRepository.findById(input.organizationId),
@@ -73,10 +91,16 @@ export class GetSalesRankingUseCase implements UseCase<GetSalesRankingInput, Sal
 
     const entries = await Promise.all(
       sellers.map(async (member): Promise<SalesRankingEntry> => {
-        const mine = { ...month, assignedUserId: member.userId }
-        const [wonCents, wonCount, activeDays] = await Promise.all([
+        const mine = { ...range, assignedUserId: member.userId }
+        const [wonCents, wonCount, monthWonCents, activeDays] = await Promise.all([
           this.leadRepository.sumWonValueCentsInDefaultFunnel(mine),
           this.leadRepository.countWonInDefaultFunnel(mine),
+          period === 'month'
+            ? null
+            : this.leadRepository.sumWonValueCentsInDefaultFunnel({
+                ...month,
+                assignedUserId: member.userId,
+              }),
           this.streakRepository.listActiveDays(member.userId),
         ])
         return {
@@ -87,6 +111,7 @@ export class GetSalesRankingUseCase implements UseCase<GetSalesRankingInput, Sal
           wonCount,
           wonCents,
           goalCents: member.salesGoalCents,
+          monthWonCents: monthWonCents ?? wonCents,
           streakDays: computeStreak(activeDays, now).current,
         }
       }),
@@ -105,6 +130,7 @@ export class GetSalesRankingUseCase implements UseCase<GetSalesRankingInput, Sal
       .filter((goal): goal is number => goal !== null)
 
     return {
+      period,
       periodStart: start,
       periodEnd: end,
       organization: {

@@ -168,6 +168,25 @@ describe('GET /dashboard/ranking', () => {
     expect(body.organization.achievedCents).toBe(300_000_00)
   })
 
+  it('accepts the week period and rejects an unknown one', async () => {
+    const { app } = buildTestApp(SELLER_MEMBERSHIP)
+
+    const week = await app.inject({
+      method: 'GET',
+      url: '/dashboard/ranking?period=week',
+      headers: AUTH_HEADERS,
+    })
+    expect(week.statusCode).toBe(200)
+    expect(week.json<{ period: string }>().period).toBe('week')
+
+    const bad = await app.inject({
+      method: 'GET',
+      url: '/dashboard/ranking?period=ano',
+      headers: AUTH_HEADERS,
+    })
+    expect(bad.statusCode).toBe(400)
+  })
+
   it('returns 401 without a token', async () => {
     const { app } = buildTestApp(SELLER_MEMBERSHIP)
 

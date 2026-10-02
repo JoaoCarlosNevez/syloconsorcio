@@ -41,19 +41,28 @@ export interface SalesRankingEntry {
   wonCents: number
   /** Meta do mês definida pelo gestor; null = sem meta. */
   goalCents: number | null
+  /** Ganho no mês — a barra da meta usa este, mesmo no ranking da semana. */
+  monthWonCents: number
   streakDays: number
 }
 
+export type SalesRankingPeriod = 'week' | 'month'
+
 /** Ranking do mês — vendedores já na ordem (1º primeiro). */
 export interface SalesRanking {
+  period: SalesRankingPeriod
   periodStart: string
   periodEnd: string
+  /** Sempre o mês — a meta da operação é mensal. */
   organization: { name: string; goalCents: number | null; achievedCents: number }
   sellers: SalesRankingEntry[]
 }
 
-export function getSalesRanking(organizationId: string): Promise<SalesRanking> {
-  return apiClient.get<SalesRanking>('/dashboard/ranking', { organizationId })
+export function getSalesRanking(
+  organizationId: string,
+  period: SalesRankingPeriod,
+): Promise<SalesRanking> {
+  return apiClient.get<SalesRanking>(`/dashboard/ranking?period=${period}`, { organizationId })
 }
 
 export function getMyMonthlyStats(organizationId: string): Promise<MyMonthlyStats> {

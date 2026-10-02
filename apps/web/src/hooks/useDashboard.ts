@@ -1,7 +1,12 @@
 // useDashboard — server state dos cards do início (ADR-04).
 
 import { useQuery } from '@tanstack/react-query'
-import { getMyMonthlyStats, getMyStreak, getSalesRanking } from '../lib/dashboard-api'
+import {
+  type SalesRankingPeriod,
+  getMyMonthlyStats,
+  getMyStreak,
+  getSalesRanking,
+} from '../lib/dashboard-api'
 
 /** O ranking fica aberto numa TV: atualiza sozinho a cada minuto. */
 const RANKING_REFETCH_MS = 60_000
@@ -16,10 +21,10 @@ export function useMyStreakQuery(organizationId: string | null) {
   })
 }
 
-export function useSalesRankingQuery(organizationId: string | null) {
+export function useSalesRankingQuery(organizationId: string | null, period: SalesRankingPeriod) {
   return useQuery({
-    queryKey: ['dashboard', 'ranking', organizationId],
-    queryFn: () => getSalesRanking(organizationId as string),
+    queryKey: ['dashboard', 'ranking', organizationId, period],
+    queryFn: () => getSalesRanking(organizationId as string, period),
     enabled: Boolean(organizationId),
     refetchInterval: RANKING_REFETCH_MS,
     refetchIntervalInBackground: true,

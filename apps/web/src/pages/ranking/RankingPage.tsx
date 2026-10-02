@@ -1,14 +1,15 @@
-// RankingPage — /app/ranking: ranking do mês em tela cheia (pra deixar numa
-// TV), aberto a qualquer papel a partir do início. Pódio dos 3 primeiros e a
-// classificação do 4º em diante, com clientes ganhos, ofensiva e meta.
-// Atualiza sozinho a cada minuto (useSalesRankingQuery).
+// RankingPage — /app/ranking: ranking da semana ou do mês (?periodo=semana)
+// pra deixar numa TV, aberto a qualquer papel a partir do início. Pódio dos 3
+// primeiros e a classificação do 4º em diante, com clientes ganhos, ofensiva
+// e meta do mês. Atualiza sozinho a cada minuto (useSalesRankingQuery); o
+// botão "Tela cheia" usa a Fullscreen API do navegador (modo apresentação).
 
 import { Skeleton } from '@sylocrm/ui'
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useSalesRankingQuery } from '../../hooks/useDashboard'
 import { useActiveOrganization } from '../../hooks/useOrganization'
-import type { SalesRankingEntry } from '../../lib/dashboard-api'
+import type { SalesRankingEntry, SalesRankingPeriod } from '../../lib/dashboard-api'
 import { formatBRL } from '../../lib/lead-adapters'
 import styles from './RankingPage.module.css'
 
@@ -52,6 +53,69 @@ function CloseIcon() {
   )
 }
 
+function ExpandIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="15 3 21 3 21 9" />
+      <polyline points="9 21 3 21 3 15" />
+      <line x1="21" y1="3" x2="14" y2="10" />
+      <line x1="3" y1="21" x2="10" y2="14" />
+    </svg>
+  )
+}
+
+function ShrinkIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="4 14 10 14 10 20" />
+      <polyline points="20 10 14 10 14 4" />
+      <line x1="14" y1="10" x2="21" y2="3" />
+      <line x1="3" y1="21" x2="10" y2="14" />
+    </svg>
+  )
+}
+
+/** Modo apresentação: tela cheia de verdade (some a barra do navegador). */
+function useFullscreen(): { active: boolean; toggle: () => void; supported: boolean } {
+  const [active, setActive] = useState(() => Boolean(document.fullscreenElement))
+  useEffect(() => {
+    const onChange = () => setActive(Boolean(document.fullscreenElement))
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [])
+  function toggle() {
+    const action = document.fullscreenElement
+      ? document.exitFullscreen()
+      : document.documentElement.requestFullscreen()
+    action.catch((error: unknown) => {
+      console.error('Fullscreen indisponível', error)
+    })
+  }
+  return { active, toggle, supported: document.fullscreenEnabled }
+}
+
+const PERIOD_PARAM: Record<SalesRankingPeriod, string> = { week: 'semana', month: 'mes' }
+
 function useClock(): Date {
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
@@ -68,9 +132,10 @@ function initials(name: string): string {
   ).toUpperCase()
 }
 
+/** Progresso da meta do mês — usa o ganho do mês mesmo no ranking da semana. */
 function goalPercent(entry: SalesRankingEntry): number | null {
   if (!entry.goalCents) return null
-  return Math.round((entry.wonCents / entry.goalCents) * 100)
+  return Math.round((entry.monthWonCents / entry.goalCents) * 100)
 }
 
 function clientsLabel(count: number): string {
@@ -132,8 +197,15 @@ function PodiumCard({
 export function RankingPage() {
   const navigate = useNavigate()
   const { organizationId, membership } = useActiveOrganization()
-  const { data, isLoading, isError } = useSalesRankingQuery(organizationId)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const period: SalesRankingPeriod = searchParams.get('periodo') === 'semana' ? 'week' : 'month'
+  const { data, isLoading, isError } = useSalesRankingQuery(organizationId, period)
+  const fullscreen = useFullscreen()
   const now = useClock()
+
+  function selectPeriod(next: SalesRankingPeriod) {
+    setSearchParams({ periodo: PERIOD_PARAM[next] }, { replace: true })
+  }
   const logoUrl = membership?.organizationIconUrl ?? null
 
   const org = data?.organization
@@ -199,19 +271,53 @@ export function RankingPage() {
           </span>
         </div>
 
-        <button
-          type="button"
-          className={styles.closeBtn}
-          onClick={() => navigate('/app/home')}
-          aria-label="Fechar ranking"
-          title="Voltar pro início"
-        >
-          <CloseIcon />
-        </button>
+        <div className={styles.headerButtons}>
+          {fullscreen.supported && (
+            <button
+              type="button"
+              className={styles.iconBtn}
+              onClick={fullscreen.toggle}
+              aria-label={fullscreen.active ? 'Sair da tela cheia' : 'Tela cheia'}
+              title={
+                fullscreen.active ? 'Sair da tela cheia (Esc)' : 'Tela cheia (modo apresentação)'
+              }
+            >
+              {fullscreen.active ? <ShrinkIcon /> : <ExpandIcon />}
+            </button>
+          )}
+          {!fullscreen.active && (
+            <button
+              type="button"
+              className={styles.iconBtn}
+              onClick={() => navigate('/app/home')}
+              aria-label="Fechar ranking"
+              title="Voltar pro início"
+            >
+              <CloseIcon />
+            </button>
+          )}
+        </div>
       </header>
 
       <section className={styles.panel}>
-        <h1 className={styles.panelTitle}>Pódio de Campeões do Mês</h1>
+        <div className={styles.panelHeader}>
+          <h1 className={styles.panelTitle}>
+            Pódio de Campeões {period === 'week' ? 'da Semana' : 'do Mês'}
+          </h1>
+          <fieldset className={styles.periodToggle} aria-label="Período do ranking">
+            {(['week', 'month'] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                className={option === period ? styles.periodActive : styles.periodOption}
+                aria-pressed={option === period}
+                onClick={() => selectPeriod(option)}
+              >
+                {option === 'week' ? 'Semana' : 'Mês'}
+              </button>
+            ))}
+          </fieldset>
+        </div>
         {isLoading ? (
           <div className={styles.podium}>
             {[0, 1, 2].map((i) => (
@@ -247,7 +353,10 @@ export function RankingPage() {
       {rest.length > 0 && (
         <section className={styles.panel}>
           <h2 className={styles.tableTitle}>Classificação geral (4º em diante)</h2>
-          <p className={styles.tableSub}>Clientes ganhos, ofensiva e meta individual do mês</p>
+          <p className={styles.tableSub}>
+            Clientes ganhos {period === 'week' ? 'na semana' : 'no mês'}, ofensiva e meta individual
+            do mês
+          </p>
           <table className={styles.table}>
             <thead>
               <tr>
@@ -293,7 +402,7 @@ export function RankingPage() {
                           />
                         </div>
                         <span className={styles.volumePercent}>
-                          {percent === null ? 'Sem meta' : `${percent}% da meta`}
+                          {percent === null ? 'Sem meta' : `${percent}% da meta do mês`}
                         </span>
                       </div>
                     </td>
