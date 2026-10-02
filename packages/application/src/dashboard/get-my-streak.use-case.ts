@@ -7,7 +7,9 @@
 // Brasília.
 //
 // A ofensiva de ontem continua valendo durante o dia de hoje (ainda dá pra
-// manter): só zera quando um dia inteiro passa sem atividade.
+// manter): só zera quando um dia útil inteiro passa sem atividade. Sábado e
+// domingo sem atividade não quebram a sequência (são pulados); com
+// atividade, contam normalmente.
 
 import type { IStreakRepository } from '../ports/streak.repository'
 import type { UseCase } from '../ports/use-case'
@@ -22,7 +24,8 @@ export const STREAK_ACTIONS = [
   'task.completed',
 ] as const
 
-export type StreakDayStatus = 'done' | 'missed' | 'today' | 'future'
+/** 'off' = sábado/domingo sem atividade — não quebra a ofensiva. */
+export type StreakDayStatus = 'done' | 'missed' | 'off' | 'today' | 'future'
 
 export interface MyStreak {
   /** Dias seguidos até hoje (ou até ontem, se hoje ainda não teve atividade). */
@@ -55,12 +58,19 @@ function addDays(key: string, days: number): string {
   return new Date(keyToUtc(key) + days * DAY_MS).toISOString().slice(0, 10)
 }
 
-/** Sequência que termina em `lastDay` (inclusive). */
-function runEndingAt(active: ReadonlySet<string>, lastDay: string): number {
+function isWeekend(key: string): boolean {
+  const weekday = new Date(keyToUtc(key)).getUTCDay()
+  return weekday === 0 || weekday === 6
+}
+
+/** Sequência que termina em `lastDay` (inclusive), pulando fins de semana
+ * sem atividade. */
+function runEndingAt(active: ReadonlySet<string>, lastDay: string, firstDay: string): number {
   let count = 0
   let day = lastDay
-  while (active.has(day)) {
-    count++
+  while (day >= firstDay) {
+    if (active.has(day)) count++
+    else if (!isWeekend(day)) break
     day = addDays(day, -1)
   }
   return count
@@ -68,17 +78,26 @@ function runEndingAt(active: ReadonlySet<string>, lastDay: string): number {
 
 export function computeStreak(activeDays: string[], now: Date): MyStreak {
   const active = new Set(activeDays)
+  const firstDay = [...active].sort()[0] ?? null
   const today = brasiliaDateKey(now)
   const todayDone = active.has(today)
-  const current = todayDone ? runEndingAt(active, today) : runEndingAt(active, addDays(today, -1))
+  const current =
+    firstDay === null ? 0 : runEndingAt(active, todayDone ? today : addDays(today, -1), firstDay)
 
+  // Recorde: percorre o calendário do primeiro dia ativo até hoje; dia útil
+  // sem atividade zera, fim de semana sem atividade só não soma (e hoje,
+  // ainda em aberto, não zera).
   let record = 0
   let run = 0
-  let previous: string | null = null
-  for (const day of [...active].sort()) {
-    run = previous !== null && addDays(previous, 1) === day ? run + 1 : 1
-    record = Math.max(record, run)
-    previous = day
+  if (firstDay !== null) {
+    for (let day = firstDay; day <= today; day = addDays(day, 1)) {
+      if (active.has(day)) {
+        run++
+        record = Math.max(record, run)
+      } else if (!isWeekend(day) && day !== today) {
+        run = 0
+      }
+    }
   }
 
   // Segunda-feira da semana de hoje (getUTCDay: 0 = domingo).
@@ -92,7 +111,9 @@ export function computeStreak(activeDays: string[], now: Date): MyStreak {
         ? 'today'
         : date > today
           ? 'future'
-          : 'missed'
+          : isWeekend(date)
+            ? 'off'
+            : 'missed'
     return { date, status }
   })
 

@@ -652,6 +652,16 @@
   color: var(--color-text-muted);
 }
 
+/* Fim de semana sem atividade: folga, não quebra a ofensiva. */
+.weekDay.off {
+  background: transparent;
+  border: 1px dashed var(--color-border);
+}
+
+.weekDay.off .weekDayCheck {
+  color: var(--color-text-disabled);
+}
+
 .weekDay.missed {
   background: var(--color-bg-subtle);
 }

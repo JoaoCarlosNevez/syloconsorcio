@@ -55,6 +55,40 @@ describe('computeStreak', () => {
     ])
   })
 
+  // 02/10/2026 é sexta; 26-27/09 foi fim de semana.
+  it('skips a weekend without activity when counting the record', () => {
+    // Qui 24, Sex 25, (sáb/dom pulados), Seg 28, Ter 29 = 4. Qua 30 e Qui 01
+    // sem nada quebram a sequência atual.
+    const s = computeStreak(['2026-09-24', '2026-09-25', '2026-09-28', '2026-09-29'], NOW)
+    expect(s.current).toBe(0)
+    expect(s.record).toBe(4)
+  })
+
+  it('carries the streak from Friday to Monday', () => {
+    const monday = new Date('2026-10-05T15:00:00Z')
+    const s = computeStreak(['2026-10-01', '2026-10-02', '2026-10-05'], monday)
+    expect(s).toMatchObject({ current: 3, todayDone: true })
+  })
+
+  it("keeps Friday's streak alive on Monday before any activity", () => {
+    const monday = new Date('2026-10-05T15:00:00Z')
+    const s = computeStreak(['2026-10-01', '2026-10-02'], monday)
+    expect(s).toMatchObject({ current: 2, todayDone: false })
+  })
+
+  it('counts weekend days with activity', () => {
+    const monday = new Date('2026-10-05T15:00:00Z')
+    const s = computeStreak(['2026-10-02', '2026-10-03', '2026-10-05'], monday)
+    expect(s.current).toBe(3)
+  })
+
+  it('marks weekend days without activity as off, not missed', () => {
+    const sunday = new Date('2026-10-04T15:00:00Z')
+    const s = computeStreak(['2026-10-02'], sunday)
+    expect(s.week.slice(4).map((d) => d.status)).toEqual(['done', 'off', 'today'])
+    expect(s.current).toBe(1)
+  })
+
   it('is all zeros with no activity', () => {
     expect(computeStreak([], NOW)).toMatchObject({ current: 0, record: 0, todayDone: false })
   })

@@ -182,6 +182,7 @@ const WEEK_DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 const WEEK_DAY_CLASS = {
   done: 'done',
   missed: 'missed',
+  off: 'off',
   today: 'pending',
   future: 'pending',
 } as const
@@ -189,6 +190,7 @@ const WEEK_DAY_CLASS = {
 const WEEK_DAY_TITLE = {
   done: 'Teve atividade',
   missed: 'Sem atividade',
+  off: 'Fim de semana — não quebra a ofensiva',
   today: 'Hoje — ainda sem atividade',
   future: '',
 } as const
@@ -202,6 +204,13 @@ function todayKey(week: MyStreak['week'] | undefined): string | null {
   if (!week) return null
   const notFuture = week.filter((d) => d.status !== 'future')
   return notFuture[notFuture.length - 1]?.date ?? null
+}
+
+/** Hoje é sábado ou domingo (posições 5 e 6 da semana). */
+function isWeekendToday(week: MyStreak['week'] | undefined): boolean {
+  const today = todayKey(week)
+  const index = week?.findIndex((d) => d.date === today) ?? -1
+  return index >= 5
 }
 
 /** "Out 2026" — mês da segunda-feira da semana. */
@@ -1053,7 +1062,9 @@ export function PerfilPage() {
                               ? '✓'
                               : entry?.status === 'missed'
                                 ? '✕'
-                                : '·'}
+                                : entry?.status === 'off'
+                                  ? '–'
+                                  : '·'}
                           </span>
                         </div>
                       )
@@ -1068,8 +1079,11 @@ export function PerfilPage() {
                 ) : (
                   <>
                     <p className={styles.streakTodayHint}>
-                      Mova um lead, conclua uma tarefa ou registre uma ligação ou visita pra
-                      {streak && streak.current > 0 ? ' manter' : ' começar'} a ofensiva hoje.
+                      {isWeekendToday(streak?.week)
+                        ? 'Fim de semana não quebra a ofensiva — mas trabalhar hoje soma +1 dia.'
+                        : `Mova um lead, conclua uma tarefa ou registre uma ligação ou visita pra ${
+                            streak && streak.current > 0 ? 'manter' : 'começar'
+                          } a ofensiva hoje.`}
                     </p>
                     <button
                       type="button"

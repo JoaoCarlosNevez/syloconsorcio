@@ -23,8 +23,9 @@ export interface MyStreak {
   current: number
   record: number
   todayDone: boolean
-  /** Segunda a domingo da semana atual. */
-  week: { date: string; status: 'done' | 'missed' | 'today' | 'future' }[]
+  /** Segunda a domingo da semana atual. 'off' = fim de semana sem
+   * atividade, que não quebra a ofensiva. */
+  week: { date: string; status: 'done' | 'missed' | 'off' | 'today' | 'future' }[]
 }
 
 export function getMyStreak(organizationId: string): Promise<MyStreak> {
