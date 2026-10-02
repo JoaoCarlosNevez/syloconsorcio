@@ -151,3 +151,28 @@ describe('GET /dashboard/me/streak', () => {
     expect(response.statusCode).toBe(401)
   })
 })
+
+describe('GET /dashboard/ranking', () => {
+  it('is open to sellers and returns the month ranking', async () => {
+    const { app } = buildTestApp(SELLER_MEMBERSHIP)
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/dashboard/ranking',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    const body = response.json<{ sellers: unknown[]; organization: { achievedCents: number } }>()
+    expect(body.sellers).toEqual([])
+    expect(body.organization.achievedCents).toBe(300_000_00)
+  })
+
+  it('returns 401 without a token', async () => {
+    const { app } = buildTestApp(SELLER_MEMBERSHIP)
+
+    const response = await app.inject({ method: 'GET', url: '/dashboard/ranking' })
+
+    expect(response.statusCode).toBe(401)
+  })
+})

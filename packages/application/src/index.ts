@@ -266,6 +266,12 @@ export {
   computeStreak,
 } from './dashboard/get-my-streak.use-case'
 export type { MyStreak, StreakDayStatus } from './dashboard/get-my-streak.use-case'
+export { GetSalesRankingUseCase } from './dashboard/get-sales-ranking.use-case'
+export type {
+  GetSalesRankingInput,
+  SalesRanking,
+  SalesRankingEntry,
+} from './dashboard/get-sales-ranking.use-case'
 export { GetMyMonthlyStatsUseCase } from './dashboard/get-my-monthly-stats.use-case'
 export type {
   GetMyMonthlyStatsInput,

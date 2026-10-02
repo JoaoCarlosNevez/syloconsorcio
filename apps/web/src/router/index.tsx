@@ -42,6 +42,9 @@ const AdminOrganizationDetailPage = lazy(() =>
 const TarefasPage = lazy(() =>
   import('../pages/tarefas/TarefasPage').then((m) => ({ default: m.TarefasPage })),
 )
+const RankingPage = lazy(() =>
+  import('../pages/ranking/RankingPage').then((m) => ({ default: m.RankingPage })),
+)
 const PublicProposalPage = lazy(() =>
   import('../pages/proposta/PublicProposalPage').then((m) => ({
     default: m.PublicProposalPage,
@@ -73,6 +76,7 @@ export function AppRouter() {
           <Route path="admin/:id" element={<AdminOrganizationDetailPage />} />
           <Route path="ajuda" element={<ComingSoonPage />} />
           <Route path="perfil" element={<PerfilPage />} />
+          <Route path="ranking" element={<RankingPage />} />
         </Route>
 
         {/* Raiz → home */}

@@ -111,6 +111,28 @@
   flex-shrink: 0;
 }
 
+.rankingBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-accent-gradient);
+  color: var(--color-accent-contrast, #0b1c30);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-family-base);
+  cursor: pointer;
+  box-shadow: 0 4px 12px var(--color-accent-shadow);
+  transition: opacity var(--duration-normal);
+}
+
+.rankingBtn:hover {
+  opacity: 0.9;
+}
+
 .notifBtn {
   width: 38px;
   height: 38px;

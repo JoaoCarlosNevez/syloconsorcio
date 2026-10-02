@@ -9,6 +9,10 @@
 //                             de trabalho, recorde e a semana atual (ver
 //                             GetMyStreakUseCase). Do usuário, em todas as
 //                             organizações.
+// GET /dashboard/ranking    — ranking do mês dos Vendedores da organização
+//                             ativa (valor e clientes ganhos, meta, ofensiva) +
+//                             meta da operação. Qualquer papel — é o painel
+//                             aberto a partir do início (GetSalesRankingUseCase).
 //
 // Roda authMiddleware → tenantMiddleware.
 
@@ -21,7 +25,11 @@ import type {
   ITaskRepository,
   IUserRepository,
 } from '@sylocrm/application'
-import { GetMyMonthlyStatsUseCase, GetMyStreakUseCase } from '@sylocrm/application'
+import {
+  GetMyMonthlyStatsUseCase,
+  GetMyStreakUseCase,
+  GetSalesRankingUseCase,
+} from '@sylocrm/application'
 import type { FastifyPluginAsync } from 'fastify'
 import { createAuthMiddleware } from '../middleware/auth.middleware'
 import { createTenantMiddleware } from '../middleware/tenant.middleware'
@@ -51,6 +59,29 @@ export const dashboardRoute: FastifyPluginAsync<DashboardRouteOptions> = async (
     options.leadRepository,
   )
   const getMyStreak = new GetMyStreakUseCase(options.streakRepository)
+  const getSalesRanking = new GetSalesRankingUseCase(
+    options.membershipRepository,
+    options.leadRepository,
+    options.organizationRepository,
+    options.streakRepository,
+  )
+
+  // ── GET /dashboard/ranking ────────────────────────────────────────────────
+  fastify.get(
+    '/dashboard/ranking',
+    { preHandler: [authMiddleware, tenantMiddleware] },
+    async (request) => {
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      const ranking = await getSalesRanking.execute({
+        organizationId: context.currentMembership.organizationId,
+      })
+      return {
+        ...ranking,
+        periodStart: ranking.periodStart.toISOString(),
+        periodEnd: ranking.periodEnd.toISOString(),
+      }
+    },
+  )
 
   // ── GET /dashboard/me/streak ──────────────────────────────────────────────
   fastify.get(

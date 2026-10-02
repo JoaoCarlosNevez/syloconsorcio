@@ -32,6 +32,30 @@ export function getMyStreak(organizationId: string): Promise<MyStreak> {
   return apiClient.get<MyStreak>('/dashboard/me/streak', { organizationId })
 }
 
+/** Vendedor no ranking do mês. */
+export interface SalesRankingEntry {
+  userId: string
+  name: string
+  avatarUrl: string | null
+  wonCount: number
+  wonCents: number
+  /** Meta do mês definida pelo gestor; null = sem meta. */
+  goalCents: number | null
+  streakDays: number
+}
+
+/** Ranking do mês — vendedores já na ordem (1º primeiro). */
+export interface SalesRanking {
+  periodStart: string
+  periodEnd: string
+  organization: { name: string; goalCents: number | null; achievedCents: number }
+  sellers: SalesRankingEntry[]
+}
+
+export function getSalesRanking(organizationId: string): Promise<SalesRanking> {
+  return apiClient.get<SalesRanking>('/dashboard/ranking', { organizationId })
+}
+
 export function getMyMonthlyStats(organizationId: string): Promise<MyMonthlyStats> {
   return apiClient.get<MyMonthlyStats>('/dashboard/me/monthly', { organizationId })
 }
