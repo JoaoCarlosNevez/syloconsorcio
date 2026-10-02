@@ -1218,6 +1218,102 @@
   box-shadow: 0 0 0 2px var(--color-accent-border-badge);
 }
 
+.timelineIconTask {
+  background: var(--color-success-subtle);
+  color: var(--color-success-text);
+  box-shadow: 0 0 0 2px var(--color-success-border);
+}
+
+/* "Comentar o que foi tratado" — abre a tarefa concluída pra escrever. */
+.timelineTaskComment {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 5px;
+  margin-top: 4px;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  font-family: var(--font-family-base);
+}
+
+.timelineTaskComment:hover {
+  color: #0b1c30;
+}
+
+/* Modal "Registrar agora" */
+.registerBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.registerHint {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.registerLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.registerOptional {
+  font-weight: 400;
+  color: #94a3b8;
+}
+
+.registerTextarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: var(--font-family-base);
+  color: #0b1c30;
+  resize: vertical;
+}
+
+.registerTextarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.registerCancelBtn,
+.registerSaveBtn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-family-base);
+  cursor: pointer;
+}
+
+.registerCancelBtn {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.registerSaveBtn {
+  background: #0b1c30;
+  border: none;
+  color: #fff;
+}
+
+.registerCancelBtn:disabled,
+.registerSaveBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .timelineIconComment {
   background: #dbeafe;
   color: #2563eb;

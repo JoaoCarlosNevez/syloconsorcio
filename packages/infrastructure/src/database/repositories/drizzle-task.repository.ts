@@ -30,6 +30,7 @@ const TASK_COLUMNS = {
   notes: tasks.notes,
   status: tasks.status,
   dueAt: tasks.dueAt,
+  completedAt: tasks.completedAt,
   createdAt: tasks.createdAt,
   updatedAt: tasks.updatedAt,
 } as const
@@ -107,6 +108,7 @@ export class DrizzleTaskRepository implements ITaskRepository {
         notes: input.notes ?? null,
         dueAt: input.dueAt,
         status: input.status ?? 'pendente',
+        completedAt: input.status === 'concluida' ? new Date() : null,
       })
       .returning(TASK_COLUMNS)
 
@@ -135,9 +137,18 @@ export class DrizzleTaskRepository implements ITaskRepository {
   ): Promise<TaskRecord | null> {
     if (scope.organizationIds.length === 0) return null
 
+    // Concluir guarda quando (sem sobrescrever se já estava concluída);
+    // reabrir limpa.
+    const completedAt =
+      input.status === undefined
+        ? {}
+        : {
+            completedAt:
+              input.status === 'concluida' ? sql`coalesce(${tasks.completedAt}, now())` : null,
+          }
     const rows = await this.db
       .update(tasks)
-      .set({ ...input, updatedAt: new Date() })
+      .set({ ...input, ...completedAt, updatedAt: new Date() })
       .where(and(eq(tasks.id, id), ...buildScopeConditions(scope)))
       .returning(TASK_COLUMNS)
 

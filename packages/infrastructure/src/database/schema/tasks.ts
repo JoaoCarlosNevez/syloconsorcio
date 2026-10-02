@@ -35,6 +35,10 @@ export const tasks = pgTable('tasks', {
   notes: text('notes'),
   status: text('status').notNull().default('pendente'),
   dueAt: timestamp('due_at', { withTimezone: true }).notNull(),
+  // Quando foi concluída — é o "Ligação feita em 02/10 às 14:55" do histórico
+  // do lead. Preenchido ao concluir, limpo ao reabrir (ver
+  // DrizzleTaskRepository); null enquanto não concluída.
+  completedAt: timestamp('completed_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })

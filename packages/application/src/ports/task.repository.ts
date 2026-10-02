@@ -27,6 +27,8 @@ export interface TaskRecord {
   notes: string | null
   status: TaskStatus
   dueAt: Date
+  /** Quando foi concluída; null enquanto não concluída. */
+  completedAt: Date | null
   createdAt: Date
   updatedAt: Date
 }

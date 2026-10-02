@@ -89,6 +89,7 @@ const SAMPLE_TASK: TaskRecord = {
   notes: null,
   status: 'pendente',
   dueAt: new Date('2026-02-01T12:00:00Z'),
+  completedAt: null,
   createdAt: new Date('2026-01-05T00:00:00Z'),
   updatedAt: new Date('2026-01-05T00:00:00Z'),
 }

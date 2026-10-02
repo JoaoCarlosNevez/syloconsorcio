@@ -1,7 +1,7 @@
 // LeadModal — ficha completa do lead, aberta ao clicar em um card do Kanban.
 // Design: Figma SYLOAPP node 276:590
 
-import { Dropdown, Skeleton, useToast } from '@sylocrm/ui'
+import { Dropdown, Modal, Skeleton, useToast } from '@sylocrm/ui'
 import { useEffect, useRef, useState } from 'react'
 import type { CardData } from '../../data/kanban-mock'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
@@ -622,7 +622,7 @@ const HISTORY_TAB_LABEL: Record<HistoryTab, string> = {
 
 interface FeedItem {
   id: string
-  kind: 'created' | 'assignment' | 'comment' | 'proposal' | 'stage'
+  kind: 'created' | 'assignment' | 'comment' | 'proposal' | 'stage' | 'task'
   timestamp: string
   source?: string
   changedByName?: string
@@ -630,6 +630,16 @@ interface FeedItem {
   toName?: string
   authorName?: string
   text?: string
+  /** kind 'task': a tarefa concluída — clicar abre ela pra comentar. */
+  task?: Task
+}
+
+/** Título da tarefa concluída no histórico: "Ligação feita", "Visita feita"… */
+function doneTaskLabel(type: TaskType): string {
+  if (type === 'Ligação') return 'Ligação feita'
+  if (type === 'Visita') return 'Visita feita'
+  if (type === 'Reunião') return 'Reunião realizada'
+  return `${type} concluída`
 }
 
 /** Resumo da proposta no histórico: "Entrada R$ 20.000 · 24x · Tabela X". */
@@ -643,6 +653,7 @@ function buildHistoryFeed(
   card: CardData,
   history: LeadHistory | undefined,
   proposals: LeadProposal[] | undefined,
+  doneTasks: Task[] | undefined,
   members: TeamMember[] | undefined,
   currentUserId: string | undefined,
 ): FeedItem[] {
@@ -658,6 +669,20 @@ function buildHistoryFeed(
       changedByName: resolveAgent(change.changedByUserId, members).name,
       fromName: resolveAgent(change.fromUserId, members).name,
       toName: resolveAgent(change.toUserId, members).name,
+    })
+  }
+
+  for (const task of doneTasks ?? []) {
+    items.push({
+      id: `task-${task.id}`,
+      kind: 'task',
+      timestamp: task.completedAt ?? task.updatedAt,
+      authorName:
+        task.assignedUserId === currentUserId
+          ? 'Você'
+          : resolveAgent(task.assignedUserId, members).name,
+      text: task.notes?.trim() || undefined,
+      task,
     })
   }
 
@@ -917,17 +942,31 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
   const { data: proposalsData } = useLeadProposalsQuery(organizationId, card.id)
   const createLeadProposal = useCreateLeadProposal(organizationId, card.id)
   const shareLeadProposal = useShareLeadProposal(organizationId, card.id)
-  const { data: leadTasksData } = useTasksQuery(organizationId, {
+  // Abertas (lista de tarefas) e concluídas (recolhidas na lista + histórico)
+  // em consultas separadas, pra uma não empurrar a outra pra fora da página.
+  const { data: openLeadTasksData } = useTasksQuery(organizationId, {
     leadId: card.id,
-    status: 'todos',
-    pageSize: 20,
+    status: 'abertas',
+    pageSize: 50,
   })
-  const leadTasks = leadTasksData?.items ?? []
+  const { data: doneLeadTasksData } = useTasksQuery(organizationId, {
+    leadId: card.id,
+    status: 'concluida',
+    pageSize: 100,
+  })
+  const openLeadTasks = openLeadTasksData?.items ?? []
+  const doneLeadTasks = doneLeadTasksData?.items ?? []
+  const hasLeadTasks = openLeadTasks.length > 0 || doneLeadTasks.length > 0
   const createTask = useCreateTask(organizationId)
   const updateTaskMutation = useUpdateTask(organizationId)
   const deleteTaskMutation = useDeleteTask(organizationId)
   const [taskDetail, setTaskDetail] = useState<Task | null>(null)
   const [showDoneTasks, setShowDoneTasks] = useState(false)
+  /** "Registrar agora" aberto: tipo e o comentário do que foi tratado. */
+  const [registerDraft, setRegisterDraft] = useState<{
+    type: 'Visita' | 'Ligação'
+    notes: string
+  } | null>(null)
   const [taskFormOpen, setTaskFormOpen] = useState(false)
   const [editingLeadTask, setEditingLeadTask] = useState<Task | null>(null)
   const { toast } = useToast()
@@ -1360,19 +1399,24 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
 
   /** "Registrar agora": algo que acabou de acontecer (o cliente veio fazer
    * uma visita, a ligação foi feita) — tarefa já concluída, agora. */
-  function handleRegisterDoneTask(type: TaskType, title: string) {
-    if (!currentUser) return
+  function handleRegisterDoneTask() {
+    if (!currentUser || !registerDraft) return
+    const { type, notes } = registerDraft
     createTask.mutate(
       {
         leadId: card.id,
         assignedUserId: currentUser.id,
         type,
-        title,
+        title: type === 'Visita' ? `Visita de ${card.name}` : `Ligação com ${card.name}`,
+        notes: notes.trim() || null,
         dueAt: new Date().toISOString(),
         status: 'concluida',
       },
       {
-        onSuccess: () => toast({ type: 'success', title: `${type} registrada como feita` }),
+        onSuccess: () => {
+          setRegisterDraft(null)
+          toast({ type: 'success', title: `${type} registrada no histórico` })
+        },
         onError: (error) => {
           toast({
             type: 'error',
@@ -1383,9 +1427,6 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
       },
     )
   }
-
-  const openLeadTasks = leadTasks.filter((task) => task.status !== 'concluida')
-  const doneLeadTasks = leadTasks.filter((task) => task.status === 'concluida')
 
   function renderLeadTask(task: Task) {
     const done = task.status === 'concluida'
@@ -1582,6 +1623,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
     card,
     history,
     proposalsData?.proposals,
+    doneLeadTasks,
     members,
     currentUser?.id,
   )
@@ -2624,7 +2666,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                       type="button"
                       className={styles.chipDone}
                       disabled={createTask.isPending}
-                      onClick={() => handleRegisterDoneTask('Visita', `Visita de ${card.name}`)}
+                      onClick={() => setRegisterDraft({ type: 'Visita', notes: '' })}
                     >
                       <HomeIcon />
                       Visita feita
@@ -2633,7 +2675,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                       type="button"
                       className={styles.chipDone}
                       disabled={createTask.isPending}
-                      onClick={() => handleRegisterDoneTask('Ligação', `Ligação com ${card.name}`)}
+                      onClick={() => setRegisterDraft({ type: 'Ligação', notes: '' })}
                     >
                       <PhoneIcon />
                       Ligação feita
@@ -2643,12 +2685,12 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                   {/* Lista de tarefas — abertas primeiro; as concluídas ficam
                       recolhidas pra lista mostrar o que ainda falta fazer. */}
                   <div className={styles.taskList}>
-                    {leadTasks.length === 0 && (
+                    {!hasLeadTasks && (
                       <p className={styles.attrValueMuted}>
                         Nenhuma tarefa criada pra este lead ainda.
                       </p>
                     )}
-                    {leadTasks.length > 0 && openLeadTasks.length === 0 && (
+                    {hasLeadTasks && openLeadTasks.length === 0 && (
                       <p className={styles.attrValueMuted}>Nenhuma tarefa pendente.</p>
                     )}
                     {openLeadTasks.map(renderLeadTask)}
@@ -2722,7 +2764,9 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                                 ? `${styles.timelineIcon} ${styles.timelineIconCreated}`
                                 : item.kind === 'proposal'
                                   ? `${styles.timelineIcon} ${styles.timelineIconProposal}`
-                                  : `${styles.timelineIcon} ${styles.timelineIconSystem}`
+                                  : item.kind === 'task'
+                                    ? `${styles.timelineIcon} ${styles.timelineIconTask}`
+                                    : `${styles.timelineIcon} ${styles.timelineIconSystem}`
                           }
                         >
                           {item.kind === 'comment' && <CommentIcon />}
@@ -2730,6 +2774,14 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                           {item.kind === 'created' && <CheckIcon />}
                           {item.kind === 'proposal' && <TrophyIcon />}
                           {item.kind === 'stage' && <FlagIcon />}
+                          {item.kind === 'task' &&
+                            (item.task?.type === 'Ligação' ? (
+                              <PhoneIcon />
+                            ) : item.task?.type === 'Visita' ? (
+                              <HomeIcon />
+                            ) : (
+                              <CheckIcon />
+                            ))}
                         </div>
                         {i < filteredHistoryFeed.length - 1 && (
                           <div className={styles.timelineConnector} />
@@ -2746,7 +2798,9 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                                   ? 'Proposta gerada'
                                   : item.kind === 'stage'
                                     ? 'Etapa alterada'
-                                    : 'Comentário'}
+                                    : item.kind === 'task' && item.task
+                                      ? doneTaskLabel(item.task.type)
+                                      : 'Comentário'}
                           </span>
                           <span className={styles.timelineDate}>
                             {formatHistoryTimestamp(item.timestamp)}
@@ -2762,6 +2816,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                         )}
 
                         {(item.kind === 'comment' ||
+                          item.kind === 'task' ||
                           (item.kind === 'proposal' && item.authorName)) && (
                           <p className={styles.timelineBody}>
                             por <strong className={styles.timelineBold}>{item.authorName}</strong>
@@ -2777,6 +2832,22 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
 
                         {item.kind === 'proposal' && item.text && (
                           <div className={styles.timelineDetail}>{item.text}</div>
+                        )}
+
+                        {item.kind === 'task' && item.task && (
+                          <>
+                            {item.text && (
+                              <div className={styles.timelineCommentMsg}>{item.text}</div>
+                            )}
+                            <button
+                              type="button"
+                              className={styles.timelineTaskComment}
+                              onClick={() => item.task && setTaskDetail(item.task)}
+                            >
+                              <CommentIcon />
+                              {item.text ? 'Editar comentário' : 'Comentar o que foi tratado'}
+                            </button>
+                          </>
                         )}
 
                         {item.kind === 'comment' && item.text && (
@@ -2867,6 +2938,59 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
           }
         />
       )}
+
+      <Modal
+        open={registerDraft !== null}
+        onClose={() => setRegisterDraft(null)}
+        title={
+          registerDraft?.type === 'Visita' ? 'Registrar visita feita' : 'Registrar ligação feita'
+        }
+        size="sm"
+        footer={
+          <>
+            <button
+              type="button"
+              className={styles.registerCancelBtn}
+              onClick={() => setRegisterDraft(null)}
+              disabled={createTask.isPending}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className={styles.registerSaveBtn}
+              onClick={handleRegisterDoneTask}
+              disabled={createTask.isPending}
+            >
+              {createTask.isPending ? 'Registrando…' : 'Registrar'}
+            </button>
+          </>
+        }
+      >
+        <div className={styles.registerBody}>
+          <p className={styles.registerHint}>
+            Fica no histórico de {card.name} com a data e a hora de agora.
+          </p>
+          <label className={styles.registerLabel} htmlFor="register-notes">
+            O que foi tratado? <span className={styles.registerOptional}>(opcional)</span>
+          </label>
+          <textarea
+            id="register-notes"
+            className={styles.registerTextarea}
+            rows={4}
+            maxLength={2000}
+            placeholder={
+              registerDraft?.type === 'Visita'
+                ? 'Ex: veio conhecer o plano de imóvel, ficou de trazer os documentos.'
+                : 'Ex: tirou dúvidas sobre o lance, pediu nova simulação com entrada menor.'
+            }
+            value={registerDraft?.notes ?? ''}
+            onChange={(e) =>
+              setRegisterDraft((prev) => (prev ? { ...prev, notes: e.target.value } : prev))
+            }
+          />
+        </div>
+      </Modal>
 
       {taskFormOpen && currentUser && (
         <TaskFormModal
