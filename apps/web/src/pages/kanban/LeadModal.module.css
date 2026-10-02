@@ -886,6 +886,52 @@
   border-color: var(--color-accent);
 }
 
+.taskCheckboxChecked {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-success-text);
+  border-color: var(--color-success-text);
+  color: #fff;
+}
+
+.taskCheckboxChecked svg {
+  width: 11px;
+  height: 11px;
+}
+
+.taskCheckboxChecked:hover {
+  border-color: var(--color-success-text);
+}
+
+.taskItemDone {
+  opacity: 0.7;
+}
+
+.taskItemTitleDone {
+  text-decoration: line-through;
+  color: #64748b;
+}
+
+.doneTasksToggle {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 4px;
+  padding: 4px 0;
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  font-family: var(--font-family-base);
+}
+
+.doneTasksToggle:hover {
+  color: #0b1c30;
+}
+
 .taskContent {
   display: flex;
   flex-direction: column;

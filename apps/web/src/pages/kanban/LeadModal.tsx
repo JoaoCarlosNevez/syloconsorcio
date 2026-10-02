@@ -927,6 +927,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
   const updateTaskMutation = useUpdateTask(organizationId)
   const deleteTaskMutation = useDeleteTask(organizationId)
   const [taskDetail, setTaskDetail] = useState<Task | null>(null)
+  const [showDoneTasks, setShowDoneTasks] = useState(false)
   const [taskFormOpen, setTaskFormOpen] = useState(false)
   const [editingLeadTask, setEditingLeadTask] = useState<Task | null>(null)
   const { toast } = useToast()
@@ -1383,11 +1384,96 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
     )
   }
 
+  const openLeadTasks = leadTasks.filter((task) => task.status !== 'concluida')
+  const doneLeadTasks = leadTasks.filter((task) => task.status === 'concluida')
+
+  function renderLeadTask(task: Task) {
+    const done = task.status === 'concluida'
+    const urgent = displayStatus(task) === 'atrasada'
+    const badge = TASK_TYPE_BADGES[task.type]
+    return (
+      <button
+        key={task.id}
+        type="button"
+        className={
+          done
+            ? `${styles.taskItem} ${styles.taskItemDone}`
+            : urgent
+              ? styles.taskItemUrgent
+              : styles.taskItem
+        }
+        onClick={() => setTaskDetail(task)}
+        style={{ cursor: 'pointer', width: '100%', textAlign: 'left' }}
+      >
+        <div className={styles.taskLeft}>
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: mouse-only shortcut — completing via TaskModal's "Concluir" button stays keyboard-accessible */}
+          <span
+            className={
+              done ? `${styles.taskCheckbox} ${styles.taskCheckboxChecked}` : styles.taskCheckbox
+            }
+            title={task.status === 'concluida' ? 'Reabrir tarefa' : 'Concluir tarefa'}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleToggleTaskComplete(task)
+            }}
+          >
+            {done && <CheckIcon />}
+          </span>
+          <div className={styles.taskContent}>
+            <span
+              className={
+                done ? `${styles.taskItemTitle} ${styles.taskItemTitleDone}` : styles.taskItemTitle
+              }
+            >
+              {task.title}
+            </span>
+            <div className={styles.taskMeta}>
+              <span className={urgent ? styles.taskTimeUrgent : styles.taskTime}>
+                <ClockIcon />
+                {formatTaskDateTime(task.dueAt)}
+              </span>
+              <span className={styles.taskMetaDot}>•</span>
+              <span className={styles.taskMetaText}>
+                Resp: {resolveAgent(task.assignedUserId, members).name}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className={styles.taskRight}>
+          <span
+            className={styles.priorityBadgeNormal}
+            style={{
+              background: badge.bg,
+              borderColor: badge.border,
+              color: badge.color,
+            }}
+          >
+            {badge.label}
+          </span>
+        </div>
+      </button>
+    )
+  }
+
   function handleToggleTaskComplete(task: Task) {
-    updateTaskMutation.mutate({
-      id: task.id,
-      payload: { status: task.status === 'concluida' ? 'pendente' : 'concluida' },
-    })
+    const reopening = task.status === 'concluida'
+    updateTaskMutation.mutate(
+      { id: task.id, payload: { status: reopening ? 'pendente' : 'concluida' } },
+      {
+        // Concluída sai da lista de abertas — o aviso explica pra onde foi.
+        onSuccess: () =>
+          toast({
+            type: 'success',
+            title: reopening ? 'Tarefa reaberta' : 'Tarefa concluída',
+          }),
+        onError: (error) =>
+          toast({
+            type: 'error',
+            title: 'Não foi possível atualizar a tarefa',
+            description: error instanceof Error ? error.message : undefined,
+          }),
+      },
+    )
   }
 
   function handleReopenLead() {
@@ -2554,65 +2640,30 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                     </button>
                   </div>
 
-                  {/* Lista de tarefas */}
+                  {/* Lista de tarefas — abertas primeiro; as concluídas ficam
+                      recolhidas pra lista mostrar o que ainda falta fazer. */}
                   <div className={styles.taskList}>
                     {leadTasks.length === 0 && (
                       <p className={styles.attrValueMuted}>
                         Nenhuma tarefa criada pra este lead ainda.
                       </p>
                     )}
-                    {leadTasks.map((task) => {
-                      const urgent = displayStatus(task) === 'atrasada'
-                      const badge = TASK_TYPE_BADGES[task.type]
-                      return (
-                        <button
-                          key={task.id}
-                          type="button"
-                          className={urgent ? styles.taskItemUrgent : styles.taskItem}
-                          onClick={() => setTaskDetail(task)}
-                          style={{ cursor: 'pointer', width: '100%', textAlign: 'left' }}
-                        >
-                          <div className={styles.taskLeft}>
-                            {/* biome-ignore lint/a11y/useKeyWithClickEvents: mouse-only shortcut — completing via TaskModal's "Concluir" button stays keyboard-accessible */}
-                            <span
-                              className={styles.taskCheckbox}
-                              title={
-                                task.status === 'concluida' ? 'Reabrir tarefa' : 'Concluir tarefa'
-                              }
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleToggleTaskComplete(task)
-                              }}
-                            />
-                            <div className={styles.taskContent}>
-                              <span className={styles.taskItemTitle}>{task.title}</span>
-                              <div className={styles.taskMeta}>
-                                <span className={urgent ? styles.taskTimeUrgent : styles.taskTime}>
-                                  <ClockIcon />
-                                  {formatTaskDateTime(task.dueAt)}
-                                </span>
-                                <span className={styles.taskMetaDot}>•</span>
-                                <span className={styles.taskMetaText}>
-                                  Resp: {resolveAgent(task.assignedUserId, members).name}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className={styles.taskRight}>
-                            <span
-                              className={styles.priorityBadgeNormal}
-                              style={{
-                                background: badge.bg,
-                                borderColor: badge.border,
-                                color: badge.color,
-                              }}
-                            >
-                              {badge.label}
-                            </span>
-                          </div>
-                        </button>
-                      )
-                    })}
+                    {leadTasks.length > 0 && openLeadTasks.length === 0 && (
+                      <p className={styles.attrValueMuted}>Nenhuma tarefa pendente.</p>
+                    )}
+                    {openLeadTasks.map(renderLeadTask)}
+                    {doneLeadTasks.length > 0 && (
+                      <button
+                        type="button"
+                        className={styles.doneTasksToggle}
+                        onClick={() => setShowDoneTasks((prev) => !prev)}
+                        aria-expanded={showDoneTasks}
+                      >
+                        {showDoneTasks ? <ChevronDownIcon /> : <ChevronRightIcon />}
+                        {showDoneTasks ? 'Ocultar' : 'Ver'} concluídas ({doneLeadTasks.length})
+                      </button>
+                    )}
+                    {showDoneTasks && doneLeadTasks.map(renderLeadTask)}
                   </div>
                 </div>
               )}
