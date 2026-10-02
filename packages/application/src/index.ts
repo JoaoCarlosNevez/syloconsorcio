@@ -258,6 +258,14 @@ export type {
   CreateWebhookLeadOutput,
 } from './leads/create-webhook-lead.use-case'
 
+export type { IStreakRepository } from './ports/streak.repository'
+export {
+  GetMyStreakUseCase,
+  STREAK_ACTIONS,
+  brasiliaDateKey,
+  computeStreak,
+} from './dashboard/get-my-streak.use-case'
+export type { MyStreak, StreakDayStatus } from './dashboard/get-my-streak.use-case'
 export { GetMyMonthlyStatsUseCase } from './dashboard/get-my-monthly-stats.use-case'
 export type {
   GetMyMonthlyStatsInput,

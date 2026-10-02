@@ -1,6 +1,6 @@
 // PerfilPage — Perfil completo do consultor: nível, XP, ofensiva e conquistas.
 
-import { OrganizationAvatar, TIER_COLORS, TIER_LABELS } from '@sylocrm/ui'
+import { OrganizationAvatar, Skeleton, TIER_COLORS, TIER_LABELS } from '@sylocrm/ui'
 import { type ChangeEvent, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
@@ -12,8 +12,10 @@ import {
   useUpdateMyProfile,
   useUploadMyAvatar,
 } from '../../hooks/useCurrentUser'
+import { useMyStreakQuery } from '../../hooks/useDashboard'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { useSalesGoalsSummaryQuery, useUpdateMyPersonalGoal } from '../../hooks/useTeam'
+import type { MyStreak } from '../../lib/dashboard-api'
 import { validateIconFile } from '../../lib/icon-validation'
 import { formatGoalInput, goalInputToCents } from '../../lib/sales-goals'
 import { supabase } from '../../lib/supabase'
@@ -175,16 +177,43 @@ const MAX_XP = 2200
 const XP_PERCENT = Math.round((CURRENT_XP / MAX_XP) * 100)
 
 const WEEK_DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
-// Seg a Sex = feito, Sáb/Dom = pendente (hoje = Sex)
-const WEEK_STATUS: Array<'done' | 'today' | 'pending'> = [
-  'done',
-  'done',
-  'done',
-  'done',
-  'today',
-  'pending',
-  'pending',
-]
+
+/** Classe de cada dia da semana da ofensiva. */
+const WEEK_DAY_CLASS = {
+  done: 'done',
+  missed: 'missed',
+  today: 'pending',
+  future: 'pending',
+} as const
+
+const WEEK_DAY_TITLE = {
+  done: 'Teve atividade',
+  missed: 'Sem atividade',
+  today: 'Hoje — ainda sem atividade',
+  future: '',
+} as const
+
+function daysLabel(days: number): string {
+  return days === 1 ? '1 Dia' : `${days} Dias`
+}
+
+/** Hoje é o dia 'today' da semana; se hoje já foi feito, o último não-futuro. */
+function todayKey(week: MyStreak['week'] | undefined): string | null {
+  if (!week) return null
+  const notFuture = week.filter((d) => d.status !== 'future')
+  return notFuture[notFuture.length - 1]?.date ?? null
+}
+
+/** "Out 2026" — mês da segunda-feira da semana. */
+function weekMonthLabel(week: MyStreak['week'] | undefined): string {
+  const first = week?.[0]?.date
+  if (!first) return ''
+  const [year, month] = first.split('-').map(Number)
+  const label = new Date(year as number, (month as number) - 1, 1).toLocaleDateString('pt-BR', {
+    month: 'short',
+  })
+  return `${label.replace('.', '').replace(/^./, (c) => c.toUpperCase())} ${year}`
+}
 
 const METRICS = [
   { label: 'Leads\nAtendidos', value: '42', sub: '↑ 18% vs mês ant.', subGreen: true },
@@ -788,27 +817,19 @@ function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
 
 // ── PerfilPage ─────────────────────────────────────────────────────────────────
 
-const ACTIVITY_TYPES = [
-  '☎️ Ligação',
-  '💬 WhatsApp',
-  '📧 E-mail',
-  '🤝 Reunião',
-  '📄 Proposta Enviada',
-  '🏆 Venda Fechada',
-]
-
 export function PerfilPage() {
   const { user } = useAuth()
   const { data: currentUser } = useCurrentUser()
-  const { membership } = useActiveOrganization()
+  const { membership, organizationId } = useActiveOrganization()
   // Só Vendedor tem patente — Dono/Supervisor ficam com anel e capa neutros.
   const tier = membership ? visibleTier(membership) : null
   const emailPrefix = user?.email?.split('@')[0] ?? 'consultor'
   const fallbackName = emailPrefix.replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
   const [selectedBadge, setSelectedBadge] = useState<BadgeData | null>(null)
   const [editingProfile, setEditingProfile] = useState(false)
-  const [activityOpen, setActivityOpen] = useState(false)
   const [activityToast, setActivityToast] = useState('')
+  const { data: streak, isLoading: streakLoading } = useMyStreakQuery(organizationId)
+  const navigate = useNavigate()
 
   const displayName = currentUser?.name ?? fallbackName
   const displayHandle = currentUser?.instagramHandle
@@ -827,78 +848,6 @@ export function PerfilPage() {
             setTimeout(() => setActivityToast(''), 3000)
           }}
         />
-      )}
-      {activityOpen && (
-        // biome-ignore lint/a11y/useKeyWithClickEvents: overlay backdrop dismiss
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 400,
-            background: 'rgba(11,28,48,0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          onClick={() => setActivityOpen(false)}
-        >
-          {/* biome-ignore lint/a11y/useKeyWithClickEvents: modal stops propagation */}
-          <div
-            style={{
-              background: '#fff',
-              borderRadius: 16,
-              width: 340,
-              boxShadow: '0 8px 40px rgba(11,28,48,0.18)',
-              overflow: 'hidden',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ padding: '18px 20px', borderBottom: '1px solid #e9ecef' }}>
-              <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#0b1c30' }}>
-                Registrar Atividade
-              </p>
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#94a3b8' }}>
-                Selecione o tipo de atividade realizada hoje
-              </p>
-            </div>
-            <div style={{ padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {ACTIVITY_TYPES.map((act) => (
-                <button
-                  key={act}
-                  type="button"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '10px 14px',
-                    background: 'none',
-                    border: 'none',
-                    borderRadius: 8,
-                    fontFamily: 'inherit',
-                    fontSize: 14,
-                    color: '#0f172a',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'background 0.12s',
-                  }}
-                  onMouseEnter={(e) => {
-                    ;(e.currentTarget as HTMLElement).style.background = '#f1f5f9'
-                  }}
-                  onMouseLeave={(e) => {
-                    ;(e.currentTarget as HTMLElement).style.background = 'none'
-                  }}
-                  onClick={() => {
-                    setActivityToast(`✓ ${act} registrada!`)
-                    setActivityOpen(false)
-                    setTimeout(() => setActivityToast(''), 3000)
-                  }}
-                >
-                  {act}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
       )}
       {activityToast && (
         <div
@@ -1059,32 +1008,52 @@ export function PerfilPage() {
                   <div>
                     <h2 className={styles.cardTitle}>Ofensiva de Vendas</h2>
                   </div>
-                  <span className={styles.recordBadge}>Recorde: 21 Dias</span>
+                  {streak && streak.record > 0 && (
+                    <span className={styles.recordBadge}>Recorde: {daysLabel(streak.record)}</span>
+                  )}
                 </div>
 
                 <div className={styles.streakBox}>
-                  <p className={styles.streakLabel}>OFENSIVA SEMANAL ATIVA</p>
-                  <p className={styles.streakValue}>14 Dias Seguidos</p>
+                  <p className={styles.streakLabel}>
+                    {streak && streak.current > 0 ? 'OFENSIVA ATIVA' : 'SEM OFENSIVA'}
+                  </p>
+                  {streakLoading || !streak ? (
+                    <Skeleton width="60%" height={28} />
+                  ) : (
+                    <p className={styles.streakValue}>
+                      {streak.current === 1 ? '1 Dia' : `${streak.current} Dias Seguidos`}
+                    </p>
+                  )}
                 </div>
 
                 <div className={styles.weekCalendar}>
                   <div className={styles.weekHeader}>
                     <span className={styles.weekPeriod}>Esta semana</span>
-                    <span className={styles.weekPeriod}>Set 2026</span>
+                    <span className={styles.weekPeriod}>{weekMonthLabel(streak?.week)}</span>
                   </div>
                   <div className={styles.weekDays}>
                     {WEEK_DAYS.map((day, i) => {
-                      const status = WEEK_STATUS[i]
+                      const entry = streak?.week[i]
+                      const isToday = entry?.date === todayKey(streak?.week)
                       return (
                         <div
                           key={day}
-                          className={[styles.weekDay, status ? styles[status] : '']
+                          className={[
+                            styles.weekDay,
+                            entry ? styles[WEEK_DAY_CLASS[entry.status]] : styles.pending,
+                            isToday ? styles.today : '',
+                          ]
                             .filter(Boolean)
                             .join(' ')}
+                          title={entry ? WEEK_DAY_TITLE[entry.status] : undefined}
                         >
                           <span className={styles.weekDayLabel}>{day}</span>
                           <span className={styles.weekDayCheck}>
-                            {status === 'done' ? '✓' : status === 'today' ? '✓' : '·'}
+                            {entry?.status === 'done'
+                              ? '✓'
+                              : entry?.status === 'missed'
+                                ? '✕'
+                                : '·'}
                           </span>
                         </div>
                       )
@@ -1092,13 +1061,25 @@ export function PerfilPage() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  className={styles.streakActionBtn}
-                  onClick={() => setActivityOpen(true)}
-                >
-                  Registrar Atividade de Hoje
-                </button>
+                {streak?.todayDone ? (
+                  <p className={styles.streakTodayDone}>
+                    ✓ Ofensiva de hoje garantida. Volte amanhã pra continuar!
+                  </p>
+                ) : (
+                  <>
+                    <p className={styles.streakTodayHint}>
+                      Mova um lead, conclua uma tarefa ou registre uma ligação ou visita pra
+                      {streak && streak.current > 0 ? ' manter' : ' começar'} a ofensiva hoje.
+                    </p>
+                    <button
+                      type="button"
+                      className={styles.streakActionBtn}
+                      onClick={() => navigate('/app/kanban')}
+                    >
+                      Ir pro Kanban
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Métricas operacionais */}

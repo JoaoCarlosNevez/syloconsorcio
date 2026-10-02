@@ -36,3 +36,4 @@ export { DrizzleActivityLogRepository } from './database/repositories/drizzle-ac
 export { DrizzleNotificationRepository } from './database/repositories/drizzle-notification.repository'
 export { DrizzleApiKeyRepository } from './database/repositories/drizzle-api-key.repository'
 export { DrizzleLeadQueueRepository } from './database/repositories/drizzle-lead-queue.repository'
+export { DrizzleStreakRepository } from './database/repositories/drizzle-streak.repository'

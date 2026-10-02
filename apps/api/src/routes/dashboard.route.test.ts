@@ -80,14 +80,18 @@ function buildTestApp(membership: UserMembership) {
     sumWonValueCentsInDefaultFunnel: vi.fn().mockResolvedValue(300_000_00),
     countWonInDefaultFunnel: vi.fn().mockResolvedValue(2),
   } as unknown as ILeadRepository
+  const streakRepository = {
+    listActiveDays: vi.fn().mockResolvedValue(['2026-01-01', '2026-01-02']),
+  }
   const app = buildApp({
     authProvider: buildAuthProvider(),
     userRepository: buildUserRepository(),
     membershipRepository: buildMembershipRepository(membership),
     taskRepository,
     leadRepository,
+    streakRepository,
   })
-  return { app, taskRepository, leadRepository }
+  return { app, taskRepository, leadRepository, streakRepository }
 }
 
 describe('GET /dashboard/me/monthly', () => {
@@ -119,5 +123,31 @@ describe('GET /dashboard/me/monthly', () => {
     expect(taskRepository.count).toHaveBeenCalledWith(
       expect.objectContaining({ organizationId: ORG_ID, assignedUserId: IDENTITY.id }),
     )
+  })
+})
+
+describe('GET /dashboard/me/streak', () => {
+  it("returns the logged-in user's streak", async () => {
+    const { app, streakRepository } = buildTestApp(SELLER_MEMBERSHIP)
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/dashboard/me/streak',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(streakRepository.listActiveDays).toHaveBeenCalledWith(IDENTITY.id)
+    const body = response.json<{ record: number; week: unknown[] }>()
+    expect(body.record).toBe(2)
+    expect(body.week).toHaveLength(7)
+  })
+
+  it('returns 401 without a token', async () => {
+    const { app } = buildTestApp(SELLER_MEMBERSHIP)
+
+    const response = await app.inject({ method: 'GET', url: '/dashboard/me/streak' })
+
+    expect(response.statusCode).toBe(401)
   })
 })

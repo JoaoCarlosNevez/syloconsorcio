@@ -21,6 +21,7 @@ import type {
   INotificationRepository,
   IOrganizationRepository,
   IStorageProvider,
+  IStreakRepository,
   ITaskRepository,
   IUserRepository,
 } from '@sylocrm/application'
@@ -61,6 +62,7 @@ export interface BuildAppDeps {
   notificationRepository: INotificationRepository
   apiKeyRepository: IApiKeyRepository
   leadQueueRepository: ILeadQueueRepository
+  streakRepository: IStreakRepository
 }
 
 /** No-op auth provider used when Supabase env vars are not configured. */
@@ -271,6 +273,8 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     notificationRepository: deps?.notificationRepository ?? NO_OP_NOTIFICATIONS,
     apiKeyRepository: deps?.apiKeyRepository ?? createNoOpApiKeyRepository(),
     leadQueueRepository: deps?.leadQueueRepository ?? createNoOpLeadQueueRepository(),
+    // Sem banco, ninguém tem ofensiva.
+    streakRepository: deps?.streakRepository ?? { listActiveDays: async () => [] },
   }
 
   const app = Fastify({
@@ -372,6 +376,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     organizationRepository: resolvedDeps.organizationRepository,
     taskRepository: resolvedDeps.taskRepository,
     leadRepository: resolvedDeps.leadRepository,
+    streakRepository: resolvedDeps.streakRepository,
   })
 
   app.register(teamRoute, {

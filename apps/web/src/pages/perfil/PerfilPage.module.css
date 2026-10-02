@@ -652,6 +652,45 @@
   color: var(--color-text-muted);
 }
 
+.weekDay.missed {
+  background: var(--color-bg-subtle);
+}
+
+.weekDay.missed .weekDayCheck {
+  background: var(--color-border-input);
+  color: var(--color-text-muted);
+}
+
+/* Hoje já feito fica roxo cheio (done + today); hoje ainda aberto, só a borda. */
+.weekDay.pending.today {
+  opacity: 1;
+}
+
+.weekDay.pending.today .weekDayCheck {
+  background: transparent;
+  border: 1.5px dashed #7c3aed;
+  color: #7c3aed;
+}
+
+.streakTodayDone,
+.streakTodayHint {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.streakTodayDone {
+  padding: 10px 12px;
+  border-radius: var(--radius-lg);
+  background: rgba(75, 0, 204, 0.08);
+  color: #5b21b6;
+  font-weight: var(--font-weight-semibold);
+}
+
+.streakTodayHint {
+  color: var(--color-text-muted);
+}
+
 .streakActionBtn {
   width: 100%;
   padding: 12px;

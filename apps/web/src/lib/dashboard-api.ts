@@ -17,6 +17,20 @@ export interface MyMonthlyStats {
   averageTicketCents: number | null
 }
 
+/** Ofensiva do Perfil — dias seguidos com atividade de trabalho no CRM. */
+export interface MyStreak {
+  /** Dias seguidos até hoje (ou até ontem, se hoje ainda não teve atividade). */
+  current: number
+  record: number
+  todayDone: boolean
+  /** Segunda a domingo da semana atual. */
+  week: { date: string; status: 'done' | 'missed' | 'today' | 'future' }[]
+}
+
+export function getMyStreak(organizationId: string): Promise<MyStreak> {
+  return apiClient.get<MyStreak>('/dashboard/me/streak', { organizationId })
+}
+
 export function getMyMonthlyStats(organizationId: string): Promise<MyMonthlyStats> {
   return apiClient.get<MyMonthlyStats>('/dashboard/me/monthly', { organizationId })
 }
