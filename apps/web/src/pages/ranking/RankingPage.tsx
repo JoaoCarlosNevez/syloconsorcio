@@ -1,8 +1,9 @@
 // RankingPage — /app/ranking: rankings pra deixar numa TV, abertos a
 // qualquer papel a partir do início. Dois tipos (?ranking=atividades):
 // vendas (valor e clientes ganhos, meta do mês) e a "corrida" de ligações e
-// visitas concluídas; semana ou mês (?periodo=semana|mes). Pódio dos 3
-// primeiros e a classificação do 4º em diante. Atualiza sozinho a cada minuto (useSalesRankingQuery); o
+// visitas concluídas, mostrada como uma pista com carrinhos (RaceTrack);
+// semana ou mês (?periodo=semana|mes). Vendas: pódio dos 3 primeiros e a
+// classificação do 4º em diante. Atualiza sozinho a cada minuto (useSalesRankingQuery); o
 // botão "Tela cheia" usa a Fullscreen API do navegador (modo apresentação).
 
 import { Skeleton } from '@sylocrm/ui'
@@ -16,6 +17,7 @@ import type {
   SalesRankingPeriod,
 } from '../../lib/dashboard-api'
 import { formatBRL } from '../../lib/lead-adapters'
+import { RaceTrack } from './RaceTrack'
 import styles from './RankingPage.module.css'
 
 function FlameIcon() {
@@ -302,7 +304,6 @@ export function RankingPage() {
       : activityRows(activities.data?.sellers ?? [])
   const top = rows.slice(0, 3)
   const salesRest = (sales.data?.sellers ?? []).slice(3)
-  const activityRest = (activities.data?.sellers ?? []).slice(3)
   const periodWord = period === 'week' ? 'Semana' : 'Mês'
   const title =
     kind === 'sales'
@@ -436,6 +437,14 @@ export function RankingPage() {
           </p>
         ) : top.length === 0 ? (
           <p className={styles.empty}>Nenhum vendedor na equipe ainda.</p>
+        ) : kind === 'activities' && activities.data ? (
+          <RaceTrack
+            sellers={activities.data.sellers}
+            period={period}
+            periodStart={activities.data.periodStart}
+            periodEnd={activities.data.periodEnd}
+            now={now.getTime()}
+          />
         ) : (
           <div className={styles.podium}>
             {PODIUM.map(({ place, label, className }) => {
@@ -499,49 +508,6 @@ export function RankingPage() {
                   </tr>
                 )
               })}
-            </tbody>
-          </table>
-        </section>
-      )}
-
-      {kind === 'activities' && activityRest.length > 0 && (
-        <section className={styles.panel}>
-          <h2 className={styles.tableTitle}>Classificação geral (4º em diante)</h2>
-          <p className={styles.tableSub}>
-            Ligações e visitas concluídas {period === 'week' ? 'na semana' : 'no mês'}
-          </p>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th className={styles.colPos}>Pos.</th>
-                <th>Vendedor</th>
-                <th className={styles.center}>Ligações</th>
-                <th className={styles.center}>Visitas</th>
-                <th className={styles.center}>Ofensiva</th>
-                <th className={styles.right}>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activityRest.map((entry, index) => (
-                <tr key={entry.userId}>
-                  <td className={styles.colPos}>{index + 4}º</td>
-                  <td>
-                    <SellerCell name={entry.name} avatarUrl={entry.avatarUrl} />
-                  </td>
-                  <td className={styles.center}>
-                    <span className={styles.countChip}>{entry.calls}</span>
-                  </td>
-                  <td className={styles.center}>
-                    <span className={styles.countChip}>{entry.visits}</span>
-                  </td>
-                  <td className={styles.center}>
-                    <StreakCell days={entry.streakDays} />
-                  </td>
-                  <td className={styles.right}>
-                    <span className={styles.volumeValue}>{entry.total}</span>
-                  </td>
-                </tr>
-              ))}
             </tbody>
           </table>
         </section>
