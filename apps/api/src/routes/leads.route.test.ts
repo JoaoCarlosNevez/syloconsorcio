@@ -352,6 +352,24 @@ describe('GET /leads', () => {
     expect(leadRepository.list).not.toHaveBeenCalled()
   })
 
+  it('allows a SELLER to request outcome=todos', async () => {
+    const leadRepository = buildLeadRepository()
+    const app = buildTestApp({ membership: SELLER_MEMBERSHIP, leadRepository })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/leads?outcome=todos',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(leadRepository.list).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'todos' }),
+      expect.anything(),
+      expect.anything(),
+    )
+  })
+
   it('allows a MANAGER to request outcome=perdido', async () => {
     const leadRepository = buildLeadRepository()
     const app = buildTestApp({ membership: MANAGER_MEMBERSHIP, leadRepository })

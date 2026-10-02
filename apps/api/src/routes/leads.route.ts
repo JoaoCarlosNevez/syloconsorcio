@@ -2,7 +2,8 @@
 //
 // GET    /leads              — lista paginada e filtrada por DataScope (lead.read).
 //                              `outcome` (aberto/ganho/perdido/todos) filtra por resultado;
-//                              "perdido"/"todos" exigem lead.manage_lost (Vendedor não tem).
+//                              "perdido" exige lead.manage_lost (Vendedor não tem).
+//                              "todos" é liberado pra todo mundo.
 //                              `tags` (lista separada por vírgula) filtra por overlap (OR).
 // POST   /leads              — cria um lead na organização ativa (lead.create)
 // GET    /leads/:id          — detalhe de um lead dentro do escopo (lead.read)
@@ -242,11 +243,12 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
       // preHandlers garantem que authContext está presente neste ponto.
       const context = request.authContext as NonNullable<typeof request.authContext>
 
-      // Ver leads perdidos exige uma permission adicional — Vendedor não a
-      // possui (ver apps/api/src/auth/permissions.ts). 'todos' também inclui
-      // perdidos, então exige a mesma permission.
+      // O filtro só de perdidos exige uma permission adicional — Vendedor não
+      // a possui (ver apps/api/src/auth/permissions.ts). 'todos' é liberado pro
+      // Vendedor (decisão de produto): ele vê os próprios leads perdidos ali,
+      // mas continua sem poder reabri-los (PATCH lost: false).
       if (
-        (parsed.data.outcome === 'perdido' || parsed.data.outcome === 'todos') &&
+        parsed.data.outcome === 'perdido' &&
         !context.currentMembership.permissions.includes(Permission.LEAD_MANAGE_LOST)
       ) {
         return reply.status(403).send({

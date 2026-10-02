@@ -979,8 +979,8 @@ export function KanbanPage() {
                 </span>
               }
               items={(['aberto', 'ganho', 'perdido', 'todos'] as const)
-                // "Perdido" e "Todos" incluem leads perdidos — mesma permission das duas.
-                .filter((outcome) => (outcome !== 'perdido' && outcome !== 'todos') || canViewLost)
+                // Só "Perdido" exige lead.manage_lost; "Todos" é liberado pro Vendedor.
+                .filter((outcome) => outcome !== 'perdido' || canViewLost)
                 .map((outcome) => ({
                   key: outcome,
                   label: OUTCOME_LABEL[outcome],

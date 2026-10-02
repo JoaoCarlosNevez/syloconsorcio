@@ -15,7 +15,8 @@ export const Permission = {
   LEAD_ASSIGN: 'lead.assign',
   LEAD_DELETE: 'lead.delete',
   /** Ver leads marcados como Perdido (filtro "Perdido") e reabri-los — Vendedor
-   * não tem: pode marcar um lead como perdido, mas não desfazer. */
+   * não tem: pode marcar um lead como perdido, mas não desfazer. (O filtro
+   * "Todos", que inclui os perdidos, é liberado pro Vendedor.) */
   LEAD_MANAGE_LOST: 'lead.manage_lost',
   USER_INVITE: 'user.invite',
   USER_REMOVE: 'user.remove',
