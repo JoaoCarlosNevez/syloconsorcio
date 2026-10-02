@@ -172,9 +172,11 @@ export class DrizzleTaskRepository implements ITaskRepository {
       eq(tasks.organizationId, filter.organizationId),
       eq(tasks.assignedUserId, filter.assignedUserId),
       eq(tasks.type, filter.type),
-      gte(tasks.dueAt, filter.dueFrom),
-      lt(tasks.dueAt, filter.dueTo),
     ]
+    if (filter.dueFrom) conditions.push(gte(tasks.dueAt, filter.dueFrom))
+    if (filter.dueTo) conditions.push(lt(tasks.dueAt, filter.dueTo))
+    if (filter.completedFrom) conditions.push(gte(tasks.completedAt, filter.completedFrom))
+    if (filter.completedTo) conditions.push(lt(tasks.completedAt, filter.completedTo))
     if (filter.status) conditions.push(eq(tasks.status, filter.status))
 
     const rows = await this.db

@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query'
 import {
   type SalesRankingPeriod,
+  getActivityRanking,
   getMyMonthlyStats,
   getMyStreak,
   getSalesRanking,
@@ -26,6 +27,20 @@ export function useSalesRankingQuery(organizationId: string | null, period: Sale
     queryKey: ['dashboard', 'ranking', organizationId, period],
     queryFn: () => getSalesRanking(organizationId as string, period),
     enabled: Boolean(organizationId),
+    refetchInterval: RANKING_REFETCH_MS,
+    refetchIntervalInBackground: true,
+  })
+}
+
+export function useActivityRankingQuery(
+  organizationId: string | null,
+  period: SalesRankingPeriod,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: ['dashboard', 'ranking', 'activities', organizationId, period],
+    queryFn: () => getActivityRanking(organizationId as string, period),
+    enabled: Boolean(organizationId) && enabled,
     refetchInterval: RANKING_REFETCH_MS,
     refetchIntervalInBackground: true,
   })

@@ -58,6 +58,33 @@ export interface SalesRanking {
   sellers: SalesRankingEntry[]
 }
 
+/** Vendedor na "corrida" de ligações e visitas concluídas. */
+export interface ActivityRankingEntry {
+  userId: string
+  name: string
+  avatarUrl: string | null
+  calls: number
+  visits: number
+  total: number
+  streakDays: number
+}
+
+export interface ActivityRanking {
+  period: SalesRankingPeriod
+  periodStart: string
+  periodEnd: string
+  sellers: ActivityRankingEntry[]
+}
+
+export function getActivityRanking(
+  organizationId: string,
+  period: SalesRankingPeriod,
+): Promise<ActivityRanking> {
+  return apiClient.get<ActivityRanking>(`/dashboard/ranking/activities?period=${period}`, {
+    organizationId,
+  })
+}
+
 export function getSalesRanking(
   organizationId: string,
   period: SalesRankingPeriod,

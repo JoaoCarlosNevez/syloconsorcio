@@ -79,8 +79,12 @@ export interface TaskCountFilter {
   assignedUserId: string
   type: string
   /** Prazo (dueAt) em [dueFrom, dueTo). */
-  dueFrom: Date
-  dueTo: Date
+  dueFrom?: Date
+  dueTo?: Date
+  /** Concluída (completedAt) em [completedFrom, completedTo) — o ranking de
+   * ligações e visitas conta pelo dia em que foram feitas. */
+  completedFrom?: Date
+  completedTo?: Date
   /** Só tarefas neste status; ausente = qualquer status. */
   status?: TaskStatus
 }

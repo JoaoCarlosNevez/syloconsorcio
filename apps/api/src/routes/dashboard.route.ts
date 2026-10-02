@@ -13,6 +13,9 @@
 //                             ativa (valor e clientes ganhos, meta, ofensiva) +
 //                             meta da operação. Qualquer papel — é o painel
 //                             aberto a partir do início (GetSalesRankingUseCase).
+// GET /dashboard/ranking/activities — "corrida" de ligações e visitas
+//                             concluídas (?period=week|month, padrão semana)
+//                             (GetActivityRankingUseCase). Qualquer papel.
 //
 // Roda authMiddleware → tenantMiddleware.
 
@@ -26,6 +29,7 @@ import type {
   IUserRepository,
 } from '@sylocrm/application'
 import {
+  GetActivityRankingUseCase,
   GetMyMonthlyStatsUseCase,
   GetMyStreakUseCase,
   GetSalesRankingUseCase,
@@ -67,6 +71,36 @@ export const dashboardRoute: FastifyPluginAsync<DashboardRouteOptions> = async (
     options.leadRepository,
     options.organizationRepository,
     options.streakRepository,
+  )
+
+  const getActivityRanking = new GetActivityRankingUseCase(
+    options.membershipRepository,
+    options.taskRepository,
+    options.streakRepository,
+  )
+
+  // ── GET /dashboard/ranking/activities ─────────────────────────────────────
+  fastify.get(
+    '/dashboard/ranking/activities',
+    { preHandler: [authMiddleware, tenantMiddleware] },
+    async (request, reply) => {
+      const query = rankingQuerySchema.safeParse(request.query)
+      if (!query.success) {
+        return reply
+          .status(400)
+          .send({ error: 'Período inválido.', code: 'VALIDATION_ERROR', status: 400 })
+      }
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      const ranking = await getActivityRanking.execute({
+        organizationId: context.currentMembership.organizationId,
+        period: query.data.period,
+      })
+      return {
+        ...ranking,
+        periodStart: ranking.periodStart.toISOString(),
+        periodEnd: ranking.periodEnd.toISOString(),
+      }
+    },
   )
 
   // ── GET /dashboard/ranking ────────────────────────────────────────────────

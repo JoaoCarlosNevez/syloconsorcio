@@ -1,15 +1,20 @@
-// RankingPage — /app/ranking: ranking da semana ou do mês (?periodo=semana)
-// pra deixar numa TV, aberto a qualquer papel a partir do início. Pódio dos 3
-// primeiros e a classificação do 4º em diante, com clientes ganhos, ofensiva
-// e meta do mês. Atualiza sozinho a cada minuto (useSalesRankingQuery); o
+// RankingPage — /app/ranking: rankings pra deixar numa TV, abertos a
+// qualquer papel a partir do início. Dois tipos (?ranking=atividades):
+// vendas (valor e clientes ganhos, meta do mês) e a "corrida" de ligações e
+// visitas concluídas; semana ou mês (?periodo=semana|mes). Pódio dos 3
+// primeiros e a classificação do 4º em diante. Atualiza sozinho a cada minuto (useSalesRankingQuery); o
 // botão "Tela cheia" usa a Fullscreen API do navegador (modo apresentação).
 
 import { Skeleton } from '@sylocrm/ui'
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useSalesRankingQuery } from '../../hooks/useDashboard'
+import { useActivityRankingQuery, useSalesRankingQuery } from '../../hooks/useDashboard'
 import { useActiveOrganization } from '../../hooks/useOrganization'
-import type { SalesRankingEntry, SalesRankingPeriod } from '../../lib/dashboard-api'
+import type {
+  ActivityRankingEntry,
+  SalesRankingEntry,
+  SalesRankingPeriod,
+} from '../../lib/dashboard-api'
 import { formatBRL } from '../../lib/lead-adapters'
 import styles from './RankingPage.module.css'
 
@@ -152,13 +157,53 @@ const PODIUM = [
   { place: 3, label: '3º colocado', className: 'bronze' },
 ] as const
 
+type RankingKind = 'sales' | 'activities'
+
+/** O que cada pódio/linha mostra — igual pros dois rankings, muda o conteúdo. */
+interface RankRow {
+  userId: string
+  name: string
+  avatarUrl: string | null
+  streakDays: number
+  /** Número grande do pódio (ex: "R$ 150.000" ou "12 atividades"). */
+  headline: string
+  /** Chip ao lado da ofensiva no pódio (ex: "3 clientes", "7 lig. · 5 visitas"). */
+  detail: string
+}
+
+function salesRows(sellers: SalesRankingEntry[]): RankRow[] {
+  return sellers.map((entry) => ({
+    userId: entry.userId,
+    name: entry.name,
+    avatarUrl: entry.avatarUrl,
+    streakDays: entry.streakDays,
+    headline: `R$ ${formatBRL(entry.wonCents)}`,
+    detail: clientsLabel(entry.wonCount),
+  }))
+}
+
+function activityRows(sellers: ActivityRankingEntry[]): RankRow[] {
+  return sellers.map((entry) => ({
+    userId: entry.userId,
+    name: entry.name,
+    avatarUrl: entry.avatarUrl,
+    streakDays: entry.streakDays,
+    headline: entry.total === 1 ? '1 atividade' : `${entry.total} atividades`,
+    detail: `${countLabel(entry.calls, 'ligação', 'ligações')} · ${countLabel(entry.visits, 'visita', 'visitas')}`,
+  }))
+}
+
+function countLabel(count: number, one: string, many: string): string {
+  return `${count} ${count === 1 ? one : many}`
+}
+
 function PodiumCard({
-  entry,
+  row,
   place,
   label,
   medal,
 }: {
-  entry: SalesRankingEntry
+  row: RankRow
   place: number
   label: string
   medal: 'gold' | 'silver' | 'bronze'
@@ -171,22 +216,18 @@ function PodiumCard({
         </span>
       )}
       <div className={styles.podiumAvatarRing}>
-        <img
-          className={styles.podiumAvatar}
-          src={entry.avatarUrl ?? '/default-avatar.svg'}
-          alt=""
-        />
+        <img className={styles.podiumAvatar} src={row.avatarUrl ?? '/default-avatar.svg'} alt="" />
         <span className={styles.placeBadge}>{place}º</span>
       </div>
       <div className={styles.podiumCard}>
         <span className={styles.podiumLabel}>{label}</span>
-        <span className={styles.podiumName}>{entry.name}</span>
-        <span className={styles.podiumValue}>R$ {formatBRL(entry.wonCents)}</span>
+        <span className={styles.podiumName}>{row.name}</span>
+        <span className={styles.podiumValue}>{row.headline}</span>
         <div className={styles.podiumChips}>
-          <span className={styles.chip}>{clientsLabel(entry.wonCount)}</span>
+          <span className={styles.chip}>{row.detail}</span>
           <span className={`${styles.chip} ${styles.chipStreak}`}>
             <FlameIcon />
-            {daysLabel(entry.streakDays)}
+            {daysLabel(row.streakDays)}
           </span>
         </div>
       </div>
@@ -194,27 +235,79 @@ function PodiumCard({
   )
 }
 
+function SellerCell({ name, avatarUrl }: { name: string; avatarUrl: string | null }) {
+  return (
+    <div className={styles.seller}>
+      {avatarUrl ? (
+        <img className={styles.sellerAvatar} src={avatarUrl} alt="" />
+      ) : (
+        <span className={styles.sellerInitials}>{initials(name)}</span>
+      )}
+      <span className={styles.sellerName}>{name}</span>
+    </div>
+  )
+}
+
+function StreakCell({ days }: { days: number }) {
+  return (
+    <span className={styles.streakCell}>
+      <FlameIcon />
+      {daysLabel(days)}
+    </span>
+  )
+}
+
 export function RankingPage() {
   const navigate = useNavigate()
   const { organizationId, membership } = useActiveOrganization()
   const [searchParams, setSearchParams] = useSearchParams()
-  const period: SalesRankingPeriod = searchParams.get('periodo') === 'semana' ? 'week' : 'month'
-  const { data, isLoading, isError } = useSalesRankingQuery(organizationId, period)
+  const kind: RankingKind = searchParams.get('ranking') === 'atividades' ? 'activities' : 'sales'
+  // Sem período na URL: vendas abre no mês; ligações e visitas, na semana (a
+  // "corrida da semana").
+  const periodParam = searchParams.get('periodo')
+  const period: SalesRankingPeriod =
+    periodParam === 'semana'
+      ? 'week'
+      : periodParam === 'mes'
+        ? 'month'
+        : kind === 'activities'
+          ? 'week'
+          : 'month'
+  // O topo (meta da operação) vem do ranking de vendas, que é sempre do mês.
+  const sales = useSalesRankingQuery(organizationId, kind === 'sales' ? period : 'month')
+  const activities = useActivityRankingQuery(organizationId, period, kind === 'activities')
+  const current = kind === 'sales' ? sales : activities
   const fullscreen = useFullscreen()
   const now = useClock()
 
-  function selectPeriod(next: SalesRankingPeriod) {
-    setSearchParams({ periodo: PERIOD_PARAM[next] }, { replace: true })
+  function updateParams(next: { kind?: RankingKind; period?: SalesRankingPeriod }) {
+    const nextKind = next.kind ?? kind
+    const params: Record<string, string> = {}
+    if (nextKind === 'activities') params.ranking = 'atividades'
+    // Trocar de ranking volta pro período padrão dele.
+    if (next.period) params.periodo = PERIOD_PARAM[next.period]
+    else if (!next.kind && periodParam) params.periodo = periodParam
+    setSearchParams(params, { replace: true })
   }
-  const logoUrl = membership?.organizationIconUrl ?? null
 
-  const org = data?.organization
+  const logoUrl = membership?.organizationIconUrl ?? null
+  const org = sales.data?.organization
   const orgPercent =
     org?.goalCents && org.goalCents > 0
       ? Math.round((org.achievedCents / org.goalCents) * 100)
       : null
-  const top = data?.sellers.slice(0, 3) ?? []
-  const rest = data?.sellers.slice(3) ?? []
+  const rows =
+    kind === 'sales'
+      ? salesRows(sales.data?.sellers ?? [])
+      : activityRows(activities.data?.sellers ?? [])
+  const top = rows.slice(0, 3)
+  const salesRest = (sales.data?.sellers ?? []).slice(3)
+  const activityRest = (activities.data?.sellers ?? []).slice(3)
+  const periodWord = period === 'week' ? 'Semana' : 'Mês'
+  const title =
+    kind === 'sales'
+      ? `Pódio de Campeões ${period === 'week' ? 'da Semana' : 'do Mês'}`
+      : `Corrida ${period === 'week' ? 'da Semana' : 'do Mês'} — Ligações e Visitas`
 
   return (
     <main className={styles.page}>
@@ -301,30 +394,43 @@ export function RankingPage() {
 
       <section className={styles.panel}>
         <div className={styles.panelHeader}>
-          <h1 className={styles.panelTitle}>
-            Pódio de Campeões {period === 'week' ? 'da Semana' : 'do Mês'}
-          </h1>
-          <fieldset className={styles.periodToggle} aria-label="Período do ranking">
-            {(['week', 'month'] as const).map((option) => (
-              <button
-                key={option}
-                type="button"
-                className={option === period ? styles.periodActive : styles.periodOption}
-                aria-pressed={option === period}
-                onClick={() => selectPeriod(option)}
-              >
-                {option === 'week' ? 'Semana' : 'Mês'}
-              </button>
-            ))}
-          </fieldset>
+          <h1 className={styles.panelTitle}>{title}</h1>
+          <div className={styles.toggles}>
+            <fieldset className={styles.periodToggle} aria-label="Tipo de ranking">
+              {(['sales', 'activities'] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={option === kind ? styles.periodActive : styles.periodOption}
+                  aria-pressed={option === kind}
+                  onClick={() => updateParams({ kind: option })}
+                >
+                  {option === 'sales' ? 'Vendas' : 'Ligações e visitas'}
+                </button>
+              ))}
+            </fieldset>
+            <fieldset className={styles.periodToggle} aria-label="Período do ranking">
+              {(['week', 'month'] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={option === period ? styles.periodActive : styles.periodOption}
+                  aria-pressed={option === period}
+                  onClick={() => updateParams({ period: option })}
+                >
+                  {option === 'week' ? 'Semana' : 'Mês'}
+                </button>
+              ))}
+            </fieldset>
+          </div>
         </div>
-        {isLoading ? (
+        {current.isLoading ? (
           <div className={styles.podium}>
             {[0, 1, 2].map((i) => (
               <Skeleton key={i} width="100%" height={220} />
             ))}
           </div>
-        ) : isError ? (
+        ) : current.isError ? (
           <p className={styles.empty}>
             Não foi possível carregar o ranking. Tentando de novo em instantes…
           </p>
@@ -333,15 +439,9 @@ export function RankingPage() {
         ) : (
           <div className={styles.podium}>
             {PODIUM.map(({ place, label, className }) => {
-              const entry = top[place - 1]
-              return entry ? (
-                <PodiumCard
-                  key={place}
-                  entry={entry}
-                  place={place}
-                  label={label}
-                  medal={className}
-                />
+              const row = top[place - 1]
+              return row ? (
+                <PodiumCard key={place} row={row} place={place} label={label} medal={className} />
               ) : (
                 <div key={place} className={styles.podiumSlot} />
               )
@@ -350,7 +450,7 @@ export function RankingPage() {
         )}
       </section>
 
-      {rest.length > 0 && (
+      {kind === 'sales' && salesRest.length > 0 && (
         <section className={styles.panel}>
           <h2 className={styles.tableTitle}>Classificação geral (4º em diante)</h2>
           <p className={styles.tableSub}>
@@ -368,29 +468,19 @@ export function RankingPage() {
               </tr>
             </thead>
             <tbody>
-              {rest.map((entry, index) => {
+              {salesRest.map((entry, index) => {
                 const percent = goalPercent(entry)
                 return (
                   <tr key={entry.userId}>
                     <td className={styles.colPos}>{index + 4}º</td>
                     <td>
-                      <div className={styles.seller}>
-                        {entry.avatarUrl ? (
-                          <img className={styles.sellerAvatar} src={entry.avatarUrl} alt="" />
-                        ) : (
-                          <span className={styles.sellerInitials}>{initials(entry.name)}</span>
-                        )}
-                        <span className={styles.sellerName}>{entry.name}</span>
-                      </div>
+                      <SellerCell name={entry.name} avatarUrl={entry.avatarUrl} />
                     </td>
                     <td className={styles.center}>
                       <span className={styles.countChip}>{clientsLabel(entry.wonCount)}</span>
                     </td>
                     <td className={styles.center}>
-                      <span className={styles.streakCell}>
-                        <FlameIcon />
-                        {daysLabel(entry.streakDays)}
-                      </span>
+                      <StreakCell days={entry.streakDays} />
                     </td>
                     <td className={styles.right}>
                       <div className={styles.volume}>
@@ -413,6 +503,53 @@ export function RankingPage() {
           </table>
         </section>
       )}
+
+      {kind === 'activities' && activityRest.length > 0 && (
+        <section className={styles.panel}>
+          <h2 className={styles.tableTitle}>Classificação geral (4º em diante)</h2>
+          <p className={styles.tableSub}>
+            Ligações e visitas concluídas {period === 'week' ? 'na semana' : 'no mês'}
+          </p>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th className={styles.colPos}>Pos.</th>
+                <th>Vendedor</th>
+                <th className={styles.center}>Ligações</th>
+                <th className={styles.center}>Visitas</th>
+                <th className={styles.center}>Ofensiva</th>
+                <th className={styles.right}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activityRest.map((entry, index) => (
+                <tr key={entry.userId}>
+                  <td className={styles.colPos}>{index + 4}º</td>
+                  <td>
+                    <SellerCell name={entry.name} avatarUrl={entry.avatarUrl} />
+                  </td>
+                  <td className={styles.center}>
+                    <span className={styles.countChip}>{entry.calls}</span>
+                  </td>
+                  <td className={styles.center}>
+                    <span className={styles.countChip}>{entry.visits}</span>
+                  </td>
+                  <td className={styles.center}>
+                    <StreakCell days={entry.streakDays} />
+                  </td>
+                  <td className={styles.right}>
+                    <span className={styles.volumeValue}>{entry.total}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      <p className={styles.periodFootnote}>
+        {kind === 'sales' ? 'Vendas' : 'Ligações e visitas'} · {periodWord}
+      </p>
     </main>
   )
 }

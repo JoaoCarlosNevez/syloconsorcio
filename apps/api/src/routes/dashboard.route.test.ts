@@ -195,3 +195,21 @@ describe('GET /dashboard/ranking', () => {
     expect(response.statusCode).toBe(401)
   })
 })
+
+describe('GET /dashboard/ranking/activities', () => {
+  it('is open to sellers and defaults to the week', async () => {
+    const { app } = buildTestApp(SELLER_MEMBERSHIP)
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/dashboard/ranking/activities',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json<{ period: string; sellers: unknown[] }>()).toMatchObject({
+      period: 'week',
+      sellers: [],
+    })
+  })
+})
