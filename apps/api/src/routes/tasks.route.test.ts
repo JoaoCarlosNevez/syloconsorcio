@@ -67,6 +67,7 @@ const SAMPLE_LEAD: LeadRecord = {
   assignedUserId: IDENTITY.id,
   stageChangedAt: new Date('2026-01-01T00:00:00Z'),
   lostAt: null,
+  lostReason: null,
   wonAt: null,
   tags: [],
   notes: null,

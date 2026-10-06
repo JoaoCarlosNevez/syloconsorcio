@@ -710,7 +710,9 @@ function buildHistoryFeed(
           ? `Estava marcado como ${change.reopenedFrom === 'won' ? 'ganho' : 'perdido'}`
           : change.outcome === 'won' && change.valueCents
             ? `Venda de R$ ${formatBRL(change.valueCents)}`
-            : undefined,
+            : change.outcome === 'lost' && change.reason
+              ? `Motivo: ${change.reason}`
+              : undefined,
     })
   }
 
@@ -990,6 +992,8 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
   const deleteTaskMutation = useDeleteTask(organizationId)
   const [taskDetail, setTaskDetail] = useState<Task | null>(null)
   const [showDoneTasks, setShowDoneTasks] = useState(false)
+  /** Motivo da perda sendo digitado; null = janela fechada. */
+  const [lostReasonDraft, setLostReasonDraft] = useState<string | null>(null)
   /** "Registrar agora" aberto: tipo e o comentário do que foi tratado. */
   const [registerDraft, setRegisterDraft] = useState<{
     type: 'Visita' | 'Ligação'
@@ -1073,10 +1077,13 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
   }
 
   function handleMarkLost() {
+    const reason = lostReasonDraft?.trim()
+    if (!reason) return
     updateLead.mutate(
-      { id: card.id, payload: { lost: true } },
+      { id: card.id, payload: { lost: true, lostReason: reason } },
       {
         onSuccess: () => {
+          setLostReasonDraft(null)
           toast({ type: 'success', title: 'Lead marcado como perdido' })
           onClose()
         },
@@ -1683,9 +1690,17 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
               </div>
               <div className={styles.leadTitleRow}>
                 <h1 className={styles.leadName}>{card.name}</h1>
-                <span className={styles.statusBadge}>
+                <span
+                  className={
+                    isViewingLost
+                      ? `${styles.statusBadge} ${styles.statusBadgeLost}`
+                      : isViewingWon
+                        ? `${styles.statusBadge} ${styles.statusBadgeWon}`
+                        : styles.statusBadge
+                  }
+                >
                   <span className={styles.statusDot} />
-                  Em Aberto
+                  {isViewingLost ? 'Perdido' : isViewingWon ? 'Ganho' : 'Em Aberto'}
                 </span>
                 <button type="button" className={styles.stagePill}>
                   <FlagIcon />
@@ -1693,6 +1708,11 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                   <ChevronDownIcon />
                 </button>
               </div>
+              {isViewingLost && card.lostReason && (
+                <p className={styles.lostReasonLine}>
+                  <strong>Motivo da perda:</strong> {card.lostReason}
+                </p>
+              )}
             </div>
 
             {/* Ações */}
@@ -1739,7 +1759,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                   <button
                     type="button"
                     className={styles.btnDanger}
-                    onClick={handleMarkLost}
+                    onClick={() => setLostReasonDraft('')}
                     disabled={updateLead.isPending}
                   >
                     <ThumbsDownIcon />
@@ -2985,6 +3005,51 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
           }
         />
       )}
+
+      <Modal
+        open={lostReasonDraft !== null}
+        onClose={() => setLostReasonDraft(null)}
+        title="Marcar como perdido"
+        size="sm"
+        footer={
+          <>
+            <button
+              type="button"
+              className={styles.registerCancelBtn}
+              onClick={() => setLostReasonDraft(null)}
+              disabled={updateLead.isPending}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className={styles.lostConfirmBtn}
+              onClick={handleMarkLost}
+              disabled={updateLead.isPending || !lostReasonDraft?.trim()}
+            >
+              {updateLead.isPending ? 'Salvando…' : 'Marcar como perdido'}
+            </button>
+          </>
+        }
+      >
+        <div className={styles.registerBody}>
+          <label className={styles.registerLabel} htmlFor="lost-reason">
+            Por que o lead foi perdido?
+          </label>
+          <textarea
+            id="lost-reason"
+            className={styles.registerTextarea}
+            rows={3}
+            maxLength={500}
+            placeholder="Ex: achou a parcela alta, fechou com o banco, não tinha lance…"
+            value={lostReasonDraft ?? ''}
+            onChange={(e) => setLostReasonDraft(e.target.value)}
+          />
+          <p className={styles.registerHint}>
+            Obrigatório. Fica no histórico do lead e ajuda o gestor a ver onde o time perde venda.
+          </p>
+        </div>
+      </Modal>
 
       <Modal
         open={registerDraft !== null}

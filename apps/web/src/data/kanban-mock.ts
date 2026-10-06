@@ -23,6 +23,8 @@ export interface CardData {
   stageId: string
   /** Não-null quando o lead está marcado como Perdido — ver resolveCardOutcome. */
   lostAt: string | null
+  /** Motivo da perda, quando perdido. */
+  lostReason: string | null
   /** Não-null quando o lead está marcado como Ganho — ver resolveCardOutcome. */
   wonAt: string | null
   tags: string[]

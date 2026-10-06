@@ -50,6 +50,7 @@ const LEAD: LeadRecord = {
   assignedUserId: 'user-seller',
   stageChangedAt: new Date('2026-01-01T00:00:00Z'),
   lostAt: null,
+  lostReason: null,
   wonAt: null,
   tags: [],
   notes: null,

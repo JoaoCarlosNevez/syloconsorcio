@@ -40,6 +40,7 @@ const SOURCE_LEAD: LeadRecord = {
   assignedUserId: 'user-01',
   stageChangedAt: new Date('2026-01-01T00:00:00Z'),
   lostAt: null,
+  lostReason: null,
   wonAt: null,
   tags: ['Quente'],
   notes: 'Anotação original.',

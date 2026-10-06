@@ -31,6 +31,8 @@ export interface LeadRecord {
   stageChangedAt: Date
   /** Null enquanto o lead está ativo no funil; setado ao marcar como Perdido. */
   lostAt: Date | null
+  /** Motivo da perda (texto livre); null se não está perdido ou é antigo. */
+  lostReason: string | null
   /** Null enquanto o lead não foi ganho; setado ao marcar como Ganho. */
   wonAt: Date | null
   /** Tags livres (ex: "Quente", "Frio") — um lead pode ter várias ao mesmo tempo. */
@@ -79,6 +81,8 @@ export interface UpdateLeadInput {
   assignedUserId?: string | null
   /** true marca como Perdido (lostAt = agora); false reabre (lostAt = null). */
   lost?: boolean
+  /** Motivo da perda — obrigatório com lost: true (ver UpdateLeadUseCase). */
+  lostReason?: string
   /** true marca como Ganho (wonAt = agora); false reabre (wonAt = null). */
   won?: boolean
   tags?: string[]

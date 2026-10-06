@@ -50,6 +50,7 @@ const LEAD = {
   funnelId: 'funnel-01',
   assignedUserId: null,
   lostAt: null,
+  lostReason: null,
   wonAt: null,
 } as LeadRecord
 

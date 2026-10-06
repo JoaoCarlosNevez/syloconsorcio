@@ -44,6 +44,8 @@ export interface LeadOutcomeChange {
   valueCents: number | null
   /** Reaberto de quê — null fora do 'reopened'. */
   reopenedFrom: 'won' | 'lost' | null
+  /** Motivo da perda — só no 'lost' (null nos antigos, de antes do campo). */
+  reason: string | null
 }
 
 export interface LeadHistory {
@@ -121,6 +123,7 @@ export class GetLeadHistoryUseCase implements UseCase<GetLeadHistoryInput, LeadH
           valueCents:
             typeof entry.metadata.valueCents === 'number' ? entry.metadata.valueCents : null,
           reopenedFrom: from === 'won' || from === 'lost' ? from : null,
+          reason: metadataString(entry.metadata.reason),
         })
       }
     }

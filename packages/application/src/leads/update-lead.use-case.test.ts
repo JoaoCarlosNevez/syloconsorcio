@@ -46,6 +46,7 @@ const SAMPLE_LEAD: LeadRecord = {
   assignedUserId: null,
   stageChangedAt: new Date('2026-01-01T00:00:00Z'),
   lostAt: null,
+  lostReason: null,
   wonAt: null,
   tags: [],
   notes: null,
@@ -344,6 +345,91 @@ describe('UpdateLeadUseCase', () => {
     })
 
     expect(leadRepository.create).not.toHaveBeenCalled()
+  })
+
+  it('requires a reason to mark a lead as lost', async () => {
+    const leadRepository = buildLeadRepository()
+    const useCase = new UpdateLeadUseCase(
+      leadRepository,
+      buildOrganizationRepository(),
+      buildFunnelRepository(),
+    )
+
+    for (const lostReason of [undefined, '   ']) {
+      await expect(
+        useCase.execute({
+          id: 'lead-01',
+          userId: 'user-01',
+          membership: MEMBERSHIP,
+          changes: { lost: true, lostReason },
+        }),
+      ).rejects.toThrow(ValidationError)
+    }
+    expect(leadRepository.update).not.toHaveBeenCalled()
+  })
+
+  it('stores the trimmed reason and logs it with the loss', async () => {
+    const leadRepository = buildLeadRepository({
+      update: vi.fn().mockResolvedValue({
+        ...SAMPLE_LEAD,
+        lostAt: new Date(),
+        lostReason: 'Achou a parcela alta',
+      }),
+    })
+    const activityLog: IActivityLogRepository = { record: vi.fn(), list: vi.fn() }
+    const useCase = new UpdateLeadUseCase(
+      leadRepository,
+      buildOrganizationRepository(),
+      buildFunnelRepository(),
+      activityLog,
+    )
+
+    await useCase.execute({
+      id: 'lead-01',
+      userId: 'user-01',
+      membership: MEMBERSHIP,
+      changes: { lost: true, lostReason: '  Achou a parcela alta ' },
+    })
+
+    expect(leadRepository.update).toHaveBeenCalledWith(
+      'lead-01',
+      expect.anything(),
+      expect.objectContaining({ lost: true, lostReason: 'Achou a parcela alta' }),
+    )
+    expect(activityLog.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'lead.lost',
+        metadata: expect.objectContaining({ reason: 'Achou a parcela alta' }),
+      }),
+    )
+  })
+
+  it('keeps the previous reason when an already lost lead is marked lost again', async () => {
+    const leadRepository = buildLeadRepository({
+      findById: vi.fn().mockResolvedValue({
+        ...SAMPLE_LEAD,
+        lostAt: new Date('2026-10-01T00:00:00Z'),
+        lostReason: 'Fechou com o banco',
+      }),
+    })
+    const useCase = new UpdateLeadUseCase(
+      leadRepository,
+      buildOrganizationRepository(),
+      buildFunnelRepository(),
+    )
+
+    await useCase.execute({
+      id: 'lead-01',
+      userId: 'user-01',
+      membership: MEMBERSHIP,
+      changes: { lost: true },
+    })
+
+    expect(leadRepository.update).toHaveBeenCalledWith(
+      'lead-01',
+      expect.anything(),
+      expect.objectContaining({ lostReason: 'Fechou com o banco' }),
+    )
   })
 
   it('rejects changing the phone to one already used by another lead in the org', async () => {

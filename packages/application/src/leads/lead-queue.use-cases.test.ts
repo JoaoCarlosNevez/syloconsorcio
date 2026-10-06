@@ -126,6 +126,7 @@ function buildLead(overrides: Partial<LeadRecord> = {}): LeadRecord {
     assignedUserId: null,
     stageChangedAt: T0,
     lostAt: null,
+    lostReason: null,
     wonAt: null,
     tags: [],
     notes: null,

@@ -53,6 +53,7 @@ const LEAD_COLUMNS = {
   assignedUserId: leads.assignedUserId,
   stageChangedAt: leads.stageChangedAt,
   lostAt: leads.lostAt,
+  lostReason: leads.lostReason,
   wonAt: leads.wonAt,
   tags: leads.tags,
   notes: leads.notes,
@@ -214,7 +215,7 @@ export class DrizzleLeadRepository implements ILeadRepository {
   ): Promise<LeadRecord | null> {
     if (scope.organizationIds.length === 0) return null
 
-    const { lost, won, ...rest } = input
+    const { lost, won, lostReason, ...rest } = input
 
     const rows = await this.db
       .update(leads)
@@ -222,7 +223,10 @@ export class DrizzleLeadRepository implements ILeadRepository {
         ...rest,
         updatedAt: new Date(),
         ...(input.stageId ? { stageChangedAt: new Date() } : {}),
-        ...(lost !== undefined ? { lostAt: lost ? new Date() : null } : {}),
+        // Perder grava o motivo; reabrir limpa.
+        ...(lost !== undefined
+          ? { lostAt: lost ? new Date() : null, lostReason: lost ? (lostReason ?? null) : null }
+          : {}),
         ...(won !== undefined ? { wonAt: won ? new Date() : null } : {}),
       })
       .where(and(eq(leads.id, id), ...buildScopeConditions(scope)))

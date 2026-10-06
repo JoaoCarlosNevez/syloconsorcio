@@ -108,6 +108,18 @@ export class UpdateLeadUseCase implements UseCase<UpdateLeadUseCaseInput, LeadRe
       }
     }
 
+    // Perder exige motivo — é o que diz ao gestor onde o time está perdendo
+    // venda (parcela alta, concorrente, sem lance…).
+    const lostReason = input.changes.lostReason?.trim()
+    if (input.changes.lost === true && before && !before.lostAt && !lostReason) {
+      throw new ValidationError([{ field: 'lostReason', message: 'Informe o motivo da perda.' }])
+    }
+    // Lead já perdido marcado de novo sem motivo mantém o motivo que tinha.
+    const changes =
+      input.changes.lost === true
+        ? { ...input.changes, lostReason: lostReason || before?.lostReason || undefined }
+        : input.changes
+
     let wonFunnel: FunnelRecord | null = null
     if (isMarkingWon && before) {
       wonFunnel = await this.funnelRepository.findById(before.funnelId, before.organizationId)
@@ -122,7 +134,7 @@ export class UpdateLeadUseCase implements UseCase<UpdateLeadUseCaseInput, LeadRe
       }
     }
 
-    const updated = await this.leadRepository.update(input.id, scope, input.changes)
+    const updated = await this.leadRepository.update(input.id, scope, changes)
     if (!updated) return null
 
     if (isReassigning && before && before.assignedUserId !== updated.assignedUserId) {
@@ -201,7 +213,7 @@ export class UpdateLeadUseCase implements UseCase<UpdateLeadUseCaseInput, LeadRe
       push('lead.won', { valueCents: after.valueCents })
     }
     if (changes.lost === true && !before.lostAt && after.lostAt) {
-      push('lead.lost', { valueCents: after.valueCents })
+      push('lead.lost', { valueCents: after.valueCents, reason: after.lostReason })
     }
     if (changes.won === false && before.wonAt && !after.wonAt) {
       push('lead.reopened', { from: 'won' })

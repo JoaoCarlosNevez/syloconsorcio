@@ -93,6 +93,7 @@ const SAMPLE_LEAD: LeadRecord = {
   assignedUserId: null,
   stageChangedAt: new Date('2026-01-01T00:00:00Z'),
   lostAt: null,
+  lostReason: null,
   wonAt: null,
   tags: [],
   notes: null,
@@ -716,6 +717,7 @@ describe('GET /leads/:id/history', () => {
         outcome: 'won',
         valueCents: 350_000_00,
         reopenedFrom: null,
+        reason: null,
       },
     ])
   })
@@ -936,7 +938,7 @@ describe('PATCH /leads/:id', () => {
       method: 'PATCH',
       url: '/leads/lead-01',
       headers: AUTH_HEADERS,
-      payload: { lost: true },
+      payload: { lost: true, lostReason: 'Fechou com o banco' },
     })
 
     expect(response.statusCode).toBe(200)
@@ -946,6 +948,21 @@ describe('PATCH /leads/:id', () => {
       expect.objectContaining({ lost: true }),
     )
     expect(response.json<{ lostAt: string | null }>().lostAt).not.toBeNull()
+  })
+
+  it('returns 400 when marking a lead as lost without a reason', async () => {
+    const update = vi.fn()
+    const app = buildTestApp({ leadRepository: buildLeadRepository({ update }) })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/leads/lead-01',
+      headers: AUTH_HEADERS,
+      payload: { lost: true },
+    })
+
+    expect(response.statusCode).toBe(400)
+    expect(update).not.toHaveBeenCalled()
   })
 
   it('returns 403 when a SELLER tries to reopen a lost lead (missing lead.manage_lost)', async () => {
@@ -995,7 +1012,7 @@ describe('PATCH /leads/:id', () => {
       method: 'PATCH',
       url: '/leads/lead-01',
       headers: AUTH_HEADERS,
-      payload: { lost: true },
+      payload: { lost: true, lostReason: 'Fechou com o banco' },
     })
 
     expect(response.statusCode).toBe(200)

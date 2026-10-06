@@ -136,6 +136,7 @@ export function toCardData(lead: Lead, stages: FunnelStage[]): CardData {
     funnelId: lead.funnelId,
     stageId: lead.stageId,
     lostAt: lead.lostAt,
+    lostReason: lead.lostReason,
     wonAt: lead.wonAt,
     tags: lead.tags,
     notes: lead.notes,

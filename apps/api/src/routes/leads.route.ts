@@ -102,6 +102,8 @@ const updateLeadSchema = z.object({
   stageId: z.string().uuid().optional(),
   assignedUserId: z.string().uuid().nullable().optional(),
   lost: z.boolean().optional(),
+  // Motivo da perda — obrigatório junto com lost: true (UpdateLeadUseCase).
+  lostReason: z.string().trim().min(1).max(500).optional(),
   won: z.boolean().optional(),
   tags: z.array(z.string().min(1)).optional(),
   notes: z.string().nullable().optional(),

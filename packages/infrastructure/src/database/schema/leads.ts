@@ -39,6 +39,9 @@ export const leads = pgTable('leads', {
   assignedUserId: uuid('assigned_user_id').references(() => users.id),
   stageChangedAt: timestamp('stage_changed_at', { withTimezone: true }).defaultNow().notNull(),
   lostAt: timestamp('lost_at', { withTimezone: true }),
+  // Por que o lead foi perdido — texto livre, obrigatório ao marcar Perdido
+  // (UpdateLeadUseCase); limpo ao reabrir. Null nos perdidos antigos.
+  lostReason: text('lost_reason'),
   // Marca "Ganho" — simétrico a lostAt, desacoplado do estágio (ver plano de
   // funis). Null enquanto o lead não foi ganho.
   wonAt: timestamp('won_at', { withTimezone: true }),

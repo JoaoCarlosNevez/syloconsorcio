@@ -104,6 +104,32 @@
   white-space: nowrap;
 }
 
+.statusBadgeLost {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.statusBadgeLost .statusDot {
+  background: #dc2626;
+}
+
+.statusBadgeWon {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #b45309;
+}
+
+.statusBadgeWon .statusDot {
+  background: #f59e0b;
+}
+
+.lostReasonLine {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #b91c1c;
+}
+
 .statusDot {
   width: 6px;
   height: 6px;
@@ -1317,6 +1343,23 @@
   background: #0b1c30;
   border: none;
   color: #fff;
+}
+
+.lostConfirmBtn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-family-base);
+  cursor: pointer;
+}
+
+.lostConfirmBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .registerCancelBtn:disabled,

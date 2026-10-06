@@ -24,6 +24,8 @@ export interface Lead {
   assignedUserId: string | null
   stageChangedAt: string
   lostAt: string | null
+  /** Motivo da perda (texto livre); null se não está perdido ou é antigo. */
+  lostReason: string | null
   wonAt: string | null
   tags: string[]
   notes: string | null
@@ -87,6 +89,8 @@ export interface UpdateLeadPayload {
   assignedUserId?: string | null
   /** true marca como Perdido; false reabre um lead perdido. */
   lost?: boolean
+  /** Motivo da perda — obrigatório junto com lost: true. */
+  lostReason?: string
   /** true marca como Ganho; false reabre um lead ganho. */
   won?: boolean
   tags?: string[]
@@ -186,6 +190,8 @@ export interface LeadOutcomeChange {
   /** Valor do lead na hora (ganho/perdido). */
   valueCents: number | null
   reopenedFrom: 'won' | 'lost' | null
+  /** Motivo da perda — só no 'lost' (null nos antigos). */
+  reason: string | null
 }
 
 export function getLeadHistory(organizationId: string, leadId: string): Promise<LeadHistory> {
