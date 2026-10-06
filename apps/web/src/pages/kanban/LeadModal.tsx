@@ -1667,9 +1667,14 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
   return (
     <div
       className={styles.overlay}
-      onClick={onClose}
+      // Só fecha com clique/Esc no próprio fundo: as janelas de dentro
+      // (motivo da perda, registrar ligação…) são portais, mas no React os
+      // eventos delas sobem até aqui e fechariam o lead inteiro.
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
       onKeyDown={(e) => {
-        if (e.key === 'Escape') onClose()
+        if (e.key === 'Escape' && e.target === e.currentTarget) onClose()
       }}
       role="presentation"
     >
