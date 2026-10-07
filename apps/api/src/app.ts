@@ -256,6 +256,13 @@ function createNoOpLeadQueueRepository(): ILeadQueueRepository {
   }
 }
 
+/** Front do Vite (porta 5173) aberto por um IP de rede local/privada. */
+function isLocalNetworkDevOrigin(origin: string): boolean {
+  return /^http:\/\/(localhost|127\.0\.0\.1|10(\.\d{1,3}){3}|192\.168(\.\d{1,3}){2}|172\.(1[6-9]|2\d|3[01])(\.\d{1,3}){2}):5173$/.test(
+    origin,
+  )
+}
+
 export function buildApp(deps?: Partial<BuildAppDeps>) {
   // Use provided deps or fall back to no-op adapters.
   // Real adapters are created in main.ts (composition root) from env vars.
@@ -286,8 +293,21 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
   app.decorateRequest('authContext', undefined)
 
   // ── Plugins ───────────────────────────────────────────────────────────────
+  // CORS_ORIGIN aceita vários endereços separados por vírgula. Em
+  // desenvolvimento também libera o front aberto pelo IP da rede local
+  // (celular/outro PC acessando o Vite da máquina na porta 5173).
+  const allowedOrigins = env.CORS_ORIGIN.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
   app.register(cors, {
-    origin: env.CORS_ORIGIN,
+    origin: (origin, callback) => {
+      // Sem Origin = chamada fora do navegador (curl, webhook, outro servidor).
+      if (!origin || allowedOrigins.includes(origin)) return callback(null, true)
+      if (env.NODE_ENV === 'development' && isLocalNetworkDevOrigin(origin)) {
+        return callback(null, true)
+      }
+      callback(null, false)
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
   })

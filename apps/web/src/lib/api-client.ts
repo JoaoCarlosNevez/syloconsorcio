@@ -8,9 +8,14 @@
 
 import { supabase } from './supabase'
 
-/** Base da API — também exibida na documentação do webhook (Integrações). */
+/** Base da API — também exibida na documentação do webhook (Integrações).
+ * Sem VITE_API_URL (ou vazio), usa o mesmo host em que o site foi aberto, na
+ * porta 3001: assim o CRM aberto pelo IP da máquina (celular/outro PC na rede)
+ * fala com a API dessa mesma máquina, mesmo se o IP mudar. Em produção
+ * VITE_API_URL é sempre definido. */
 export const API_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001'
+  (import.meta.env.VITE_API_URL as string | undefined) ||
+  `${window.location.protocol}//${window.location.hostname}:3001`
 
 export class ApiError extends Error {
   constructor(

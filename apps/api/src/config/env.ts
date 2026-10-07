@@ -12,6 +12,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3001),
   HOST: z.string().default('0.0.0.0'),
+  // Um ou mais endereços do front, separados por vírgula.
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
 
   // Infrastructure — optional until the database layer is wired up
