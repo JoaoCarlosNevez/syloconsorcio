@@ -27,6 +27,10 @@ export const Permission = {
   /** Definir a patente de um membro da equipe — mesma hierarquia fina da
    * meta, aplicada em UpdateTeamMemberTierUseCase. */
   TEAM_TIER_UPDATE: 'team.tier_update',
+  /** Mudar o papel (Dono/Supervisor/Vendedor) de um membro — só Dono (e o
+   * Super Admin). As regras finas (não muda o próprio, não rebaixa outro Dono,
+   * a organização nunca fica sem Dono) ficam em UpdateTeamMemberRoleUseCase. */
+  TEAM_ROLE_UPDATE: 'team.role_update',
   REPORTS_READ: 'reports.read',
   ORGANIZATION_UPDATE: 'organization.update',
   /** Ver o log de atividades da organização (Configurações > Atividade). */

@@ -165,6 +165,8 @@ export function describeActivity(
       return num(m, 'salesGoalCents') === null
         ? `removeu a meta de ${member}`
         : `definiu a meta de ${member} em ${money(num(m, 'salesGoalCents'))}`
+    case 'team.role_updated':
+      return `mudou o papel de ${member} de ${ROLE_LABEL[str(m, 'from') ?? ''] ?? str(m, 'from')} para ${ROLE_LABEL[str(m, 'to') ?? ''] ?? str(m, 'to')}`
     case 'team.tier_updated':
       return `definiu a patente de ${member} como ${TIER_LABEL[str(m, 'tier') ?? ''] ?? str(m, 'tier')}`
     case 'organization.updated':

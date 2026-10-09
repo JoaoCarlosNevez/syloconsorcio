@@ -4,12 +4,14 @@ import type { Tier } from '@sylocrm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   type InviteTeamMemberPayload,
+  type TeamMember,
   getSalesGoalsSummary,
   inviteTeamMember,
   listTeamMembers,
   reactivateTeamMember,
   removeTeamMember,
   updateMyPersonalGoal,
+  updateTeamMemberRole,
   updateTeamMemberSalesGoal,
   updateTeamMemberTier,
 } from '../lib/team-api'
@@ -69,6 +71,17 @@ export function useUpdateTeamMemberSalesGoal(organizationId: string | null) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['team', 'members', organizationId] })
       queryClient.invalidateQueries({ queryKey: ['team', 'goals', 'summary', organizationId] })
+    },
+  })
+}
+
+export function useUpdateTeamMemberRole(organizationId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: TeamMember['role'] }) =>
+      updateTeamMemberRole(organizationId as string, userId, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team', 'members', organizationId] })
     },
   })
 }

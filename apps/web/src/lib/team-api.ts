@@ -64,6 +64,15 @@ export function updateTeamMemberTier(
   return apiClient.put<void>(`/team/members/${userId}/tier`, { tier }, { organizationId })
 }
 
+/** Muda o papel do membro (só Dono/Super Admin — ver team.route.ts). */
+export function updateTeamMemberRole(
+  organizationId: string,
+  userId: string,
+  role: TeamMember['role'],
+): Promise<void> {
+  return apiClient.put<void>(`/team/members/${userId}/role`, { role }, { organizationId })
+}
+
 export interface SalesGoalProgress {
   /** Centavos de crédito; null quando não há meta definida. */
   goalCents: number | null

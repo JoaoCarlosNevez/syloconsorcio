@@ -208,6 +208,8 @@ export { UpdateTeamMemberSalesGoalUseCase } from './team/update-team-member-sale
 export type { UpdateTeamMemberSalesGoalInput } from './team/update-team-member-sales-goal.use-case'
 
 export { UpdateTeamMemberTierUseCase } from './team/update-team-member-tier.use-case'
+export { UpdateTeamMemberRoleUseCase } from './team/update-team-member-role.use-case'
+export type { UpdateTeamMemberRoleInput } from './team/update-team-member-role.use-case'
 export type { UpdateTeamMemberTierInput } from './team/update-team-member-tier.use-case'
 
 export { NO_OP_ACTIVITY_LOG } from './ports/activity-log.repository'

@@ -262,6 +262,18 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
       )
   }
 
+  async updateRole(userId: string, organizationId: string, role: Role): Promise<void> {
+    await this.db
+      .update(organizationMemberships)
+      .set({ role, updatedAt: new Date() })
+      .where(
+        and(
+          eq(organizationMemberships.userId, userId),
+          eq(organizationMemberships.organizationId, organizationId),
+        ),
+      )
+  }
+
   async findPersonalGoal(userId: string, organizationId: string): Promise<number | null> {
     const rows = await this.db
       .select({ personalGoalCents: organizationMemberships.personalGoalCents })

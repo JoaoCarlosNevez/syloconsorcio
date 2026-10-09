@@ -34,6 +34,7 @@ import {
   useReactivateTeamMember,
   useRemoveTeamMember,
   useTeamMembersQuery,
+  useUpdateTeamMemberRole,
   useUpdateTeamMemberSalesGoal,
   useUpdateTeamMemberTier,
 } from '../../hooks/useTeam'
@@ -369,6 +370,9 @@ const ROLE_RANK: Record<TeamMember['role'], number> = { SELLER: 0, MANAGER: 1, A
 // Vendedor. Super Admin da plataforma ignora a hierarquia. A checagem real
 // acontece no backend (RemoveTeamMemberUseCase/ReactivateTeamMemberUseCase);
 // isto só decide o que mostrar na UI.
+/** Ordem do seletor de papel no detalhe do membro. */
+const ROLE_OPTIONS: TeamMember['role'][] = ['ADMIN', 'MANAGER', 'SELLER']
+
 function canManageMember(
   viewerRole: TeamMember['role'],
   viewerIsPlatformAdmin: boolean,
@@ -887,6 +891,14 @@ function EquipeView() {
             (detailMember.userId !== currentUser?.id &&
               membership !== null &&
               canManageMember(membership.role, false, detailMember.role))
+          }
+          // Papel: só Dono (team.role_update), nunca o próprio, e outro Dono
+          // só o Super Admin muda. A API aplica as mesmas regras.
+          canChangeRole={
+            detailMember.userId !== currentUser?.id &&
+            detailMember.status === 'ACTIVE' &&
+            (membership?.permissions.includes('team.role_update') ?? false) &&
+            (isPlatformAdmin || detailMember.role !== 'ADMIN')
           }
           onSaved={(msg) => setToast(msg)}
           onClose={() => setDetailUserId(null)}
@@ -2832,15 +2844,19 @@ function MemberDetailModal({
   organizationId,
   member,
   canEdit,
+  canChangeRole,
   onSaved,
   onClose,
 }: {
   organizationId: string
   member: TeamMember
   canEdit: boolean
+  canChangeRole: boolean
   onSaved: (msg: string) => void
   onClose: () => void
 }) {
+  const [role, setRole] = useState<TeamMember['role']>(member.role)
+  const updateRole = useUpdateTeamMemberRole(organizationId)
   const [goal, setGoal] = useState(
     member.salesGoalCents !== null ? formatGoalInput(String(member.salesGoalCents / 100)) : '',
   )
@@ -2850,7 +2866,7 @@ function MemberDetailModal({
   const [formError, setFormError] = useState('')
   const updateGoal = useUpdateTeamMemberSalesGoal(organizationId)
   const updateTier = useUpdateTeamMemberTier(organizationId)
-  const isSaving = updateGoal.isPending || updateTier.isPending
+  const isSaving = updateGoal.isPending || updateTier.isPending || updateRole.isPending
   const displayName = member.name ?? member.email
 
   async function handleRemoveGoal() {
@@ -2870,21 +2886,27 @@ function MemberDetailModal({
     const salesGoalCents = goalInputToCents(goal)
     const goalChanged = salesGoalCents !== member.salesGoalCents
     const tierChanged = hasTier && tier !== member.tier
-    if (!goalChanged && !tierChanged) {
+    const roleChanged = canChangeRole && role !== member.role
+    if (!goalChanged && !tierChanged && !roleChanged) {
       onClose()
       return
     }
     try {
+      if (roleChanged) await updateRole.mutateAsync({ userId: member.userId, role })
       if (tierChanged) await updateTier.mutateAsync({ userId: member.userId, tier })
       if (goalChanged) await updateGoal.mutateAsync({ userId: member.userId, salesGoalCents })
       onSaved(
-        tierChanged && goalChanged
-          ? `Patente e meta de ${displayName} atualizadas.`
-          : tierChanged
-            ? `${displayName} agora é ${TIER_LABELS[tier]}.`
-            : salesGoalCents === null
-              ? `Meta de ${displayName} removida.`
-              : `Meta de ${displayName} atualizada.`,
+        roleChanged && !tierChanged && !goalChanged
+          ? `${displayName} agora é ${ROLE_LABEL[role]}.`
+          : roleChanged
+            ? `Alterações de ${displayName} salvas.`
+            : tierChanged && goalChanged
+              ? `Patente e meta de ${displayName} atualizadas.`
+              : tierChanged
+                ? `${displayName} agora é ${TIER_LABELS[tier]}.`
+                : salesGoalCents === null
+                  ? `Meta de ${displayName} removida.`
+                  : `Meta de ${displayName} atualizada.`,
       )
       onClose()
     } catch (error) {
@@ -2926,6 +2948,29 @@ function MemberDetailModal({
         </div>
         <form onSubmit={handleSubmit}>
           <div className={styles.modalBody}>
+            {canChangeRole && (
+              <fieldset className={`${styles.formRow} ${styles.tierFieldset}`}>
+                <legend className={`${styles.formLabel} ${styles.tierLegend}`}>Papel</legend>
+                <div className={styles.tierPicker}>
+                  {ROLE_OPTIONS.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      aria-pressed={option === role}
+                      className={`${styles.tierOption} ${option === role ? styles.roleOptionSelected : ''}`}
+                      onClick={() => setRole(option)}
+                    >
+                      {ROLE_LABEL[option]}
+                    </button>
+                  ))}
+                </div>
+                <span className={styles.formHint}>
+                  {role === 'ADMIN' && member.role !== 'ADMIN'
+                    ? 'Dono tem acesso total à organização: equipe, integrações e configurações.'
+                    : 'Define o que o membro pode ver e fazer na organização.'}
+                </span>
+              </fieldset>
+            )}
             {hasTier && (
               <fieldset className={`${styles.formRow} ${styles.tierFieldset}`}>
                 <legend className={`${styles.formLabel} ${styles.tierLegend}`}>Patente</legend>

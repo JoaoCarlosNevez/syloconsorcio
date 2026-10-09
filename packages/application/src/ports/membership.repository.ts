@@ -117,6 +117,9 @@ export interface IMembershipRepository {
   /** Define a patente do membro na organização — Configurações → Equipe. */
   updateTier(userId: string, organizationId: string, tier: MemberTier): Promise<void>
 
+  /** Muda o papel do membro na organização. */
+  updateRole(userId: string, organizationId: string, role: Role): Promise<void>
+
   /** Meta pessoal do membro na organização (definida por ele no Perfil).
    * null quando não definida ou quando o vínculo não existe. Não faz parte de
    * TeamMember de propósito: não é exposta na listagem da equipe. */

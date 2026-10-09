@@ -2230,3 +2230,10 @@ button.breadcrumbCurrent:hover {
   font-size: var(--cfg-text-xs);
   color: #94a3b8;
 }
+
+/* Papel escolhido no detalhe do membro (mesmo botão da patente, sem gradiente). */
+.roleOptionSelected {
+  background: var(--color-text-primary);
+  border-color: var(--color-text-primary);
+  color: #fff;
+}

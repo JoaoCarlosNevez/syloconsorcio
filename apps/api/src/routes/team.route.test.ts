@@ -110,6 +110,7 @@ function buildMembershipRepository(membership: UserMembership): IMembershipRepos
     reactivate: vi.fn(),
     updateSalesGoal: vi.fn(),
     updateTier: vi.fn(),
+    updateRole: vi.fn(),
     findPersonalGoal: vi.fn().mockResolvedValue(null),
     updatePersonalGoal: vi.fn(),
     removeAllForUser: vi.fn(),
@@ -250,6 +251,7 @@ describe('DELETE /team/members/:userId', () => {
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
       updateTier: vi.fn(),
+      updateRole: vi.fn(),
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
@@ -445,6 +447,7 @@ describe('POST /team/members/:userId/reactivate', () => {
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
       updateTier: vi.fn(),
+      updateRole: vi.fn(),
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
@@ -594,6 +597,7 @@ describe('PATCH /team/members/:userId', () => {
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
       updateTier: vi.fn(),
+      updateRole: vi.fn(),
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
@@ -720,6 +724,7 @@ describe('PUT /team/members/:userId/tier', () => {
       reactivate: vi.fn(),
       updateSalesGoal: vi.fn(),
       updateTier: vi.fn(),
+      updateRole: vi.fn(),
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
@@ -940,5 +945,91 @@ describe('PUT /team/me/personal-goal', () => {
     })
 
     expect(response.statusCode).toBe(400)
+  })
+})
+
+describe('PUT /team/members/:userId/role', () => {
+  const TARGET_ID = 'target-user-uuid'
+
+  function buildRoleMembershipRepository(
+    actorMembership: UserMembership,
+    targetMembership: UserMembership,
+  ): IMembershipRepository {
+    return {
+      findActiveByUserId: vi.fn().mockResolvedValue([actorMembership]),
+      findActiveByUserAndOrganization: vi.fn().mockResolvedValue(actorMembership),
+      findByUserAndOrganization: vi
+        .fn()
+        .mockImplementation((userId: string) =>
+          Promise.resolve(userId === TARGET_ID ? targetMembership : actorMembership),
+        ),
+      findActiveByOrganizationId: vi.fn().mockResolvedValue([]),
+      findByOrganizationId: vi.fn().mockResolvedValue([]),
+      findAllActive: vi.fn().mockResolvedValue([]),
+      findAll: vi.fn().mockResolvedValue([]),
+      create: vi.fn(),
+      deactivate: vi.fn(),
+      reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
+      updateTier: vi.fn(),
+      updateRole: vi.fn(),
+      findPersonalGoal: vi.fn().mockResolvedValue(null),
+      updatePersonalGoal: vi.fn(),
+      removeAllForUser: vi.fn(),
+    }
+  }
+
+  function putRole(app: ReturnType<typeof buildApp>, role: string) {
+    return app.inject({
+      method: 'PUT',
+      url: `/team/members/${TARGET_ID}/role`,
+      headers: AUTH_HEADERS,
+      payload: { role },
+    })
+  }
+
+  it('returns 403 for a supervisor (missing team.role_update)', async () => {
+    const membershipRepository = buildRoleMembershipRepository(
+      MANAGER_MEMBERSHIP,
+      SELLER_MEMBERSHIP,
+    )
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository,
+    })
+
+    const response = await putRole(app, 'MANAGER')
+
+    expect(response.statusCode).toBe(403)
+    expect(membershipRepository.updateRole).not.toHaveBeenCalled()
+  })
+
+  it('lets an owner promote a seller to supervisor', async () => {
+    const membershipRepository = buildRoleMembershipRepository(ADMIN_MEMBERSHIP, SELLER_MEMBERSHIP)
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository,
+    })
+
+    const response = await putRole(app, 'MANAGER')
+
+    expect(response.statusCode).toBe(204)
+    expect(membershipRepository.updateRole).toHaveBeenCalledWith(
+      TARGET_ID,
+      ADMIN_MEMBERSHIP.organizationId,
+      'MANAGER',
+    )
+  })
+
+  it('returns 400 for an unknown role', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository: buildRoleMembershipRepository(ADMIN_MEMBERSHIP, SELLER_MEMBERSHIP),
+    })
+
+    expect((await putRole(app, 'CEO')).statusCode).toBe(400)
   })
 })

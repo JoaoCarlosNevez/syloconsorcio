@@ -32,6 +32,10 @@
 //                                            team.tier_update; hierarquia
 //                                            fina em
 //                                            UpdateTeamMemberTierUseCase.
+// PUT    /team/members/:userId/role       — muda o papel (Dono/Supervisor/
+//                                            Vendedor). Exige team.role_update
+//                                            (só Dono); regras finas em
+//                                            UpdateTeamMemberRoleUseCase.
 // PUT    /team/me/personal-goal           — o próprio usuário define a sua
 //                                            meta pessoal (Perfil), separada
 //                                            da meta da equipe. Qualquer
@@ -59,6 +63,7 @@ import {
   ReactivateTeamMemberUseCase,
   RemoveTeamMemberUseCase,
   UpdateMyPersonalGoalUseCase,
+  UpdateTeamMemberRoleUseCase,
   UpdateTeamMemberSalesGoalUseCase,
   UpdateTeamMemberTierUseCase,
 } from '@sylocrm/application'
@@ -98,6 +103,10 @@ const updateMemberSchema = z.object({
   salesGoalCents: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable(),
 })
 
+const updateMemberRoleSchema = z.object({
+  role: z.enum([Role.ADMIN, Role.MANAGER, Role.SELLER]),
+})
+
 const updateMemberTierSchema = z.object({
   tier: z.enum(MEMBER_TIERS as [MemberTier, ...MemberTier[]]),
 })
@@ -134,6 +143,10 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
     options.activityLogRepository,
   )
   const updateTier = new UpdateTeamMemberTierUseCase(
+    options.membershipRepository,
+    options.activityLogRepository,
+  )
+  const updateRole = new UpdateTeamMemberRoleUseCase(
     options.membershipRepository,
     options.activityLogRepository,
   )
@@ -439,6 +452,68 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
           return reply.status(400).send({
             error: 'Só vendedores têm patente.',
             code: 'TIER_ONLY_FOR_SELLERS',
+            status: 400,
+          })
+        }
+        if (error instanceof AuthorizationError) {
+          return reply.status(403).send({ error: error.message, code: error.code, status: 403 })
+        }
+        throw error
+      }
+    },
+  )
+
+  // ── PUT /team/members/:userId/role ────────────────────────────────────────
+  fastify.put<{ Params: { userId: string } }>(
+    '/team/members/:userId/role',
+    {
+      preHandler: [
+        authMiddleware,
+        tenantMiddleware,
+        requirePermission(Permission.TEAM_ROLE_UPDATE),
+      ],
+    },
+    async (request, reply) => {
+      const parsed = updateMemberRoleSchema.safeParse(request.body)
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: 'Dados inválidos.',
+          code: 'VALIDATION_ERROR',
+          status: 400,
+          details: parsed.error.flatten().fieldErrors,
+        })
+      }
+
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      const targetUserId = request.params.userId
+
+      const target = await options.membershipRepository.findByUserAndOrganization(
+        targetUserId,
+        context.currentMembership.organizationId,
+      )
+      if (!target || target.status !== 'ACTIVE') {
+        return reply
+          .status(404)
+          .send({ error: 'Membro não encontrado.', code: 'MEMBER_NOT_FOUND', status: 404 })
+      }
+
+      const actor = await options.userRepository.findById(context.userId)
+
+      try {
+        await updateRole.execute({
+          actorUserId: context.userId,
+          actorIsPlatformAdmin: actor?.isPlatformAdmin ?? false,
+          targetUserId,
+          targetRole: target.role,
+          organizationId: context.currentMembership.organizationId,
+          role: parsed.data.role,
+        })
+        return reply.status(204).send()
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          return reply.status(400).send({
+            error: error.issues[0]?.message ?? 'Dados inválidos.',
+            code: error.code,
             status: 400,
           })
         }
