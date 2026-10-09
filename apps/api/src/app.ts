@@ -286,6 +286,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
 
   const app = Fastify({
     logger: env.NODE_ENV !== 'test',
+    trustProxy: env.TRUST_PROXY,
   })
 
   // Decorate request with auth properties (required for type safety)

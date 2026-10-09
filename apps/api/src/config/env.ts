@@ -20,6 +20,15 @@ const envSchema = z.object({
   SUPABASE_URL: z.string().url().optional(),
   SUPABASE_SERVICE_KEY: z.string().optional(),
 
+  // Atrás de um proxy (Traefik, Fly, Railway…), "true" faz o Fastify ler o IP
+  // real do cliente do X-Forwarded-For — sem isso os limites por IP (webhook
+  // sem chave, página pública da proposta) viram um limite só pra todo mundo.
+  // Deixe desligado com a API exposta direto: o header poderia ser forjado.
+  TRUST_PROXY: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
+
   // Frontend URL for CORS (set in production to the Vercel URL)
   FRONTEND_URL: z.string().optional(),
 

@@ -1,0 +1,16 @@
+# Contexto do docker build (feito na raiz do monorepo) — só o que a API usa.
+**/node_modules
+**/dist
+**/.turbo
+**/coverage
+.git
+.env
+.env.*
+**/.env
+**/.env.*
+apps/web
+packages/ui
+packages/testing
+docs
+supabase
+*.log
