@@ -51,3 +51,6 @@ drizzle/
 
 # Supabase CLI local session cache
 supabase/.temp/
+
+# Vercel CLI (vercel link) — projeto vinculado e token OIDC local
+.vercel
