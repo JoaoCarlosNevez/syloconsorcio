@@ -52,6 +52,7 @@ function buildUserRepository(): IUserRepository {
     }),
     upsert: vi.fn(),
     updateProfile: vi.fn(),
+    listPlatformAdmins: vi.fn().mockResolvedValue([]),
   }
 }
 

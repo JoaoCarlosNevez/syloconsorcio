@@ -8,7 +8,7 @@ import type {
   UpsertUserInput,
   UserRecord,
 } from '@sylocrm/application'
-import { eq } from 'drizzle-orm'
+import { asc, eq, sql } from 'drizzle-orm'
 import type { Database } from '../client'
 import { users } from '../schema'
 
@@ -30,6 +30,14 @@ export class DrizzleUserRepository implements IUserRepository {
   async findById(id: string): Promise<UserRecord | null> {
     const rows = await this.db.select(USER_COLUMNS).from(users).where(eq(users.id, id)).limit(1)
     return rows[0] ?? null
+  }
+
+  async listPlatformAdmins(): Promise<UserRecord[]> {
+    return this.db
+      .select(USER_COLUMNS)
+      .from(users)
+      .where(eq(users.isPlatformAdmin, true))
+      .orderBy(asc(sql`coalesce(${users.name}, ${users.email})`))
   }
 
   async upsert(input: UpsertUserInput): Promise<UserRecord> {

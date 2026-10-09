@@ -121,8 +121,21 @@ export const organizationsRoute: FastifyPluginAsync<OrganizationsRouteOptions> =
     '/organizations/members',
     { preHandler: [authMiddleware, platformAdminMiddleware] },
     async () => {
-      const members = await options.membershipRepository.findAll()
-      return { members }
+      // Vínculos com organizações + os Super Admins (que podem não estar em
+      // nenhuma organização) — a aba Usuários junta os dois.
+      const [members, admins] = await Promise.all([
+        options.membershipRepository.findAll(),
+        options.userRepository.listPlatformAdmins(),
+      ])
+      return {
+        members,
+        platformAdmins: admins.map((admin) => ({
+          userId: admin.id,
+          name: admin.name,
+          email: admin.email,
+          avatarUrl: admin.avatarUrl,
+        })),
+      }
     },
   )
 

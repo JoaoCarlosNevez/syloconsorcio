@@ -83,6 +83,7 @@ function buildUserRepository(isPlatformAdmin = false): IUserRepository {
       .mockResolvedValue({ id: IDENTITY.id, email: IDENTITY.email, name: null, isPlatformAdmin }),
     upsert: vi.fn(),
     updateProfile: vi.fn(),
+    listPlatformAdmins: vi.fn().mockResolvedValue([]),
   }
 }
 

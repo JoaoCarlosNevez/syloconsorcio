@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { useOrganizationsQuery, usePlatformMembersQuery } from '../../hooks/useOrganizations'
+import { type AdminUserRow, buildAdminUserRows } from '../../lib/admin-users'
 import type { Organization, PlatformMember } from '../../lib/organizations-api'
 import styles from './AdminPage.module.css'
 import { CreatePlatformUserModal } from './CreatePlatformUserModal'
@@ -89,31 +90,56 @@ function UsuariosTab() {
   const { data: currentUser } = useCurrentUser()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<PlatformMember | null>(null)
+  const rows = buildAdminUserRows(data?.members ?? [], data?.platformAdmins ?? [])
 
-  const columns: ColumnDef<PlatformMember>[] = [
-    { key: 'name', header: 'Nome', render: (row) => row.name ?? '—' },
+  const columns: ColumnDef<AdminUserRow>[] = [
+    {
+      key: 'name',
+      header: 'Nome',
+      render: (row) => (
+        <span className={styles.userName}>
+          {row.name ?? '—'}
+          {row.isPlatformAdmin && <Badge variant="purple">Super Admin</Badge>}
+        </span>
+      ),
+    },
     { key: 'email', header: 'E-mail', render: (row) => row.email },
     {
       key: 'role',
       header: 'Papel',
-      render: (row) => <Badge variant="slate">{ROLE_LABEL[row.role]}</Badge>,
+      render: (row) =>
+        row.member ? <Badge variant="slate">{ROLE_LABEL[row.member.role]}</Badge> : '—',
     },
-    { key: 'organizationName', header: 'Representação', render: (row) => row.organizationName },
+    {
+      key: 'organizationName',
+      header: 'Representação',
+      render: (row) =>
+        row.member?.organizationName ?? <span className={styles.muted}>Sem organização</span>,
+    },
     {
       key: 'status',
       header: 'Status',
-      render: (row) => (
-        <Badge variant={row.status === 'ACTIVE' ? 'green' : 'red'}>
-          {STATUS_LABEL[row.status]}
-        </Badge>
-      ),
+      render: (row) =>
+        row.member ? (
+          <Badge variant={row.member.status === 'ACTIVE' ? 'green' : 'red'}>
+            {STATUS_LABEL[row.member.status]}
+          </Badge>
+        ) : (
+          '—'
+        ),
     },
     {
       key: 'actions',
       header: '',
+      // Não apaga a si mesmo nem outro Super Admin pela tabela.
       render: (row) =>
-        row.userId === currentUser?.id ? null : (
-          <Button type="button" variant="danger" size="sm" onClick={() => setDeleteTarget(row)}>
+        row.userId === currentUser?.id || row.isPlatformAdmin || !row.member ? null : (
+          <Button
+            type="button"
+            variant="danger"
+            size="sm"
+            onClick={() => setDeleteTarget(row.member)}
+          >
             Apagar
           </Button>
         ),
@@ -123,7 +149,9 @@ function UsuariosTab() {
   return (
     <div className={styles.tabContent}>
       <div className={styles.tabHeader}>
-        <p className={styles.subtitle}>Todos os usuários cadastrados na plataforma.</p>
+        <p className={styles.subtitle}>
+          Todos os usuários cadastrados na plataforma — Super Admins primeiro.
+        </p>
         <Button type="button" onClick={() => setIsCreateOpen(true)}>
           Novo Usuário
         </Button>
@@ -132,8 +160,8 @@ function UsuariosTab() {
       <div className={styles.tableWrapper}>
         <DataTable
           columns={columns}
-          data={data?.members ?? []}
-          rowKey={(row) => row.userId}
+          data={rows}
+          rowKey={(row) => row.key}
           isLoading={isLoading}
           emptyTitle="Nenhum usuário ainda"
           emptyDescription="Crie o primeiro usuário para uma representação."

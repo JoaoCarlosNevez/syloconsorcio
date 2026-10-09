@@ -190,7 +190,12 @@ describe('PATCH /auth/me', () => {
     })
     const app = buildApp({
       authProvider: mockProvider,
-      userRepository: { findById: vi.fn(), upsert: vi.fn(), updateProfile },
+      userRepository: {
+        findById: vi.fn(),
+        upsert: vi.fn(),
+        updateProfile,
+        listPlatformAdmins: vi.fn().mockResolvedValue([]),
+      },
     })
 
     const response = await app.inject({
@@ -244,7 +249,12 @@ describe('PATCH /auth/me', () => {
     })
     const app = buildApp({
       authProvider: mockProvider,
-      userRepository: { findById: vi.fn(), upsert: vi.fn(), updateProfile },
+      userRepository: {
+        findById: vi.fn(),
+        upsert: vi.fn(),
+        updateProfile,
+        listPlatformAdmins: vi.fn().mockResolvedValue([]),
+      },
     })
 
     const response = await app.inject({
@@ -336,7 +346,12 @@ describe('POST /auth/me/avatar', () => {
     const app = buildApp({
       authProvider: mockProvider,
       storageProvider,
-      userRepository: { findById: vi.fn(), upsert: vi.fn(), updateProfile },
+      userRepository: {
+        findById: vi.fn(),
+        upsert: vi.fn(),
+        updateProfile,
+        listPlatformAdmins: vi.fn().mockResolvedValue([]),
+      },
     })
 
     const { payload, headers } = buildMultipartUpload(
@@ -376,7 +391,12 @@ describe('POST /auth/me/avatar', () => {
     const app = buildApp({
       authProvider: mockProvider,
       storageProvider,
-      userRepository: { findById: vi.fn(), upsert: vi.fn(), updateProfile },
+      userRepository: {
+        findById: vi.fn(),
+        upsert: vi.fn(),
+        updateProfile,
+        listPlatformAdmins: vi.fn().mockResolvedValue([]),
+      },
     })
 
     const { payload, headers } = buildMultipartUpload(
@@ -450,7 +470,12 @@ describe('DELETE /auth/me/avatar', () => {
     const storageProvider = buildStorageProvider()
     const app = buildApp({
       authProvider: mockProvider,
-      userRepository: { findById: vi.fn(), upsert: vi.fn(), updateProfile },
+      userRepository: {
+        findById: vi.fn(),
+        upsert: vi.fn(),
+        updateProfile,
+        listPlatformAdmins: vi.fn().mockResolvedValue([]),
+      },
       storageProvider,
     })
 
@@ -585,6 +610,7 @@ describe('GET /auth/memberships', () => {
         }),
         upsert: vi.fn(),
         updateProfile: vi.fn(),
+        listPlatformAdmins: vi.fn().mockResolvedValue([]),
       },
       organizationRepository: {
         findChildOrganizationIds: vi.fn().mockResolvedValue([]),
@@ -671,6 +697,7 @@ describe('GET /auth/memberships', () => {
         }),
         upsert: vi.fn(),
         updateProfile: vi.fn(),
+        listPlatformAdmins: vi.fn().mockResolvedValue([]),
       },
       organizationRepository: {
         findChildOrganizationIds: vi.fn().mockResolvedValue([]),

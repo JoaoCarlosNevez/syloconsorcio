@@ -159,6 +159,7 @@ function createNoOpUserRepository(): IUserRepository {
     updateProfile: async () => {
       throw new Error('Database not configured — cannot update user profile.')
     },
+    listPlatformAdmins: async () => [],
   }
 }
 

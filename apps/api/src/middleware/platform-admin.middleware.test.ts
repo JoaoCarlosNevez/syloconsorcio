@@ -34,6 +34,7 @@ describe('requirePlatformAdmin', () => {
       findById: vi.fn(),
       upsert: vi.fn(),
       updateProfile: vi.fn(),
+      listPlatformAdmins: vi.fn().mockResolvedValue([]),
     }
     const app = buildTestApp(userRepository, undefined)
 
@@ -53,6 +54,7 @@ describe('requirePlatformAdmin', () => {
       }),
       upsert: vi.fn(),
       updateProfile: vi.fn(),
+      listPlatformAdmins: vi.fn().mockResolvedValue([]),
     }
     const app = buildTestApp(userRepository, IDENTITY)
 
@@ -68,6 +70,7 @@ describe('requirePlatformAdmin', () => {
       findById: vi.fn().mockResolvedValue(null),
       upsert: vi.fn(),
       updateProfile: vi.fn(),
+      listPlatformAdmins: vi.fn().mockResolvedValue([]),
     }
     const app = buildTestApp(userRepository, IDENTITY)
 
@@ -86,6 +89,7 @@ describe('requirePlatformAdmin', () => {
       }),
       upsert: vi.fn(),
       updateProfile: vi.fn(),
+      listPlatformAdmins: vi.fn().mockResolvedValue([]),
     }
     const app = buildTestApp(userRepository, IDENTITY)
 

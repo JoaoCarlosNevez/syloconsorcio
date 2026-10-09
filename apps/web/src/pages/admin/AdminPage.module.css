@@ -206,3 +206,13 @@
   border: 1px solid var(--color-border, #ccc);
   font-size: var(--font-size-base);
 }
+
+.userName {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.muted {
+  color: var(--color-text-muted);
+}

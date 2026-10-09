@@ -76,6 +76,7 @@ function buildUserRepository(isPlatformAdmin = false): IUserRepository {
       isPlatformAdmin: false,
     }),
     updateProfile: vi.fn(),
+    listPlatformAdmins: vi.fn().mockResolvedValue([]),
   }
 }
 

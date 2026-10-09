@@ -100,8 +100,21 @@ export function getOrganizationMembers(id: string): Promise<{ members: TeamMembe
   return apiClient.get<{ members: TeamMember[] }>(`/organizations/${id}/members`)
 }
 
-export function listPlatformMembers(): Promise<{ members: PlatformMember[] }> {
-  return apiClient.get<{ members: PlatformMember[] }>('/organizations/members')
+/** Super Admin da plataforma — pode não estar em nenhuma organização. */
+export interface PlatformAdmin {
+  userId: string
+  name: string | null
+  email: string
+  avatarUrl: string | null
+}
+
+export interface PlatformMembersResponse {
+  members: PlatformMember[]
+  platformAdmins: PlatformAdmin[]
+}
+
+export function listPlatformMembers(): Promise<PlatformMembersResponse> {
+  return apiClient.get<PlatformMembersResponse>('/organizations/members')
 }
 
 export function createPlatformUser(

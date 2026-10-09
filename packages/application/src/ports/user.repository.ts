@@ -44,4 +44,8 @@ export interface IUserRepository {
 
   /** Autoatualização de perfil pelo próprio usuário — nunca toca em email/isPlatformAdmin. */
   updateProfile(id: string, input: UpdateProfileInput): Promise<UserRecord>
+
+  /** Super Admins da plataforma (isPlatformAdmin), por nome/e-mail. Uso:
+   * aba Usuários da Administração — inclui quem não está em organização. */
+  listPlatformAdmins(): Promise<UserRecord[]>
 }

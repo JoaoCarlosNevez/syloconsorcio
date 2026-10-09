@@ -68,6 +68,7 @@ function buildUserRepository(isPlatformAdmin: boolean): IUserRepository {
       isPlatformAdmin: false,
     }),
     updateProfile: vi.fn(),
+    listPlatformAdmins: vi.fn().mockResolvedValue([]),
   }
 }
 
@@ -408,6 +409,36 @@ describe('GET /organizations/members', () => {
     const body = response.json<{ members: { organizationId: string }[] }>()
     expect(body.members).toHaveLength(1)
     expect(body.members[0]?.organizationId).toBe('org-1')
+  })
+
+  it('also returns the platform admins, even those without an organization', async () => {
+    const userRepository = buildUserRepository(true)
+    userRepository.listPlatformAdmins = vi.fn().mockResolvedValue([
+      {
+        id: 'admin-1',
+        email: 'admin@sylo.com',
+        name: 'Admin Sem Org',
+        avatarUrl: null,
+        isPlatformAdmin: true,
+      },
+    ])
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository,
+      organizationRepository: buildOrganizationRepository(),
+      membershipRepository: buildMembershipRepository(),
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/organizations/members',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json<{ platformAdmins: unknown[] }>().platformAdmins).toEqual([
+      { userId: 'admin-1', name: 'Admin Sem Org', email: 'admin@sylo.com', avatarUrl: null },
+    ])
   })
 })
 
