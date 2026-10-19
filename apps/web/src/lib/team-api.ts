@@ -4,14 +4,14 @@
 import type { Tier } from '@sylocrm/ui'
 import { apiClient } from './api-client'
 
-export type InvitableRole = 'MANAGER' | 'SELLER'
+export type InvitableRole = 'MANAGER' | 'BACKOFFICE' | 'SELLER'
 
 export interface TeamMember {
   userId: string
   name: string | null
   email: string
   avatarUrl: string | null
-  role: 'ADMIN' | 'MANAGER' | 'SELLER'
+  role: 'ADMIN' | 'MANAGER' | 'BACKOFFICE' | 'SELLER'
   status: 'ACTIVE' | 'INVITED' | 'SUSPENDED'
   /** Meta de vendas na organização, em centavos de crédito. null = sem meta. */
   salesGoalCents: number | null

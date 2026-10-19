@@ -1,5 +1,5 @@
-// Avisa no sininho ('lead.received') quem distribui os leads — Dono e
-// Supervisores ativos — sobre um lead sem responsável. Usado quando o lead
+// Avisa no sininho ('lead.received') quem distribui os leads — Dono,
+// Supervisores e Administrativos ativos — sobre um lead sem responsável. Usado quando o lead
 // chega pelo webhook sem fila, e quando ninguém da fila aceitou
 // (metadata.queueExhausted).
 
@@ -11,7 +11,7 @@ import type {
   NotificationMetadata,
 } from '../ports/notification.repository'
 
-const DISTRIBUTOR_ROLES: ReadonlySet<Role> = new Set([Role.ADMIN, Role.MANAGER])
+const DISTRIBUTOR_ROLES: ReadonlySet<Role> = new Set([Role.ADMIN, Role.MANAGER, Role.BACKOFFICE])
 
 export async function notifyLeadDistributors(
   lead: LeadRecord,

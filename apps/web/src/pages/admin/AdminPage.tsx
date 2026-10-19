@@ -26,6 +26,7 @@ const TYPE_LABEL: Record<Organization['type'], string> = {
 const ROLE_LABEL: Record<PlatformMember['role'], string> = {
   ADMIN: 'Dono',
   MANAGER: 'Supervisor',
+  BACKOFFICE: 'Administrativo',
   SELLER: 'Vendedor',
 }
 

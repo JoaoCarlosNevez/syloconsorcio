@@ -15,7 +15,7 @@ const NEUTRAL_GRADIENT = 'linear-gradient(135deg, #e2e8f0, #94a3b8)'
 /** A patente do membro, ou null quando o papel não tem patente — só o
  * Vendedor tem (espelha roleHasTier do domínio). */
 export function visibleTier(member: {
-  role: 'ADMIN' | 'MANAGER' | 'SELLER'
+  role: 'ADMIN' | 'MANAGER' | 'BACKOFFICE' | 'SELLER'
   tier: Tier
 }): Tier | null {
   return member.role === 'SELLER' ? member.tier : null

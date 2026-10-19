@@ -13,7 +13,7 @@ import { users } from './users'
 
 export const membershipStatusEnum = pgEnum('membership_status', ['ACTIVE', 'INVITED', 'SUSPENDED'])
 
-export const roleEnum = pgEnum('role', ['ADMIN', 'MANAGER', 'SELLER'])
+export const roleEnum = pgEnum('role', ['ADMIN', 'MANAGER', 'BACKOFFICE', 'SELLER'])
 
 // Patente do membro (ver MemberTier em @sylocrm/domain), da mais baixa pra
 // mais alta.

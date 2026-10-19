@@ -192,6 +192,7 @@ export interface ResolvedAgent {
 const ROLE_LABEL: Record<TeamMember['role'], string> = {
   ADMIN: 'Dono',
   MANAGER: 'Supervisor',
+  BACKOFFICE: 'Administrativo',
   SELLER: 'Vendedor',
 }
 

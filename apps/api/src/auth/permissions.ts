@@ -40,6 +40,21 @@ const MANAGER_PERMISSIONS: readonly Permission[] = [
   Permission.TASK_ASSIGN,
 ]
 
+// Administrativo (backoffice): opera os leads de toda a representação
+// (distribui, cria e edita, cria tarefas pro time), mas não gerencia equipe,
+// metas, configurações, integrações nem a fila; não reabre nem apaga leads.
+const BACKOFFICE_PERMISSIONS: readonly Permission[] = [
+  Permission.LEAD_READ,
+  Permission.LEAD_CREATE,
+  Permission.LEAD_UPDATE,
+  Permission.LEAD_ASSIGN,
+  Permission.TASK_READ,
+  Permission.TASK_CREATE,
+  Permission.TASK_UPDATE,
+  Permission.TASK_DELETE,
+  Permission.TASK_ASSIGN,
+]
+
 const SELLER_PERMISSIONS: readonly Permission[] = [
   Permission.LEAD_READ,
   Permission.LEAD_CREATE,
@@ -53,6 +68,7 @@ const SELLER_PERMISSIONS: readonly Permission[] = [
 const ROLE_PERMISSION_MAP: Record<Role, readonly Permission[]> = {
   [Role.ADMIN]: ADMIN_PERMISSIONS,
   [Role.MANAGER]: MANAGER_PERMISSIONS,
+  [Role.BACKOFFICE]: BACKOFFICE_PERMISSIONS,
   [Role.SELLER]: SELLER_PERMISSIONS,
 }
 

@@ -187,9 +187,10 @@ function SairIcon() {
 // Paleta da patente injetada como CSS custom properties no sidebar.
 // O menu (--nav-*) usa a cor secundária White Label quando a organização
 // ativa tem uma; senão, a da patente.
-const ROLE_LABEL: Record<'ADMIN' | 'MANAGER' | 'SELLER', string> = {
+const ROLE_LABEL: Record<'ADMIN' | 'MANAGER' | 'BACKOFFICE' | 'SELLER', string> = {
   ADMIN: 'Dono',
   MANAGER: 'Supervisor',
+  BACKOFFICE: 'Administrativo',
   SELLER: 'Vendedor',
 }
 

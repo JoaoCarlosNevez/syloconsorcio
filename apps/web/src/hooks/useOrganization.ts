@@ -22,7 +22,7 @@ export interface MembershipSummary {
   organizationIconUrl: string | null
   /** Cor secundária White Label (#RRGGBB), null = âmbar padrão da Sylo. */
   organizationSecondaryColor: string | null
-  role: 'ADMIN' | 'MANAGER' | 'SELLER'
+  role: 'ADMIN' | 'MANAGER' | 'BACKOFFICE' | 'SELLER'
   /** Patente do usuário nesta organização (Configurações → Equipe). */
   tier: Tier
   dataScope: 'own' | 'representation' | 'master' | 'incorporadora'

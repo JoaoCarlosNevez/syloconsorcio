@@ -67,7 +67,7 @@ const createPlatformUserSchema = z.object({
   organizationId: z.string().min(1),
   name: z.string().min(1),
   email: z.string().email(),
-  role: z.enum([Role.ADMIN, Role.MANAGER, Role.SELLER]),
+  role: z.enum([Role.ADMIN, Role.MANAGER, Role.BACKOFFICE, Role.SELLER]),
 })
 
 function validationErrorResponse(fieldErrors: Record<string, string[] | undefined>) {

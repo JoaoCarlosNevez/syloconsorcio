@@ -20,6 +20,7 @@ const QUEUE_PERMISSION = 'lead_queue.manage'
 const ROLE_LABEL: Record<TeamMember['role'], string> = {
   ADMIN: 'Dono',
   MANAGER: 'Supervisor',
+  BACKOFFICE: 'Administrativo',
   SELLER: 'Vendedor',
 }
 

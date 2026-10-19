@@ -6,7 +6,7 @@
 // Hierarquia:
 //   INCORPORADORA (qualquer role) → 'incorporadora' — visão agregada
 //   MASTER (qualquer role)        → 'master' — todas as representações
-//   REPRESENTACAO + ADMIN/MANAGER → 'representation' — toda a representação
+//   REPRESENTACAO + ADMIN/MANAGER/BACKOFFICE → 'representation' — toda a representação
 //   REPRESENTACAO + SELLER        → 'own' — apenas seus próprios leads
 
 import { DataScope, OrganizationType, Role } from '@sylocrm/domain'

@@ -10,6 +10,10 @@
 export const Role = {
   ADMIN: 'ADMIN',
   MANAGER: 'MANAGER',
+  /** Administrativo (backoffice): operação da representação — vê todos os
+   * leads, distribui e cria tarefas; não gerencia equipe nem configurações.
+   * Ganha as telas de pré-contrato/cota quando elas existirem. */
+  BACKOFFICE: 'BACKOFFICE',
   SELLER: 'SELLER',
 } as const
 

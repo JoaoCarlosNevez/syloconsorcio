@@ -347,23 +347,31 @@ type View =
 const ROLE_LABEL: Record<TeamMember['role'], string> = {
   ADMIN: 'Dono',
   MANAGER: 'Supervisor',
+  BACKOFFICE: 'Administrativo',
   SELLER: 'Vendedor',
 }
 
 const ROLE_DESCRIPTION: Record<InvitableRole, string> = {
   MANAGER: 'Convida vendedores e gerencia a equipe',
+  BACKOFFICE: 'Backoffice: vê todos os leads, distribui e cria tarefas',
   SELLER: 'Opera o funil de leads',
 }
 
 // Um Role só convida papéis estritamente abaixo do seu (AGENTS.md §7,
 // espelhado no backend por canGrantRole).
 const INVITABLE_ROLES_BY_ROLE: Record<string, InvitableRole[]> = {
-  ADMIN: ['MANAGER', 'SELLER'],
+  ADMIN: ['MANAGER', 'BACKOFFICE', 'SELLER'],
   MANAGER: ['SELLER'],
+  BACKOFFICE: [],
   SELLER: [],
 }
 
-const ROLE_RANK: Record<TeamMember['role'], number> = { SELLER: 0, MANAGER: 1, ADMIN: 2 }
+const ROLE_RANK: Record<TeamMember['role'], number> = {
+  SELLER: 0,
+  MANAGER: 1,
+  BACKOFFICE: 1,
+  ADMIN: 2,
+}
 
 // Mesma regra de hierarquia usada pra convidar (canGrantRole no backend) —
 // Dono remove/reativa Supervisor/Vendedor, Supervisor remove/reativa só
@@ -371,7 +379,7 @@ const ROLE_RANK: Record<TeamMember['role'], number> = { SELLER: 0, MANAGER: 1, A
 // acontece no backend (RemoveTeamMemberUseCase/ReactivateTeamMemberUseCase);
 // isto só decide o que mostrar na UI.
 /** Ordem do seletor de papel no detalhe do membro. */
-const ROLE_OPTIONS: TeamMember['role'][] = ['ADMIN', 'MANAGER', 'SELLER']
+const ROLE_OPTIONS: TeamMember['role'][] = ['ADMIN', 'MANAGER', 'BACKOFFICE', 'SELLER']
 
 function canManageMember(
   viewerRole: TeamMember['role'],
@@ -385,6 +393,7 @@ function canManageMember(
 function roleBadgeClass(role: TeamMember['role']) {
   if (role === 'ADMIN') return styles.roleAdmin
   if (role === 'MANAGER') return styles.roleSupervisor
+  if (role === 'BACKOFFICE') return styles.roleBackoffice
   return styles.roleMember
 }
 
@@ -3091,7 +3100,11 @@ export function ConfigPage() {
   // "Minha Conta" — melhor as seções da organização aparecerem um instante
   // depois pra quem pode do que piscarem pra quem não pode. As rotas da API
   // continuam exigindo as permissões de cada tela.
-  const canSeeOrganization = membership ? membership.role !== 'SELLER' : false
+  // Administrativo (BACKOFFICE) também só vê "Minha Conta" — não gerencia
+  // equipe nem configurações da organização.
+  const canSeeOrganization = membership
+    ? membership.role === 'ADMIN' || membership.role === 'MANAGER'
+    : false
   const view = canSeeOrganization || ACCOUNT_VIEWS.has(requestedView) ? requestedView : 'hub'
 
   const isHub = view === 'hub'

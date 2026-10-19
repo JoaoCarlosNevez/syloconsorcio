@@ -621,6 +621,12 @@ button.breadcrumbCurrent:hover {
   white-space: nowrap;
 }
 
+.roleBackoffice {
+  background: #f0fdfa;
+  border-color: #99f6e4;
+  color: #0f766e;
+}
+
 .roleAdmin {
   background: #eff6ff;
   border-color: #bfdbfe;

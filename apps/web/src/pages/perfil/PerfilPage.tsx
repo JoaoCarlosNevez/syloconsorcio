@@ -23,9 +23,10 @@ import { teamLine } from '../../lib/team-line'
 import { tierBackground, visibleTier } from '../../lib/tier-art'
 import styles from './PerfilPage.module.css'
 
-const ROLE_LABEL: Record<'ADMIN' | 'MANAGER' | 'SELLER', string> = {
+const ROLE_LABEL: Record<'ADMIN' | 'MANAGER' | 'BACKOFFICE' | 'SELLER', string> = {
   ADMIN: 'Dono',
   MANAGER: 'Supervisor',
+  BACKOFFICE: 'Administrativo',
   SELLER: 'Vendedor',
 }
 

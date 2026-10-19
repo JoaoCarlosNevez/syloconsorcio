@@ -12,6 +12,7 @@ import styles from './AdminPage.module.css'
 const ROLE_LABEL: Record<CreatePlatformUserPayload['role'], string> = {
   ADMIN: 'Dono (ADMIN)',
   MANAGER: 'Supervisor',
+  BACKOFFICE: 'Administrativo',
   SELLER: 'Vendedor',
 }
 

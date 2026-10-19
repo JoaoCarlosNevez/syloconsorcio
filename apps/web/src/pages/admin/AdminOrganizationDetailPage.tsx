@@ -31,6 +31,7 @@ import styles from './AdminPage.module.css'
 const ROLE_LABEL: Record<TeamMember['role'], string> = {
   ADMIN: 'Dono',
   MANAGER: 'Supervisor',
+  BACKOFFICE: 'Administrativo',
   SELLER: 'Vendedor',
 }
 

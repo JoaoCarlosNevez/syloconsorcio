@@ -55,14 +55,14 @@ export interface CreatePlatformUserPayload {
   organizationId: string
   name: string
   email: string
-  role: 'ADMIN' | 'MANAGER' | 'SELLER'
+  role: 'ADMIN' | 'MANAGER' | 'BACKOFFICE' | 'SELLER'
 }
 
 export interface CreatePlatformUserResult {
   member: {
     id: string
     email: string
-    role: 'ADMIN' | 'MANAGER' | 'SELLER'
+    role: 'ADMIN' | 'MANAGER' | 'BACKOFFICE' | 'SELLER'
     temporaryPassword: string
   }
 }

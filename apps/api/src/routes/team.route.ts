@@ -91,7 +91,7 @@ interface TeamRouteOptions {
   activityLogRepository: IActivityLogRepository
 }
 
-const INVITABLE_ROLES = [Role.MANAGER, Role.SELLER] as const
+const INVITABLE_ROLES = [Role.MANAGER, Role.BACKOFFICE, Role.SELLER] as const
 
 const inviteMemberSchema = z.object({
   name: z.string().min(1),
@@ -104,7 +104,7 @@ const updateMemberSchema = z.object({
 })
 
 const updateMemberRoleSchema = z.object({
-  role: z.enum([Role.ADMIN, Role.MANAGER, Role.SELLER]),
+  role: z.enum([Role.ADMIN, Role.MANAGER, Role.BACKOFFICE, Role.SELLER]),
 })
 
 const updateMemberTierSchema = z.object({
