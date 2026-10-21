@@ -120,6 +120,12 @@ export const ADHESION_DOCUMENTS: {
   required: boolean
 }[] = [
   {
+    kind: 'identity_document',
+    label: 'Documento de identificação com foto',
+    hint: 'RG, CNH ou outro documento oficial com foto (frente e verso)',
+    required: true,
+  },
+  {
     kind: 'email_print',
     label: 'Print do e-mail',
     hint: 'Print da caixa de entrada do e-mail do cliente',

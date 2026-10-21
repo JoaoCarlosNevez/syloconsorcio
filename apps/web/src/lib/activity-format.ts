@@ -100,6 +100,7 @@ export function activityActorName(entry: ActivityEntry): string {
 
 /** Frase do evento, sem o nome de quem fez (vem antes, em negrito). */
 const DOCUMENT_LABELS: Record<string, string> = {
+  identity_document: 'o documento de identificação',
   email_print: 'o print do e-mail',
   proof_of_address: 'o comprovante de residência',
   handwritten_letter: 'a carta a punho',

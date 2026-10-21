@@ -235,7 +235,11 @@ export function getLeadAdhesion(
   })
 }
 
-export type AdhesionDocumentKind = 'email_print' | 'proof_of_address' | 'handwritten_letter'
+export type AdhesionDocumentKind =
+  | 'identity_document'
+  | 'email_print'
+  | 'proof_of_address'
+  | 'handwritten_letter'
 
 export interface AdhesionDocument {
   id: string

@@ -38,6 +38,7 @@ export interface LeadAdhesionRecord extends LeadAdhesionFields {
 
 /** Documentos da ficha — um arquivo vigente por tipo. */
 export const ADHESION_DOCUMENT_KINDS = [
+  'identity_document',
   'email_print',
   'proof_of_address',
   'handwritten_letter',

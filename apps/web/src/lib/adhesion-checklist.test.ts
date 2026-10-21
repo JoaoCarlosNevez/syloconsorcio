@@ -38,7 +38,12 @@ function filledForm(overrides: Partial<AdhesionForm> = {}): AdhesionForm {
   }
 }
 
-const ALL_DOCS = new Set(['email_print', 'proof_of_address', 'handwritten_letter'] as const)
+const ALL_DOCS = new Set([
+  'identity_document',
+  'email_print',
+  'proof_of_address',
+  'handwritten_letter',
+] as const)
 
 describe('needsSpouse', () => {
   it('asks for the spouse only when married or in a stable union', () => {
@@ -72,7 +77,7 @@ describe('adhesionProgress', () => {
   it('counts the required items and lists the missing ones', () => {
     const progress = adhesionProgress(buildAdhesionForm(CARD, null, null))
 
-    expect(progress.total).toBe(17)
+    expect(progress.total).toBe(18)
     expect(progress.missing).toEqual([
       'Administradora / intermediação',
       'Tabela / plano',
@@ -81,6 +86,7 @@ describe('adhesionProgress', () => {
       'Naturalidade',
       'Endereço',
       'CEP atualizado',
+      'Documento de identificação com foto',
       'Print do e-mail',
       'Comprovante de residência',
     ])
@@ -89,14 +95,14 @@ describe('adhesionProgress', () => {
   it('requires the spouse for married clients', () => {
     const progress = adhesionProgress(filledForm({ maritalStatus: 'Casado(a)' }), ALL_DOCS)
 
-    expect(progress.total).toBe(18)
+    expect(progress.total).toBe(19)
     expect(progress.missing).toEqual(['Cônjuge'])
   })
 
   it('is complete when every required item is filled', () => {
     expect(adhesionProgress(filledForm(), ALL_DOCS)).toMatchObject({
-      done: 17,
-      total: 17,
+      done: 18,
+      total: 18,
       missing: [],
     })
   })
@@ -104,7 +110,7 @@ describe('adhesionProgress', () => {
   it('does not require the handwritten letter', () => {
     const progress = adhesionProgress(
       filledForm(),
-      new Set(['email_print', 'proof_of_address'] as const),
+      new Set(['identity_document', 'email_print', 'proof_of_address'] as const),
     )
     expect(progress.missing).toEqual([])
   })

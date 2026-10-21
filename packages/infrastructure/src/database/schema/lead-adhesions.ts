@@ -75,7 +75,7 @@ export const leadAdhesionDocuments = pgTable(
     organizationId: uuid('organization_id')
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' }),
-    // email_print | proof_of_address | handwritten_letter
+    // identity_document | email_print | proof_of_address | handwritten_letter
     kind: text('kind').notNull(),
     fileName: text('file_name').notNull(),
     storagePath: text('storage_path').notNull(),
