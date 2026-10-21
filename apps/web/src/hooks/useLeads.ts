@@ -60,6 +60,9 @@ export function useUpdateLead(organizationId: string | null) {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['leads', organizationId] })
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'me', 'monthly', organizationId] })
+      // Contagem de leads por etapa — e o Ganho pode criar o funil ADM na
+      // hora (organização que ainda não tinha), que precisa aparecer no seletor.
+      queryClient.invalidateQueries({ queryKey: ['funnels', organizationId] })
     },
   })
 }
