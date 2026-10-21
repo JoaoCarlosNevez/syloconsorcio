@@ -133,6 +133,7 @@ const SAMPLE_FUNNEL = {
   name: 'Padrão',
   isDefault: true,
   duplicateToFunnelId: null,
+  kind: 'SALES' as const,
   stages: [
     { id: LEAD_STAGE_ID, funnelId: FUNNEL_ID, name: 'Lead', color: '#94a3b8', position: 0 },
     {
@@ -154,6 +155,7 @@ const TARGET_FUNNEL = {
   name: 'Instalação',
   isDefault: false,
   duplicateToFunnelId: null,
+  kind: 'SALES' as const,
   stages: [
     { id: TARGET_STAGE_ID, funnelId: TARGET_FUNNEL_ID, name: 'Novo', color: '#000', position: 0 },
   ],
@@ -899,20 +901,18 @@ describe('PATCH /leads/:id', () => {
     expect(response.json<{ wonAt: string | null }>().wonAt).not.toBeNull()
   })
 
-  it('auto-duplicates the lead into duplicateToFunnelId when marking it as won', async () => {
+  it('copies the won lead into the ADM funnel', async () => {
     const findById = vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, stageId: FECHADO_STAGE_ID })
     const update = vi
       .fn()
       .mockResolvedValue({ ...SAMPLE_LEAD, stageId: FECHADO_STAGE_ID, wonAt: new Date() })
     const create = vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, id: 'lead-02' })
     const leadRepository = buildLeadRepository({ findById, update, create })
+    const admFunnel = { ...TARGET_FUNNEL, name: 'ADM', kind: 'BACKOFFICE' as const }
     const funnelRepository = buildFunnelRepository({
+      listByOrganization: vi.fn().mockResolvedValue([SAMPLE_FUNNEL, admFunnel]),
       findById: vi.fn((id: string) =>
-        Promise.resolve(
-          id === TARGET_FUNNEL_ID
-            ? TARGET_FUNNEL
-            : { ...SAMPLE_FUNNEL, duplicateToFunnelId: TARGET_FUNNEL_ID },
-        ),
+        Promise.resolve(id === TARGET_FUNNEL_ID ? admFunnel : SAMPLE_FUNNEL),
       ),
     })
     const app = buildTestApp({ leadRepository, funnelRepository })
@@ -928,6 +928,28 @@ describe('PATCH /leads/:id', () => {
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({ funnelId: TARGET_FUNNEL_ID, stageId: TARGET_STAGE_ID }),
     )
+  })
+
+  it('returns 403 when a seller tries to move a lead in the ADM funnel', async () => {
+    const update = vi.fn()
+    const leadRepository = buildLeadRepository({
+      findById: vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, funnelId: TARGET_FUNNEL_ID }),
+      update,
+    })
+    const funnelRepository = buildFunnelRepository({
+      findById: vi.fn().mockResolvedValue({ ...TARGET_FUNNEL, kind: 'BACKOFFICE' as const }),
+    })
+    const app = buildTestApp({ membership: SELLER_MEMBERSHIP, leadRepository, funnelRepository })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/leads/lead-01',
+      headers: AUTH_HEADERS,
+      payload: { stageId: TARGET_STAGE_ID },
+    })
+
+    expect(response.statusCode).toBe(403)
+    expect(update).not.toHaveBeenCalled()
   })
 
   it('marks a lead as lost without requiring lead.assign', async () => {
@@ -1458,6 +1480,7 @@ describe('/leads/:id/adhesion/documents', () => {
       uploadPublicFile: vi.fn(),
       deleteFolderFiles: vi.fn(),
       uploadPrivateFile: vi.fn().mockResolvedValue(undefined),
+      copyFile: vi.fn().mockResolvedValue(undefined),
       createSignedUrl: vi.fn().mockResolvedValue('https://signed.example/doc'),
       deleteFiles: vi.fn().mockResolvedValue(undefined),
     }

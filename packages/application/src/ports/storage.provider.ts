@@ -52,6 +52,9 @@ export interface IStorageProvider {
     expiresInSeconds: number
   }): Promise<string>
 
+  /** Copia um arquivo dentro do mesmo bucket. */
+  copyFile(input: { bucket: string; from: string; to: string }): Promise<void>
+
   /** Apaga arquivos específicos de um bucket. */
   deleteFiles(input: { bucket: string; paths: string[] }): Promise<void>
 }

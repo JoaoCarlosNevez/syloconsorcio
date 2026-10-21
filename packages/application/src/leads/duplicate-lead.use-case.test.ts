@@ -1,6 +1,12 @@
 // Tests: DuplicateLeadUseCase — transferência manual de um lead pra outro funil.
 
-import { DataScope, OrganizationType, Role, ValidationError } from '@sylocrm/domain'
+import {
+  AuthorizationError,
+  DataScope,
+  OrganizationType,
+  Role,
+  ValidationError,
+} from '@sylocrm/domain'
 import { describe, expect, it, vi } from 'vitest'
 import type { MembershipContext } from '../auth/auth-context'
 import type { FunnelRecord, IFunnelRepository } from '../ports/funnel.repository'
@@ -58,6 +64,7 @@ const SOURCE_FUNNEL: FunnelRecord = {
   name: 'Vendas',
   isDefault: true,
   duplicateToFunnelId: null,
+  kind: 'SALES' as const,
   stages: [
     {
       id: 'stage-source-first',
@@ -77,6 +84,7 @@ const TARGET_FUNNEL: FunnelRecord = {
   name: 'Instalação',
   isDefault: false,
   duplicateToFunnelId: null,
+  kind: 'SALES' as const,
   stages: [
     {
       id: TARGET_FIRST_STAGE_ID,
@@ -135,6 +143,27 @@ function buildLeadRepository(overrides: Partial<ILeadRepository> = {}): ILeadRep
 }
 
 describe('DuplicateLeadUseCase', () => {
+  it('does not let a seller send a lead to the ADM funnel by hand', async () => {
+    const leadRepository = buildLeadRepository()
+    const useCase = new DuplicateLeadUseCase(
+      leadRepository,
+      buildOrganizationRepository(),
+      buildFunnelRepository({
+        findById: vi.fn().mockResolvedValue({ ...TARGET_FUNNEL, kind: 'BACKOFFICE' }),
+      }),
+    )
+
+    await expect(
+      useCase.execute({
+        id: 'lead-01',
+        userId: 'user-01',
+        membership: { ...MEMBERSHIP, role: Role.SELLER },
+        targetFunnelId: TARGET_FUNNEL_ID,
+      }),
+    ).rejects.toThrow(AuthorizationError)
+    expect(leadRepository.create).not.toHaveBeenCalled()
+  })
+
   it('returns null when the source lead does not exist', async () => {
     const leadRepository = buildLeadRepository({ findById: vi.fn().mockResolvedValue(null) })
     const useCase = new DuplicateLeadUseCase(

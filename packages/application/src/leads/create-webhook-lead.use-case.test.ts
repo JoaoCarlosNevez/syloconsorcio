@@ -27,6 +27,7 @@ const SAMPLE_FUNNEL: FunnelRecord = {
   name: 'Padrão',
   isDefault: true,
   duplicateToFunnelId: null,
+  kind: 'SALES' as const,
   stages: [{ id: FIRST_STAGE_ID, funnelId: FUNNEL_ID, name: 'Lead', color: '#000', position: 0 }],
   createdAt: new Date('2026-01-01T00:00:00Z'),
   updatedAt: new Date('2026-01-01T00:00:00Z'),

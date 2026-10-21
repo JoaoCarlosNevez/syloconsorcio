@@ -18,9 +18,12 @@ export interface Funnel {
   organizationId: string
   name: string
   isDefault: boolean
-  /** Gatilho "passar o bastão" — ao marcar Ganho neste funil, duplica
-   * automaticamente o lead pro primeiro estágio deste outro funil. Null = desativado. */
+  /** Antigo gatilho "passar o bastão" — não é mais usado: o Ganho de um
+   * funil de vendas sempre vai pro funil ADM. */
   duplicateToFunnelId: string | null
+  /** SALES = funil de vendas (configurável). BACKOFFICE = funil ADM do
+   * pós-venda: fixo, criado pelo sistema, recebe a cópia de todo lead ganho. */
+  kind: 'SALES' | 'BACKOFFICE'
   /** Sempre ordenados por position asc. */
   stages: FunnelStage[]
   createdAt: string

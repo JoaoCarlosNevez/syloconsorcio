@@ -3,7 +3,7 @@
 // Cobre a regra "telefone único por organização" — antes só era exercitada
 // indiretamente via leads.route.test.ts.
 
-import { ValidationError } from '@sylocrm/domain'
+import { AuthorizationError, Role, ValidationError } from '@sylocrm/domain'
 import { describe, expect, it, vi } from 'vitest'
 import type { FunnelRecord, IFunnelRepository } from '../ports/funnel.repository'
 import type { ILeadRepository, LeadRecord } from '../ports/lead.repository'
@@ -19,6 +19,7 @@ const SAMPLE_FUNNEL: FunnelRecord = {
   name: 'Padrão',
   isDefault: true,
   duplicateToFunnelId: null,
+  kind: 'SALES' as const,
   stages: [{ id: FIRST_STAGE_ID, funnelId: FUNNEL_ID, name: 'Lead', color: '#000', position: 0 }],
   createdAt: new Date('2026-01-01T00:00:00Z'),
   updatedAt: new Date('2026-01-01T00:00:00Z'),
@@ -92,6 +93,21 @@ const VALID_INPUT = {
 }
 
 describe('CreateLeadUseCase', () => {
+  it('does not let a seller create a lead straight in the ADM funnel', async () => {
+    const leadRepository = buildLeadRepository()
+    const funnelRepository = buildFunnelRepository({
+      findById: vi.fn().mockResolvedValue({ ...SAMPLE_FUNNEL, kind: 'BACKOFFICE' }),
+    })
+    const useCase = new CreateLeadUseCase(leadRepository, funnelRepository)
+
+    await expect(useCase.execute({ ...VALID_INPUT, actorRole: Role.SELLER })).rejects.toThrow(
+      AuthorizationError,
+    )
+    await expect(
+      useCase.execute({ ...VALID_INPUT, actorRole: Role.BACKOFFICE }),
+    ).resolves.toBeDefined()
+  })
+
   it('rejects when a lead with the same phone already exists in the organization', async () => {
     const leadRepository = buildLeadRepository({
       findByPhone: vi.fn().mockResolvedValue(EXISTING_LEAD),

@@ -197,12 +197,9 @@ function SortableStageRow({
 
 function FunnelEditor({
   funnel,
-  otherFunnels,
   onClose,
 }: {
   funnel: Funnel
-  /** Demais funis da org — opções pro gatilho "passar o bastão". */
-  otherFunnels: Funnel[]
   onClose: () => void
 }) {
   const { organizationId } = useActiveOrganization()
@@ -211,7 +208,6 @@ function FunnelEditor({
 
   const [name, setName] = useState(funnel.name)
   const [stages, setStages] = useState<StageDraft[]>(() => stageDraftsFromFunnel(funnel))
-  const [duplicateToFunnelId, setDuplicateToFunnelId] = useState(funnel.duplicateToFunnelId ?? '')
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -263,7 +259,6 @@ function FunnelEditor({
         payload: {
           name: trimmedName,
           stages: stages.map((s) => ({ id: s.id, name: s.name.trim(), color: s.color })),
-          duplicateToFunnelId: duplicateToFunnelId || null,
         },
       })
       toast({ type: 'success', title: 'Funil salvo com sucesso' })
@@ -312,25 +307,6 @@ function FunnelEditor({
         <button type="button" className={styles.secondaryBtn} onClick={addStage}>
           <PlusIcon /> Adicionar Estágio
         </button>
-      </div>
-
-      <div className={styles.formRow}>
-        <label className={styles.formLabel} htmlFor={`funnel-duplicate-${funnel.id}`}>
-          Ao marcar Ganho neste funil, duplicar automaticamente para
-        </label>
-        <select
-          id={`funnel-duplicate-${funnel.id}`}
-          className={styles.formSelect}
-          value={duplicateToFunnelId}
-          onChange={(e) => setDuplicateToFunnelId(e.target.value)}
-        >
-          <option value="">Nenhum (padrão)</option>
-          {otherFunnels.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.name}
-            </option>
-          ))}
-        </select>
       </div>
 
       <div className={styles.saveRow}>
@@ -438,9 +414,19 @@ export function FunnelsSection({ isAdmin }: { isAdmin: boolean }) {
               <div className={styles.funnelListInfo}>
                 <span className={styles.funnelListName}>{funnel.name}</span>
                 {funnel.isDefault && <span className={styles.funnelBadgeDefault}>Padrão</span>}
+                {funnel.kind === 'BACKOFFICE' && (
+                  <span className={styles.funnelBadgeFixed}>Fixo · pós-venda</span>
+                )}
                 <span className={styles.funnelLeadCount}>{totalLeads(funnel)} lead(s)</span>
               </div>
-              {isAdmin && (
+              {funnel.kind === 'BACKOFFICE' && (
+                <p className={styles.funnelFixedNote}>
+                  Todo lead marcado como Ganho num funil de vendas é copiado pra cá, com a ficha de
+                  adesão e os documentos, pro Administrativo dar andamento. Etapas:{' '}
+                  {funnel.stages.map((stage) => stage.name).join(' → ')}.
+                </p>
+              )}
+              {isAdmin && funnel.kind !== 'BACKOFFICE' && (
                 <div className={styles.funnelListActions}>
                   {!funnel.isDefault && (
                     <button
@@ -486,11 +472,7 @@ export function FunnelsSection({ isAdmin }: { isAdmin: boolean }) {
                 </div>
               )}
               {editingFunnelId === funnel.id && (
-                <FunnelEditor
-                  funnel={funnel}
-                  otherFunnels={funnels.filter((f) => f.id !== funnel.id)}
-                  onClose={() => setEditingFunnelId(null)}
-                />
+                <FunnelEditor funnel={funnel} onClose={() => setEditingFunnelId(null)} />
               )}
             </div>
           ))

@@ -7,6 +7,7 @@ import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activi
 import type { IFunnelRepository } from '../ports/funnel.repository'
 import type { UseCase } from '../ports/use-case'
 
+import { FIXED_FUNNEL_MESSAGE } from './backoffice-funnel'
 export interface DeleteFunnelInput {
   id: string
   organizationId: string
@@ -25,6 +26,10 @@ export class DeleteFunnelUseCase implements UseCase<DeleteFunnelInput, boolean> 
       this.funnelRepository.listByOrganization(input.organizationId),
     ])
     if (!funnel) return false
+
+    if (funnel.kind === 'BACKOFFICE') {
+      throw new ValidationError([{ field: 'id', message: FIXED_FUNNEL_MESSAGE }])
+    }
 
     if (allFunnels.length <= 1) {
       throw new ValidationError([

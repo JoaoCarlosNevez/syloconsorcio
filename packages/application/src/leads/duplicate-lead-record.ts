@@ -55,5 +55,9 @@ export async function duplicateLeadRecord(
     assignedUserId: source.assignedUserId,
     tags: source.tags,
     notes: buildDuplicateNote(source, sourceFunnelName),
+    profession: source.profession,
+    incomeCents: source.incomeCents,
+    maritalStatus: source.maritalStatus,
+    cpf: source.cpf,
   })
 }

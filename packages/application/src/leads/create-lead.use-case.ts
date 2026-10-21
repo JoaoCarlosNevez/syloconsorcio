@@ -10,7 +10,8 @@
 // leadRepository.create() diretamente: ali não é uma disputa entre vendedores,
 // é o mesmo negócio sendo encaminhado de propósito pra outro setor/funil.
 
-import { ValidationError } from '@sylocrm/domain'
+import { type Role, ValidationError } from '@sylocrm/domain'
+import { assertCanChangeLeadsInFunnel } from '../funnels/backoffice-funnel'
 import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activity-log.repository'
 import type { IFunnelRepository } from '../ports/funnel.repository'
 import type { ILeadRepository, LeadRecord } from '../ports/lead.repository'
@@ -30,6 +31,9 @@ export interface CreateLeadInput {
   notes?: string | null
   /** Quem está criando — registrado no log de atividades. */
   createdByUserId?: string
+  /** Papel de quem cria — Vendedor não cria lead no funil ADM. Ausente
+   * (webhook, sistema) = sem essa restrição. */
+  actorRole?: Role
 }
 
 export class CreateLeadUseCase implements UseCase<CreateLeadInput, LeadRecord> {
@@ -44,6 +48,7 @@ export class CreateLeadUseCase implements UseCase<CreateLeadInput, LeadRecord> {
     if (!funnel) {
       throw new ValidationError([{ field: 'funnelId', message: 'Funil não encontrado.' }])
     }
+    if (input.actorRole) assertCanChangeLeadsInFunnel(funnel, { role: input.actorRole })
     const firstStage = funnel.stages[0]
     if (!firstStage) {
       throw new ValidationError([{ field: 'funnelId', message: 'O funil não tem nenhum estágio.' }])
@@ -56,7 +61,7 @@ export class CreateLeadUseCase implements UseCase<CreateLeadInput, LeadRecord> {
       ])
     }
 
-    const { createdByUserId, ...leadInput } = input
+    const { createdByUserId, actorRole: _actorRole, ...leadInput } = input
     const lead = await this.leadRepository.create({ ...leadInput, stageId: firstStage.id })
 
     await this.activityLog.record({

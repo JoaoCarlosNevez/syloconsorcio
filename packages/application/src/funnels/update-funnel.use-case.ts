@@ -3,15 +3,16 @@
 // Guarda: não deixa remover (omitir da lista `stages`) um estágio que ainda
 // tem leads — o usuário precisa mover os leads antes.
 //
-// Guarda adicional: duplicateToFunnelId (gatilho "passar o bastão" — ver
-// funnel.repository.ts) precisa apontar pra um funil existente na mesma
-// organização, diferente do próprio funil.
+// O funil ADM (kind BACKOFFICE) é fixo: nada nele pode ser alterado. E o
+// gatilho "passar o bastão" (duplicateToFunnelId) não pode mais ser ligado —
+// o Ganho de um funil de vendas já vai sozinho pro ADM; só desligar (null).
 
 import { ValidationError } from '@sylocrm/domain'
 import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activity-log.repository'
 import type { FunnelRecord, IFunnelRepository, UpdateFunnelInput } from '../ports/funnel.repository'
 import type { UseCase } from '../ports/use-case'
 
+import { FIXED_FUNNEL_MESSAGE } from './backoffice-funnel'
 export interface UpdateFunnelUseCaseInput {
   id: string
   organizationId: string
@@ -29,24 +30,16 @@ export class UpdateFunnelUseCase implements UseCase<UpdateFunnelUseCaseInput, Fu
     const current = await this.funnelRepository.findById(input.id, input.organizationId)
     if (!current) return null
 
+    if (current.kind === 'BACKOFFICE') {
+      throw new ValidationError([{ field: 'id', message: FIXED_FUNNEL_MESSAGE }])
+    }
     if (input.changes.duplicateToFunnelId) {
-      if (input.changes.duplicateToFunnelId === input.id) {
-        throw new ValidationError([
-          {
-            field: 'duplicateToFunnelId',
-            message: 'O funil de destino não pode ser o próprio funil.',
-          },
-        ])
-      }
-      const target = await this.funnelRepository.findById(
-        input.changes.duplicateToFunnelId,
-        input.organizationId,
-      )
-      if (!target) {
-        throw new ValidationError([
-          { field: 'duplicateToFunnelId', message: 'Funil de destino não encontrado.' },
-        ])
-      }
+      throw new ValidationError([
+        {
+          field: 'duplicateToFunnelId',
+          message: 'O lead ganho já vai sozinho pro funil ADM.',
+        },
+      ])
     }
 
     if (input.changes.stages) {

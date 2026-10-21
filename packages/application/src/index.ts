@@ -35,6 +35,7 @@ export type { IStorageProvider, UploadFileInput } from './ports/storage.provider
 export { PRIVATE_STORAGE_BUCKETS, STORAGE_BUCKETS } from './ports/storage.provider'
 export type {
   IFunnelRepository,
+  FunnelKind,
   FunnelRecord,
   FunnelStageRecord,
   NewFunnelInput,
@@ -185,6 +186,12 @@ export { ListFunnelsUseCase } from './funnels/list-funnels.use-case'
 export type { ListFunnelsInput } from './funnels/list-funnels.use-case'
 export { CreateFunnelUseCase } from './funnels/create-funnel.use-case'
 export { DEFAULT_FUNNEL_NAME, DEFAULT_FUNNEL_STAGES } from './funnels/default-funnel'
+export {
+  BACKOFFICE_FUNNEL_NAME,
+  BACKOFFICE_FUNNEL_STAGES,
+  assertCanChangeLeadsInFunnel,
+  ensureBackofficeFunnel,
+} from './funnels/backoffice-funnel'
 export type { CreateFunnelInput } from './funnels/create-funnel.use-case'
 export { UpdateFunnelUseCase } from './funnels/update-funnel.use-case'
 export type { UpdateFunnelUseCaseInput } from './funnels/update-funnel.use-case'

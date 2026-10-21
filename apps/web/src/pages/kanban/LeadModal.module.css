@@ -2038,3 +2038,15 @@
   font-weight: 700;
   color: #0b1c30;
 }
+
+/* Funil ADM visto pelo Vendedor — só acompanhamento */
+.followOnlyBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 12px;
+  font-weight: 600;
+}

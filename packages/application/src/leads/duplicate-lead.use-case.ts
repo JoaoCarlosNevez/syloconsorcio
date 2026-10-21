@@ -4,6 +4,7 @@
 // original não é alterado.
 
 import type { MembershipContext } from '../auth/auth-context'
+import { assertCanChangeLeadsInFunnel } from '../funnels/backoffice-funnel'
 import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activity-log.repository'
 import type { IFunnelRepository } from '../ports/funnel.repository'
 import type { ILeadRepository, LeadRecord } from '../ports/lead.repository'
@@ -36,6 +37,12 @@ export class DuplicateLeadUseCase implements UseCase<DuplicateLeadUseCaseInput, 
     const source = await this.leadRepository.findById(input.id, scope)
     if (!source) return null
 
+    const targetFunnel = await this.funnelRepository.findById(
+      input.targetFunnelId,
+      source.organizationId,
+    )
+    assertCanChangeLeadsInFunnel(targetFunnel, input.membership)
+
     const sourceFunnel = await this.funnelRepository.findById(
       source.funnelId,
       source.organizationId,
@@ -49,10 +56,6 @@ export class DuplicateLeadUseCase implements UseCase<DuplicateLeadUseCaseInput, 
       input.targetFunnelId,
     )
 
-    const targetFunnel = await this.funnelRepository.findById(
-      input.targetFunnelId,
-      source.organizationId,
-    )
     await this.activityLog.record({
       organizationId: source.organizationId,
       actorUserId: input.userId,

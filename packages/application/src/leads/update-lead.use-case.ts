@@ -10,10 +10,11 @@
 // plano "Múltiplos funis customizáveis") — reabrir (won: false) nunca mexe em
 // stageId, só limpa wonAt.
 //
-// Gatilho "passar o bastão": se o funil do lead tem duplicateToFunnelId
-// configurado (ver funnel.repository.ts / Configurações > Funis), marcar como
-// Ganho cria automaticamente uma cópia do lead no primeiro estágio do funil
-// de destino — ver duplicate-lead-record.ts.
+// Funil ADM (ver funnels/backoffice-funnel.ts): marcar como Ganho um lead de
+// um funil de vendas cria automaticamente uma cópia dele — com a ficha de
+// adesão e os documentos — na primeira etapa do funil ADM, mesmo vendedor
+// como responsável. Ganho dentro do próprio ADM não copia (é o fim). O
+// Vendedor não altera leads do funil ADM (só acompanha).
 //
 // Telefone é único por organização — editar o telefone de um lead pra um que
 // já pertence a outro lead da mesma org é rejeitado (mesma regra da criação,
@@ -25,6 +26,7 @@
 
 import { ValidationError } from '@sylocrm/domain'
 import type { MembershipContext } from '../auth/auth-context'
+import { assertCanChangeLeadsInFunnel, ensureBackofficeFunnel } from '../funnels/backoffice-funnel'
 import {
   type ActivityMetadata,
   type IActivityLogRepository,
@@ -32,9 +34,12 @@ import {
   type NewActivityEntry,
 } from '../ports/activity-log.repository'
 import type { FunnelRecord, IFunnelRepository } from '../ports/funnel.repository'
+import type { ILeadAdhesionRepository } from '../ports/lead-adhesion.repository'
 import type { ILeadRepository, LeadRecord, UpdateLeadInput } from '../ports/lead.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
+import type { IStorageProvider } from '../ports/storage.provider'
 import type { UseCase } from '../ports/use-case'
+import { copyLeadAdhesion } from './copy-lead-adhesion'
 import { duplicateLeadRecord } from './duplicate-lead-record'
 import { resolveLeadScope } from './lead-scope'
 
@@ -73,6 +78,12 @@ export class UpdateLeadUseCase implements UseCase<UpdateLeadUseCaseInput, LeadRe
     private readonly organizationRepository: IOrganizationRepository,
     private readonly funnelRepository: IFunnelRepository,
     private readonly activityLog: IActivityLogRepository = NO_OP_ACTIVITY_LOG,
+    /** Pra levar a ficha de adesão e os documentos pro card do ADM. Sem eles
+     * (testes antigos), o card nasce só com os dados do lead. */
+    private readonly adhesionCopy: {
+      leadAdhesionRepository: ILeadAdhesionRepository
+      storage: IStorageProvider
+    } | null = null,
   ) {}
 
   async execute(input: UpdateLeadUseCaseInput): Promise<LeadRecord | null> {
@@ -87,6 +98,11 @@ export class UpdateLeadUseCase implements UseCase<UpdateLeadUseCaseInput, LeadRe
     // Estado anterior — base da validação de telefone e de Ganho, do histórico
     // de atribuição e dos eventos do log de atividades.
     const before = await this.leadRepository.findById(input.id, scope)
+
+    const currentFunnel = before
+      ? await this.funnelRepository.findById(before.funnelId, before.organizationId)
+      : null
+    assertCanChangeLeadsInFunnel(currentFunnel, input.membership)
 
     // Só valida unicidade se o telefone mudou de fato: o modal de edição sempre
     // reenvia o telefone, e cópias do lead em outros funis (duplicateLeadRecord)
@@ -122,7 +138,7 @@ export class UpdateLeadUseCase implements UseCase<UpdateLeadUseCaseInput, LeadRe
 
     let wonFunnel: FunnelRecord | null = null
     if (isMarkingWon && before) {
-      wonFunnel = await this.funnelRepository.findById(before.funnelId, before.organizationId)
+      wonFunnel = currentFunnel
       const lastStage = wonFunnel?.stages[wonFunnel.stages.length - 1]
       if (!lastStage || before.stageId !== lastStage.id) {
         throw new ValidationError([
@@ -148,18 +164,28 @@ export class UpdateLeadUseCase implements UseCase<UpdateLeadUseCaseInput, LeadRe
 
     if (before) await this.recordActivity(input.userId, before, updated, input.changes)
 
-    if (isMarkingWon && updated.wonAt && wonFunnel?.duplicateToFunnelId) {
+    // Só no Ganho de verdade (não reenvio de won: true num lead já ganho).
+    if (isMarkingWon && !before?.wonAt && updated.wonAt && wonFunnel?.kind === 'SALES') {
+      const targetFunnel = await ensureBackofficeFunnel(
+        this.funnelRepository,
+        updated.organizationId,
+      )
       const copy = await duplicateLeadRecord(
         this.leadRepository,
         this.funnelRepository,
         updated,
         wonFunnel.name,
-        wonFunnel.duplicateToFunnelId,
+        targetFunnel.id,
       )
-      const targetFunnel = await this.funnelRepository.findById(
-        wonFunnel.duplicateToFunnelId,
-        updated.organizationId,
-      )
+      if (this.adhesionCopy) {
+        await copyLeadAdhesion(
+          this.adhesionCopy.leadAdhesionRepository,
+          this.adhesionCopy.storage,
+          updated,
+          copy,
+          input.userId,
+        )
+      }
       await this.activityLog.record({
         organizationId: updated.organizationId,
         actorUserId: null,
@@ -169,7 +195,7 @@ export class UpdateLeadUseCase implements UseCase<UpdateLeadUseCaseInput, LeadRe
         entityLabel: copy.name,
         metadata: {
           fromFunnelName: wonFunnel.name,
-          toFunnelName: targetFunnel?.name ?? null,
+          toFunnelName: targetFunnel.name,
           automatic: true,
         },
       })

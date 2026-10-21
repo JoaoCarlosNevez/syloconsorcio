@@ -70,7 +70,7 @@ import {
   UpdateLeadUseCase,
   UploadAdhesionDocumentUseCase,
 } from '@sylocrm/application'
-import { Permission, ValidationError } from '@sylocrm/domain'
+import { AuthorizationError, Permission, ValidationError } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { AuthErrorCode } from '../auth/errors'
@@ -250,6 +250,7 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
     options.organizationRepository,
     options.funnelRepository,
     options.activityLogRepository,
+    { leadAdhesionRepository: options.leadAdhesionRepository, storage: options.storageProvider },
   )
   const deleteLead = new DeleteLeadUseCase(
     options.leadRepository,
@@ -397,11 +398,15 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
           assignedUserId,
           organizationId: context.currentMembership.organizationId,
           createdByUserId: context.userId,
+          actorRole: context.currentMembership.role,
         })
         return reply.status(201).send(lead)
       } catch (error) {
         if (error instanceof ValidationError) {
           return reply.status(400).send({ error: error.message, code: error.code, status: 400 })
+        }
+        if (error instanceof AuthorizationError) {
+          return reply.status(403).send({ error: error.message, code: error.code, status: 403 })
         }
         throw error
       }
@@ -517,6 +522,9 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
       } catch (error) {
         if (error instanceof ValidationError) {
           return reply.status(400).send({ error: error.message, code: error.code, status: 400 })
+        }
+        if (error instanceof AuthorizationError) {
+          return reply.status(403).send({ error: error.message, code: error.code, status: 403 })
         }
         throw error
       }
@@ -772,6 +780,9 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
         if (error instanceof ValidationError) {
           return reply.status(400).send({ error: error.message, code: error.code, status: 400 })
         }
+        if (error instanceof AuthorizationError) {
+          return reply.status(403).send({ error: error.message, code: error.code, status: 403 })
+        }
         throw error
       }
     },
@@ -834,6 +845,9 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
       } catch (error) {
         if (error instanceof ValidationError) {
           return reply.status(400).send({ error: error.message, code: error.code, status: 400 })
+        }
+        if (error instanceof AuthorizationError) {
+          return reply.status(403).send({ error: error.message, code: error.code, status: 403 })
         }
         throw error
       }

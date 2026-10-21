@@ -18,13 +18,19 @@ export interface FunnelStageRecord {
   leadCount?: number
 }
 
+/** SALES = funil de vendas (configurável). BACKOFFICE = funil ADM do
+ * pós-venda, fixo e criado pelo sistema — ver funnels/backoffice-funnel.ts. */
+export type FunnelKind = 'SALES' | 'BACKOFFICE'
+
 export interface FunnelRecord {
   id: string
   organizationId: string
   name: string
   isDefault: boolean
-  /** Gatilho "passar o bastão" — ver UpdateFunnelInput. Null = desativado. */
+  /** Gatilho "passar o bastão" — ver UpdateFunnelInput. Null = desativado.
+   * Não é mais usado: o Ganho de um funil de vendas sempre vai pro ADM. */
   duplicateToFunnelId: string | null
+  kind: FunnelKind
   /** Sempre ordenados por position asc. */
   stages: FunnelStageRecord[]
   createdAt: Date
@@ -41,6 +47,8 @@ export interface NewFunnelInput {
   name: string
   stages: NewFunnelStageInput[]
   isDefault?: boolean
+  /** Padrão SALES. */
+  kind?: FunnelKind
 }
 
 export interface StageUpsertInput {

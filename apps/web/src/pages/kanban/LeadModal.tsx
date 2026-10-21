@@ -1012,6 +1012,10 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
   const isViewingLost = cardOutcome === 'perdido'
   const isViewingWon = cardOutcome === 'ganho'
   const canDelete = membership?.permissions.includes('lead.delete') ?? false
+  // Funil ADM: o Vendedor só acompanha o cliente dele — quem move, ganha,
+  // perde e edita é o Administrativo (a API também barra).
+  const isSeller = membership?.role === 'SELLER'
+  const isFollowOnly = funnel.kind === 'BACKOFFICE' && isSeller
 
   function handleReassign(userId: string) {
     updateLead.mutate(
@@ -1654,7 +1658,9 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
   // customizado (ver update-lead.use-case.ts, mesma regra no backend).
   const lastStage = funnel.stages[funnel.stages.length - 1]
   const isAtLastStage = lastStage !== undefined && card.stageId === lastStage.id
-  const otherFunnels = funnels.filter((f) => f.id !== funnel.id)
+  const otherFunnels = funnels.filter(
+    (f) => f.id !== funnel.id && !(isSeller && f.kind === 'BACKOFFICE'),
+  )
   const responsible = resolveAgent(card.assignedUserId, members)
   const historyFeed = buildHistoryFeed(
     card,
@@ -1724,7 +1730,12 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
 
             {/* Ações */}
             <div className={styles.headerActions}>
-              {otherFunnels.length > 0 && (
+              {isFollowOnly && (
+                <span className={styles.followOnlyBadge}>
+                  Acompanhamento · o Administrativo dá andamento
+                </span>
+              )}
+              {!isFollowOnly && otherFunnels.length > 0 && (
                 <Dropdown
                   trigger={
                     <button type="button" className={styles.btnSecondary}>
@@ -1739,7 +1750,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                   }))}
                 />
               )}
-              {isViewingLost ? (
+              {isFollowOnly ? null : isViewingLost ? (
                 canManageLost && (
                   <button
                     type="button"
@@ -1785,7 +1796,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                   )}
                 </>
               )}
-              {canDelete && (
+              {canDelete && !isFollowOnly && (
                 <button
                   type="button"
                   className={styles.btnDanger}
@@ -1822,7 +1833,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                     type="button"
                     className={i === activeStage ? styles.funnelStageActive : styles.funnelStage}
                     onClick={() => handleStageClick(stage.id)}
-                    disabled={updateLead.isPending || isLockedByOutcome}
+                    disabled={updateLead.isPending || isLockedByOutcome || isFollowOnly}
                     title={
                       isLockedByOutcome ? 'Reabra o lead para poder mudar de etapa.' : undefined
                     }
@@ -2058,7 +2069,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                       Anexos
                     </button>
                   </div>
-                  {activeTab === 'qualificacao' && (
+                  {activeTab === 'qualificacao' && !isFollowOnly && (
                     <div className={styles.editActions}>
                       {isEditingAttrs && (
                         <button

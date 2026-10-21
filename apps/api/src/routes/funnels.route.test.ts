@@ -58,6 +58,7 @@ const SAMPLE_FUNNEL: FunnelRecord = {
   name: 'Padrão',
   isDefault: true,
   duplicateToFunnelId: null,
+  kind: 'SALES' as const,
   stages: [
     { id: STAGE_1_ID, funnelId: FUNNEL_ID, name: 'Lead', color: '#94a3b8', position: 0 },
     { id: STAGE_2_ID, funnelId: FUNNEL_ID, name: 'Fechado', color: '#0ea5e9', position: 1 },
@@ -72,6 +73,7 @@ const OTHER_FUNNEL: FunnelRecord = {
   name: 'Imobiliário',
   isDefault: false,
   duplicateToFunnelId: null,
+  kind: 'SALES' as const,
 }
 
 function buildAuthProvider(): IAuthProvider {
@@ -264,7 +266,7 @@ describe('PATCH /funnels/:id', () => {
     )
   })
 
-  it('sets duplicateToFunnelId when it points to another existing funnel', async () => {
+  it('returns 400 when turning on duplicateToFunnelId (won leads go to ADM)', async () => {
     const funnelRepository = buildFunnelRepository({
       findById: vi.fn((id: string) =>
         Promise.resolve(id === OTHER_FUNNEL_ID ? OTHER_FUNNEL : SAMPLE_FUNNEL),
@@ -279,12 +281,25 @@ describe('PATCH /funnels/:id', () => {
       payload: { duplicateToFunnelId: OTHER_FUNNEL_ID },
     })
 
-    expect(response.statusCode).toBe(200)
-    expect(funnelRepository.update).toHaveBeenCalledWith(
-      FUNNEL_ID,
-      ORG_ID,
-      expect.objectContaining({ duplicateToFunnelId: OTHER_FUNNEL_ID }),
-    )
+    expect(response.statusCode).toBe(400)
+    expect(funnelRepository.update).not.toHaveBeenCalled()
+  })
+
+  it('returns 400 when editing the fixed ADM funnel', async () => {
+    const funnelRepository = buildFunnelRepository({
+      findById: vi.fn().mockResolvedValue({ ...SAMPLE_FUNNEL, kind: 'BACKOFFICE' as const }),
+    })
+    const app = buildTestApp({ membership: ADMIN_MEMBERSHIP, funnelRepository })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: `/funnels/${FUNNEL_ID}`,
+      headers: AUTH_HEADERS,
+      payload: { name: 'Pós-venda' },
+    })
+
+    expect(response.statusCode).toBe(400)
+    expect(funnelRepository.update).not.toHaveBeenCalled()
   })
 
   it('returns 400 when duplicateToFunnelId points to itself', async () => {

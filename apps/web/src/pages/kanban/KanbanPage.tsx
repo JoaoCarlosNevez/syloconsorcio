@@ -659,6 +659,8 @@ export function KanbanPage() {
   }
 
   const activeFunnel = funnels.find((f) => f.id === activeFunnelId) ?? null
+  // Funil ADM: o Vendedor só acompanha (não arrasta nem cria lead aqui).
+  const isFollowOnly = activeFunnel?.kind === 'BACKOFFICE' && membership?.role === 'SELLER'
   const activeStages: FunnelStage[] = activeFunnel?.stages ?? []
   const columns: ColumnMeta[] = useMemo(
     () =>
@@ -1063,7 +1065,12 @@ export function KanbanPage() {
               type="button"
               className={styles.newLeadBtn}
               onClick={() => setIsCreateOpen(true)}
-              disabled={!organizationId}
+              disabled={!organizationId || isFollowOnly}
+              title={
+                isFollowOnly
+                  ? 'Leads do funil ADM chegam sozinhos quando uma venda é ganha.'
+                  : undefined
+              }
             >
               <PlusIcon /> Novo Lead
             </button>
@@ -1188,10 +1195,17 @@ export function KanbanPage() {
           />
         )}
 
+        {isFollowOnly && (
+          <p className={styles.followOnlyBanner}>
+            Funil ADM: aqui você acompanha o pós-venda dos seus clientes. Quem move os cards é o
+            Administrativo — pendências, comentários e documentos continuam com você no lead.
+          </p>
+        )}
+
         {/* ── Board ────────────────────────────────────────────────────── */}
         {!isLoading && totalLeads > 0 && viewMode === 'kanban' && (
           <DndContext
-            sensors={sensors}
+            sensors={isFollowOnly ? [] : sensors}
             collisionDetection={closestCorners}
             onDragStart={handleDragStart}
             onDragOver={handleDragOver}

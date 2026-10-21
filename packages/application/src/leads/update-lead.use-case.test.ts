@@ -3,20 +3,28 @@
 // Cobre a regra de negócio "só marca Ganho (won: true) a partir da última
 // etapa do funil" — antes só era exercitada indiretamente via leads.route.test.ts.
 
-import { DataScope, OrganizationType, Role, ValidationError } from '@sylocrm/domain'
+import {
+  AuthorizationError,
+  DataScope,
+  OrganizationType,
+  Role,
+  ValidationError,
+} from '@sylocrm/domain'
 import { describe, expect, it, vi } from 'vitest'
 import type { MembershipContext } from '../auth/auth-context'
 import type { IActivityLogRepository } from '../ports/activity-log.repository'
 import type { IFunnelRepository } from '../ports/funnel.repository'
+import type { ILeadAdhesionRepository } from '../ports/lead-adhesion.repository'
 import type { ILeadRepository, LeadRecord } from '../ports/lead.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
+import type { IStorageProvider } from '../ports/storage.provider'
 import { UpdateLeadUseCase } from './update-lead.use-case'
 
 const ORG_ID = 'org-01'
 const FUNNEL_ID = 'funnel-01'
 const FIRST_STAGE_ID = 'stage-first'
 const LAST_STAGE_ID = 'stage-last'
-const TARGET_FUNNEL_ID = 'funnel-target'
+const TARGET_FUNNEL_ID = 'funnel-adm'
 const TARGET_FIRST_STAGE_ID = 'stage-target-first'
 
 const MEMBERSHIP: MembershipContext = {
@@ -64,6 +72,7 @@ const SAMPLE_FUNNEL = {
   name: 'Padrão',
   isDefault: true,
   duplicateToFunnelId: null,
+  kind: 'SALES' as const,
   stages: [
     { id: FIRST_STAGE_ID, funnelId: FUNNEL_ID, name: 'Lead', color: '#000', position: 0 },
     { id: LAST_STAGE_ID, funnelId: FUNNEL_ID, name: 'Fechado', color: '#000', position: 1 },
@@ -75,9 +84,10 @@ const SAMPLE_FUNNEL = {
 const TARGET_FUNNEL = {
   id: TARGET_FUNNEL_ID,
   organizationId: ORG_ID,
-  name: 'Instalação',
+  name: 'ADM',
   isDefault: false,
   duplicateToFunnelId: null,
+  kind: 'BACKOFFICE' as const,
   stages: [
     {
       id: TARGET_FIRST_STAGE_ID,
@@ -103,7 +113,7 @@ function buildOrganizationRepository(): IOrganizationRepository {
 
 function buildFunnelRepository(overrides: Partial<IFunnelRepository> = {}): IFunnelRepository {
   return {
-    listByOrganization: vi.fn().mockResolvedValue([SAMPLE_FUNNEL]),
+    listByOrganization: vi.fn().mockResolvedValue([SAMPLE_FUNNEL, TARGET_FUNNEL]),
     findById: vi.fn((id: string) => {
       if (id === TARGET_FUNNEL_ID) return Promise.resolve(TARGET_FUNNEL)
       return Promise.resolve(SAMPLE_FUNNEL)
@@ -121,7 +131,7 @@ function buildLeadRepository(overrides: Partial<ILeadRepository> = {}): ILeadRep
   return {
     list: vi.fn(),
     findById: vi.fn().mockResolvedValue(SAMPLE_LEAD),
-    create: vi.fn(),
+    create: vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, id: 'lead-copy' }),
     update: vi.fn().mockResolvedValue(SAMPLE_LEAD),
     delete: vi.fn(),
     recordAssignmentChange: vi.fn(),
@@ -230,57 +240,164 @@ describe('UpdateLeadUseCase', () => {
     )
   })
 
-  it('duplicates the lead into duplicateToFunnelId when marking it as won', async () => {
-    const wonLead = { ...SAMPLE_LEAD, stageId: LAST_STAGE_ID, wonAt: new Date() }
-    const leadRepository = buildLeadRepository({
-      findById: vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, stageId: LAST_STAGE_ID }),
-      update: vi.fn().mockResolvedValue(wonLead),
-      create: vi.fn().mockResolvedValue({
-        ...SAMPLE_LEAD,
-        id: 'lead-copy',
-        funnelId: TARGET_FUNNEL_ID,
-        stageId: TARGET_FIRST_STAGE_ID,
-      }),
-    })
-    const funnelRepository = buildFunnelRepository({
-      findById: vi.fn((id: string) => {
-        if (id === TARGET_FUNNEL_ID) return Promise.resolve(TARGET_FUNNEL)
-        return Promise.resolve({ ...SAMPLE_FUNNEL, duplicateToFunnelId: TARGET_FUNNEL_ID })
-      }),
-    })
-    const activityLog: IActivityLogRepository = { record: vi.fn(), list: vi.fn() }
-    const useCase = new UpdateLeadUseCase(
-      leadRepository,
-      buildOrganizationRepository(),
-      funnelRepository,
-      activityLog,
-    )
+  describe('won → funil ADM', () => {
+    const copyLead = { ...SAMPLE_LEAD, id: 'lead-copy', funnelId: TARGET_FUNNEL_ID }
 
-    await useCase.execute({
+    function setupWon(options: { before?: Partial<LeadRecord>; funnels?: unknown[] } = {}) {
+      const wonLead = { ...SAMPLE_LEAD, stageId: LAST_STAGE_ID, wonAt: new Date() }
+      const leadRepository = buildLeadRepository({
+        findById: vi
+          .fn()
+          .mockResolvedValue({ ...SAMPLE_LEAD, stageId: LAST_STAGE_ID, ...options.before }),
+        update: vi.fn().mockResolvedValue(wonLead),
+        create: vi.fn().mockResolvedValue({ ...copyLead, stageId: TARGET_FIRST_STAGE_ID }),
+      })
+      const funnelRepository = buildFunnelRepository(
+        options.funnels
+          ? {
+              listByOrganization: vi.fn().mockResolvedValue(options.funnels),
+              create: vi.fn().mockResolvedValue(TARGET_FUNNEL),
+            }
+          : {},
+      )
+      const leadAdhesionRepository = {
+        findByLead: vi.fn().mockResolvedValue(null),
+        upsert: vi.fn(),
+        listDocuments: vi.fn().mockResolvedValue([
+          {
+            id: 'doc-1',
+            leadId: SAMPLE_LEAD.id,
+            organizationId: ORG_ID,
+            kind: 'identity_document',
+            fileName: 'cnh.jpg',
+            storagePath: `${ORG_ID}/${SAMPLE_LEAD.id}/identity_document-1.jpg`,
+            contentType: 'image/jpeg',
+            sizeBytes: 10,
+            uploadedByUserId: 'user-01',
+            createdAt: new Date(),
+          },
+        ]),
+        replaceDocument: vi.fn().mockResolvedValue({ document: {}, previous: null }),
+        deleteDocument: vi.fn(),
+      } as unknown as ILeadAdhesionRepository
+      const storage = {
+        copyFile: vi.fn().mockResolvedValue(undefined),
+      } as unknown as IStorageProvider
+      const activityLog: IActivityLogRepository = { record: vi.fn(), list: vi.fn() }
+      const useCase = new UpdateLeadUseCase(
+        leadRepository,
+        buildOrganizationRepository(),
+        funnelRepository,
+        activityLog,
+        { leadAdhesionRepository, storage },
+      )
+      return {
+        useCase,
+        leadRepository,
+        funnelRepository,
+        leadAdhesionRepository,
+        storage,
+        activityLog,
+      }
+    }
+
+    const markWon = {
       id: 'lead-01',
       userId: 'user-01',
       membership: MEMBERSHIP,
       changes: { won: true },
+    }
+
+    it('copies the won lead into the first stage of the ADM funnel, same seller', async () => {
+      const { useCase, leadRepository, activityLog } = setupWon()
+
+      await useCase.execute(markWon)
+
+      expect(leadRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          funnelId: TARGET_FUNNEL_ID,
+          stageId: TARGET_FIRST_STAGE_ID,
+          name: SAMPLE_LEAD.name,
+          assignedUserId: SAMPLE_LEAD.assignedUserId,
+        }),
+      )
+      expect(activityLog.record).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'lead.duplicated',
+          entityId: 'lead-copy',
+          metadata: expect.objectContaining({ toFunnelName: 'ADM', automatic: true }),
+        }),
+      )
     })
 
-    expect(leadRepository.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        funnelId: TARGET_FUNNEL_ID,
-        stageId: TARGET_FIRST_STAGE_ID,
-        name: wonLead.name,
+    it('takes the adhesion documents along, copying the files', async () => {
+      const { useCase, storage, leadAdhesionRepository } = setupWon()
+
+      await useCase.execute(markWon)
+
+      expect(storage.copyFile).toHaveBeenCalledWith({
+        bucket: 'lead-documents',
+        from: `${ORG_ID}/${SAMPLE_LEAD.id}/identity_document-1.jpg`,
+        to: `${ORG_ID}/lead-copy/identity_document-1.jpg`,
+      })
+      expect(leadAdhesionRepository.replaceDocument).toHaveBeenCalledWith(
+        expect.objectContaining({ leadId: 'lead-copy', kind: 'identity_document' }),
+      )
+    })
+
+    it('creates the ADM funnel when the organization does not have it yet', async () => {
+      const { useCase, funnelRepository } = setupWon({ funnels: [SAMPLE_FUNNEL] })
+
+      await useCase.execute(markWon)
+
+      expect(funnelRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'ADM', kind: 'BACKOFFICE' }),
+      )
+    })
+
+    it('does not copy again a lead that was already won', async () => {
+      const { useCase, leadRepository } = setupWon({ before: { wonAt: new Date() } })
+
+      await useCase.execute(markWon)
+
+      expect(leadRepository.create).not.toHaveBeenCalled()
+    })
+
+    it('does not copy a lead won inside the ADM funnel itself', async () => {
+      const { useCase, leadRepository, funnelRepository } = setupWon({
+        before: { funnelId: TARGET_FUNNEL_ID },
+      })
+      // ADM cuja última etapa é a do lead, pra poder ganhar.
+      vi.mocked(funnelRepository.findById).mockResolvedValue({
+        ...TARGET_FUNNEL,
+        stages: [{ ...TARGET_FUNNEL.stages[0], id: LAST_STAGE_ID }],
+      } as never)
+
+      await useCase.execute(markWon)
+
+      expect(leadRepository.create).not.toHaveBeenCalled()
+    })
+  })
+
+  it('does not let a seller change a lead in the ADM funnel', async () => {
+    const leadRepository = buildLeadRepository({
+      findById: vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, funnelId: TARGET_FUNNEL_ID }),
+    })
+    const useCase = new UpdateLeadUseCase(
+      leadRepository,
+      buildOrganizationRepository(),
+      buildFunnelRepository(),
+    )
+
+    await expect(
+      useCase.execute({
+        id: 'lead-01',
+        userId: 'user-01',
+        membership: { ...MEMBERSHIP, role: Role.SELLER },
+        changes: { stageId: TARGET_FIRST_STAGE_ID },
       }),
-    )
-    expect(activityLog.record).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'lead.won', actorUserId: 'user-01' }),
-    )
-    expect(activityLog.record).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: 'lead.duplicated',
-        actorUserId: null,
-        entityId: 'lead-copy',
-        metadata: expect.objectContaining({ toFunnelName: 'Instalação', automatic: true }),
-      }),
-    )
+    ).rejects.toBeInstanceOf(AuthorizationError)
+    expect(leadRepository.update).not.toHaveBeenCalled()
   })
 
   it('records the stage change and edited fields in the activity log', async () => {
@@ -322,29 +439,6 @@ describe('UpdateLeadUseCase', () => {
         metadata: { fields: ['valueCents'] },
       }),
     )
-  })
-
-  it('does not duplicate the lead when duplicateToFunnelId is not configured', async () => {
-    const leadRepository = buildLeadRepository({
-      findById: vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, stageId: LAST_STAGE_ID }),
-      update: vi
-        .fn()
-        .mockResolvedValue({ ...SAMPLE_LEAD, stageId: LAST_STAGE_ID, wonAt: new Date() }),
-    })
-    const useCase = new UpdateLeadUseCase(
-      leadRepository,
-      buildOrganizationRepository(),
-      buildFunnelRepository(),
-    )
-
-    await useCase.execute({
-      id: 'lead-01',
-      userId: 'user-01',
-      membership: MEMBERSHIP,
-      changes: { won: true },
-    })
-
-    expect(leadRepository.create).not.toHaveBeenCalled()
   })
 
   it('requires a reason to mark a lead as lost', async () => {

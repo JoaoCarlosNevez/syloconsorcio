@@ -13,6 +13,7 @@ const SAMPLE_FUNNEL: FunnelRecord = {
   name: 'Padrão',
   isDefault: true,
   duplicateToFunnelId: null,
+  kind: 'SALES' as const,
   stages: [
     { id: 'stage-1', funnelId: 'funnel-01', name: 'Lead', color: '#000', position: 0 },
     { id: 'stage-2', funnelId: 'funnel-01', name: 'Fechado', color: '#000', position: 1 },
@@ -99,45 +100,29 @@ describe('UpdateFunnelUseCase', () => {
     )
   })
 
-  it('rejects duplicateToFunnelId pointing to itself', async () => {
-    const useCase = new UpdateFunnelUseCase(buildFunnelRepository())
-
-    await expect(
-      useCase.execute({
-        id: 'funnel-01',
-        organizationId: ORG_ID,
-        changes: { duplicateToFunnelId: 'funnel-01' },
-      }),
-    ).rejects.toThrow(ValidationError)
-  })
-
-  it('rejects duplicateToFunnelId pointing to a funnel that does not exist', async () => {
-    const useCase = new UpdateFunnelUseCase(buildFunnelRepository())
-
-    await expect(
-      useCase.execute({
-        id: 'funnel-01',
-        organizationId: ORG_ID,
-        changes: { duplicateToFunnelId: 'missing-funnel' },
-      }),
-    ).rejects.toThrow(ValidationError)
-  })
-
-  it('accepts a valid duplicateToFunnelId', async () => {
+  it('rejects turning on duplicateToFunnelId — won leads already go to ADM', async () => {
     const funnelRepository = buildFunnelRepository()
     const useCase = new UpdateFunnelUseCase(funnelRepository)
 
-    await useCase.execute({
-      id: 'funnel-01',
-      organizationId: ORG_ID,
-      changes: { duplicateToFunnelId: 'funnel-02' },
-    })
+    await expect(
+      useCase.execute({
+        id: 'funnel-01',
+        organizationId: ORG_ID,
+        changes: { duplicateToFunnelId: 'funnel-02' },
+      }),
+    ).rejects.toBeInstanceOf(ValidationError)
+    expect(funnelRepository.update).not.toHaveBeenCalled()
+  })
 
-    expect(funnelRepository.update).toHaveBeenCalledWith(
-      'funnel-01',
-      ORG_ID,
-      expect.objectContaining({ duplicateToFunnelId: 'funnel-02' }),
-    )
+  it('does not change anything in the fixed ADM funnel', async () => {
+    const adm: FunnelRecord = { ...OTHER_FUNNEL, id: 'funnel-adm', name: 'ADM', kind: 'BACKOFFICE' }
+    const funnelRepository = buildFunnelRepository({ findById: vi.fn().mockResolvedValue(adm) })
+    const useCase = new UpdateFunnelUseCase(funnelRepository)
+
+    await expect(
+      useCase.execute({ id: 'funnel-adm', organizationId: ORG_ID, changes: { name: 'Pós' } }),
+    ).rejects.toThrow('O funil ADM é fixo')
+    expect(funnelRepository.update).not.toHaveBeenCalled()
   })
 
   it('allows clearing duplicateToFunnelId (null)', async () => {

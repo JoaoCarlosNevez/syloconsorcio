@@ -61,6 +61,13 @@ export class SupabaseStorageAdapter implements IStorageProvider {
     return data.signedUrl
   }
 
+  async copyFile(input: { bucket: string; from: string; to: string }): Promise<void> {
+    const { error } = await this.client.storage.from(input.bucket).copy(input.from, input.to)
+    if (error) {
+      throw new Error(`Falha ao copiar arquivo no Storage: ${error.message}`)
+    }
+  }
+
   async deleteFiles(input: { bucket: string; paths: string[] }): Promise<void> {
     if (input.paths.length === 0) return
     const { error } = await this.client.storage.from(input.bucket).remove(input.paths)

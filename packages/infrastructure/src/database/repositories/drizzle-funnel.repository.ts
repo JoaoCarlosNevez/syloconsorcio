@@ -23,6 +23,7 @@ const FUNNEL_COLUMNS = {
   name: funnels.name,
   isDefault: funnels.isDefault,
   duplicateToFunnelId: funnels.duplicateToFunnelId,
+  kind: funnels.kind,
   createdAt: funnels.createdAt,
   updatedAt: funnels.updatedAt,
 } as const
@@ -93,6 +94,7 @@ export class DrizzleFunnelRepository implements IFunnelRepository {
           organizationId: input.organizationId,
           name: input.name,
           isDefault: input.isDefault ?? false,
+          kind: input.kind ?? 'SALES',
         })
         .returning(FUNNEL_COLUMNS)
       if (!funnelRow) throw new Error('Failed to create funnel: no row returned')

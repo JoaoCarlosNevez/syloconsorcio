@@ -181,6 +181,9 @@ function createNoOpStorageProvider(): IStorageProvider {
     createSignedUrl: async () => {
       throw new Error('Storage provider not configured — cannot read files.')
     },
+    copyFile: async () => {
+      throw new Error('Storage provider not configured — cannot copy files.')
+    },
     deleteFiles: async () => {},
   }
 }

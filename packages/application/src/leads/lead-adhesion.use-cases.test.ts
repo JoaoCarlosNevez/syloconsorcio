@@ -82,6 +82,7 @@ function setup(lead: LeadRecord | null = LEAD) {
     uploadPublicFile: vi.fn(),
     deleteFolderFiles: vi.fn(),
     uploadPrivateFile: vi.fn().mockResolvedValue(undefined),
+    copyFile: vi.fn().mockResolvedValue(undefined),
     createSignedUrl: vi.fn(),
     deleteFiles: vi.fn().mockResolvedValue(undefined),
   }

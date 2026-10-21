@@ -13,6 +13,7 @@ const DEFAULT_FUNNEL: FunnelRecord = {
   name: 'Padrão',
   isDefault: true,
   duplicateToFunnelId: null,
+  kind: 'SALES' as const,
   stages: [],
   createdAt: new Date('2026-01-01T00:00:00Z'),
   updatedAt: new Date('2026-01-01T00:00:00Z'),
@@ -24,6 +25,7 @@ const OTHER_FUNNEL: FunnelRecord = {
   name: 'Imobiliário',
   isDefault: false,
   duplicateToFunnelId: null,
+  kind: 'SALES' as const,
   stages: [],
   createdAt: new Date('2026-01-01T00:00:00Z'),
   updatedAt: new Date('2026-01-01T00:00:00Z'),
@@ -50,6 +52,18 @@ describe('DeleteFunnelUseCase', () => {
     const result = await useCase.execute({ id: 'missing', organizationId: ORG_ID })
 
     expect(result).toBe(false)
+  })
+
+  it('rejects deleting the fixed ADM funnel', async () => {
+    const funnelRepository = buildFunnelRepository({
+      findById: vi.fn().mockResolvedValue({ ...OTHER_FUNNEL, kind: 'BACKOFFICE' }),
+    })
+    const useCase = new DeleteFunnelUseCase(funnelRepository)
+
+    await expect(useCase.execute({ id: 'funnel-other', organizationId: ORG_ID })).rejects.toThrow(
+      'O funil ADM é fixo',
+    )
+    expect(funnelRepository.delete).not.toHaveBeenCalled()
   })
 
   it('rejects deleting the only funnel of the organization', async () => {
