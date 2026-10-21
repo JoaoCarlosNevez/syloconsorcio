@@ -11,6 +11,7 @@ import {
   getMyEngagement,
   getMyMonthlyStats,
   getMyStreak,
+  getMyXp,
   getSalesRanking,
 } from '../lib/dashboard-api'
 
@@ -89,6 +90,15 @@ export function useMyAchievementsQuery(organizationId: string | null) {
   return useQuery({
     queryKey: ['dashboard', 'me', 'achievements', organizationId],
     queryFn: () => getMyAchievements(organizationId as string),
+    enabled: Boolean(organizationId),
+  })
+}
+
+/** XP do mês e nível do Perfil. */
+export function useMyXpQuery(organizationId: string | null) {
+  return useQuery({
+    queryKey: ['dashboard', 'me', 'xp', organizationId],
+    queryFn: () => getMyXp(organizationId as string),
     enabled: Boolean(organizationId),
   })
 }

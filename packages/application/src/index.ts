@@ -335,6 +335,14 @@ export type {
   IManagementDashboardRepository,
   OpenLeadSnapshot,
 } from './ports/management-dashboard.repository'
+export {
+  ACHIEVEMENT_XP,
+  GetMyXpUseCase,
+  XP_LEVELS,
+  XP_RULES,
+  levelFor,
+} from './dashboard/get-my-xp.use-case'
+export type { MyXp, XpItem, XpItemKey } from './dashboard/get-my-xp.use-case'
 export { GetMyAchievementsUseCase } from './dashboard/get-my-achievements.use-case'
 export type { Achievement, AchievementId } from './dashboard/get-my-achievements.use-case'
 export type {

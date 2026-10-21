@@ -262,3 +262,23 @@ export function getMyAchievements(
     organizationId,
   })
 }
+
+// ── XP e nível (Perfil) ──────────────────────────────────────────────────────
+
+export interface XpLevel {
+  level: number
+  name: string
+  minXp: number
+}
+
+export interface MyXp {
+  month: { items: { key: string; label: string; count: number; xp: number }[]; total: number }
+  totalXp: number
+  level: XpLevel
+  nextLevel: XpLevel | null
+  levels: XpLevel[]
+}
+
+export function getMyXp(organizationId: string): Promise<MyXp> {
+  return apiClient.get<MyXp>('/dashboard/me/xp', { organizationId })
+}

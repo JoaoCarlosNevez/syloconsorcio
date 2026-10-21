@@ -364,3 +364,34 @@ describe('GET /dashboard/me/achievements', () => {
     expect(byId.sold_1m.unlockedAt).toBeNull()
   })
 })
+
+describe('GET /dashboard/me/xp', () => {
+  it('returns the month XP and the level', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository: buildMembershipRepository(SELLER_MEMBERSHIP),
+      leadRepository: {
+        countWonInDefaultFunnel: vi.fn().mockResolvedValue(0),
+      } as unknown as ILeadRepository,
+      engagementRepository: {
+        countLeadsWorked: vi.fn().mockResolvedValue(3),
+        proposalStats: vi.fn().mockResolvedValue({ created: 0, shared: 0, opened: 0 }),
+      },
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/dashboard/me/xp',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({
+      month: { total: 6 },
+      totalXp: 6,
+      level: { level: 1, name: 'Iniciante Sylo' },
+      nextLevel: { level: 2, minXp: 500 },
+    })
+  })
+})

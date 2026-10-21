@@ -5,6 +5,8 @@
 //                             visitas realizadas (dessas, as concluídas), valor
 //                             ganho e tíquete médio. Qualquer papel — só olha
 //                             os dados de quem está logado.
+// GET /dashboard/me/xp      — XP do mês (por tipo de ação) e nível pelo XP
+//                             acumulado (GetMyXpUseCase). Do usuário logado.
 // GET /dashboard/me/achievements — Mural de Conquistas do Perfil (primeira
 //                             cota, marcos de crédito vendido, primeira
 //                             assembleia e contemplação) — GetMyAchievementsUseCase.
@@ -54,6 +56,7 @@ import {
   GetMyEngagementUseCase,
   GetMyMonthlyStatsUseCase,
   GetMyStreakUseCase,
+  GetMyXpUseCase,
   GetSalesRankingUseCase,
 } from '@sylocrm/application'
 import { AuthorizationError, Permission } from '@sylocrm/domain'
@@ -215,6 +218,26 @@ export const dashboardRoute: FastifyPluginAsync<DashboardRouteOptions> = async (
   )
 
   const getMyAchievements = new GetMyAchievementsUseCase(options.achievementsRepository)
+
+  const getMyXp = new GetMyXpUseCase(
+    options.engagementRepository,
+    options.leadRepository,
+    options.streakRepository,
+    getMyAchievements,
+  )
+
+  // ── GET /dashboard/me/xp ──────────────────────────────────────────────────
+  fastify.get(
+    '/dashboard/me/xp',
+    { preHandler: [authMiddleware, tenantMiddleware] },
+    async (request) => {
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      return getMyXp.execute({
+        organizationId: context.currentMembership.organizationId,
+        userId: context.userId,
+      })
+    },
+  )
 
   // ── GET /dashboard/me/achievements ────────────────────────────────────────
   fastify.get(

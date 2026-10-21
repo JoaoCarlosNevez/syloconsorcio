@@ -16,6 +16,7 @@ import {
   useMyAchievementsQuery,
   useMyEngagementQuery,
   useMyStreakQuery,
+  useMyXpQuery,
 } from '../../hooks/useDashboard'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { useSalesGoalsSummaryQuery, useUpdateMyPersonalGoal } from '../../hooks/useTeam'
@@ -178,10 +179,6 @@ function StarIcon() {
 }
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
-
-const CURRENT_XP = 1840
-const MAX_XP = 2200
-const XP_PERCENT = Math.round((CURRENT_XP / MAX_XP) * 100)
 
 const WEEK_DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
@@ -763,6 +760,14 @@ export function PerfilPage() {
   const { data: streak, isLoading: streakLoading } = useMyStreakQuery(organizationId)
   const { data: engagement } = useMyEngagementQuery(organizationId)
   const { data: achievementsData } = useMyAchievementsQuery(organizationId)
+  const { data: xp } = useMyXpQuery(organizationId)
+  const currentXp = xp?.totalXp ?? 0
+  // Barra do topo: do início do nível atual até o próximo.
+  const levelFloor = xp?.level.minXp ?? 0
+  const levelCeil = xp?.nextLevel?.minXp ?? currentXp
+  const xpPercent = xp?.nextLevel
+    ? Math.round(((currentXp - levelFloor) / (levelCeil - levelFloor)) * 100)
+    : 100
   const BADGES = (achievementsData?.achievements ?? []).map(toBadge)
   const metrics = engagement ? engagementCards(engagement) : null
   const navigate = useNavigate()
@@ -905,29 +910,37 @@ export function PerfilPage() {
               <div className={styles.xpLabels}>
                 <span className={styles.xpLabel}>
                   <StarIcon />
-                  Progresso para Nível 4 (Mestre em Fechamentos)
+                  {xp?.nextLevel
+                    ? `Progresso para Nível ${xp.nextLevel.level} (${xp.nextLevel.name})`
+                    : xp
+                      ? `Nível máximo: ${xp.level.name}`
+                      : 'Carregando nível…'}
                 </span>
                 <span className={styles.xpValues}>
-                  <strong>{CURRENT_XP.toLocaleString('pt-BR')} XP</strong>
-                  <span className={styles.xpDivider}>
-                    {' '}
-                    / {MAX_XP.toLocaleString('pt-BR')} XP •{' '}
-                  </span>
-                  <span className={styles.xpRemaining}>
-                    Faltam {(MAX_XP - CURRENT_XP).toLocaleString('pt-BR')} XP
-                  </span>
+                  <strong>{currentXp.toLocaleString('pt-BR')} XP</strong>
+                  {xp?.nextLevel && (
+                    <>
+                      <span className={styles.xpDivider}>
+                        {' '}
+                        / {levelCeil.toLocaleString('pt-BR')} XP •{' '}
+                      </span>
+                      <span className={styles.xpRemaining}>
+                        Faltam {(levelCeil - currentXp).toLocaleString('pt-BR')} XP
+                      </span>
+                    </>
+                  )}
                 </span>
               </div>
               <div
                 className={styles.xpBar}
                 role="progressbar"
-                aria-valuenow={XP_PERCENT}
+                aria-valuenow={xpPercent}
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-label="XP para próximo nível"
                 tabIndex={0}
               >
-                <div className={styles.xpFill} style={{ width: `${XP_PERCENT}%` }} />
+                <div className={styles.xpFill} style={{ width: `${xpPercent}%` }} />
               </div>
             </div>
           </div>
@@ -1132,50 +1145,53 @@ export function PerfilPage() {
               <div className={styles.sideCardTitle}>Nível & Evolução</div>
 
               <div className={styles.levelSteps}>
-                {[
-                  { num: 1, label: 'Iniciante Sylo', xp: '0 XP', done: true },
-                  { num: 2, label: 'Consultor Ágil', xp: '500 XP', done: true },
-                  { num: 3, label: 'Especialista', xp: '1.000 XP', current: true },
-                  { num: 4, label: 'Mestre em Fechamentos', xp: '2.200 XP', done: false },
-                ].map((step, i, arr) => (
-                  <div key={step.num} className={styles.levelStep}>
-                    <div className={styles.levelStepLeft}>
-                      <div
-                        className={[
-                          styles.levelDot,
-                          step.done
-                            ? styles.levelDotDone
-                            : step.current
-                              ? styles.levelDotCurrent
-                              : styles.levelDotPending,
-                        ].join(' ')}
-                      >
-                        {step.done ? '✓' : step.num}
-                      </div>
-                      {i < arr.length - 1 && (
+                {(xp?.levels ?? [])
+                  .map((lvl) => ({
+                    num: lvl.level,
+                    label: lvl.name,
+                    xp: `${lvl.minXp.toLocaleString('pt-BR')} XP`,
+                    done: lvl.level < (xp?.level.level ?? 0),
+                    current: lvl.level === xp?.level.level,
+                  }))
+                  .map((step, i, arr) => (
+                    <div key={step.num} className={styles.levelStep}>
+                      <div className={styles.levelStepLeft}>
                         <div
                           className={[
-                            styles.levelLine,
-                            step.done ? styles.levelLineDone : styles.levelLinePending,
+                            styles.levelDot,
+                            step.done
+                              ? styles.levelDotDone
+                              : step.current
+                                ? styles.levelDotCurrent
+                                : styles.levelDotPending,
                           ].join(' ')}
-                        />
-                      )}
+                        >
+                          {step.done ? '✓' : step.num}
+                        </div>
+                        {i < arr.length - 1 && (
+                          <div
+                            className={[
+                              styles.levelLine,
+                              step.done ? styles.levelLineDone : styles.levelLinePending,
+                            ].join(' ')}
+                          />
+                        )}
+                      </div>
+                      <div className={styles.levelStepInfo}>
+                        <span
+                          className={[
+                            styles.levelStepLabel,
+                            step.current ? styles.levelStepCurrent : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
+                        >
+                          {step.label}
+                        </span>
+                        <span className={styles.levelStepXP}>{step.xp}</span>
+                      </div>
                     </div>
-                    <div className={styles.levelStepInfo}>
-                      <span
-                        className={[
-                          styles.levelStepLabel,
-                          step.current ? styles.levelStepCurrent : '',
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
-                      >
-                        {step.label}
-                      </span>
-                      <span className={styles.levelStepXP}>{step.xp}</span>
-                    </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
 
@@ -1183,22 +1199,24 @@ export function PerfilPage() {
             <div className={styles.sideCard}>
               <div className={styles.sideCardTitle}>XP do Mês</div>
               <div className={styles.xpSummary}>
-                {[
-                  { label: 'Leads atendidos', xp: '+84 XP' },
-                  { label: 'Simulações', xp: '+54 XP' },
-                  { label: 'Cotas fechadas', xp: '+240 XP' },
-                  { label: 'Ofensiva ativa', xp: '+30 XP' },
-                  { label: 'Conquistas', xp: '+350 XP' },
-                ].map((item) => (
-                  <div key={item.label} className={styles.xpSummaryRow}>
-                    <span className={styles.xpSummaryLabel}>{item.label}</span>
-                    <span className={styles.xpSummaryValue}>{item.xp}</span>
+                {!xp && <Skeleton variant="rect" width="100%" height="150px" />}
+                {xp?.month.items.map((item) => (
+                  <div key={item.key} className={styles.xpSummaryRow}>
+                    <span className={styles.xpSummaryLabel}>
+                      {item.label}
+                      {item.count > 0 && ` (${item.count})`}
+                    </span>
+                    <span className={styles.xpSummaryValue}>
+                      +{item.xp.toLocaleString('pt-BR')} XP
+                    </span>
                   </div>
                 ))}
-                <div className={styles.xpSummaryTotal}>
-                  <span>Total do mês</span>
-                  <span>+758 XP</span>
-                </div>
+                {xp && (
+                  <div className={styles.xpSummaryTotal}>
+                    <span>Total do mês</span>
+                    <span>+{xp.month.total.toLocaleString('pt-BR')} XP</span>
+                  </div>
+                )}
               </div>
             </div>
           </aside>
