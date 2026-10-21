@@ -207,6 +207,7 @@ export interface LeadAdhesionFields {
   groupCode: string | null
   downPaymentCents: number | null
   prepaidInstallments: number | null
+  paymentMethod: string | null
   birthplace: string | null
   spouseName: string | null
   phone2: string | null
@@ -230,6 +231,57 @@ export function getLeadAdhesion(
   leadId: string,
 ): Promise<{ adhesion: LeadAdhesion | null }> {
   return apiClient.get<{ adhesion: LeadAdhesion | null }>(`/leads/${leadId}/adhesion`, {
+    organizationId,
+  })
+}
+
+export type AdhesionDocumentKind = 'email_print' | 'proof_of_address' | 'handwritten_letter'
+
+export interface AdhesionDocument {
+  id: string
+  leadId: string
+  kind: AdhesionDocumentKind
+  fileName: string
+  contentType: string
+  sizeBytes: number
+  uploadedByUserId: string | null
+  createdAt: string
+  /** Link de leitura temporário (alguns minutos) — o bucket é privado. */
+  url?: string
+}
+
+export function listAdhesionDocuments(
+  organizationId: string,
+  leadId: string,
+): Promise<{ documents: AdhesionDocument[] }> {
+  return apiClient.get<{ documents: AdhesionDocument[] }>(`/leads/${leadId}/adhesion/documents`, {
+    organizationId,
+  })
+}
+
+export function uploadAdhesionDocument(
+  organizationId: string,
+  leadId: string,
+  kind: AdhesionDocumentKind,
+  file: File,
+): Promise<{ document: AdhesionDocument }> {
+  // "kind" antes do arquivo: a API lê os campos que chegam antes dele.
+  const formData = new FormData()
+  formData.append('kind', kind)
+  formData.append('file', file)
+  return apiClient.post<{ document: AdhesionDocument }>(
+    `/leads/${leadId}/adhesion/documents`,
+    formData,
+    { organizationId },
+  )
+}
+
+export function deleteAdhesionDocument(
+  organizationId: string,
+  leadId: string,
+  documentId: string,
+): Promise<void> {
+  return apiClient.delete<void>(`/leads/${leadId}/adhesion/documents/${documentId}`, {
     organizationId,
   })
 }

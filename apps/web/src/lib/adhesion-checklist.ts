@@ -4,7 +4,13 @@
 
 import type { CardData } from '../data/kanban-mock'
 import { centsToMoneyInput, formatBRL, parseValueToCents } from './lead-adapters'
-import type { LeadAdhesion, LeadAdhesionFields, LeadProposal, UpdateLeadPayload } from './leads-api'
+import type {
+  AdhesionDocumentKind,
+  LeadAdhesion,
+  LeadAdhesionFields,
+  LeadProposal,
+  UpdateLeadPayload,
+} from './leads-api'
 
 /** Valores do formulário, como o usuário digita (dinheiro com máscara). */
 export interface AdhesionForm {
@@ -17,6 +23,7 @@ export interface AdhesionForm {
   groupCode: string
   downPayment: string
   prepaidInstallments: string
+  paymentMethod: string
   name: string
   profession: string
   income: string
@@ -66,6 +73,7 @@ export const ADHESION_ITEMS: AdhesionItem[] = [
   { key: 'groupCode', label: 'Grupo', section: 'plano', required: never },
   { key: 'downPayment', label: 'Entrada', section: 'plano', required: never },
   { key: 'prepaidInstallments', label: 'Parcelas antecipadas', section: 'plano', required: never },
+  { key: 'paymentMethod', label: 'Forma de pagamento', section: 'plano', required: always },
   { key: 'name', label: 'Nome', section: 'pessoais', required: always },
   { key: 'profession', label: 'Profissão', section: 'pessoais', required: always },
   { key: 'income', label: 'Renda', section: 'pessoais', required: always },
@@ -97,6 +105,40 @@ export const ADHESION_ITEMS: AdhesionItem[] = [
   { key: 'notes', label: 'Observação', section: 'preferencias', required: never },
 ]
 
+export const PAYMENT_METHOD_OPTIONS = [
+  'Boleto',
+  'Débito em conta',
+  'Cartão de crédito',
+  'PIX',
+] as const
+
+/** Anexos da ficha — um arquivo por tipo. */
+export const ADHESION_DOCUMENTS: {
+  kind: AdhesionDocumentKind
+  label: string
+  hint: string
+  required: boolean
+}[] = [
+  {
+    kind: 'email_print',
+    label: 'Print do e-mail',
+    hint: 'Print da caixa de entrada do e-mail do cliente',
+    required: true,
+  },
+  {
+    kind: 'proof_of_address',
+    label: 'Comprovante de residência',
+    hint: 'Conta de luz, água, internet… recente',
+    required: true,
+  },
+  {
+    kind: 'handwritten_letter',
+    label: 'Carta a punho',
+    hint: 'Quando a administradora pedir',
+    required: false,
+  },
+]
+
 export function isFilled(form: AdhesionForm, key: keyof AdhesionForm): boolean {
   return form[key].trim() !== ''
 }
@@ -108,10 +150,19 @@ export interface AdhesionProgress {
   missing: string[]
 }
 
-export function adhesionProgress(form: AdhesionForm): AdhesionProgress {
+/** Progresso dos campos obrigatórios + anexos obrigatórios já enviados. */
+export function adhesionProgress(
+  form: AdhesionForm,
+  uploadedKinds: ReadonlySet<AdhesionDocumentKind> = new Set(),
+): AdhesionProgress {
   const required = ADHESION_ITEMS.filter((item) => item.required(form))
-  const missing = required.filter((item) => !isFilled(form, item.key)).map((item) => item.label)
-  return { done: required.length - missing.length, total: required.length, missing }
+  const requiredDocuments = ADHESION_DOCUMENTS.filter((doc) => doc.required)
+  const missing = [
+    ...required.filter((item) => !isFilled(form, item.key)).map((item) => item.label),
+    ...requiredDocuments.filter((doc) => !uploadedKinds.has(doc.kind)).map((doc) => doc.label),
+  ]
+  const total = required.length + requiredDocuments.length
+  return { done: total - missing.length, total, missing }
 }
 
 function moneyOrEmpty(cents: number | null | undefined): string {
@@ -140,6 +191,7 @@ export function buildAdhesionForm(
       adhesion?.prepaidInstallments !== null && adhesion?.prepaidInstallments !== undefined
         ? String(adhesion.prepaidInstallments)
         : '',
+    paymentMethod: adhesion?.paymentMethod ?? '',
     name: card.name,
     profession: card.profession ?? '',
     income: moneyOrEmpty(card.incomeCents),
@@ -172,6 +224,7 @@ export function adhesionFields(form: AdhesionForm): LeadAdhesionFields {
     groupCode: textOrNull(form.groupCode),
     downPaymentCents: form.downPayment.trim() ? parseValueToCents(form.downPayment) : null,
     prepaidInstallments: Number.isNaN(prepaid) ? null : prepaid,
+    paymentMethod: textOrNull(form.paymentMethod),
     birthplace: textOrNull(form.birthplace),
     spouseName: needsSpouse(form.maritalStatus) ? textOrNull(form.spouseName) : null,
     phone2: textOrNull(form.phone2),

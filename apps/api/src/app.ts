@@ -175,6 +175,13 @@ function createNoOpStorageProvider(): IStorageProvider {
     uploadPublicFile: async () => {
       throw new Error('Storage provider not configured — cannot upload files.')
     },
+    uploadPrivateFile: async () => {
+      throw new Error('Storage provider not configured — cannot upload files.')
+    },
+    createSignedUrl: async () => {
+      throw new Error('Storage provider not configured — cannot read files.')
+    },
+    deleteFiles: async () => {},
   }
 }
 
@@ -293,6 +300,11 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
       upsert: async () => {
         throw new Error('Database not configured — cannot save lead adhesions.')
       },
+      listDocuments: async () => [],
+      replaceDocument: async () => {
+        throw new Error('Database not configured — cannot save documents.')
+      },
+      deleteDocument: async () => null,
     },
   }
 
@@ -325,12 +337,13 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     credentials: true,
   })
 
-  // Limite do plugin fica ACIMA do limite de negócio (2MB, ver icon-validation.ts).
+  // Limite do plugin fica ACIMA dos limites de negócio (2MB do ícone, ver
+  // icon-validation.ts; 10MB dos documentos da ficha de adesão).
   // Se fossem iguais, um arquivo maior que 2MB seria truncado exatamente no limite
   // pelo @fastify/multipart em vez de disparar nosso erro real — a rota acabaria
   // aceitando um arquivo corrompido em silêncio.
   app.register(multipart, {
-    limits: { fileSize: 6 * 1024 * 1024 },
+    limits: { fileSize: 12 * 1024 * 1024 },
   })
 
   // ── Routes ────────────────────────────────────────────────────────────────
@@ -353,6 +366,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     funnelRepository: resolvedDeps.funnelRepository,
     leadProposalRepository: resolvedDeps.leadProposalRepository,
     leadAdhesionRepository: resolvedDeps.leadAdhesionRepository,
+    storageProvider: resolvedDeps.storageProvider,
     activityLogRepository: resolvedDeps.activityLogRepository,
   })
 

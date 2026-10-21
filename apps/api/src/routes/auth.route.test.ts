@@ -26,6 +26,9 @@ function buildTestApp(authProvider: IAuthProvider, membershipRepository?: IMembe
 function buildStorageProvider(): IStorageProvider {
   return {
     deleteFolderFiles: vi.fn(),
+    uploadPrivateFile: vi.fn(),
+    createSignedUrl: vi.fn(),
+    deleteFiles: vi.fn(),
     uploadPublicFile: vi.fn().mockResolvedValue({
       url: 'https://xvzsobntyhvxrbdfboax.supabase.co/storage/v1/object/public/user-avatars/user-uuid/avatar.png',
     }),

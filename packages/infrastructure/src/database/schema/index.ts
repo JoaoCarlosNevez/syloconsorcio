@@ -43,5 +43,5 @@ export type { DbOrganizationApiKey, NewDbOrganizationApiKey } from './organizati
 export { leadOffers, leadQueueMembers, leadQueueSettings } from './lead-queue'
 export type { DbLeadOffer } from './lead-queue'
 
-export { leadAdhesions } from './lead-adhesions'
-export type { DbLeadAdhesion } from './lead-adhesions'
+export { leadAdhesionDocuments, leadAdhesions } from './lead-adhesions'
+export type { DbLeadAdhesion, DbLeadAdhesionDocument } from './lead-adhesions'

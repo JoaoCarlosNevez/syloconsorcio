@@ -12,6 +12,13 @@ export const STORAGE_BUCKETS = {
   userAvatars: 'user-avatars',
 } as const
 
+/** Buckets PRIVADOS — documentos de cliente (LGPD). Nunca têm URL pública:
+ * leitura só por link assinado de curta duração, gerado pela API pra quem
+ * enxerga o lead. Pasta por "<organizationId>/<leadId>". */
+export const PRIVATE_STORAGE_BUCKETS = {
+  leadDocuments: 'lead-documents',
+} as const
+
 export interface UploadFileInput {
   bucket: string
   path: string
@@ -34,4 +41,17 @@ export interface IStorageProvider {
    * a foto quando ela é removida.
    */
   deleteFolderFiles(input: { bucket: string; folder: string; keepPath?: string }): Promise<void>
+
+  /** Envia um arquivo para um bucket privado (sobrescrevendo o caminho). */
+  uploadPrivateFile(input: UploadFileInput): Promise<void>
+
+  /** Link temporário pra ler um arquivo de bucket privado. */
+  createSignedUrl(input: {
+    bucket: string
+    path: string
+    expiresInSeconds: number
+  }): Promise<string>
+
+  /** Apaga arquivos específicos de um bucket. */
+  deleteFiles(input: { bucket: string; paths: string[] }): Promise<void>
 }

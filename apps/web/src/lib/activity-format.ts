@@ -99,6 +99,17 @@ export function activityActorName(entry: ActivityEntry): string {
 }
 
 /** Frase do evento, sem o nome de quem fez (vem antes, em negrito). */
+const DOCUMENT_LABELS: Record<string, string> = {
+  email_print: 'o print do e-mail',
+  proof_of_address: 'o comprovante de residência',
+  handwritten_letter: 'a carta a punho',
+}
+
+function documentLabel(metadata: Record<string, unknown> | null | undefined): string {
+  const kind = typeof metadata?.kind === 'string' ? metadata.kind : ''
+  return DOCUMENT_LABELS[kind] ?? 'um documento'
+}
+
 export function describeActivity(
   entry: ActivityEntry,
   memberName: (userId: string | null) => string,
@@ -136,6 +147,10 @@ export function describeActivity(
       return `comentou no lead ${label}${str(m, 'preview') ? `: ${quoted(str(m, 'preview'))}` : ''}`
     case 'lead.adhesion_updated':
       return `atualizou a ficha de adesão do lead ${label}`
+    case 'lead.document_uploaded':
+      return `anexou ${documentLabel(entry.metadata)} ao lead ${label}`
+    case 'lead.document_deleted':
+      return `removeu ${documentLabel(entry.metadata)} do lead ${label}`
     case 'lead.proposal_created':
       return `criou uma simulação para o lead ${label}${str(m, 'tableName') ? ` na tabela ${quoted(str(m, 'tableName'))}` : ''} · entrada ${money(num(m, 'downPaymentCents'))} em ${num(m, 'termMonths') ?? '—'} meses`
     case 'task.created':

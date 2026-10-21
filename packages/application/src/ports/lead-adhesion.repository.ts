@@ -17,6 +17,7 @@ export interface LeadAdhesionFields {
   groupCode: string | null
   downPaymentCents: number | null
   prepaidInstallments: number | null
+  paymentMethod: string | null
   birthplace: string | null
   spouseName: string | null
   phone2: string | null
@@ -35,6 +36,28 @@ export interface LeadAdhesionRecord extends LeadAdhesionFields {
   updatedAt: Date
 }
 
+/** Documentos da ficha — um arquivo vigente por tipo. */
+export const ADHESION_DOCUMENT_KINDS = [
+  'email_print',
+  'proof_of_address',
+  'handwritten_letter',
+] as const
+export type AdhesionDocumentKind = (typeof ADHESION_DOCUMENT_KINDS)[number]
+
+export interface LeadAdhesionDocumentRecord {
+  id: string
+  leadId: string
+  organizationId: string
+  kind: AdhesionDocumentKind
+  fileName: string
+  /** Caminho no bucket privado lead-documents. */
+  storagePath: string
+  contentType: string
+  sizeBytes: number
+  uploadedByUserId: string | null
+  createdAt: Date
+}
+
 export interface ILeadAdhesionRepository {
   findByLead(leadId: string): Promise<LeadAdhesionRecord | null>
 
@@ -42,4 +65,15 @@ export interface ILeadAdhesionRepository {
   upsert(
     input: LeadAdhesionFields & { leadId: string; organizationId: string; updatedByUserId: string },
   ): Promise<LeadAdhesionRecord>
+
+  listDocuments(leadId: string): Promise<LeadAdhesionDocumentRecord[]>
+
+  /** Grava o documento do tipo, substituindo o anterior. Devolve o anterior
+   * (pra apagar o arquivo dele) ou null. */
+  replaceDocument(
+    input: Omit<LeadAdhesionDocumentRecord, 'id' | 'createdAt'>,
+  ): Promise<{ document: LeadAdhesionDocumentRecord; previous: LeadAdhesionDocumentRecord | null }>
+
+  /** Apaga e devolve o documento (null se não existir ou não for do lead). */
+  deleteDocument(leadId: string, documentId: string): Promise<LeadAdhesionDocumentRecord | null>
 }

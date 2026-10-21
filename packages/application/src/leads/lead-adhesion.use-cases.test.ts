@@ -8,7 +8,13 @@ import type { ILeadAdhesionRepository, LeadAdhesionFields } from '../ports/lead-
 import type { ILeadRepository, LeadRecord } from '../ports/lead.repository'
 import type { IMembershipRepository } from '../ports/membership.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
-import { GetLeadAdhesionUseCase, SaveLeadAdhesionUseCase } from './lead-adhesion.use-cases'
+import type { IStorageProvider } from '../ports/storage.provider'
+import {
+  DeleteAdhesionDocumentUseCase,
+  GetLeadAdhesionUseCase,
+  SaveLeadAdhesionUseCase,
+  UploadAdhesionDocumentUseCase,
+} from './lead-adhesion.use-cases'
 
 const MEMBERSHIP: MembershipContext = {
   organizationId: 'org-01',
@@ -34,6 +40,7 @@ const EMPTY_FIELDS: LeadAdhesionFields = {
   groupCode: null,
   downPaymentCents: null,
   prepaidInstallments: null,
+  paymentMethod: null,
   birthplace: null,
   spouseName: null,
   phone2: null,
@@ -64,6 +71,19 @@ function setup(lead: LeadRecord | null = LEAD) {
       createdAt: new Date(),
       updatedAt: new Date(),
     })),
+    listDocuments: vi.fn().mockResolvedValue([]),
+    replaceDocument: vi.fn(async (input) => ({
+      document: { ...input, id: 'doc-new', createdAt: new Date() },
+      previous: null,
+    })),
+    deleteDocument: vi.fn().mockResolvedValue(null),
+  }
+  const storage: IStorageProvider = {
+    uploadPublicFile: vi.fn(),
+    deleteFolderFiles: vi.fn(),
+    uploadPrivateFile: vi.fn().mockResolvedValue(undefined),
+    createSignedUrl: vi.fn(),
+    deleteFiles: vi.fn().mockResolvedValue(undefined),
   }
   const activityLog: IActivityLogRepository = { record: vi.fn(), list: vi.fn() }
   return {
@@ -75,7 +95,22 @@ function setup(lead: LeadRecord | null = LEAD) {
       leadAdhesionRepository,
       activityLog,
     ),
+    upload: new UploadAdhesionDocumentUseCase(
+      leadRepository,
+      organizationRepository,
+      leadAdhesionRepository,
+      storage,
+      activityLog,
+    ),
+    remove: new DeleteAdhesionDocumentUseCase(
+      leadRepository,
+      organizationRepository,
+      leadAdhesionRepository,
+      storage,
+      activityLog,
+    ),
     leadAdhesionRepository,
+    storage,
     activityLog,
   }
 }
@@ -131,5 +166,88 @@ describe('lead adhesion', () => {
       ).rejects.toThrow(ValidationError)
     }
     expect(leadAdhesionRepository.upsert).not.toHaveBeenCalled()
+  })
+})
+
+describe('adhesion documents', () => {
+  const file = {
+    kind: 'email_print',
+    fileName: 'print.png',
+    contentType: 'image/png',
+    data: Buffer.from('png'),
+  }
+
+  it('stores the file in the private bucket inside the lead folder', async () => {
+    const { upload, storage, activityLog } = setup()
+
+    const document = await upload.execute({ ...access, ...file })
+
+    expect(document?.kind).toBe('email_print')
+    const [call] = vi.mocked(storage.uploadPrivateFile).mock.calls
+    expect(call?.[0].bucket).toBe('lead-documents')
+    expect(call?.[0].path).toMatch(/^org-01\/lead-01\/email_print-\d+\.png$/)
+    expect(activityLog.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'lead.document_uploaded',
+        metadata: { kind: 'email_print' },
+      }),
+    )
+  })
+
+  it('removes the previous file of the same kind', async () => {
+    const { upload, storage, leadAdhesionRepository } = setup()
+    vi.mocked(leadAdhesionRepository.replaceDocument).mockImplementationOnce(async (input) => ({
+      document: { ...input, id: 'doc-new', createdAt: new Date() },
+      previous: {
+        ...input,
+        id: 'doc-old',
+        storagePath: 'org-01/lead-01/old.png',
+        createdAt: new Date(),
+      },
+    }))
+
+    await upload.execute({ ...access, ...file })
+
+    expect(storage.deleteFiles).toHaveBeenCalledWith({
+      bucket: 'lead-documents',
+      paths: ['org-01/lead-01/old.png'],
+    })
+  })
+
+  it('rejects unknown kinds, unsupported types and oversized files', async () => {
+    const { upload, storage } = setup()
+
+    await expect(upload.execute({ ...access, ...file, kind: 'rg' })).rejects.toBeInstanceOf(
+      ValidationError,
+    )
+    await expect(
+      upload.execute({ ...access, ...file, contentType: 'text/html' }),
+    ).rejects.toBeInstanceOf(ValidationError)
+    await expect(
+      upload.execute({ ...access, ...file, data: Buffer.alloc(10 * 1024 * 1024 + 1) }),
+    ).rejects.toBeInstanceOf(ValidationError)
+    expect(storage.uploadPrivateFile).not.toHaveBeenCalled()
+  })
+
+  it('does not upload for a lead outside the scope', async () => {
+    const { upload, storage } = setup(null)
+
+    expect(await upload.execute({ ...access, ...file })).toBeNull()
+    expect(storage.uploadPrivateFile).not.toHaveBeenCalled()
+  })
+
+  it('deletes the uploaded file when saving the record fails', async () => {
+    const { upload, storage, leadAdhesionRepository } = setup()
+    vi.mocked(leadAdhesionRepository.replaceDocument).mockRejectedValueOnce(new Error('db down'))
+
+    await expect(upload.execute({ ...access, ...file })).rejects.toThrow('db down')
+    expect(storage.deleteFiles).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns false when deleting a document that is not from the lead', async () => {
+    const { remove, storage } = setup()
+
+    expect(await remove.execute({ ...access, documentId: 'doc-x' })).toBe(false)
+    expect(storage.deleteFiles).not.toHaveBeenCalled()
   })
 })

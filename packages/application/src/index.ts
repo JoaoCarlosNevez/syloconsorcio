@@ -32,7 +32,7 @@ export type {
   UpdateProfileInput,
 } from './ports/user.repository'
 export type { IStorageProvider, UploadFileInput } from './ports/storage.provider'
-export { STORAGE_BUCKETS } from './ports/storage.provider'
+export { PRIVATE_STORAGE_BUCKETS, STORAGE_BUCKETS } from './ports/storage.provider'
 export type {
   IFunnelRepository,
   FunnelRecord,
@@ -133,15 +133,30 @@ export {
   UpdateLeadQueueSettingsUseCase,
 } from './leads/lead-queue-settings.use-case'
 export type { LeadQueueOverview } from './leads/lead-queue-settings.use-case'
+export { ADHESION_DOCUMENT_KINDS } from './ports/lead-adhesion.repository'
 export type {
+  AdhesionDocumentKind,
   ILeadAdhesionRepository,
+  LeadAdhesionDocumentRecord,
   LeadAdhesionFields,
   LeadAdhesionRecord,
 } from './ports/lead-adhesion.repository'
-export { GetLeadAdhesionUseCase, SaveLeadAdhesionUseCase } from './leads/lead-adhesion.use-cases'
+export {
+  ADHESION_DOCUMENT_LINK_SECONDS,
+  ADHESION_DOCUMENT_MAX_BYTES,
+  ADHESION_DOCUMENT_TYPES,
+  DeleteAdhesionDocumentUseCase,
+  GetLeadAdhesionUseCase,
+  ListAdhesionDocumentsUseCase,
+  SaveLeadAdhesionUseCase,
+  UploadAdhesionDocumentUseCase,
+} from './leads/lead-adhesion.use-cases'
 export type {
+  AdhesionDocumentWithLink,
+  DeleteAdhesionDocumentInput,
   GetLeadAdhesionOutput,
   SaveLeadAdhesionInput,
+  UploadAdhesionDocumentInput,
 } from './leads/lead-adhesion.use-cases'
 export { ShareLeadProposalUseCase } from './leads/share-lead-proposal.use-case'
 export type {

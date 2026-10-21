@@ -1382,6 +1382,7 @@ describe('PUT /leads/:id/adhesion', () => {
     groupCode: null,
     downPaymentCents: null,
     prepaidInstallments: 2,
+    paymentMethod: ' Boleto ',
     birthplace: 'Goiânia/GO',
     spouseName: null,
     phone2: null,
@@ -1419,6 +1420,7 @@ describe('PUT /leads/:id/adhesion', () => {
         administrator: 'Porto Seguro',
         assetCode: null,
         prepaidInstallments: 2,
+        paymentMethod: 'Boleto',
       }),
     )
   })
@@ -1434,5 +1436,124 @@ describe('PUT /leads/:id/adhesion', () => {
     })
 
     expect(response.statusCode).toBe(400)
+  })
+})
+
+describe('/leads/:id/adhesion/documents', () => {
+  const DOCUMENT = {
+    id: '6f1c2c1e-6c1b-4a51-9a51-0c1b6a5e7d01',
+    leadId: 'lead-01',
+    organizationId: 'org-01',
+    kind: 'proof_of_address',
+    fileName: 'conta-luz.pdf',
+    storagePath: 'org-01/lead-01/proof_of_address-1.pdf',
+    contentType: 'application/pdf',
+    sizeBytes: 4,
+    uploadedByUserId: 'user-01',
+    createdAt: new Date('2026-10-20T00:00:00Z'),
+  }
+
+  function buildStorage() {
+    return {
+      uploadPublicFile: vi.fn(),
+      deleteFolderFiles: vi.fn(),
+      uploadPrivateFile: vi.fn().mockResolvedValue(undefined),
+      createSignedUrl: vi.fn().mockResolvedValue('https://signed.example/doc'),
+      deleteFiles: vi.fn().mockResolvedValue(undefined),
+    }
+  }
+
+  function buildDocsApp(adhesionRepository: Record<string, unknown>, storage = buildStorage()) {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      membershipRepository: buildMembershipRepository(MANAGER_MEMBERSHIP),
+      leadRepository: buildLeadRepository(),
+      organizationRepository: buildOrganizationRepository(),
+      leadAdhesionRepository: adhesionRepository as never,
+      storageProvider: storage as never,
+    })
+    return { app, storage }
+  }
+
+  function multipart(kind: string, contentType: string) {
+    const boundary = '----sylotest'
+    const body = [
+      `--${boundary}`,
+      'Content-Disposition: form-data; name="kind"',
+      '',
+      kind,
+      `--${boundary}`,
+      'Content-Disposition: form-data; name="file"; filename="conta-luz.pdf"',
+      `Content-Type: ${contentType}`,
+      '',
+      '%PDF',
+      `--${boundary}--`,
+      '',
+    ].join('\r\n')
+    return {
+      payload: body,
+      headers: { ...AUTH_HEADERS, 'content-type': `multipart/form-data; boundary=${boundary}` },
+    }
+  }
+
+  it('lists documents with a signed link and without the storage path', async () => {
+    const { app } = buildDocsApp({ listDocuments: vi.fn().mockResolvedValue([DOCUMENT]) })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/leads/lead-01/adhesion/documents',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    const [document] = response.json().documents
+    expect(document.url).toBe('https://signed.example/doc')
+    expect(document.storagePath).toBeUndefined()
+  })
+
+  it('uploads a document to the private bucket', async () => {
+    const replaceDocument = vi.fn().mockResolvedValue({ document: DOCUMENT, previous: null })
+    const { app, storage } = buildDocsApp({ replaceDocument })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/leads/lead-01/adhesion/documents',
+      ...multipart('proof_of_address', 'application/pdf'),
+    })
+
+    expect(response.statusCode).toBe(201)
+    expect(storage.uploadPrivateFile).toHaveBeenCalledWith(
+      expect.objectContaining({ bucket: 'lead-documents', contentType: 'application/pdf' }),
+    )
+    expect(response.json().document.storagePath).toBeUndefined()
+  })
+
+  it('returns 400 for a file type that is not accepted', async () => {
+    const { app, storage } = buildDocsApp({ replaceDocument: vi.fn() })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/leads/lead-01/adhesion/documents',
+      ...multipart('proof_of_address', 'text/html'),
+    })
+
+    expect(response.statusCode).toBe(400)
+    expect(storage.uploadPrivateFile).not.toHaveBeenCalled()
+  })
+
+  it('deletes a document and its file', async () => {
+    const { app, storage } = buildDocsApp({ deleteDocument: vi.fn().mockResolvedValue(DOCUMENT) })
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: `/leads/lead-01/adhesion/documents/${DOCUMENT.id}`,
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(204)
+    expect(storage.deleteFiles).toHaveBeenCalledWith({
+      bucket: 'lead-documents',
+      paths: [DOCUMENT.storagePath],
+    })
   })
 })

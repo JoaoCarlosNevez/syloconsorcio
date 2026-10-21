@@ -26,6 +26,11 @@
 // GET    /leads/:id/adhesion — ficha (checklist) de adesão do lead (lead.read)
 // PUT    /leads/:id/adhesion — salva a ficha (lead.update); dados pessoais que
 //                              o lead já tem são salvos no lead (PATCH)
+// GET    /leads/:id/adhesion/documents — documentos da ficha com link de
+//                              leitura temporário (lead.read)
+// POST   /leads/:id/adhesion/documents — envia (multipart: kind + file) e
+//                              substitui o do mesmo tipo (lead.update)
+// DELETE /leads/:id/adhesion/documents/:documentId — apaga (lead.update)
 // POST   /leads/:id/proposals/:proposalId/share — gera (ou devolve) o token do
 //                              link público da proposta, pra mandar pro
 //                              cliente (lead.read). A página pública é
@@ -44,22 +49,26 @@ import type {
   ILeadRepository,
   IMembershipRepository,
   IOrganizationRepository,
+  IStorageProvider,
   IUserRepository,
 } from '@sylocrm/application'
 import {
   CreateLeadCommentUseCase,
   CreateLeadProposalUseCase,
   CreateLeadUseCase,
+  DeleteAdhesionDocumentUseCase,
   DeleteLeadUseCase,
   DuplicateLeadUseCase,
   GetLeadAdhesionUseCase,
   GetLeadHistoryUseCase,
   GetLeadUseCase,
+  ListAdhesionDocumentsUseCase,
   ListLeadProposalsUseCase,
   ListLeadsUseCase,
   SaveLeadAdhesionUseCase,
   ShareLeadProposalUseCase,
   UpdateLeadUseCase,
+  UploadAdhesionDocumentUseCase,
 } from '@sylocrm/application'
 import { Permission, ValidationError } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
@@ -78,6 +87,7 @@ interface LeadsRouteOptions {
   funnelRepository: IFunnelRepository
   leadProposalRepository: ILeadProposalRepository
   leadAdhesionRepository: ILeadAdhesionRepository
+  storageProvider: IStorageProvider
   activityLogRepository: IActivityLogRepository
 }
 
@@ -102,6 +112,7 @@ const saveAdhesionSchema = z.object({
   groupCode: optionalText(40),
   downPaymentCents: optionalCents,
   prepaidInstallments: z.number().int().min(0).max(999).nullable(),
+  paymentMethod: optionalText(60),
   birthplace: optionalText(120),
   spouseName: optionalText(160),
   phone2: optionalText(30),
@@ -244,6 +255,7 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
     options.leadRepository,
     options.organizationRepository,
     options.activityLogRepository,
+    options.storageProvider,
   )
   const duplicateLead = new DuplicateLeadUseCase(
     options.leadRepository,
@@ -265,6 +277,26 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
     options.leadRepository,
     options.organizationRepository,
     options.leadAdhesionRepository,
+  )
+  const uploadAdhesionDocument = new UploadAdhesionDocumentUseCase(
+    options.leadRepository,
+    options.organizationRepository,
+    options.leadAdhesionRepository,
+    options.storageProvider,
+    options.activityLogRepository,
+  )
+  const listAdhesionDocuments = new ListAdhesionDocumentsUseCase(
+    options.leadRepository,
+    options.organizationRepository,
+    options.leadAdhesionRepository,
+    options.storageProvider,
+  )
+  const deleteAdhesionDocument = new DeleteAdhesionDocumentUseCase(
+    options.leadRepository,
+    options.organizationRepository,
+    options.leadAdhesionRepository,
+    options.storageProvider,
+    options.activityLogRepository,
   )
   const saveLeadAdhesion = new SaveLeadAdhesionUseCase(
     options.leadRepository,
@@ -548,6 +580,108 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
         }
         throw error
       }
+    },
+  )
+
+  // ── GET /leads/:id/adhesion/documents ────────────────────────────────────
+  fastify.get<{ Params: { id: string } }>(
+    '/leads/:id/adhesion/documents',
+    {
+      preHandler: [authMiddleware, tenantMiddleware, requirePermission(Permission.LEAD_READ)],
+    },
+    async (request, reply) => {
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      const documents = await listAdhesionDocuments.execute({
+        leadId: request.params.id,
+        userId: context.userId,
+        membership: context.currentMembership,
+      })
+      if (!documents) {
+        return reply
+          .status(404)
+          .send({ error: 'Lead não encontrado.', code: 'LEAD_NOT_FOUND', status: 404 })
+      }
+      // O caminho interno no Storage não sai da API — só o link temporário.
+      return { documents: documents.map(({ storagePath: _path, ...document }) => document) }
+    },
+  )
+
+  // ── POST /leads/:id/adhesion/documents ───────────────────────────────────
+  fastify.post<{ Params: { id: string } }>(
+    '/leads/:id/adhesion/documents',
+    {
+      preHandler: [authMiddleware, tenantMiddleware, requirePermission(Permission.LEAD_UPDATE)],
+    },
+    async (request, reply) => {
+      const file = await request.file()
+      if (!file) {
+        return reply
+          .status(400)
+          .send({ error: 'Nenhum arquivo enviado.', code: 'VALIDATION_ERROR', status: 400 })
+      }
+      // O campo "kind" vem antes do arquivo no formulário.
+      const kindField = file.fields.kind
+      const kind =
+        kindField && !Array.isArray(kindField) && 'value' in kindField
+          ? String(kindField.value)
+          : ''
+      const data = await file.toBuffer()
+
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      try {
+        const document = await uploadAdhesionDocument.execute({
+          leadId: request.params.id,
+          userId: context.userId,
+          membership: context.currentMembership,
+          kind,
+          fileName: file.filename,
+          contentType: file.mimetype,
+          data,
+        })
+        if (!document) {
+          return reply
+            .status(404)
+            .send({ error: 'Lead não encontrado.', code: 'LEAD_NOT_FOUND', status: 404 })
+        }
+        const { storagePath: _path, ...publicDocument } = document
+        return reply.status(201).send({ document: publicDocument })
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          return reply.status(400).send({
+            error: error.issues[0]?.message ?? 'Arquivo inválido.',
+            code: error.code,
+            status: 400,
+          })
+        }
+        throw error
+      }
+    },
+  )
+
+  // ── DELETE /leads/:id/adhesion/documents/:documentId ─────────────────────
+  fastify.delete<{ Params: { id: string; documentId: string } }>(
+    '/leads/:id/adhesion/documents/:documentId',
+    {
+      preHandler: [authMiddleware, tenantMiddleware, requirePermission(Permission.LEAD_UPDATE)],
+    },
+    async (request, reply) => {
+      const notFound = {
+        error: 'Documento não encontrado.',
+        code: 'DOCUMENT_NOT_FOUND',
+        status: 404,
+      }
+      if (!z.string().uuid().safeParse(request.params.documentId).success) {
+        return reply.status(404).send(notFound)
+      }
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      const deleted = await deleteAdhesionDocument.execute({
+        leadId: request.params.id,
+        userId: context.userId,
+        membership: context.currentMembership,
+        documentId: request.params.documentId,
+      })
+      if (!deleted) return reply.status(404).send(notFound)
+      return reply.status(204).send()
     },
   )
 

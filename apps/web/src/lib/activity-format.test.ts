@@ -145,3 +145,19 @@ describe('describeActivity — ficha de adesão', () => {
     expect(text).toContain('atualizou a ficha de adesão do lead')
   })
 })
+
+describe('describeActivity — documentos da ficha', () => {
+  it('names the uploaded document', () => {
+    const text = describeActivity(
+      entry({
+        action: 'lead.document_uploaded',
+        entityType: 'lead',
+        entityId: 'lead-01',
+        entityLabel: 'Maria',
+        metadata: { kind: 'proof_of_address' },
+      }),
+      memberName,
+    )
+    expect(text).toContain('anexou o comprovante de residência ao lead')
+  })
+})

@@ -3,6 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  type AdhesionDocumentKind,
   type CreateLeadPayload,
   type CreateLeadProposalPayload,
   type LeadAdhesionFields,
@@ -14,15 +15,18 @@ import {
   createLead,
   createLeadComment,
   createLeadProposal,
+  deleteAdhesionDocument,
   deleteLead,
   duplicateLead,
   getLeadAdhesion,
   getLeadHistory,
+  listAdhesionDocuments,
   listLeadProposals,
   listLeads,
   saveLeadAdhesion,
   shareLeadProposal,
   updateLead,
+  uploadAdhesionDocument,
 } from '../lib/leads-api'
 
 function leadsQueryKey(organizationId: string | null, params: ListLeadsParams) {
@@ -126,6 +130,47 @@ export function useLeadAdhesionQuery(organizationId: string | null, leadId: stri
     queryKey: leadAdhesionQueryKey(organizationId, leadId),
     queryFn: () => getLeadAdhesion(organizationId as string, leadId),
     enabled: Boolean(organizationId) && Boolean(leadId),
+  })
+}
+
+function adhesionDocumentsQueryKey(organizationId: string | null, leadId: string) {
+  return ['leads', organizationId, leadId, 'adhesion-documents'] as const
+}
+
+export function useAdhesionDocumentsQuery(organizationId: string | null, leadId: string) {
+  return useQuery({
+    queryKey: adhesionDocumentsQueryKey(organizationId, leadId),
+    queryFn: () => listAdhesionDocuments(organizationId as string, leadId),
+    enabled: Boolean(organizationId) && Boolean(leadId),
+    // Os links de leitura duram 10 min — renova antes de vencerem.
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 8 * 60 * 1000,
+  })
+}
+
+export function useUploadAdhesionDocument(organizationId: string | null, leadId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ kind, file }: { kind: AdhesionDocumentKind; file: File }) =>
+      uploadAdhesionDocument(organizationId as string, leadId, kind, file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: adhesionDocumentsQueryKey(organizationId, leadId),
+      })
+    },
+  })
+}
+
+export function useDeleteAdhesionDocument(organizationId: string | null, leadId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (documentId: string) =>
+      deleteAdhesionDocument(organizationId as string, leadId, documentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: adhesionDocumentsQueryKey(organizationId, leadId),
+      })
+    },
   })
 }
 

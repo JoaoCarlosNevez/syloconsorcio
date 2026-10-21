@@ -7,12 +7,18 @@
 import { Skeleton, useToast } from '@sylocrm/ui'
 import { useEffect, useState } from 'react'
 import type { CardData } from '../../data/kanban-mock'
-import { useLeadAdhesionQuery, useSaveLeadAdhesion, useUpdateLead } from '../../hooks/useLeads'
+import {
+  useAdhesionDocumentsQuery,
+  useLeadAdhesionQuery,
+  useSaveLeadAdhesion,
+  useUpdateLead,
+} from '../../hooks/useLeads'
 import {
   ADHESION_ITEMS,
   type AdhesionForm,
   type AdhesionItem,
   type AdhesionSection,
+  PAYMENT_METHOD_OPTIONS,
   adhesionFields,
   adhesionProgress,
   adhesionText,
@@ -24,6 +30,7 @@ import {
 import { formatMoneyInput, formatPhoneBR } from '../../lib/lead-adapters'
 import type { LeadProposal } from '../../lib/leads-api'
 import type { TeamMember } from '../../lib/team-api'
+import { AdhesionDocuments } from './AdhesionDocuments'
 import styles from './AdhesionTab.module.css'
 
 const MARITAL_STATUS_OPTIONS = [
@@ -127,6 +134,7 @@ export function AdhesionTab({
   latestProposal: LeadProposal | null
 }) {
   const { data, isLoading } = useLeadAdhesionQuery(organizationId, card.id)
+  const documentsQuery = useAdhesionDocumentsQuery(organizationId, card.id)
   const saveAdhesion = useSaveLeadAdhesion(organizationId, card.id)
   const updateLead = useUpdateLead(organizationId)
   const { toast } = useToast()
@@ -155,7 +163,8 @@ export function AdhesionTab({
     )
   }
 
-  const progress = adhesionProgress(form)
+  const uploadedKinds = new Set((documentsQuery.data?.documents ?? []).map((d) => d.kind))
+  const progress = adhesionProgress(form, uploadedKinds)
   const percent = progress.total ? Math.round((progress.done / progress.total) * 100) : 0
   const activeMembers = members.filter((m) => m.status === 'ACTIVE')
   const sellerName =
@@ -255,6 +264,24 @@ export function AdhesionTab({
           {activeMembers.map((member) => (
             <option key={member.userId} value={member.userId}>
               {member.name ?? member.email}
+            </option>
+          ))}
+        </select>
+      )
+    }
+    if (item.key === 'paymentMethod') {
+      const options = [...new Set([...PAYMENT_METHOD_OPTIONS, value].filter(Boolean))]
+      return (
+        <select
+          id={id}
+          className={styles.input}
+          value={value}
+          onChange={(e) => update(item.key, e.target.value)}
+        >
+          <option value="">Selecione…</option>
+          {options.map((option) => (
+            <option key={option} value={option}>
+              {option}
             </option>
           ))}
         </select>
@@ -398,6 +425,11 @@ export function AdhesionTab({
           </div>
         </section>
       ))}
+
+      <section className={styles.section}>
+        <h3 className={styles.sectionTitle}>Documentos</h3>
+        <AdhesionDocuments organizationId={organizationId} leadId={card.id} />
+      </section>
 
       <div className={styles.actions}>
         <button type="button" className={styles.copyBtn} onClick={handleCopy}>

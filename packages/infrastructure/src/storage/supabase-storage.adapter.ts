@@ -38,6 +38,37 @@ export class SupabaseStorageAdapter implements IStorageProvider {
     return { url: `${data.publicUrl}?v=${Date.now()}` }
   }
 
+  async uploadPrivateFile(input: UploadFileInput): Promise<void> {
+    const { error } = await this.client.storage
+      .from(input.bucket)
+      .upload(input.path, input.data, { contentType: input.contentType, upsert: true })
+    if (error) {
+      throw new Error(`Falha ao enviar arquivo para o Storage: ${error.message}`)
+    }
+  }
+
+  async createSignedUrl(input: {
+    bucket: string
+    path: string
+    expiresInSeconds: number
+  }): Promise<string> {
+    const { data, error } = await this.client.storage
+      .from(input.bucket)
+      .createSignedUrl(input.path, input.expiresInSeconds)
+    if (error || !data) {
+      throw new Error(`Falha ao gerar link do arquivo: ${error?.message ?? 'sem retorno'}`)
+    }
+    return data.signedUrl
+  }
+
+  async deleteFiles(input: { bucket: string; paths: string[] }): Promise<void> {
+    if (input.paths.length === 0) return
+    const { error } = await this.client.storage.from(input.bucket).remove(input.paths)
+    if (error) {
+      throw new Error(`Falha ao apagar arquivos do Storage: ${error.message}`)
+    }
+  }
+
   async deleteFolderFiles(input: {
     bucket: string
     folder: string

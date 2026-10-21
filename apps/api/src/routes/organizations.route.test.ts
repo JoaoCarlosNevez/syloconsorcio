@@ -23,6 +23,9 @@ import { buildTestPng } from '../test-utils/png'
 function buildStorageProvider(): IStorageProvider {
   return {
     deleteFolderFiles: vi.fn(),
+    uploadPrivateFile: vi.fn(),
+    createSignedUrl: vi.fn(),
+    deleteFiles: vi.fn(),
     uploadPublicFile: vi.fn().mockResolvedValue({
       url: 'https://xvzsobntyhvxrbdfboax.supabase.co/storage/v1/object/public/organization-icons/org-uuid/icon.png',
     }),
