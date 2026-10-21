@@ -3,12 +3,13 @@
 
 import { Dropdown, OrganizationAvatar, TIER_COLORS, TIER_LABELS } from '@sylocrm/ui'
 import type { DropdownEntry, Tier } from '@sylocrm/ui'
-import { type ReactNode, useLayoutEffect } from 'react'
+import { type ReactNode, useEffect, useLayoutEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { applyBrandColor } from '../../lib/brand-theme'
+import { applyDocumentBranding, documentBrandingFor } from '../../lib/document-branding'
 import { visibleTier } from '../../lib/tier-art'
 import { NotificationBell } from '../notifications/NotificationBell'
 import styles from './AppLayout.module.css'
@@ -233,6 +234,11 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { membership, memberships, setActiveOrganizationId } = useActiveOrganization()
   const brandColor = membership?.organizationSecondaryColor ?? null
   const whiteLabelLogoUrl = membership?.organizationIconUrl ?? null
+
+  // Nome e ícone da aba seguem a instância (White Label) — ver document-branding.ts.
+  useEffect(() => {
+    applyDocumentBranding(documentBrandingFor(membership))
+  }, [membership])
 
   // Cor White Label da organização ativa. Layout effect (e não useEffect) pra
   // que a troca de página — que desmonta e remonta o AppLayout — não pisque

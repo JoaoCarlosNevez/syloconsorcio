@@ -13,9 +13,10 @@
 //   - aria-label nos ícones
 
 import { Button, Checkbox, Input } from '@sylocrm/ui'
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { applyDocumentBranding, documentBrandingFor } from '../../lib/document-branding'
 import styles from './LoginPage.module.css'
 
 // ── RecoveryModal ─────────────────────────────────────────────────────────────
@@ -232,6 +233,10 @@ function ArrowRightIcon() {
 // ── LoginPage ─────────────────────────────────────────────────────────────────
 
 export function LoginPage() {
+  // Fora da organização (login/logout) a aba volta pra marca SyloCRM.
+  useEffect(() => {
+    applyDocumentBranding(documentBrandingFor(null))
+  }, [])
   const navigate = useNavigate()
   const { signIn, isSigningIn, signInError, isSignedIn, isLoading } = useAuth()
 
