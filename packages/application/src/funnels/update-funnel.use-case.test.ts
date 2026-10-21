@@ -121,7 +121,7 @@ describe('UpdateFunnelUseCase', () => {
 
     await expect(
       useCase.execute({ id: 'funnel-adm', organizationId: ORG_ID, changes: { name: 'Pós' } }),
-    ).rejects.toThrow('O funil ADM é fixo')
+    ).rejects.toThrow('Este funil é fixo')
     expect(funnelRepository.update).not.toHaveBeenCalled()
   })
 
@@ -159,5 +159,54 @@ describe('UpdateFunnelUseCase', () => {
     })
 
     expect(funnelRepository.update).toHaveBeenCalled()
+  })
+
+  describe('funil Comercial', () => {
+    const commercial: FunnelRecord = { ...SAMPLE_FUNNEL, name: 'Comercial', kind: 'COMMERCIAL' }
+
+    it('lets the owner edit its stages', async () => {
+      const funnelRepository = buildFunnelRepository({
+        findById: vi.fn().mockResolvedValue(commercial),
+      })
+      const useCase = new UpdateFunnelUseCase(funnelRepository)
+
+      await useCase.execute({
+        id: 'funnel-01',
+        organizationId: ORG_ID,
+        changes: {
+          name: 'Comercial',
+          stages: [
+            { id: 'stage-1', name: 'Novo lead' },
+            { id: 'stage-2', name: 'Fechado' },
+          ],
+        },
+      })
+
+      expect(funnelRepository.update).toHaveBeenCalled()
+    })
+
+    it('cannot be renamed nor stop being the default', async () => {
+      const funnelRepository = buildFunnelRepository({
+        findById: vi.fn().mockResolvedValue(commercial),
+      })
+      const useCase = new UpdateFunnelUseCase(funnelRepository)
+
+      await expect(
+        useCase.execute({ id: 'funnel-01', organizationId: ORG_ID, changes: { name: 'Vendas' } }),
+      ).rejects.toBeInstanceOf(ValidationError)
+      await expect(
+        useCase.execute({ id: 'funnel-01', organizationId: ORG_ID, changes: { isDefault: false } }),
+      ).rejects.toBeInstanceOf(ValidationError)
+      expect(funnelRepository.update).not.toHaveBeenCalled()
+    })
+
+    it('no other funnel can become the default', async () => {
+      const funnelRepository = buildFunnelRepository()
+      const useCase = new UpdateFunnelUseCase(funnelRepository)
+
+      await expect(
+        useCase.execute({ id: 'funnel-02', organizationId: ORG_ID, changes: { isDefault: true } }),
+      ).rejects.toBeInstanceOf(ValidationError)
+    })
   })
 })

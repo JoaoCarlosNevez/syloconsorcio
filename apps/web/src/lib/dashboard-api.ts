@@ -159,6 +159,13 @@ export interface ManagementDashboard {
     supervisors: { userId: string; name: string }[]
     sellers: { userId: string; name: string }[]
   }
+  /** Funil Pós-venda: cotas ativas por etapa e quantas estão atrasadas. */
+  postSale: {
+    id: string
+    stages: { id: string; name: string; color: string; count: number }[]
+    activeCount: number
+    lateCount: number
+  } | null
   sellers: SellerPerformance[]
   /** Comparativo de supervisores — só pro Dono, na representação inteira. */
   supervisors: SupervisorPerformance[] | null

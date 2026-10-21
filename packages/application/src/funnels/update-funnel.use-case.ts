@@ -3,7 +3,8 @@
 // Guarda: não deixa remover (omitir da lista `stages`) um estágio que ainda
 // tem leads — o usuário precisa mover os leads antes.
 //
-// O funil ADM (kind BACKOFFICE) é fixo: nada nele pode ser alterado. E o
+// Funis fixos (ver system-funnels.ts): ADM e Pós-venda não mudam em nada; o
+// Comercial só muda as etapas (nome fixo, sempre o padrão). E o
 // gatilho "passar o bastão" (duplicateToFunnelId) não pode mais ser ligado —
 // o Ganho de um funil de vendas já vai sozinho pro ADM; só desligar (null).
 
@@ -12,7 +13,7 @@ import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activi
 import type { FunnelRecord, IFunnelRepository, UpdateFunnelInput } from '../ports/funnel.repository'
 import type { UseCase } from '../ports/use-case'
 
-import { FIXED_FUNNEL_MESSAGE } from './backoffice-funnel'
+import { FIXED_FUNNEL_MESSAGE, hasFixedStages } from './system-funnels'
 export interface UpdateFunnelUseCaseInput {
   id: string
   organizationId: string
@@ -30,8 +31,25 @@ export class UpdateFunnelUseCase implements UseCase<UpdateFunnelUseCaseInput, Fu
     const current = await this.funnelRepository.findById(input.id, input.organizationId)
     if (!current) return null
 
-    if (current.kind === 'BACKOFFICE') {
+    if (hasFixedStages(current.kind)) {
       throw new ValidationError([{ field: 'id', message: FIXED_FUNNEL_MESSAGE }])
+    }
+    // Comercial: só as etapas mudam — o nome é fixo e ele é sempre o padrão.
+    if (current.kind === 'COMMERCIAL') {
+      if (input.changes.name !== undefined && input.changes.name.trim() !== current.name) {
+        throw new ValidationError([
+          { field: 'name', message: 'O funil Comercial não pode ser renomeado.' },
+        ])
+      }
+      if (input.changes.isDefault === false) {
+        throw new ValidationError([
+          { field: 'isDefault', message: 'O funil Comercial é sempre o padrão.' },
+        ])
+      }
+    } else if (input.changes.isDefault === true) {
+      throw new ValidationError([
+        { field: 'isDefault', message: 'O funil Comercial é sempre o padrão.' },
+      ])
     }
     if (input.changes.duplicateToFunnelId) {
       throw new ValidationError([

@@ -291,7 +291,12 @@ describe('POST /organizations', () => {
       expect.objectContaining({ organizationId: 'org-uuid', role: 'ADMIN' }),
     )
     expect(funnelRepository.create).toHaveBeenCalledWith(
-      expect.objectContaining({ organizationId: 'org-uuid', name: 'Padrão', isDefault: true }),
+      expect.objectContaining({
+        organizationId: 'org-uuid',
+        name: 'Comercial',
+        isDefault: true,
+        kind: 'COMMERCIAL',
+      }),
     )
   })
 

@@ -54,6 +54,20 @@ describe('DeleteFunnelUseCase', () => {
     expect(result).toBe(false)
   })
 
+  it.each(['COMMERCIAL', 'POST_SALE'] as const)(
+    'rejects deleting the fixed %s funnel',
+    async (kind) => {
+      const funnelRepository = buildFunnelRepository({
+        findById: vi.fn().mockResolvedValue({ ...OTHER_FUNNEL, kind }),
+      })
+      const useCase = new DeleteFunnelUseCase(funnelRepository)
+
+      await expect(useCase.execute({ id: 'funnel-other', organizationId: ORG_ID })).rejects.toThrow(
+        'Este funil é fixo',
+      )
+    },
+  )
+
   it('rejects deleting the fixed ADM funnel', async () => {
     const funnelRepository = buildFunnelRepository({
       findById: vi.fn().mockResolvedValue({ ...OTHER_FUNNEL, kind: 'BACKOFFICE' }),
@@ -61,7 +75,7 @@ describe('DeleteFunnelUseCase', () => {
     const useCase = new DeleteFunnelUseCase(funnelRepository)
 
     await expect(useCase.execute({ id: 'funnel-other', organizationId: ORG_ID })).rejects.toThrow(
-      'O funil ADM é fixo',
+      'Este funil é fixo',
     )
     expect(funnelRepository.delete).not.toHaveBeenCalled()
   })

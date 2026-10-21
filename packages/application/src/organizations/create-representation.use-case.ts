@@ -23,7 +23,12 @@ import type { IOrganizationRepository, OrganizationRecord } from '../ports/organ
 import type { UseCase } from '../ports/use-case'
 import type { IUserRepository } from '../ports/user.repository'
 
-import { BACKOFFICE_FUNNEL_NAME, BACKOFFICE_FUNNEL_STAGES } from '../funnels/backoffice-funnel'
+import {
+  BACKOFFICE_FUNNEL_NAME,
+  BACKOFFICE_FUNNEL_STAGES,
+  POST_SALE_FUNNEL_NAME,
+  POST_SALE_FUNNEL_STAGES,
+} from '../funnels/system-funnels'
 export interface CreateRepresentationInput {
   organizationName: string
   /** null = criar só a organização, sem dono por enquanto. */
@@ -63,12 +68,19 @@ export class CreateRepresentationUseCase
       name: DEFAULT_FUNNEL_NAME,
       stages: [...DEFAULT_FUNNEL_STAGES],
       isDefault: true,
+      kind: 'COMMERCIAL',
     })
     await this.funnelRepository.create({
       organizationId: organization.id,
       name: BACKOFFICE_FUNNEL_NAME,
       stages: [...BACKOFFICE_FUNNEL_STAGES],
       kind: 'BACKOFFICE',
+    })
+    await this.funnelRepository.create({
+      organizationId: organization.id,
+      name: POST_SALE_FUNNEL_NAME,
+      stages: [...POST_SALE_FUNNEL_STAGES],
+      kind: 'POST_SALE',
     })
 
     if (owner) {

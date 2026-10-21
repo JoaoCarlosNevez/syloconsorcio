@@ -38,7 +38,7 @@ import { useLeadsQuery, useUpdateLead } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { useOrganizationSettingsQuery } from '../../hooks/useOrganizationSettings'
 import { useTeamMembersQuery } from '../../hooks/useTeam'
-import type { FunnelStage } from '../../lib/funnels-api'
+import { type FunnelStage, sortFunnels } from '../../lib/funnels-api'
 import {
   formatBRL,
   groupLeadsByColumn,
@@ -961,7 +961,7 @@ export function KanbanPage() {
                   </span>
                 }
                 items={[
-                  ...funnels.map((funnel) => ({
+                  ...sortFunnels(funnels).map((funnel) => ({
                     key: funnel.id,
                     label: funnel.name,
                     onSelect: () => handleSelectFunnel(funnel.id),

@@ -10,11 +10,11 @@
 // plano "Múltiplos funis customizáveis") — reabrir (won: false) nunca mexe em
 // stageId, só limpa wonAt.
 //
-// Funil ADM (ver funnels/backoffice-funnel.ts): marcar como Ganho um lead de
-// um funil de vendas cria automaticamente uma cópia dele — com a ficha de
-// adesão e os documentos — na primeira etapa do funil ADM, mesmo vendedor
-// como responsável. Ganho dentro do próprio ADM não copia (é o fim). O
-// Vendedor não altera leads do funil ADM (só acompanha).
+// Funis fixos (ver funnels/system-funnels.ts): o Ganho passa o lead adiante
+// — Comercial (ou funil de vendas extra) → ADM → Pós-venda. A cópia leva a
+// ficha de adesão e os documentos, nasce na primeira etapa e mantém o
+// vendedor como responsável. Ganho no Pós-venda é o fim. O Vendedor não
+// altera leads do funil ADM (só acompanha).
 //
 // Telefone é único por organização — editar o telefone de um lead pra um que
 // já pertence a outro lead da mesma org é rejeitado (mesma regra da criação,
@@ -26,7 +26,11 @@
 
 import { ValidationError } from '@sylocrm/domain'
 import type { MembershipContext } from '../auth/auth-context'
-import { assertCanChangeLeadsInFunnel, ensureBackofficeFunnel } from '../funnels/backoffice-funnel'
+import {
+  assertCanChangeLeadsInFunnel,
+  ensureSystemFunnel,
+  nextFunnelKindOnWin,
+} from '../funnels/system-funnels'
 import {
   type ActivityMetadata,
   type IActivityLogRepository,
@@ -165,10 +169,12 @@ export class UpdateLeadUseCase implements UseCase<UpdateLeadUseCaseInput, LeadRe
     if (before) await this.recordActivity(input.userId, before, updated, input.changes)
 
     // Só no Ganho de verdade (não reenvio de won: true num lead já ganho).
-    if (isMarkingWon && !before?.wonAt && updated.wonAt && wonFunnel?.kind === 'SALES') {
-      const targetFunnel = await ensureBackofficeFunnel(
+    const nextKind = wonFunnel ? nextFunnelKindOnWin(wonFunnel.kind) : null
+    if (isMarkingWon && !before?.wonAt && updated.wonAt && wonFunnel && nextKind) {
+      const targetFunnel = await ensureSystemFunnel(
         this.funnelRepository,
         updated.organizationId,
+        nextKind,
       )
       const copy = await duplicateLeadRecord(
         this.leadRepository,

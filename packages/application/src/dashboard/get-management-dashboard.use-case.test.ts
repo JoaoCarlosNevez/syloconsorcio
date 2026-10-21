@@ -44,6 +44,7 @@ function funnel(id: string, kind: 'SALES' | 'BACKOFFICE', stages: string[], isDe
 
 const SALES = funnel('padrao', 'SALES', ['lead', 'proposta', 'fechado'], true)
 const ADM = funnel('adm', 'BACKOFFICE', ['conferencia', 'digitado'])
+const POST = funnel('pos', 'POST_SALE', ['Em dia', 'Atrasado'])
 
 function member(userId: string, role: Role, overrides: Partial<TeamMember> = {}): TeamMember {
   return {
@@ -361,5 +362,23 @@ describe('GetManagementDashboardUseCase', () => {
         useCase.execute({ ...SUPERVISOR, supervisorUserId: 'carlos' }),
       ).rejects.toBeInstanceOf(AuthorizationError)
     })
+  })
+
+  it('counts active and late quotas in the Pós-venda funnel', async () => {
+    const { useCase } = setup(
+      [
+        lead({ funnelId: POST.id, stageId: 'pos-Em dia' }),
+        lead({ funnelId: POST.id, stageId: 'pos-Atrasado' }),
+        lead({ funnelId: POST.id, stageId: 'pos-Atrasado', assignedUserId: 'duda' }),
+      ],
+      { funnels: [SALES, ADM, POST] },
+    )
+
+    const owner = await useCase.execute(OWNER)
+    expect(owner.postSale).toMatchObject({ activeCount: 3, lateCount: 2 })
+
+    // Supervisor vê só o time (Duda é de fora).
+    const supervisor = await useCase.execute(SUPERVISOR)
+    expect(supervisor.postSale).toMatchObject({ activeCount: 2, lateCount: 1 })
   })
 })

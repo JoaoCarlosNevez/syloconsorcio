@@ -4,7 +4,7 @@
 // original não é alterado.
 
 import type { MembershipContext } from '../auth/auth-context'
-import { assertCanChangeLeadsInFunnel } from '../funnels/backoffice-funnel'
+import { assertCanChangeLeadsInFunnel } from '../funnels/system-funnels'
 import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activity-log.repository'
 import type { IFunnelRepository } from '../ports/funnel.repository'
 import type { ILeadRepository, LeadRecord } from '../ports/lead.repository'

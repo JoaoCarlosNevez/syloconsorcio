@@ -189,9 +189,14 @@ export { DEFAULT_FUNNEL_NAME, DEFAULT_FUNNEL_STAGES } from './funnels/default-fu
 export {
   BACKOFFICE_FUNNEL_NAME,
   BACKOFFICE_FUNNEL_STAGES,
+  POST_SALE_FUNNEL_NAME,
+  POST_SALE_FUNNEL_STAGES,
   assertCanChangeLeadsInFunnel,
-  ensureBackofficeFunnel,
-} from './funnels/backoffice-funnel'
+  ensureSystemFunnel,
+  hasFixedStages,
+  nextFunnelKindOnWin,
+} from './funnels/system-funnels'
+export { isSalesFunnelKind } from './ports/funnel.repository'
 export type { CreateFunnelInput } from './funnels/create-funnel.use-case'
 export { UpdateFunnelUseCase } from './funnels/update-funnel.use-case'
 export type { UpdateFunnelUseCaseInput } from './funnels/update-funnel.use-case'

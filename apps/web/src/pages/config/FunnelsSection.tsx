@@ -33,7 +33,7 @@ import {
   useUpdateFunnel,
 } from '../../hooks/useFunnels'
 import { useActiveOrganization } from '../../hooks/useOrganization'
-import type { Funnel, FunnelStage } from '../../lib/funnels-api'
+import { type Funnel, type FunnelStage, sortFunnels } from '../../lib/funnels-api'
 import styles from './ConfigPage.module.css'
 
 // ── Ícones ────────────────────────────────────────────────────────────────────
@@ -283,6 +283,8 @@ function FunnelEditor({
           className={styles.formInput}
           value={name}
           onChange={(e) => setName(e.target.value)}
+          disabled={funnel.kind === 'COMMERCIAL'}
+          title={funnel.kind === 'COMMERCIAL' ? 'O funil Comercial tem nome fixo.' : undefined}
         />
       </div>
 
@@ -328,12 +330,27 @@ function FunnelEditor({
 
 // ── Seção principal ──────────────────────────────────────────────────────────
 
+// Etiqueta e explicação dos funis fixos (ver application/src/funnels/system-funnels.ts).
+const FIXED_BADGE: Partial<Record<Funnel['kind'], string>> = {
+  COMMERCIAL: 'Fixo · comercial',
+  BACKOFFICE: 'Fixo · ADM',
+  POST_SALE: 'Fixo · pós-venda',
+}
+
+const FIXED_NOTE: Partial<Record<Funnel['kind'], string>> = {
+  COMMERCIAL:
+    'Funil padrão: todo lead novo entra aqui. Ao marcar Ganho, o lead vai pro ADM. O nome é fixo; as etapas você ajusta em Editar.',
+  BACKOFFICE:
+    'Recebe todo lead ganho no Comercial, com a ficha de adesão e os documentos, pro Administrativo dar andamento. Ao marcar Ganho (Efetivado), o cliente vai pro Pós-venda.',
+  POST_SALE:
+    'Acompanhamento da cota depois de efetivada: recebe todo Ganho do ADM, com a ficha e os documentos.',
+}
+
 export function FunnelsSection({ isAdmin }: { isAdmin: boolean }) {
   const { organizationId } = useActiveOrganization()
   const { data, isLoading } = useFunnelsQuery(organizationId)
   const createFunnel = useCreateFunnel(organizationId)
   const deleteFunnel = useDeleteFunnel(organizationId)
-  const updateFunnel = useUpdateFunnel(organizationId)
   const { toast } = useToast()
 
   const [editingFunnelId, setEditingFunnelId] = useState<string | null>(null)
@@ -361,18 +378,6 @@ export function FunnelsSection({ isAdmin }: { isAdmin: boolean }) {
       toast({
         type: 'error',
         title: 'Não foi possível criar o funil',
-        description: error instanceof Error ? error.message : undefined,
-      })
-    }
-  }
-
-  async function handleSetDefault(funnelId: string) {
-    try {
-      await updateFunnel.mutateAsync({ id: funnelId, payload: { isDefault: true } })
-    } catch (error) {
-      toast({
-        type: 'error',
-        title: 'Não foi possível definir o funil padrão',
         description: error instanceof Error ? error.message : undefined,
       })
     }
@@ -409,35 +414,24 @@ export function FunnelsSection({ isAdmin }: { isAdmin: boolean }) {
         {isLoading ? (
           <p className={styles.segmentEmpty}>Carregando…</p>
         ) : (
-          funnels.map((funnel) => (
+          sortFunnels(funnels).map((funnel) => (
             <div key={funnel.id} className={styles.funnelListRow}>
               <div className={styles.funnelListInfo}>
                 <span className={styles.funnelListName}>{funnel.name}</span>
-                {funnel.isDefault && <span className={styles.funnelBadgeDefault}>Padrão</span>}
-                {funnel.kind === 'BACKOFFICE' && (
-                  <span className={styles.funnelBadgeFixed}>Fixo · pós-venda</span>
+                {FIXED_BADGE[funnel.kind] && (
+                  <span className={styles.funnelBadgeFixed}>{FIXED_BADGE[funnel.kind]}</span>
                 )}
                 <span className={styles.funnelLeadCount}>{totalLeads(funnel)} lead(s)</span>
               </div>
-              {funnel.kind === 'BACKOFFICE' && (
+              {FIXED_NOTE[funnel.kind] && (
                 <p className={styles.funnelFixedNote}>
-                  Todo lead marcado como Ganho num funil de vendas é copiado pra cá, com a ficha de
-                  adesão e os documentos, pro Administrativo dar andamento. Etapas:{' '}
-                  {funnel.stages.map((stage) => stage.name).join(' → ')}.
+                  {FIXED_NOTE[funnel.kind]}
+                  {funnel.kind !== 'COMMERCIAL' &&
+                    ` Etapas: ${funnel.stages.map((stage) => stage.name).join(' → ')}.`}
                 </p>
               )}
-              {isAdmin && funnel.kind !== 'BACKOFFICE' && (
+              {isAdmin && (funnel.kind === 'COMMERCIAL' || funnel.kind === 'SALES') && (
                 <div className={styles.funnelListActions}>
-                  {!funnel.isDefault && (
-                    <button
-                      type="button"
-                      className={styles.secondaryBtn}
-                      onClick={() => handleSetDefault(funnel.id)}
-                      disabled={updateFunnel.isPending}
-                    >
-                      Definir como padrão
-                    </button>
-                  )}
                   <button
                     type="button"
                     className={styles.secondaryBtn}
@@ -447,28 +441,30 @@ export function FunnelsSection({ isAdmin }: { isAdmin: boolean }) {
                   >
                     {editingFunnelId === funnel.id ? 'Fechar' : 'Editar'}
                   </button>
-                  <button
-                    type="button"
-                    className={styles.dangerOutlineBtn}
-                    onClick={() => handleDelete(funnel)}
-                    disabled={
-                      deleteFunnel.isPending ||
-                      funnel.isDefault ||
-                      funnels.length <= 1 ||
-                      totalLeads(funnel) > 0
-                    }
-                    title={
-                      funnel.isDefault
-                        ? 'Defina outro funil como padrão antes de excluir este.'
-                        : funnels.length <= 1
-                          ? 'A organização precisa ter ao menos um funil.'
-                          : totalLeads(funnel) > 0
-                            ? 'Este funil ainda tem leads.'
-                            : undefined
-                    }
-                  >
-                    Excluir
-                  </button>
+                  {funnel.kind === 'SALES' && (
+                    <button
+                      type="button"
+                      className={styles.dangerOutlineBtn}
+                      onClick={() => handleDelete(funnel)}
+                      disabled={
+                        deleteFunnel.isPending ||
+                        funnel.isDefault ||
+                        funnels.length <= 1 ||
+                        totalLeads(funnel) > 0
+                      }
+                      title={
+                        funnel.isDefault
+                          ? 'Defina outro funil como padrão antes de excluir este.'
+                          : funnels.length <= 1
+                            ? 'A organização precisa ter ao menos um funil.'
+                            : totalLeads(funnel) > 0
+                              ? 'Este funil ainda tem leads.'
+                              : undefined
+                      }
+                    >
+                      Excluir
+                    </button>
+                  )}
                 </div>
               )}
               {editingFunnelId === funnel.id && (

@@ -363,14 +363,40 @@ describe('UpdateLeadUseCase', () => {
       expect(leadRepository.create).not.toHaveBeenCalled()
     })
 
-    it('does not copy a lead won inside the ADM funnel itself', async () => {
+    it('copies a lead won in the ADM funnel into the Pós-venda funnel', async () => {
+      const postSale = {
+        ...TARGET_FUNNEL,
+        id: 'funnel-pos',
+        name: 'Pós-venda',
+        kind: 'POST_SALE' as const,
+        stages: [{ ...TARGET_FUNNEL.stages[0], id: 'stage-pos-first', funnelId: 'funnel-pos' }],
+      }
       const { useCase, leadRepository, funnelRepository } = setupWon({
         before: { funnelId: TARGET_FUNNEL_ID },
+        funnels: [SAMPLE_FUNNEL, TARGET_FUNNEL, postSale],
       })
       // ADM cuja última etapa é a do lead, pra poder ganhar.
+      vi.mocked(funnelRepository.findById).mockImplementation(async (id) =>
+        id === 'funnel-pos'
+          ? (postSale as never)
+          : ({
+              ...TARGET_FUNNEL,
+              stages: [{ ...TARGET_FUNNEL.stages[0], id: LAST_STAGE_ID }],
+            } as never),
+      )
+
+      await useCase.execute(markWon)
+
+      expect(leadRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ funnelId: 'funnel-pos', stageId: 'stage-pos-first' }),
+      )
+    })
+
+    it('does not copy a lead won in the Pós-venda funnel (end of the line)', async () => {
+      const { useCase, leadRepository, funnelRepository } = setupWon()
       vi.mocked(funnelRepository.findById).mockResolvedValue({
-        ...TARGET_FUNNEL,
-        stages: [{ ...TARGET_FUNNEL.stages[0], id: LAST_STAGE_ID }],
+        ...SAMPLE_FUNNEL,
+        kind: 'POST_SALE',
       } as never)
 
       await useCase.execute(markWon)

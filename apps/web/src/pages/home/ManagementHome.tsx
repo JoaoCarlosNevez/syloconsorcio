@@ -348,6 +348,48 @@ function BackofficeCard({ data }: { data: ManagementDashboard }) {
   )
 }
 
+function PostSaleCard({ data }: { data: ManagementDashboard }) {
+  const post = data.postSale
+  if (!post) return null
+  const latePercent = post.activeCount > 0 ? (post.lateCount / post.activeCount) * 100 : null
+  return (
+    <section className={styles.panel}>
+      <div className={styles.panelHeader}>
+        <h2 className={styles.panelTitle}>Pós-venda · inadimplência</h2>
+        {post.activeCount > 0 &&
+          (post.lateCount > 0 ? (
+            <span className={styles.badgeDanger}>
+              {plural(post.lateCount, 'cota atrasada', 'cotas atrasadas')} (
+              {formatPercent(latePercent)})
+            </span>
+          ) : (
+            <span className={styles.badgeOk}>Nenhuma cota atrasada</span>
+          ))}
+      </div>
+      {post.activeCount === 0 ? (
+        <p className={styles.empty}>
+          Nenhum cliente no pós-venda ainda. Todo lead ganho no ADM (Efetivado) aparece aqui.
+        </p>
+      ) : (
+        <div className={styles.admStages}>
+          {post.stages.map((stage) => (
+            <div key={stage.id} className={styles.admStage}>
+              <span className={styles.admStageBar} style={{ background: stage.color }} />
+              <span className={styles.stageName}>{stage.name}</span>
+              <span className={styles.stageCount}>{stage.count}</span>
+              <span className={styles.admStageMeta}>
+                {post.activeCount > 0
+                  ? `${formatPercent(Math.round((stage.count / post.activeCount) * 1000) / 10)} da carteira`
+                  : '—'}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
 function DashboardSkeleton() {
   return (
     <>
@@ -734,16 +776,7 @@ export function ManagementHome() {
             <SalesFunnelCard data={data} onSelectFunnel={setFunnelId} />
             <BackofficeCard data={data} />
 
-            <section className={`${styles.panel} ${styles.panelSoon}`}>
-              <div className={styles.panelHeader}>
-                <h2 className={styles.panelTitle}>Pós-venda · inadimplência</h2>
-                <span className={styles.badgeSoon}>Em breve</span>
-              </div>
-              <p className={styles.empty}>
-                Cotas ativas, parcelas em dia e atrasadas e risco de estorno aparecem aqui quando o
-                acompanhamento das cotas entrar no CRM.
-              </p>
-            </section>
+            <PostSaleCard data={data} />
           </>
         )}
       </div>

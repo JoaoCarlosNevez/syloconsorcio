@@ -442,8 +442,7 @@
 }
 
 .badgeDanger,
-.badgeOk,
-.badgeSoon {
+.badgeOk {
   padding: 4px 12px;
   border-radius: 999px;
   font-size: 12px;
@@ -458,16 +457,6 @@
 .badgeOk {
   background: #ecfdf5;
   color: #047857;
-}
-
-.badgeSoon {
-  background: #f1f5f9;
-  color: #64748b;
-}
-
-.panelSoon {
-  border-style: dashed;
-  background: #fcfcfd;
 }
 
 .empty {

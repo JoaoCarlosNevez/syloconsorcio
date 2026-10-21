@@ -18,9 +18,16 @@ export interface FunnelStageRecord {
   leadCount?: number
 }
 
-/** SALES = funil de vendas (configurável). BACKOFFICE = funil ADM do
- * pós-venda, fixo e criado pelo sistema — ver funnels/backoffice-funnel.ts. */
-export type FunnelKind = 'SALES' | 'BACKOFFICE'
+/** Funis do sistema, um de cada por organização (ver funnels/system-funnels.ts):
+ * COMMERCIAL = o funil Comercial (padrão; nome fixo, etapas editáveis);
+ * BACKOFFICE = o ADM (etapas fixas); POST_SALE = o Pós-venda (etapas fixas).
+ * SALES = funis de vendas extras, criados pela organização. */
+export type FunnelKind = 'COMMERCIAL' | 'SALES' | 'BACKOFFICE' | 'POST_SALE'
+
+/** Funis onde se vende — Comercial e os extras. */
+export function isSalesFunnelKind(kind: FunnelKind): boolean {
+  return kind === 'COMMERCIAL' || kind === 'SALES'
+}
 
 export interface FunnelRecord {
   id: string

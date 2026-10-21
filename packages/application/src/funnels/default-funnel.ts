@@ -5,7 +5,7 @@
 
 import type { NewFunnelStageInput } from '../ports/funnel.repository'
 
-export const DEFAULT_FUNNEL_NAME = 'Padrão'
+export const DEFAULT_FUNNEL_NAME = 'Comercial'
 
 export const DEFAULT_FUNNEL_STAGES: readonly NewFunnelStageInput[] = [
   { name: 'Lead', color: '#94a3b8' },

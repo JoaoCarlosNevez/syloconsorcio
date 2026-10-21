@@ -39,7 +39,7 @@ export class DrizzleManagementDashboardRepository implements IManagementDashboar
     // Datas como texto ISO + cast: dentro de sql`` cru o driver não converte Date.
     const fromAt = sql`${from.toISOString()}::timestamptz`
     const toAt = sql`${to.toISOString()}::timestamptz`
-    const createdInPeriod = sql`${funnels.kind} = 'SALES' and ${leads.createdAt} >= ${fromAt} and ${leads.createdAt} < ${toAt}`
+    const createdInPeriod = sql`${funnels.kind} in ('COMMERCIAL', 'SALES') and ${leads.createdAt} >= ${fromAt} and ${leads.createdAt} < ${toAt}`
     const wonInPeriod = sql`${funnels.isDefault} and ${leads.wonAt} >= ${fromAt} and ${leads.wonAt} < ${toAt}`
     const rows = await this.db
       .select({

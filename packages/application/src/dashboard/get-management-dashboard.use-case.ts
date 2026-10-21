@@ -27,7 +27,12 @@
 //   dos vendedores do recorte (null se nenhum tiver meta).
 
 import { AuthorizationError, Role } from '@sylocrm/domain'
-import type { FunnelRecord, IFunnelRepository } from '../ports/funnel.repository'
+import { POST_SALE_LATE_STAGE } from '../funnels/system-funnels'
+import {
+  type FunnelRecord,
+  type IFunnelRepository,
+  isSalesFunnelKind,
+} from '../ports/funnel.repository'
 import type {
   AssigneePeriodStats,
   IManagementDashboardRepository,
@@ -164,6 +169,13 @@ export interface ManagementDashboard {
     stages: BackofficeStageMetrics[]
     staleCount: number
     oldest: BackofficeCard[]
+  } | null
+  /** Funil Pós-venda: cotas ativas por etapa e quantas estão atrasadas. */
+  postSale: {
+    id: string
+    stages: { id: string; name: string; color: string; count: number }[]
+    activeCount: number
+    lateCount: number
   } | null
   /** Vendedores do recorte. */
   sellers: SellerPerformance[]
@@ -346,7 +358,7 @@ export class GetManagementDashboardUseCase
 
     const inSelection = (lead: { assignedUserId: string | null }) =>
       matches(selection, lead.assignedUserId)
-    const salesFunnels = funnels.filter((f) => f.kind === 'SALES')
+    const salesFunnels = funnels.filter((f) => isSalesFunnelKind(f.kind))
     const backofficeFunnel = funnels.find((f) => f.kind === 'BACKOFFICE') ?? null
     const salesFunnelIds = new Set(salesFunnels.map((f) => f.id))
     const openSalesAll = openLeads.filter((lead) => salesFunnelIds.has(lead.funnelId))
@@ -412,6 +424,27 @@ export class GetManagementDashboardUseCase
               sellerName: seller ? memberName(seller) : null,
             }
           }),
+      }
+    }
+
+    // ── Pós-venda (inadimplência) ──
+    const postSaleFunnel = funnels.find((f) => f.kind === 'POST_SALE') ?? null
+    let postSale: ManagementDashboard['postSale'] = null
+    if (postSaleFunnel) {
+      const inPostSale = openLeads.filter(
+        (lead) => lead.funnelId === postSaleFunnel.id && inSelection(lead),
+      )
+      const stages = postSaleFunnel.stages.map((stage) => ({
+        id: stage.id,
+        name: stage.name,
+        color: stage.color,
+        count: inPostSale.filter((lead) => lead.stageId === stage.id).length,
+      }))
+      postSale = {
+        id: postSaleFunnel.id,
+        stages,
+        activeCount: inPostSale.length,
+        lateCount: stages.find((stage) => stage.name === POST_SALE_LATE_STAGE)?.count ?? 0,
       }
     }
 
@@ -515,6 +548,7 @@ export class GetManagementDashboardUseCase
           }
         : null,
       backoffice,
+      postSale,
       sellers: sellerRows,
       supervisors: supervisorRows,
     }

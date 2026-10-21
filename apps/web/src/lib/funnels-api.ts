@@ -13,6 +13,20 @@ export interface FunnelStage {
   leadCount?: number
 }
 
+export type FunnelKind = 'COMMERCIAL' | 'SALES' | 'BACKOFFICE' | 'POST_SALE'
+
+const KIND_ORDER: Record<FunnelKind, number> = {
+  COMMERCIAL: 0,
+  BACKOFFICE: 1,
+  POST_SALE: 2,
+  SALES: 3,
+}
+
+/** Ordem do fluxo: Comercial → ADM → Pós-venda → funis extras. */
+export function sortFunnels<T extends { kind: FunnelKind }>(funnels: T[]): T[] {
+  return [...funnels].sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind])
+}
+
 export interface Funnel {
   id: string
   organizationId: string
@@ -21,9 +35,10 @@ export interface Funnel {
   /** Antigo gatilho "passar o bastão" — não é mais usado: o Ganho de um
    * funil de vendas sempre vai pro funil ADM. */
   duplicateToFunnelId: string | null
-  /** SALES = funil de vendas (configurável). BACKOFFICE = funil ADM do
-   * pós-venda: fixo, criado pelo sistema, recebe a cópia de todo lead ganho. */
-  kind: 'SALES' | 'BACKOFFICE'
+  /** Funis fixos do sistema: COMMERCIAL (o padrão; nome fixo, etapas
+   * editáveis) → BACKOFFICE (ADM) → POST_SALE (Pós-venda), estes dois com
+   * etapas fixas. SALES = funis de vendas extras, configuráveis. */
+  kind: FunnelKind
   /** Sempre ordenados por position asc. */
   stages: FunnelStage[]
   createdAt: string

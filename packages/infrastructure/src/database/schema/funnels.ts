@@ -14,10 +14,11 @@
 // Desde o funil ADM fixo, o Ganho de um funil de vendas sempre vai pro ADM e
 // este campo não é mais usado (fica só pelo histórico dos dados).
 //
-// kind: 'SALES' (funis de venda, configuráveis) ou 'BACKOFFICE' — o funil ADM
-// do pós-venda, criado pelo sistema, com etapas fixas (não renomeia, não
-// edita etapas, não exclui). Exatamente um BACKOFFICE por organização
-// (índice único parcial). Ver application/src/funnels/backoffice-funnel.ts.
+// kind: os funis do sistema — 'COMMERCIAL' (o padrão; nome fixo, etapas
+// editáveis), 'BACKOFFICE' (ADM) e 'POST_SALE' (Pós-venda), estes dois com
+// etapas fixas — e 'SALES' (funis de venda extras, configuráveis). Um de cada
+// tipo do sistema por organização (índice único parcial). Ver
+// application/src/funnels/system-funnels.ts.
 
 import { sql } from 'drizzle-orm'
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
@@ -36,14 +37,18 @@ export const funnels = pgTable(
     duplicateToFunnelId: uuid('duplicate_to_funnel_id').references((): AnyPgColumn => funnels.id, {
       onDelete: 'set null',
     }),
-    kind: text('kind').$type<'SALES' | 'BACKOFFICE'>().notNull().default('SALES'),
+    kind: text('kind')
+      .$type<'COMMERCIAL' | 'SALES' | 'BACKOFFICE' | 'POST_SALE'>()
+      .notNull()
+      .default('SALES'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
-    uniqueIndex('funnels_one_backoffice_per_org_idx')
-      .on(table.organizationId)
-      .where(sql`${table.kind} = 'BACKOFFICE'`),
+    // Um funil de cada tipo do sistema por organização (Comercial, ADM, Pós-venda).
+    uniqueIndex('funnels_one_system_kind_per_org_idx')
+      .on(table.organizationId, table.kind)
+      .where(sql`${table.kind} <> 'SALES'`),
   ],
 )
 

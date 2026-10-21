@@ -11,7 +11,7 @@
 // é o mesmo negócio sendo encaminhado de propósito pra outro setor/funil.
 
 import { type Role, ValidationError } from '@sylocrm/domain'
-import { assertCanChangeLeadsInFunnel } from '../funnels/backoffice-funnel'
+import { assertCanChangeLeadsInFunnel } from '../funnels/system-funnels'
 import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activity-log.repository'
 import type { IFunnelRepository } from '../ports/funnel.repository'
 import type { ILeadRepository, LeadRecord } from '../ports/lead.repository'
