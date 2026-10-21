@@ -7,6 +7,7 @@ import {
   type SalesRankingPeriod,
   getActivityRanking,
   getManagementDashboard,
+  getMyEngagement,
   getMyMonthlyStats,
   getMyStreak,
   getSalesRanking,
@@ -70,5 +71,14 @@ export function useManagementDashboardQuery(
     enabled: Boolean(organizationId),
     refetchInterval: 2 * 60_000,
     placeholderData: (previous) => previous,
+  })
+}
+
+/** "Engajamento operacional" do Perfil — últimos 30 dias do usuário. */
+export function useMyEngagementQuery(organizationId: string | null) {
+  return useQuery({
+    queryKey: ['dashboard', 'me', 'engagement', organizationId],
+    queryFn: () => getMyEngagement(organizationId as string),
+    enabled: Boolean(organizationId),
   })
 }

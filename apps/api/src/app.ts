@@ -13,6 +13,7 @@ import type {
   IActivityLogRepository,
   IApiKeyRepository,
   IAuthProvider,
+  IEngagementRepository,
   IFunnelRepository,
   ILeadAdhesionRepository,
   ILeadProposalRepository,
@@ -67,6 +68,7 @@ export interface BuildAppDeps {
   streakRepository: IStreakRepository
   leadAdhesionRepository: ILeadAdhesionRepository
   managementDashboardRepository: IManagementDashboardRepository
+  engagementRepository: IEngagementRepository
 }
 
 /** No-op auth provider used when Supabase env vars are not configured. */
@@ -305,6 +307,10 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     leadQueueRepository: deps?.leadQueueRepository ?? createNoOpLeadQueueRepository(),
     // Sem banco, ninguém tem ofensiva.
     streakRepository: deps?.streakRepository ?? { listActiveDays: async () => [] },
+    engagementRepository: deps?.engagementRepository ?? {
+      countLeadsWorked: async () => 0,
+      proposalStats: async () => ({ created: 0, shared: 0, opened: 0 }),
+    },
     managementDashboardRepository: deps?.managementDashboardRepository ?? {
       listOpenLeads: async () => [],
       statsByAssignee: async () => [],
@@ -443,6 +449,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     streakRepository: resolvedDeps.streakRepository,
     funnelRepository: resolvedDeps.funnelRepository,
     managementDashboardRepository: resolvedDeps.managementDashboardRepository,
+    engagementRepository: resolvedDeps.engagementRepository,
   })
 
   app.register(teamRoute, {

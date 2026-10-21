@@ -10,6 +10,7 @@ import { OfferLeadToQueueUseCase, ProcessExpiredLeadOffersUseCase } from '@syloc
 import {
   DrizzleActivityLogRepository,
   DrizzleApiKeyRepository,
+  DrizzleEngagementRepository,
   DrizzleFunnelRepository,
   DrizzleLeadAdhesionRepository,
   DrizzleLeadProposalRepository,
@@ -58,6 +59,7 @@ const apiKeyRepository = database ? new DrizzleApiKeyRepository(database) : unde
 const leadQueueRepository = database ? new DrizzleLeadQueueRepository(database) : undefined
 const streakRepository = database ? new DrizzleStreakRepository(database) : undefined
 const leadAdhesionRepository = database ? new DrizzleLeadAdhesionRepository(database) : undefined
+const engagementRepository = database ? new DrizzleEngagementRepository(database) : undefined
 const managementDashboardRepository = database
   ? new DrizzleManagementDashboardRepository(database)
   : undefined
@@ -87,6 +89,7 @@ const app = buildApp({
   streakRepository,
   leadAdhesionRepository,
   managementDashboardRepository,
+  engagementRepository,
 })
 
 // Fila de Leads: passa adiante os leads que ninguém aceitou no prazo. O

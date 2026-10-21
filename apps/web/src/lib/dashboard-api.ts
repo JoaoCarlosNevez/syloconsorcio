@@ -218,3 +218,21 @@ export function getManagementDashboard(
   if (filters.supervisorUserId) params.set('supervisorUserId', filters.supervisorUserId)
   return apiClient.get<ManagementDashboard>(`/dashboard/management?${params}`, { organizationId })
 }
+
+// ── Engajamento operacional (Perfil) ─────────────────────────────────────────
+
+export interface MyEngagement {
+  periodStart: string
+  periodEnd: string
+  leadsWorked: number
+  leadsWorkedPrevious: number
+  proposalsCreated: number
+  proposalsShared: number
+  proposalsOpened: number
+  wonCount: number
+  wonValueCents: number
+}
+
+export function getMyEngagement(organizationId: string): Promise<MyEngagement> {
+  return apiClient.get<MyEngagement>('/dashboard/me/engagement', { organizationId })
+}

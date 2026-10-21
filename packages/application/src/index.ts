@@ -335,6 +335,9 @@ export type {
   IManagementDashboardRepository,
   OpenLeadSnapshot,
 } from './ports/management-dashboard.repository'
+export { ENGAGEMENT_DAYS, GetMyEngagementUseCase } from './dashboard/get-my-engagement.use-case'
+export type { GetMyEngagementInput, MyEngagement } from './dashboard/get-my-engagement.use-case'
+export type { EngagementRange, IEngagementRepository } from './ports/engagement.repository'
 export { GetSalesRankingUseCase } from './dashboard/get-sales-ranking.use-case'
 export type {
   GetSalesRankingInput,

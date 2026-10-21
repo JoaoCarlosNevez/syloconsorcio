@@ -5,6 +5,10 @@
 //                             visitas realizadas (dessas, as concluídas), valor
 //                             ganho e tíquete médio. Qualquer papel — só olha
 //                             os dados de quem está logado.
+// GET /dashboard/me/engagement — "Engajamento operacional" do Perfil: leads
+//                             atendidos, simulações, propostas e cotas fechadas
+//                             do usuário nos últimos 30 dias (GetMyEngagementUseCase).
+//                             Qualquer papel — só os dados de quem está logado.
 // GET /dashboard/me/streak  — ofensiva do Perfil: dias seguidos com atividade
 //                             de trabalho, recorde e a semana atual (ver
 //                             GetMyStreakUseCase). Do usuário, em todas as
@@ -29,6 +33,7 @@
 
 import type {
   IAuthProvider,
+  IEngagementRepository,
   IFunnelRepository,
   ILeadRepository,
   IManagementDashboardRepository,
@@ -41,6 +46,7 @@ import type {
 import {
   GetActivityRankingUseCase,
   GetManagementDashboardUseCase,
+  GetMyEngagementUseCase,
   GetMyMonthlyStatsUseCase,
   GetMyStreakUseCase,
   GetSalesRankingUseCase,
@@ -62,6 +68,7 @@ interface DashboardRouteOptions {
   streakRepository: IStreakRepository
   funnelRepository: IFunnelRepository
   managementDashboardRepository: IManagementDashboardRepository
+  engagementRepository: IEngagementRepository
 }
 
 const rankingQuerySchema = z.object({ period: z.enum(['week', 'month']).optional() })
@@ -192,6 +199,29 @@ export const dashboardRoute: FastifyPluginAsync<DashboardRouteOptions> = async (
         ...ranking,
         periodStart: ranking.periodStart.toISOString(),
         periodEnd: ranking.periodEnd.toISOString(),
+      }
+    },
+  )
+
+  const getMyEngagement = new GetMyEngagementUseCase(
+    options.engagementRepository,
+    options.leadRepository,
+  )
+
+  // ── GET /dashboard/me/engagement ──────────────────────────────────────────
+  fastify.get(
+    '/dashboard/me/engagement',
+    { preHandler: [authMiddleware, tenantMiddleware] },
+    async (request) => {
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      const engagement = await getMyEngagement.execute({
+        organizationId: context.currentMembership.organizationId,
+        userId: context.userId,
+      })
+      return {
+        ...engagement,
+        periodStart: engagement.periodStart.toISOString(),
+        periodEnd: engagement.periodEnd.toISOString(),
       }
     },
   )

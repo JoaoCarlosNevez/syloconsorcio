@@ -296,3 +296,41 @@ describe('GET /dashboard/management — recorte', () => {
     expect(response.statusCode).toBe(403)
   })
 })
+
+describe('GET /dashboard/me/engagement', () => {
+  it('returns the logged-in user engagement for the last 30 days', async () => {
+    const engagementRepository = {
+      countLeadsWorked: vi.fn().mockResolvedValue(5),
+      proposalStats: vi.fn().mockResolvedValue({ created: 3, shared: 2, opened: 1 }),
+    }
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository: buildMembershipRepository(SELLER_MEMBERSHIP),
+      leadRepository: {
+        sumWonValueCentsInDefaultFunnel: vi.fn().mockResolvedValue(150_000_00),
+        countWonInDefaultFunnel: vi.fn().mockResolvedValue(1),
+      } as unknown as ILeadRepository,
+      engagementRepository,
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/dashboard/me/engagement',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({
+      leadsWorked: 5,
+      proposalsCreated: 3,
+      proposalsShared: 2,
+      proposalsOpened: 1,
+      wonCount: 1,
+      wonValueCents: 150_000_00,
+    })
+    expect(engagementRepository.countLeadsWorked).toHaveBeenCalledWith(
+      expect.objectContaining({ organizationId: ORG_ID, userId: IDENTITY.id }),
+    )
+  })
+})

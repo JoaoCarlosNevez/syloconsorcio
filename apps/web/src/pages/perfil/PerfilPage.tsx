@@ -12,10 +12,11 @@ import {
   useUpdateMyProfile,
   useUploadMyAvatar,
 } from '../../hooks/useCurrentUser'
-import { useMyStreakQuery } from '../../hooks/useDashboard'
+import { useMyEngagementQuery, useMyStreakQuery } from '../../hooks/useDashboard'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { useSalesGoalsSummaryQuery, useUpdateMyPersonalGoal } from '../../hooks/useTeam'
 import type { MyStreak } from '../../lib/dashboard-api'
+import { engagementCards } from '../../lib/engagement-cards'
 import { validateIconFile } from '../../lib/icon-validation'
 import { formatGoalInput, goalInputToCents } from '../../lib/sales-goals'
 import { supabase } from '../../lib/supabase'
@@ -224,13 +225,6 @@ function weekMonthLabel(week: MyStreak['week'] | undefined): string {
   })
   return `${label.replace('.', '').replace(/^./, (c) => c.toUpperCase())} ${year}`
 }
-
-const METRICS = [
-  { label: 'Leads\nAtendidos', value: '42', sub: '↑ 18% vs mês ant.', subGreen: true },
-  { label: 'Simulações', value: '18', sub: 'Lances e parcelas', subGreen: false },
-  { label: 'Propostas', value: '9', sub: '5 em negociação', subGreen: false },
-  { label: 'Cotas\nFechadas', value: '4', sub: '+240 XP ganhos', subGreen: true },
-]
 
 const BADGES = [
   {
@@ -839,6 +833,8 @@ export function PerfilPage() {
   const [editingProfile, setEditingProfile] = useState(false)
   const [activityToast, setActivityToast] = useState('')
   const { data: streak, isLoading: streakLoading } = useMyStreakQuery(organizationId)
+  const { data: engagement } = useMyEngagementQuery(organizationId)
+  const metrics = engagement ? engagementCards(engagement) : null
   const navigate = useNavigate()
 
   const displayName = currentUser?.name ?? fallbackName
@@ -1105,19 +1101,23 @@ export function PerfilPage() {
                 </div>
 
                 <div className={styles.metricsGrid}>
-                  {METRICS.map((m) => (
-                    <div key={m.label} className={styles.metricCard}>
-                      <p className={styles.metricLabel}>{m.label}</p>
-                      <p className={styles.metricValue}>{m.value}</p>
-                      <p
-                        className={[styles.metricSub, m.subGreen ? styles.metricSubGreen : '']
-                          .filter(Boolean)
-                          .join(' ')}
-                      >
-                        {m.sub}
-                      </p>
-                    </div>
-                  ))}
+                  {metrics
+                    ? metrics.map((m) => (
+                        <div key={m.label} className={styles.metricCard}>
+                          <p className={styles.metricLabel}>{m.label}</p>
+                          <p className={styles.metricValue}>{m.value}</p>
+                          <p
+                            className={[styles.metricSub, m.positive ? styles.metricSubGreen : '']
+                              .filter(Boolean)
+                              .join(' ')}
+                          >
+                            {m.sub}
+                          </p>
+                        </div>
+                      ))
+                    : [0, 1, 2, 3].map((i) => (
+                        <Skeleton key={i} variant="rect" width="100%" height="110px" />
+                      ))}
                 </div>
               </div>
             </div>
