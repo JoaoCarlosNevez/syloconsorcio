@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   type CreateLeadPayload,
   type CreateLeadProposalPayload,
+  type LeadAdhesionFields,
   type LeadHistory,
   type LeadListPage,
   type LeadProposal,
@@ -15,9 +16,11 @@ import {
   createLeadProposal,
   deleteLead,
   duplicateLead,
+  getLeadAdhesion,
   getLeadHistory,
   listLeadProposals,
   listLeads,
+  saveLeadAdhesion,
   shareLeadProposal,
   updateLead,
 } from '../lib/leads-api'
@@ -111,6 +114,29 @@ export function useLeadProposalsQuery(organizationId: string | null, leadId: str
     queryKey: leadProposalsQueryKey(organizationId, leadId),
     queryFn: () => listLeadProposals(organizationId as string, leadId),
     enabled: Boolean(organizationId) && Boolean(leadId),
+  })
+}
+
+function leadAdhesionQueryKey(organizationId: string | null, leadId: string) {
+  return ['leads', organizationId, leadId, 'adhesion'] as const
+}
+
+export function useLeadAdhesionQuery(organizationId: string | null, leadId: string) {
+  return useQuery({
+    queryKey: leadAdhesionQueryKey(organizationId, leadId),
+    queryFn: () => getLeadAdhesion(organizationId as string, leadId),
+    enabled: Boolean(organizationId) && Boolean(leadId),
+  })
+}
+
+export function useSaveLeadAdhesion(organizationId: string | null, leadId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (fields: LeadAdhesionFields) =>
+      saveLeadAdhesion(organizationId as string, leadId, fields),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: leadAdhesionQueryKey(organizationId, leadId) })
+    },
   })
 }
 

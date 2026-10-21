@@ -133,6 +133,16 @@ export {
   UpdateLeadQueueSettingsUseCase,
 } from './leads/lead-queue-settings.use-case'
 export type { LeadQueueOverview } from './leads/lead-queue-settings.use-case'
+export type {
+  ILeadAdhesionRepository,
+  LeadAdhesionFields,
+  LeadAdhesionRecord,
+} from './ports/lead-adhesion.repository'
+export { GetLeadAdhesionUseCase, SaveLeadAdhesionUseCase } from './leads/lead-adhesion.use-cases'
+export type {
+  GetLeadAdhesionOutput,
+  SaveLeadAdhesionInput,
+} from './leads/lead-adhesion.use-cases'
 export { ShareLeadProposalUseCase } from './leads/share-lead-proposal.use-case'
 export type {
   ShareLeadProposalInput,

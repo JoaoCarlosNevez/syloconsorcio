@@ -194,6 +194,56 @@ export interface LeadOutcomeChange {
   reason: string | null
 }
 
+/** Ficha (checklist) de adesão do lead — dados da venda/plano e os pessoais
+ * que o lead não tem. Nome, telefone, e-mail, profissão, renda e estado civil
+ * ficam no próprio lead. Ver lead-adhesion.repository.ts no backend. */
+export interface LeadAdhesionFields {
+  administrator: string | null
+  sellerUserId: string | null
+  assetValueCents: number | null
+  assetCode: string | null
+  planTable: string | null
+  assetType: string | null
+  groupCode: string | null
+  downPaymentCents: number | null
+  prepaidInstallments: number | null
+  birthplace: string | null
+  spouseName: string | null
+  phone2: string | null
+  address: string | null
+  zipCode: string | null
+  preferredAdministrator: string | null
+  contactHours: string | null
+  notes: string | null
+}
+
+export interface LeadAdhesion extends LeadAdhesionFields {
+  leadId: string
+  organizationId: string
+  updatedByUserId: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export function getLeadAdhesion(
+  organizationId: string,
+  leadId: string,
+): Promise<{ adhesion: LeadAdhesion | null }> {
+  return apiClient.get<{ adhesion: LeadAdhesion | null }>(`/leads/${leadId}/adhesion`, {
+    organizationId,
+  })
+}
+
+export function saveLeadAdhesion(
+  organizationId: string,
+  leadId: string,
+  fields: LeadAdhesionFields,
+): Promise<{ adhesion: LeadAdhesion }> {
+  return apiClient.put<{ adhesion: LeadAdhesion }>(`/leads/${leadId}/adhesion`, fields, {
+    organizationId,
+  })
+}
+
 export function getLeadHistory(organizationId: string, leadId: string): Promise<LeadHistory> {
   return apiClient.get<LeadHistory>(`/leads/${leadId}/history`, { organizationId })
 }

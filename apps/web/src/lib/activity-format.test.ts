@@ -129,3 +129,19 @@ describe('describeActivity — tarefas registradas', () => {
     expect(text.startsWith('registrou como feita a tarefa')).toBe(true)
   })
 })
+
+describe('describeActivity — ficha de adesão', () => {
+  it('describes an adhesion update', () => {
+    const text = describeActivity(
+      entry({
+        action: 'lead.adhesion_updated',
+        entityType: 'lead',
+        entityId: 'lead-01',
+        entityLabel: 'Maria',
+        metadata: { filledFields: 12 },
+      }),
+      memberName,
+    )
+    expect(text).toContain('atualizou a ficha de adesão do lead')
+  })
+})

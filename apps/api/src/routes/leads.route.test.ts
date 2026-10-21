@@ -1368,3 +1368,71 @@ describe('DELETE /leads/:id', () => {
     expect(leadRepository.delete).toHaveBeenCalled()
   })
 })
+
+// ── GET/PUT /leads/:id/adhesion ──────────────────────────────────────────────
+
+describe('PUT /leads/:id/adhesion', () => {
+  const FIELDS = {
+    administrator: '  Porto Seguro ',
+    sellerUserId: null,
+    assetValueCents: 350_000_00,
+    assetCode: '',
+    planTable: 'Imóvel 200',
+    assetType: 'Imóvel',
+    groupCode: null,
+    downPaymentCents: null,
+    prepaidInstallments: 2,
+    birthplace: 'Goiânia/GO',
+    spouseName: null,
+    phone2: null,
+    address: 'Rua A, 10 — Centro, Goiânia/GO',
+    zipCode: '74000-000',
+    preferredAdministrator: null,
+    contactHours: 'Depois das 18h',
+    notes: null,
+  }
+
+  it('saves the adhesion with trimmed texts and empty ones as null', async () => {
+    const upsert = vi.fn(async (input: Record<string, unknown>) => ({
+      ...input,
+      createdAt: new Date('2026-10-20T00:00:00Z'),
+      updatedAt: new Date('2026-10-20T00:00:00Z'),
+    }))
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      membershipRepository: buildMembershipRepository(MANAGER_MEMBERSHIP),
+      leadRepository: buildLeadRepository(),
+      organizationRepository: buildOrganizationRepository(),
+      leadAdhesionRepository: { findByLead: vi.fn(), upsert } as never,
+    })
+
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/leads/lead-01/adhesion',
+      headers: AUTH_HEADERS,
+      payload: FIELDS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        administrator: 'Porto Seguro',
+        assetCode: null,
+        prepaidInstallments: 2,
+      }),
+    )
+  })
+
+  it('returns 400 for invalid values', async () => {
+    const app = buildTestApp({})
+
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/leads/lead-01/adhesion',
+      headers: AUTH_HEADERS,
+      payload: { ...FIELDS, assetValueCents: -1 },
+    })
+
+    expect(response.statusCode).toBe(400)
+  })
+})

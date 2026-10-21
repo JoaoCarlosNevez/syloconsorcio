@@ -54,6 +54,7 @@ import {
   displayStatus,
   formatTaskDateTime,
 } from '../tarefas/tarefas.types'
+import { AdhesionTab } from './AdhesionTab'
 import styles from './LeadModal.module.css'
 
 // ── Ícones (SVG inline — padrão do projeto) ────────────────────────────────────
@@ -1639,7 +1640,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
     return () => document.removeEventListener('mousedown', handler)
   }, [addingTag])
 
-  const [activeTab, setActiveTab] = useState<'qualificacao' | 'simulacoes' | 'anexos'>(
+  const [activeTab, setActiveTab] = useState<'qualificacao' | 'simulacoes' | 'adesao' | 'anexos'>(
     'qualificacao',
   )
   const cota = parseCota(card.cota)
@@ -2040,6 +2041,15 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                     <button
                       type="button"
                       className={
+                        activeTab === 'adesao' ? `${styles.tab} ${styles.tabActive}` : styles.tab
+                      }
+                      onClick={() => setActiveTab('adesao')}
+                    >
+                      Adesão
+                    </button>
+                    <button
+                      type="button"
+                      className={
                         activeTab === 'anexos' ? `${styles.tab} ${styles.tabActive}` : styles.tab
                       }
                       onClick={() => setActiveTab('anexos')}
@@ -2082,6 +2092,18 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                     </button>
                   )}
                 </div>
+
+                {/* ── Aba: Adesão (checklist da ficha de adesão) ───────── */}
+                {activeTab === 'adesao' && (
+                  <AdhesionTab
+                    organizationId={organizationId}
+                    organizationName={membership?.organizationName ?? ''}
+                    card={card}
+                    members={members}
+                    segments={leadSegments}
+                    latestProposal={proposalsData?.proposals[0] ?? null}
+                  />
+                )}
 
                 {/* ── Aba: Simulações ─────────────────────────────────── */}
                 {activeTab === 'simulacoes' && (
@@ -2657,7 +2679,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
               </div>
 
               {/* Card: Tarefas — fica fora da aba Simulações, que já é longa. */}
-              {activeTab !== 'simulacoes' && (
+              {activeTab !== 'simulacoes' && activeTab !== 'adesao' && (
                 <div className={styles.card}>
                   <div className={styles.taskHeader}>
                     <div>

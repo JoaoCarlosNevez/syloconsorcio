@@ -37,3 +37,4 @@ export { DrizzleNotificationRepository } from './database/repositories/drizzle-n
 export { DrizzleApiKeyRepository } from './database/repositories/drizzle-api-key.repository'
 export { DrizzleLeadQueueRepository } from './database/repositories/drizzle-lead-queue.repository'
 export { DrizzleStreakRepository } from './database/repositories/drizzle-streak.repository'
+export { DrizzleLeadAdhesionRepository } from './database/repositories/drizzle-lead-adhesion.repository'

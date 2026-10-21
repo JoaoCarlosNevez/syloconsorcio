@@ -11,6 +11,7 @@ import {
   DrizzleActivityLogRepository,
   DrizzleApiKeyRepository,
   DrizzleFunnelRepository,
+  DrizzleLeadAdhesionRepository,
   DrizzleLeadProposalRepository,
   DrizzleLeadQueueRepository,
   DrizzleLeadRepository,
@@ -55,6 +56,7 @@ const notificationRepository = database ? new DrizzleNotificationRepository(data
 const apiKeyRepository = database ? new DrizzleApiKeyRepository(database) : undefined
 const leadQueueRepository = database ? new DrizzleLeadQueueRepository(database) : undefined
 const streakRepository = database ? new DrizzleStreakRepository(database) : undefined
+const leadAdhesionRepository = database ? new DrizzleLeadAdhesionRepository(database) : undefined
 
 const storageProvider =
   env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY
@@ -79,6 +81,7 @@ const app = buildApp({
   apiKeyRepository,
   leadQueueRepository,
   streakRepository,
+  leadAdhesionRepository,
 })
 
 // Fila de Leads: passa adiante os leads que ninguém aceitou no prazo. O

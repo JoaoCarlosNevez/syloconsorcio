@@ -134,6 +134,8 @@ export function describeActivity(
         : `duplicou o lead ${label} para o funil ${quoted(str(m, 'toFunnelName'))}`
     case 'lead.comment_added':
       return `comentou no lead ${label}${str(m, 'preview') ? `: ${quoted(str(m, 'preview'))}` : ''}`
+    case 'lead.adhesion_updated':
+      return `atualizou a ficha de adesão do lead ${label}`
     case 'lead.proposal_created':
       return `criou uma simulação para o lead ${label}${str(m, 'tableName') ? ` na tabela ${quoted(str(m, 'tableName'))}` : ''} · entrada ${money(num(m, 'downPaymentCents'))} em ${num(m, 'termMonths') ?? '—'} meses`
     case 'task.created':

@@ -225,6 +225,13 @@
       "when": 1792369115197,
       "tag": "0031_wakeful_magma",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792546598902,
+      "tag": "0032_aspiring_wildside",
+      "breakpoints": true
     }
   ]
 }

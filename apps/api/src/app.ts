@@ -14,6 +14,7 @@ import type {
   IApiKeyRepository,
   IAuthProvider,
   IFunnelRepository,
+  ILeadAdhesionRepository,
   ILeadProposalRepository,
   ILeadQueueRepository,
   ILeadRepository,
@@ -63,6 +64,7 @@ export interface BuildAppDeps {
   apiKeyRepository: IApiKeyRepository
   leadQueueRepository: ILeadQueueRepository
   streakRepository: IStreakRepository
+  leadAdhesionRepository: ILeadAdhesionRepository
 }
 
 /** No-op auth provider used when Supabase env vars are not configured. */
@@ -286,6 +288,12 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     leadQueueRepository: deps?.leadQueueRepository ?? createNoOpLeadQueueRepository(),
     // Sem banco, ninguém tem ofensiva.
     streakRepository: deps?.streakRepository ?? { listActiveDays: async () => [] },
+    leadAdhesionRepository: deps?.leadAdhesionRepository ?? {
+      findByLead: async () => null,
+      upsert: async () => {
+        throw new Error('Database not configured — cannot save lead adhesions.')
+      },
+    },
   }
 
   const app = Fastify({
@@ -344,6 +352,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     userRepository: resolvedDeps.userRepository,
     funnelRepository: resolvedDeps.funnelRepository,
     leadProposalRepository: resolvedDeps.leadProposalRepository,
+    leadAdhesionRepository: resolvedDeps.leadAdhesionRepository,
     activityLogRepository: resolvedDeps.activityLogRepository,
   })
 

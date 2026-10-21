@@ -23,6 +23,9 @@
 //                              prazo são por-proposta (lead.update) — os dados
 //                              de qualificação do cliente ficam no próprio
 //                              lead (profissão, renda, estado civil, CPF).
+// GET    /leads/:id/adhesion — ficha (checklist) de adesão do lead (lead.read)
+// PUT    /leads/:id/adhesion — salva a ficha (lead.update); dados pessoais que
+//                              o lead já tem são salvos no lead (PATCH)
 // POST   /leads/:id/proposals/:proposalId/share — gera (ou devolve) o token do
 //                              link público da proposta, pra mandar pro
 //                              cliente (lead.read). A página pública é
@@ -36,6 +39,7 @@ import type {
   IActivityLogRepository,
   IAuthProvider,
   IFunnelRepository,
+  ILeadAdhesionRepository,
   ILeadProposalRepository,
   ILeadRepository,
   IMembershipRepository,
@@ -48,10 +52,12 @@ import {
   CreateLeadUseCase,
   DeleteLeadUseCase,
   DuplicateLeadUseCase,
+  GetLeadAdhesionUseCase,
   GetLeadHistoryUseCase,
   GetLeadUseCase,
   ListLeadProposalsUseCase,
   ListLeadsUseCase,
+  SaveLeadAdhesionUseCase,
   ShareLeadProposalUseCase,
   UpdateLeadUseCase,
 } from '@sylocrm/application'
@@ -71,8 +77,40 @@ interface LeadsRouteOptions {
   userRepository: IUserRepository
   funnelRepository: IFunnelRepository
   leadProposalRepository: ILeadProposalRepository
+  leadAdhesionRepository: ILeadAdhesionRepository
   activityLogRepository: IActivityLogRepository
 }
+
+/** Texto opcional da ficha: aparado, vazio vira null. */
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .nullable()
+    .transform((value) => value || null)
+
+const optionalCents = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable()
+
+const saveAdhesionSchema = z.object({
+  administrator: optionalText(120),
+  sellerUserId: z.string().uuid().nullable(),
+  assetValueCents: optionalCents,
+  assetCode: optionalText(60),
+  planTable: optionalText(120),
+  assetType: optionalText(60),
+  groupCode: optionalText(40),
+  downPaymentCents: optionalCents,
+  prepaidInstallments: z.number().int().min(0).max(999).nullable(),
+  birthplace: optionalText(120),
+  spouseName: optionalText(160),
+  phone2: optionalText(30),
+  address: optionalText(300),
+  zipCode: optionalText(9),
+  preferredAdministrator: optionalText(120),
+  contactHours: optionalText(200),
+  notes: optionalText(2000),
+})
 
 const createLeadSchema = z.object({
   name: z.string().min(1),
@@ -222,6 +260,18 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
     options.leadRepository,
     options.organizationRepository,
     options.leadProposalRepository,
+  )
+  const getLeadAdhesion = new GetLeadAdhesionUseCase(
+    options.leadRepository,
+    options.organizationRepository,
+    options.leadAdhesionRepository,
+  )
+  const saveLeadAdhesion = new SaveLeadAdhesionUseCase(
+    options.leadRepository,
+    options.organizationRepository,
+    options.membershipRepository,
+    options.leadAdhesionRepository,
+    options.activityLogRepository,
   )
   const createLeadProposal = new CreateLeadProposalUseCase(
     options.leadRepository,
@@ -435,6 +485,66 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
       } catch (error) {
         if (error instanceof ValidationError) {
           return reply.status(400).send({ error: error.message, code: error.code, status: 400 })
+        }
+        throw error
+      }
+    },
+  )
+
+  // ── GET /leads/:id/adhesion ──────────────────────────────────────────────
+  fastify.get<{ Params: { id: string } }>(
+    '/leads/:id/adhesion',
+    {
+      preHandler: [authMiddleware, tenantMiddleware, requirePermission(Permission.LEAD_READ)],
+    },
+    async (request, reply) => {
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      const result = await getLeadAdhesion.execute({
+        leadId: request.params.id,
+        userId: context.userId,
+        membership: context.currentMembership,
+      })
+      if (!result) {
+        return reply
+          .status(404)
+          .send({ error: 'Lead não encontrado.', code: 'LEAD_NOT_FOUND', status: 404 })
+      }
+      return result
+    },
+  )
+
+  // ── PUT /leads/:id/adhesion ──────────────────────────────────────────────
+  fastify.put<{ Params: { id: string } }>(
+    '/leads/:id/adhesion',
+    {
+      preHandler: [authMiddleware, tenantMiddleware, requirePermission(Permission.LEAD_UPDATE)],
+    },
+    async (request, reply) => {
+      const parsed = saveAdhesionSchema.safeParse(request.body)
+      if (!parsed.success) {
+        return reply.status(400).send(validationErrorResponse(parsed.error.flatten().fieldErrors))
+      }
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      try {
+        const adhesion = await saveLeadAdhesion.execute({
+          leadId: request.params.id,
+          userId: context.userId,
+          membership: context.currentMembership,
+          fields: parsed.data,
+        })
+        if (!adhesion) {
+          return reply
+            .status(404)
+            .send({ error: 'Lead não encontrado.', code: 'LEAD_NOT_FOUND', status: 404 })
+        }
+        return { adhesion }
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          return reply.status(400).send({
+            error: error.issues[0]?.message ?? 'Dados inválidos.',
+            code: error.code,
+            status: 400,
+          })
         }
         throw error
       }

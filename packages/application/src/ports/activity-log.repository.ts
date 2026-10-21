@@ -24,6 +24,7 @@ export type ActivityAction =
   | 'lead.duplicated'
   | 'lead.comment_added'
   | 'lead.proposal_created'
+  | 'lead.adhesion_updated'
   | 'task.created'
   | 'task.updated'
   | 'task.completed'
