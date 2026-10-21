@@ -215,3 +215,48 @@ describe('GET /dashboard/ranking/activities', () => {
     })
   })
 })
+
+describe('GET /dashboard/management', () => {
+  const MANAGER_MEMBERSHIP: UserMembership = { ...SELLER_MEMBERSHIP, role: Role.MANAGER }
+
+  it('returns 403 for a seller (no reports.read)', async () => {
+    const { app } = buildTestApp(SELLER_MEMBERSHIP)
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/dashboard/management',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(403)
+  })
+
+  it('returns the management numbers for a supervisor', async () => {
+    const { app } = buildTestApp(MANAGER_MEMBERSHIP)
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/dashboard/management?period=last_month',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({
+      period: 'last_month',
+      summary: { wonCount: 2, wonValueCents: 300_000_00, projectedCents: null },
+      health: { unassigned: 0, staleAttention: 0, staleRisk: 0, pendingQueue: 0 },
+    })
+  })
+
+  it('returns 400 for an unknown period', async () => {
+    const { app } = buildTestApp(MANAGER_MEMBERSHIP)
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/dashboard/management?period=year',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(400)
+  })
+})

@@ -31,6 +31,7 @@ import {
   formatTaskDateTime,
 } from '../tarefas/tarefas.types'
 import styles from './HomePage.module.css'
+import { ManagementHome } from './ManagementHome'
 
 // ── Ícones ────────────────────────────────────────────────────────────────────
 
@@ -233,7 +234,15 @@ function heroBackground(tier: Tier | null): string {
 
 // ── HomePage ──────────────────────────────────────────────────────────────────
 
+/** Início: Dono e Supervisor (reports.read) veem o painel de gestão; os
+ * demais papéis, o início do vendedor. */
 export function HomePage() {
+  const { membership } = useActiveOrganization()
+  if (membership?.permissions.includes('reports.read')) return <ManagementHome />
+  return <SellerHome />
+}
+
+function SellerHome() {
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(true)
   const { organizationId, membership } = useActiveOrganization()

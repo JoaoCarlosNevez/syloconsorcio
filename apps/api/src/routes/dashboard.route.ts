@@ -16,12 +16,19 @@
 // GET /dashboard/ranking/activities — "corrida" de ligações e visitas
 //                             concluídas (?period=week|month, padrão semana)
 //                             (GetActivityRankingUseCase). Qualquer papel.
+// GET /dashboard/management — início do Dono e do Supervisor (reports.read):
+//                             resumo do período (?period=week|month|last_month,
+//                             padrão mês), saúde do pipeline, funil de vendas
+//                             (?funnelId, padrão o funil padrão) e funil ADM
+//                             (GetManagementDashboardUseCase).
 //
-// Roda authMiddleware → tenantMiddleware.
+// Roda authMiddleware → tenantMiddleware (→ requirePermission onde indicado).
 
 import type {
   IAuthProvider,
+  IFunnelRepository,
   ILeadRepository,
+  IManagementDashboardRepository,
   IMembershipRepository,
   IOrganizationRepository,
   IStreakRepository,
@@ -30,13 +37,16 @@ import type {
 } from '@sylocrm/application'
 import {
   GetActivityRankingUseCase,
+  GetManagementDashboardUseCase,
   GetMyMonthlyStatsUseCase,
   GetMyStreakUseCase,
   GetSalesRankingUseCase,
 } from '@sylocrm/application'
+import { Permission } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { createAuthMiddleware } from '../middleware/auth.middleware'
+import { requirePermission } from '../middleware/permission.middleware'
 import { createTenantMiddleware } from '../middleware/tenant.middleware'
 
 interface DashboardRouteOptions {
@@ -47,9 +57,15 @@ interface DashboardRouteOptions {
   taskRepository: ITaskRepository
   leadRepository: ILeadRepository
   streakRepository: IStreakRepository
+  funnelRepository: IFunnelRepository
+  managementDashboardRepository: IManagementDashboardRepository
 }
 
 const rankingQuerySchema = z.object({ period: z.enum(['week', 'month']).optional() })
+const managementQuerySchema = z.object({
+  period: z.enum(['week', 'month', 'last_month']).optional(),
+  funnelId: z.string().uuid().optional(),
+})
 
 export const dashboardRoute: FastifyPluginAsync<DashboardRouteOptions> = async (
   fastify,
@@ -77,6 +93,41 @@ export const dashboardRoute: FastifyPluginAsync<DashboardRouteOptions> = async (
     options.membershipRepository,
     options.taskRepository,
     options.streakRepository,
+  )
+
+  const getManagementDashboard = new GetManagementDashboardUseCase(
+    options.managementDashboardRepository,
+    options.funnelRepository,
+    options.leadRepository,
+    options.organizationRepository,
+    options.membershipRepository,
+  )
+
+  // ── GET /dashboard/management ─────────────────────────────────────────────
+  fastify.get(
+    '/dashboard/management',
+    {
+      preHandler: [authMiddleware, tenantMiddleware, requirePermission(Permission.REPORTS_READ)],
+    },
+    async (request, reply) => {
+      const query = managementQuerySchema.safeParse(request.query)
+      if (!query.success) {
+        return reply
+          .status(400)
+          .send({ error: 'Filtro inválido.', code: 'VALIDATION_ERROR', status: 400 })
+      }
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      const dashboard = await getManagementDashboard.execute({
+        organizationId: context.currentMembership.organizationId,
+        period: query.data.period,
+        funnelId: query.data.funnelId,
+      })
+      return {
+        ...dashboard,
+        periodStart: dashboard.periodStart.toISOString(),
+        periodEnd: dashboard.periodEnd.toISOString(),
+      }
+    },
   )
 
   // ── GET /dashboard/ranking/activities ─────────────────────────────────────

@@ -95,3 +95,77 @@ export function getSalesRanking(
 export function getMyMonthlyStats(organizationId: string): Promise<MyMonthlyStats> {
   return apiClient.get<MyMonthlyStats>('/dashboard/me/monthly', { organizationId })
 }
+
+// ── Painel de gestão (início do Dono e do Supervisor) ────────────────────────
+
+export type ManagementPeriod = 'week' | 'month' | 'last_month'
+
+export interface FunnelStageMetrics {
+  id: string
+  name: string
+  color: string
+  count: number
+  valueCents: number
+  avgDaysInStage: number | null
+  conversionPercent: number | null
+}
+
+export interface BackofficeStageMetrics {
+  id: string
+  name: string
+  color: string
+  count: number
+  avgDaysInStage: number | null
+  staleCount: number
+}
+
+export interface ManagementDashboard {
+  period: ManagementPeriod
+  periodStart: string
+  periodEnd: string
+  summary: {
+    openLeads: number
+    newLeads: number
+    wonCount: number
+    wonValueCents: number
+    conversionPercent: number | null
+    avgTicketCents: number | null
+    goalCents: number | null
+    projectedCents: number | null
+  }
+  health: {
+    unassigned: number
+    staleAttention: number
+    staleRisk: number
+    pendingQueue: number
+  }
+  salesFunnels: { id: string; name: string }[]
+  salesFunnel: {
+    id: string
+    name: string
+    stages: FunnelStageMetrics[]
+    wonCount: number
+  } | null
+  backoffice: {
+    id: string
+    stages: BackofficeStageMetrics[]
+    staleCount: number
+    oldest: {
+      leadId: string
+      name: string
+      stageName: string
+      daysInStage: number
+      sellerName: string | null
+    }[]
+  } | null
+}
+
+export function getManagementDashboard(
+  organizationId: string,
+  period: ManagementPeriod,
+  funnelId: string | null,
+): Promise<ManagementDashboard> {
+  const params = new URLSearchParams({ period })
+  if (funnelId) params.set('funnelId', funnelId)
+  return apiClient.get<ManagementDashboard>(`/dashboard/management?${params}`, { organizationId })
+}

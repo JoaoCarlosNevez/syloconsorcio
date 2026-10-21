@@ -2,8 +2,10 @@
 
 import { useQuery } from '@tanstack/react-query'
 import {
+  type ManagementPeriod,
   type SalesRankingPeriod,
   getActivityRanking,
+  getManagementDashboard,
   getMyMonthlyStats,
   getMyStreak,
   getSalesRanking,
@@ -51,5 +53,20 @@ export function useMyMonthlyStatsQuery(organizationId: string | null) {
     queryKey: ['dashboard', 'me', 'monthly', organizationId],
     queryFn: () => getMyMonthlyStats(organizationId as string),
     enabled: Boolean(organizationId),
+  })
+}
+
+/** Início do Dono e do Supervisor — atualiza sozinho a cada 2 minutos. */
+export function useManagementDashboardQuery(
+  organizationId: string | null,
+  period: ManagementPeriod,
+  funnelId: string | null,
+) {
+  return useQuery({
+    queryKey: ['dashboard', 'management', organizationId, period, funnelId],
+    queryFn: () => getManagementDashboard(organizationId as string, period, funnelId),
+    enabled: Boolean(organizationId),
+    refetchInterval: 2 * 60_000,
+    placeholderData: (previous) => previous,
   })
 }

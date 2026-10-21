@@ -306,6 +306,23 @@ export type {
   ActivityRankingEntry,
   GetActivityRankingInput,
 } from './dashboard/get-activity-ranking.use-case'
+export {
+  ADM_STALE_DAYS,
+  GetManagementDashboardUseCase,
+  STALE_DAYS,
+} from './dashboard/get-management-dashboard.use-case'
+export type {
+  BackofficeCard,
+  BackofficeStageMetrics,
+  FunnelStageMetrics,
+  GetManagementDashboardInput,
+  ManagementDashboard,
+  ManagementPeriod,
+} from './dashboard/get-management-dashboard.use-case'
+export type {
+  IManagementDashboardRepository,
+  OpenLeadSnapshot,
+} from './ports/management-dashboard.repository'
 export { GetSalesRankingUseCase } from './dashboard/get-sales-ranking.use-case'
 export type {
   GetSalesRankingInput,

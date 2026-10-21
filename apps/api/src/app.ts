@@ -18,6 +18,7 @@ import type {
   ILeadProposalRepository,
   ILeadQueueRepository,
   ILeadRepository,
+  IManagementDashboardRepository,
   IMembershipRepository,
   INotificationRepository,
   IOrganizationRepository,
@@ -65,6 +66,7 @@ export interface BuildAppDeps {
   leadQueueRepository: ILeadQueueRepository
   streakRepository: IStreakRepository
   leadAdhesionRepository: ILeadAdhesionRepository
+  managementDashboardRepository: IManagementDashboardRepository
 }
 
 /** No-op auth provider used when Supabase env vars are not configured. */
@@ -298,6 +300,12 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     leadQueueRepository: deps?.leadQueueRepository ?? createNoOpLeadQueueRepository(),
     // Sem banco, ninguém tem ofensiva.
     streakRepository: deps?.streakRepository ?? { listActiveDays: async () => [] },
+    managementDashboardRepository: deps?.managementDashboardRepository ?? {
+      listOpenLeads: async () => [],
+      countCreatedInSalesFunnels: async () => ({ created: 0, wonOfCreated: 0 }),
+      countPendingQueueOffers: async () => 0,
+      countWonInFunnel: async () => 0,
+    },
     leadAdhesionRepository: deps?.leadAdhesionRepository ?? {
       findByLead: async () => null,
       upsert: async () => {
@@ -428,6 +436,8 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     taskRepository: resolvedDeps.taskRepository,
     leadRepository: resolvedDeps.leadRepository,
     streakRepository: resolvedDeps.streakRepository,
+    funnelRepository: resolvedDeps.funnelRepository,
+    managementDashboardRepository: resolvedDeps.managementDashboardRepository,
   })
 
   app.register(teamRoute, {
