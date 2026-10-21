@@ -54,8 +54,8 @@ import {
   displayStatus,
   formatTaskDateTime,
 } from '../tarefas/tarefas.types'
-import { AdhesionDocuments } from './AdhesionDocuments'
 import { AdhesionTab } from './AdhesionTab'
+import { LeadAttachments } from './LeadAttachments'
 import styles from './LeadModal.module.css'
 
 // ── Ícones (SVG inline — padrão do projeto) ────────────────────────────────────
@@ -2106,14 +2106,9 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                   />
                 )}
 
-                {/* ── Aba: Anexos (os mesmos documentos da ficha de adesão) ─ */}
+                {/* ── Aba: Anexos (só os documentos já anexados) ──────── */}
                 {activeTab === 'anexos' && (
-                  <div className={styles.attachmentsTab}>
-                    <p className={styles.attachmentsIntro}>
-                      Documentos da ficha de adesão — também dá pra anexar pela aba Adesão.
-                    </p>
-                    <AdhesionDocuments organizationId={organizationId} leadId={card.id} />
-                  </div>
+                  <LeadAttachments organizationId={organizationId} leadId={card.id} />
                 )}
 
                 {/* ── Aba: Simulações ─────────────────────────────────── */}

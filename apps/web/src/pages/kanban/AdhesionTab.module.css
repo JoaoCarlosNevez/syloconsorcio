@@ -371,3 +371,27 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* ── Aba Anexos (só os já anexados) ───────────────────────────────────── */
+
+.attachmentIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.attachmentsEmpty {
+  margin: 0;
+  padding: 24px 16px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+}
