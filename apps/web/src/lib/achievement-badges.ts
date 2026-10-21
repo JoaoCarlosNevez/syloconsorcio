@@ -1,0 +1,73 @@
+// Mural de Conquistas do Perfil: dados da API (GET /dashboard/me/achievements)
+// → medalhas (emoji, cor, data e progresso).
+
+import type { Achievement } from './dashboard-api'
+
+export interface Badge {
+  id: Achievement['id']
+  emoji: string
+  bg: string
+  name: string
+  desc: string
+  /** "dd/mm/aaaa" de quando desbloqueou. */
+  date: string | null
+  unlocked: boolean
+  /** Metas de valor ainda bloqueadas: "R$ 400 mil de R$ 500 mil". */
+  progressText: string | null
+  /** O que fazer pra desbloquear. */
+  hint: string
+}
+
+const VISUAL: Record<Achievement['id'], { emoji: string; bg: string; hint: string }> = {
+  first_quota: {
+    emoji: '🚀',
+    bg: '#fef3c7',
+    hint: 'Marque seu primeiro lead como Ganho no Comercial.',
+  },
+  sold_500k: { emoji: '💰', bg: '#dcfce7', hint: 'Some R$ 500 mil em crédito vendido.' },
+  sold_1m: { emoji: '🏆', bg: '#fef3c7', hint: 'Some R$ 1 milhão em crédito vendido.' },
+  sold_3m: { emoji: '💎', bg: '#e0f2fe', hint: 'Some R$ 3 milhões em crédito vendido.' },
+  sold_5m: { emoji: '👑', bg: '#ede9fe', hint: 'Some R$ 5 milhões em crédito vendido.' },
+  sold_10m: { emoji: '🌟', bg: '#fce7f3', hint: 'Some R$ 10 milhões em crédito vendido.' },
+  first_assembly: {
+    emoji: '📅',
+    bg: '#ffedd5',
+    hint: 'Uma cota sua precisa chegar a "Em dia" no funil Pós-venda.',
+  },
+  first_contemplation: {
+    emoji: '🎉',
+    bg: '#fae8ff',
+    hint: 'Uma cota sua precisa chegar a "Contemplado" no funil Pós-venda.',
+  },
+}
+
+function formatMoneyShort(cents: number): string {
+  const reais = cents / 100
+  if (reais >= 1_000_000) {
+    return `R$ ${(reais / 1_000_000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mi`
+  }
+  return `R$ ${Math.round(reais / 1000).toLocaleString('pt-BR')} mil`
+}
+
+export function toBadge(achievement: Achievement): Badge {
+  const visual = VISUAL[achievement.id]
+  const unlocked = achievement.unlockedAt !== null
+  return {
+    id: achievement.id,
+    emoji: visual.emoji,
+    bg: visual.bg,
+    name: achievement.title,
+    desc: achievement.description,
+    date: achievement.unlockedAt
+      ? new Date(achievement.unlockedAt).toLocaleDateString('pt-BR', {
+          timeZone: 'America/Sao_Paulo',
+        })
+      : null,
+    unlocked,
+    progressText:
+      !unlocked && achievement.progress
+        ? `${formatMoneyShort(achievement.progress.currentCents)} de ${formatMoneyShort(achievement.progress.targetCents)}`
+        : null,
+    hint: visual.hint,
+  }
+}

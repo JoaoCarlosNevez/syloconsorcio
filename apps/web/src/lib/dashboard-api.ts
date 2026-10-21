@@ -236,3 +236,29 @@ export interface MyEngagement {
 export function getMyEngagement(organizationId: string): Promise<MyEngagement> {
   return apiClient.get<MyEngagement>('/dashboard/me/engagement', { organizationId })
 }
+
+// ── Mural de Conquistas (Perfil) ─────────────────────────────────────────────
+
+export interface Achievement {
+  id:
+    | 'first_quota'
+    | 'sold_500k'
+    | 'sold_1m'
+    | 'sold_3m'
+    | 'sold_5m'
+    | 'sold_10m'
+    | 'first_assembly'
+    | 'first_contemplation'
+  title: string
+  description: string
+  unlockedAt: string | null
+  progress: { currentCents: number; targetCents: number } | null
+}
+
+export function getMyAchievements(
+  organizationId: string,
+): Promise<{ achievements: Achievement[] }> {
+  return apiClient.get<{ achievements: Achievement[] }>('/dashboard/me/achievements', {
+    organizationId,
+  })
+}

@@ -12,9 +12,14 @@ import {
   useUpdateMyProfile,
   useUploadMyAvatar,
 } from '../../hooks/useCurrentUser'
-import { useMyEngagementQuery, useMyStreakQuery } from '../../hooks/useDashboard'
+import {
+  useMyAchievementsQuery,
+  useMyEngagementQuery,
+  useMyStreakQuery,
+} from '../../hooks/useDashboard'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { useSalesGoalsSummaryQuery, useUpdateMyPersonalGoal } from '../../hooks/useTeam'
+import { type Badge, toBadge } from '../../lib/achievement-badges'
 import type { MyStreak } from '../../lib/dashboard-api'
 import { engagementCards } from '../../lib/engagement-cards'
 import { validateIconFile } from '../../lib/icon-validation'
@@ -226,84 +231,9 @@ function weekMonthLabel(week: MyStreak['week'] | undefined): string {
   return `${label.replace('.', '').replace(/^./, (c) => c.toUpperCase())} ${year}`
 }
 
-const BADGES = [
-  {
-    emoji: '🚀',
-    bg: '#fef3c7',
-    name: 'Primeira Cota',
-    desc: 'Vendeu a primeira cota de consórcio pelo Sylo CRM.',
-    xp: '+100 XP',
-    date: '14/01/2024',
-    unlocked: true,
-  },
-  {
-    emoji: '🔥',
-    bg: '#ffedd5',
-    name: 'Em Chamas',
-    desc: '7 dias consecutivos com follow-ups em dia sem atrasos.',
-    xp: '+150 XP',
-    date: '21/01/2024',
-    unlocked: true,
-  },
-  {
-    emoji: '🏆',
-    bg: '#fef3c7',
-    name: 'Mestre do Lance',
-    desc: 'Fechou consórcio com lance vencedor na primeira assembleia.',
-    xp: '+200 XP',
-    date: '03/02/2024',
-    unlocked: true,
-  },
-  {
-    emoji: '⚡',
-    bg: '#ede9fe',
-    name: 'Velocidade Sylo',
-    desc: 'Registrou proposta em menos de 2h após o primeiro contato.',
-    xp: '+120 XP',
-    date: '15/02/2024',
-    unlocked: true,
-  },
-  {
-    emoji: '💎',
-    bg: '#ede9fe',
-    name: 'Diamante',
-    desc: 'Atingiu o nível máximo de consultor na plataforma.',
-    xp: '+500 XP',
-    date: '10/03/2024',
-    unlocked: true,
-  },
-  {
-    emoji: '📈',
-    bg: '#d1fae5',
-    name: 'Crescimento 10x',
-    desc: 'Aumentou conversão em 10x comparado ao mês anterior.',
-    xp: '+300 XP',
-    date: '01/04/2024',
-    unlocked: true,
-  },
-  {
-    emoji: '🔒',
-    bg: '#f1f5f9',
-    name: 'Sócio Estratégico',
-    desc: 'Fechou 3 propostas em uma única semana.',
-    xp: '+250 XP',
-    date: null,
-    unlocked: false,
-  },
-  {
-    emoji: '🔒',
-    bg: '#f1f5f9',
-    name: 'Guru do Follow-up',
-    desc: 'Manteve 30 dias consecutivos sem atraso em tarefas.',
-    xp: '+400 XP',
-    date: null,
-    unlocked: false,
-  },
-]
-
 // ── Tipos de badge ────────────────────────────────────────────────────────────
 
-type BadgeData = (typeof BADGES)[number]
+type BadgeData = Badge
 
 // ── BadgeModal ────────────────────────────────────────────────────────────────
 
@@ -368,7 +298,7 @@ function BadgeModal({ badge, onClose }: { badge: BadgeData; onClose: () => void 
               padding: '3px 12px',
             }}
           >
-            {badge.xp}
+            {badge.unlocked ? 'Conquistada' : (badge.progressText ?? 'Em andamento')}
           </span>
           {badge.unlocked && badge.date && (
             <span style={{ fontSize: 12, color: '#94a3b8' }}>Desbloqueada em {badge.date}</span>
@@ -388,9 +318,7 @@ function BadgeModal({ badge, onClose }: { badge: BadgeData; onClose: () => void 
           )}
         </div>
         {!badge.unlocked && (
-          <p style={{ fontSize: 13, color: '#94a3b8', margin: 0, marginTop: 4 }}>
-            Complete o desafio para desbloquear esta conquista.
-          </p>
+          <p style={{ fontSize: 13, color: '#94a3b8', margin: 0, marginTop: 4 }}>{badge.hint}</p>
         )}
         <button
           type="button"
@@ -834,6 +762,8 @@ export function PerfilPage() {
   const [activityToast, setActivityToast] = useState('')
   const { data: streak, isLoading: streakLoading } = useMyStreakQuery(organizationId)
   const { data: engagement } = useMyEngagementQuery(organizationId)
+  const { data: achievementsData } = useMyAchievementsQuery(organizationId)
+  const BADGES = (achievementsData?.achievements ?? []).map(toBadge)
   const metrics = engagement ? engagementCards(engagement) : null
   const navigate = useNavigate()
 
@@ -1135,13 +1065,16 @@ export function PerfilPage() {
                 <div className={styles.badgeProgress}>
                   <span className={styles.badgeProgressLabel}>
                     {BADGES.filter((b) => b.unlocked).length} de {BADGES.length} desbloqueadas (
-                    {Math.round((BADGES.filter((b) => b.unlocked).length / BADGES.length) * 100)}%)
+                    {BADGES.length
+                      ? Math.round((BADGES.filter((b) => b.unlocked).length / BADGES.length) * 100)
+                      : 0}
+                    %)
                   </span>
                   <div className={styles.badgeProgressBar}>
                     <div
                       className={styles.badgeProgressFill}
                       style={{
-                        width: `${(BADGES.filter((b) => b.unlocked).length / BADGES.length) * 100}%`,
+                        width: `${BADGES.length ? (BADGES.filter((b) => b.unlocked).length / BADGES.length) * 100 : 0}%`,
                       }}
                     />
                   </div>
@@ -1149,10 +1082,14 @@ export function PerfilPage() {
               </div>
 
               <div className={styles.badgesGrid}>
+                {!achievementsData &&
+                  [0, 1, 2, 3].map((i) => (
+                    <Skeleton key={i} variant="rect" width="100%" height="150px" />
+                  ))}
                 {BADGES.map((badge) => (
                   // biome-ignore lint/a11y/useKeyWithClickEvents: badge card click
                   <div
-                    key={badge.name}
+                    key={badge.id}
                     className={[
                       styles.badgeCard,
                       badge.unlocked ? styles.badgeUnlocked : styles.badgeLocked,
@@ -1176,7 +1113,9 @@ export function PerfilPage() {
                     <h3 className={styles.badgeName}>{badge.name}</h3>
                     <p className={styles.badgeDesc}>{badge.desc}</p>
                     <div className={styles.badgeFooter}>
-                      <span className={styles.badgeXP}>{badge.xp}</span>
+                      {badge.progressText && (
+                        <span className={styles.badgeXP}>{badge.progressText}</span>
+                      )}
                       {badge.date && <span className={styles.badgeDate}>Em {badge.date}</span>}
                     </div>
                   </div>

@@ -5,6 +5,9 @@
 //                             visitas realizadas (dessas, as concluídas), valor
 //                             ganho e tíquete médio. Qualquer papel — só olha
 //                             os dados de quem está logado.
+// GET /dashboard/me/achievements — Mural de Conquistas do Perfil (primeira
+//                             cota, marcos de crédito vendido, primeira
+//                             assembleia e contemplação) — GetMyAchievementsUseCase.
 // GET /dashboard/me/engagement — "Engajamento operacional" do Perfil: leads
 //                             atendidos, simulações, propostas e cotas fechadas
 //                             do usuário nos últimos 30 dias (GetMyEngagementUseCase).
@@ -32,6 +35,7 @@
 // Roda authMiddleware → tenantMiddleware (→ requirePermission onde indicado).
 
 import type {
+  IAchievementsRepository,
   IAuthProvider,
   IEngagementRepository,
   IFunnelRepository,
@@ -46,6 +50,7 @@ import type {
 import {
   GetActivityRankingUseCase,
   GetManagementDashboardUseCase,
+  GetMyAchievementsUseCase,
   GetMyEngagementUseCase,
   GetMyMonthlyStatsUseCase,
   GetMyStreakUseCase,
@@ -69,6 +74,7 @@ interface DashboardRouteOptions {
   funnelRepository: IFunnelRepository
   managementDashboardRepository: IManagementDashboardRepository
   engagementRepository: IEngagementRepository
+  achievementsRepository: IAchievementsRepository
 }
 
 const rankingQuerySchema = z.object({ period: z.enum(['week', 'month']).optional() })
@@ -206,6 +212,27 @@ export const dashboardRoute: FastifyPluginAsync<DashboardRouteOptions> = async (
   const getMyEngagement = new GetMyEngagementUseCase(
     options.engagementRepository,
     options.leadRepository,
+  )
+
+  const getMyAchievements = new GetMyAchievementsUseCase(options.achievementsRepository)
+
+  // ── GET /dashboard/me/achievements ────────────────────────────────────────
+  fastify.get(
+    '/dashboard/me/achievements',
+    { preHandler: [authMiddleware, tenantMiddleware] },
+    async (request) => {
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      const achievements = await getMyAchievements.execute({
+        organizationId: context.currentMembership.organizationId,
+        userId: context.userId,
+      })
+      return {
+        achievements: achievements.map((a) => ({
+          ...a,
+          unlockedAt: a.unlockedAt?.toISOString() ?? null,
+        })),
+      }
+    },
   )
 
   // ── GET /dashboard/me/engagement ──────────────────────────────────────────

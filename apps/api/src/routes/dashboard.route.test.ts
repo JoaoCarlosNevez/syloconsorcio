@@ -334,3 +334,33 @@ describe('GET /dashboard/me/engagement', () => {
     )
   })
 })
+
+describe('GET /dashboard/me/achievements', () => {
+  it('returns the logged-in user achievements', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository: buildMembershipRepository(SELLER_MEMBERSHIP),
+      achievementsRepository: {
+        listWonSales: vi
+          .fn()
+          .mockResolvedValue([{ wonAt: new Date('2026-10-01T12:00:00Z'), valueCents: 600_000_00 }]),
+        firstPostSaleStageAt: vi.fn().mockResolvedValue(null),
+      },
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/dashboard/me/achievements',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    const byId = Object.fromEntries(
+      response.json().achievements.map((a: { id: string }) => [a.id, a]),
+    )
+    expect(byId.first_quota.unlockedAt).toBe('2026-10-01T12:00:00.000Z')
+    expect(byId.sold_500k.unlockedAt).toBe('2026-10-01T12:00:00.000Z')
+    expect(byId.sold_1m.unlockedAt).toBeNull()
+  })
+})

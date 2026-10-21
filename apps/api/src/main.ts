@@ -8,6 +8,7 @@
 import 'dotenv/config'
 import { OfferLeadToQueueUseCase, ProcessExpiredLeadOffersUseCase } from '@sylocrm/application'
 import {
+  DrizzleAchievementsRepository,
   DrizzleActivityLogRepository,
   DrizzleApiKeyRepository,
   DrizzleEngagementRepository,
@@ -59,6 +60,7 @@ const apiKeyRepository = database ? new DrizzleApiKeyRepository(database) : unde
 const leadQueueRepository = database ? new DrizzleLeadQueueRepository(database) : undefined
 const streakRepository = database ? new DrizzleStreakRepository(database) : undefined
 const leadAdhesionRepository = database ? new DrizzleLeadAdhesionRepository(database) : undefined
+const achievementsRepository = database ? new DrizzleAchievementsRepository(database) : undefined
 const engagementRepository = database ? new DrizzleEngagementRepository(database) : undefined
 const managementDashboardRepository = database
   ? new DrizzleManagementDashboardRepository(database)
@@ -90,6 +92,7 @@ const app = buildApp({
   leadAdhesionRepository,
   managementDashboardRepository,
   engagementRepository,
+  achievementsRepository,
 })
 
 // Fila de Leads: passa adiante os leads que ninguém aceitou no prazo. O

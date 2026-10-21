@@ -7,6 +7,7 @@ import {
   type SalesRankingPeriod,
   getActivityRanking,
   getManagementDashboard,
+  getMyAchievements,
   getMyEngagement,
   getMyMonthlyStats,
   getMyStreak,
@@ -79,6 +80,15 @@ export function useMyEngagementQuery(organizationId: string | null) {
   return useQuery({
     queryKey: ['dashboard', 'me', 'engagement', organizationId],
     queryFn: () => getMyEngagement(organizationId as string),
+    enabled: Boolean(organizationId),
+  })
+}
+
+/** Mural de Conquistas do Perfil. */
+export function useMyAchievementsQuery(organizationId: string | null) {
+  return useQuery({
+    queryKey: ['dashboard', 'me', 'achievements', organizationId],
+    queryFn: () => getMyAchievements(organizationId as string),
     enabled: Boolean(organizationId),
   })
 }

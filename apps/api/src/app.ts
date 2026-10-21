@@ -10,6 +10,7 @@
 import cors from '@fastify/cors'
 import multipart from '@fastify/multipart'
 import type {
+  IAchievementsRepository,
   IActivityLogRepository,
   IApiKeyRepository,
   IAuthProvider,
@@ -69,6 +70,7 @@ export interface BuildAppDeps {
   leadAdhesionRepository: ILeadAdhesionRepository
   managementDashboardRepository: IManagementDashboardRepository
   engagementRepository: IEngagementRepository
+  achievementsRepository: IAchievementsRepository
 }
 
 /** No-op auth provider used when Supabase env vars are not configured. */
@@ -307,6 +309,10 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     leadQueueRepository: deps?.leadQueueRepository ?? createNoOpLeadQueueRepository(),
     // Sem banco, ninguém tem ofensiva.
     streakRepository: deps?.streakRepository ?? { listActiveDays: async () => [] },
+    achievementsRepository: deps?.achievementsRepository ?? {
+      listWonSales: async () => [],
+      firstPostSaleStageAt: async () => null,
+    },
     engagementRepository: deps?.engagementRepository ?? {
       countLeadsWorked: async () => 0,
       proposalStats: async () => ({ created: 0, shared: 0, opened: 0 }),
@@ -450,6 +456,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     funnelRepository: resolvedDeps.funnelRepository,
     managementDashboardRepository: resolvedDeps.managementDashboardRepository,
     engagementRepository: resolvedDeps.engagementRepository,
+    achievementsRepository: resolvedDeps.achievementsRepository,
   })
 
   app.register(teamRoute, {

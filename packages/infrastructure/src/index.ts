@@ -38,5 +38,6 @@ export { DrizzleApiKeyRepository } from './database/repositories/drizzle-api-key
 export { DrizzleLeadQueueRepository } from './database/repositories/drizzle-lead-queue.repository'
 export { DrizzleStreakRepository } from './database/repositories/drizzle-streak.repository'
 export { DrizzleLeadAdhesionRepository } from './database/repositories/drizzle-lead-adhesion.repository'
+export { DrizzleAchievementsRepository } from './database/repositories/drizzle-achievements.repository'
 export { DrizzleEngagementRepository } from './database/repositories/drizzle-engagement.repository'
 export { DrizzleManagementDashboardRepository } from './database/repositories/drizzle-management-dashboard.repository'

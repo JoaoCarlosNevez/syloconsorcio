@@ -335,6 +335,12 @@ export type {
   IManagementDashboardRepository,
   OpenLeadSnapshot,
 } from './ports/management-dashboard.repository'
+export { GetMyAchievementsUseCase } from './dashboard/get-my-achievements.use-case'
+export type { Achievement, AchievementId } from './dashboard/get-my-achievements.use-case'
+export type {
+  AchievementsScope,
+  IAchievementsRepository,
+} from './ports/achievements.repository'
 export { ENGAGEMENT_DAYS, GetMyEngagementUseCase } from './dashboard/get-my-engagement.use-case'
 export type { GetMyEngagementInput, MyEngagement } from './dashboard/get-my-engagement.use-case'
 export type { EngagementRange, IEngagementRepository } from './ports/engagement.repository'
