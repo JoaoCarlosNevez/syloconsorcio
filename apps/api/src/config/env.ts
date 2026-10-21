@@ -17,6 +17,10 @@ const envSchema = z.object({
 
   // Infrastructure — optional until the database layer is wired up
   DATABASE_URL: z.string().url().optional(),
+  // Conexões simultâneas com o banco por processo. Use o pooler do Supabase em
+  // modo transação (porta 6543) — no modo sessão (5432) o plano limita a 15
+  // clientes somando todos os processos.
+  DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(10),
   SUPABASE_URL: z.string().url().optional(),
   SUPABASE_SERVICE_KEY: z.string().optional(),
 

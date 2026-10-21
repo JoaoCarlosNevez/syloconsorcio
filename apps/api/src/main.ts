@@ -42,7 +42,7 @@ const authProvider =
 // Supabase's certificate chain fails strict SSL verification — 'require' encrypts
 // the connection without validating the chain, which is Supabase's documented setup.
 const database = env.DATABASE_URL
-  ? createDatabase({ url: env.DATABASE_URL, ssl: 'require' })
+  ? createDatabase({ url: env.DATABASE_URL, ssl: 'require', maxConnections: env.DATABASE_POOL_MAX })
   : undefined
 
 const membershipRepository = database ? new DrizzleMembershipRepository(database) : undefined
