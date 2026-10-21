@@ -27,6 +27,8 @@ export type ActivityAction =
   | 'lead.adhesion_updated'
   | 'lead.document_uploaded'
   | 'lead.document_deleted'
+  | 'lead.checklist_checked'
+  | 'lead.checklist_unchecked'
   | 'task.created'
   | 'task.updated'
   | 'task.completed'

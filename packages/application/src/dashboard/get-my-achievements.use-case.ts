@@ -5,10 +5,12 @@
 // - 500K, Meu primeiro milhão, 3M, 5M, 10M: crédito vendido acumulado (desde
 //   sempre) — desbloqueia na venda que cruza a marca.
 // - Primeira assembleia: uma cota dele chega a "Em dia" (ou depois) no
-//   Pós-venda — pagou o 1º boleto e passa a participar das assembleias. É uma
-//   aproximação até o CRM registrar assembleias.
-// - Primeira contemplação: uma cota dele chega a "Contemplado" no Pós-venda.
+//   Pós-venda, ou alguém marca "1ª parcela paga"/"Participou da 1ª
+//   assembleia" no checklist — o que vier primeiro.
+// - Primeira contemplação: uma cota dele chega a "Contemplado" no Pós-venda
+//   ou tem "Contemplado" marcado no checklist.
 
+import { ASSEMBLY_CHECKLIST_KEYS, CONTEMPLATION_CHECKLIST_KEYS } from '../funnels/funnel-checklists'
 import type { IAchievementsRepository } from '../ports/achievements.repository'
 import type { UseCase } from '../ports/use-case'
 
@@ -45,6 +47,12 @@ const SALES_MILESTONES: { id: AchievementId; title: string; targetCents: number 
 const ASSEMBLY_STAGES = ['Em dia', 'Atrasado', 'Contemplado']
 const CONTEMPLATION_STAGES = ['Contemplado']
 
+function earliest(a: Date | null, b: Date | null): Date | null {
+  if (!a) return b
+  if (!b) return a
+  return a < b ? a : b
+}
+
 function formatMillions(cents: number): string {
   const reais = cents / 100
   return reais >= 1_000_000
@@ -58,11 +66,16 @@ export class GetMyAchievementsUseCase
   constructor(private readonly achievementsRepository: IAchievementsRepository) {}
 
   async execute(scope: { organizationId: string; userId: string }): Promise<Achievement[]> {
-    const [sales, firstAssemblyAt, firstContemplationAt] = await Promise.all([
-      this.achievementsRepository.listWonSales(scope),
-      this.achievementsRepository.firstPostSaleStageAt(scope, ASSEMBLY_STAGES),
-      this.achievementsRepository.firstPostSaleStageAt(scope, CONTEMPLATION_STAGES),
-    ])
+    const [sales, assemblyStageAt, contemplationStageAt, assemblyCheckAt, contemplationCheckAt] =
+      await Promise.all([
+        this.achievementsRepository.listWonSales(scope),
+        this.achievementsRepository.firstPostSaleStageAt(scope, ASSEMBLY_STAGES),
+        this.achievementsRepository.firstPostSaleStageAt(scope, CONTEMPLATION_STAGES),
+        this.achievementsRepository.firstChecklistItemAt(scope, [...ASSEMBLY_CHECKLIST_KEYS]),
+        this.achievementsRepository.firstChecklistItemAt(scope, [...CONTEMPLATION_CHECKLIST_KEYS]),
+      ])
+    const firstAssemblyAt = earliest(assemblyStageAt, assemblyCheckAt)
+    const firstContemplationAt = earliest(contemplationStageAt, contemplationCheckAt)
 
     // Data em que o acumulado cruzou cada marca.
     let total = 0

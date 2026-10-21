@@ -45,3 +45,5 @@ export type { DbLeadOffer } from './lead-queue'
 
 export { leadAdhesionDocuments, leadAdhesions } from './lead-adhesions'
 export type { DbLeadAdhesion, DbLeadAdhesionDocument } from './lead-adhesions'
+export { leadChecklistItems } from './lead-checklist'
+export type { DbLeadChecklistItem } from './lead-checklist'

@@ -14,4 +14,8 @@ export interface IAchievementsRepository {
   /** Primeira vez que uma cota do usuário (lead dele) entrou numa destas
    * etapas do funil Pós-venda; null se nunca. */
   firstPostSaleStageAt(scope: AchievementsScope, stageNames: string[]): Promise<Date | null>
+
+  /** Primeira vez que um destes itens do checklist foi marcado numa cota do
+   * usuário (lead dele); null se nunca. */
+  firstChecklistItemAt(scope: AchievementsScope, itemKeys: string[]): Promise<Date | null>
 }

@@ -26,6 +26,7 @@
 
 import { ValidationError } from '@sylocrm/domain'
 import type { MembershipContext } from '../auth/auth-context'
+import { checklistFor } from '../funnels/funnel-checklists'
 import {
   assertCanChangeLeadsInFunnel,
   ensureSystemFunnel,
@@ -39,6 +40,7 @@ import {
 } from '../ports/activity-log.repository'
 import type { FunnelRecord, IFunnelRepository } from '../ports/funnel.repository'
 import type { ILeadAdhesionRepository } from '../ports/lead-adhesion.repository'
+import type { ILeadChecklistRepository } from '../ports/lead-checklist.repository'
 import type { ILeadRepository, LeadRecord, UpdateLeadInput } from '../ports/lead.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
 import type { IStorageProvider } from '../ports/storage.provider'
@@ -88,6 +90,8 @@ export class UpdateLeadUseCase implements UseCase<UpdateLeadUseCaseInput, LeadRe
       leadAdhesionRepository: ILeadAdhesionRepository
       storage: IStorageProvider
     } | null = null,
+    /** Pra exigir o checklist completo antes do Ganho no ADM. */
+    private readonly checklistRepository: ILeadChecklistRepository | null = null,
   ) {}
 
   async execute(input: UpdateLeadUseCaseInput): Promise<LeadRecord | null> {
@@ -143,6 +147,24 @@ export class UpdateLeadUseCase implements UseCase<UpdateLeadUseCaseInput, LeadRe
     let wonFunnel: FunnelRecord | null = null
     if (isMarkingWon && before) {
       wonFunnel = currentFunnel
+      // ADM: o Ganho (Efetivado) só sai com o checklist inteiro marcado.
+      const required = wonFunnel ? checklistFor(wonFunnel.kind) : []
+      if (wonFunnel?.kind === 'BACKOFFICE' && this.checklistRepository && required.length > 0) {
+        const checked = new Set(
+          (await this.checklistRepository.listChecked(before.id)).map((item) => item.itemKey),
+        )
+        const missing = required.filter((item) => !checked.has(item.key))
+        if (missing.length > 0) {
+          throw new ValidationError([
+            {
+              field: 'won',
+              message: `Marque o checklist do ADM antes de efetivar: falta ${missing
+                .map((item) => item.label)
+                .join(', ')}.`,
+            },
+          ])
+        }
+      }
       const lastStage = wonFunnel?.stages[wonFunnel.stages.length - 1]
       if (!lastStage || before.stageId !== lastStage.id) {
         throw new ValidationError([

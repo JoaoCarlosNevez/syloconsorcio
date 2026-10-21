@@ -343,6 +343,20 @@ export {
   levelFor,
 } from './dashboard/get-my-xp.use-case'
 export type { MyXp, XpItem, XpItemKey } from './dashboard/get-my-xp.use-case'
+export {
+  FUNNEL_CHECKLISTS,
+  checklistFor,
+} from './funnels/funnel-checklists'
+export type { ChecklistItemDefinition } from './funnels/funnel-checklists'
+export {
+  GetLeadChecklistUseCase,
+  ToggleLeadChecklistItemUseCase,
+} from './leads/lead-checklist.use-cases'
+export type {
+  LeadChecklistView,
+  ToggleLeadChecklistItemInput,
+} from './leads/lead-checklist.use-cases'
+export type { CheckedItem, ILeadChecklistRepository } from './ports/lead-checklist.repository'
 export { GetMyAchievementsUseCase } from './dashboard/get-my-achievements.use-case'
 export type { Achievement, AchievementId } from './dashboard/get-my-achievements.use-case'
 export type {

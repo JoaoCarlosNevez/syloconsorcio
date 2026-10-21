@@ -4,7 +4,7 @@
 import type { AchievementsScope, IAchievementsRepository } from '@sylocrm/application'
 import { and, asc, eq, inArray, isNotNull, min, sql } from 'drizzle-orm'
 import type { Database } from '../client'
-import { activityLog, funnels, leads } from '../schema'
+import { activityLog, funnels, leadChecklistItems, leads } from '../schema'
 
 export class DrizzleAchievementsRepository implements IAchievementsRepository {
   constructor(private readonly db: Database) {}
@@ -42,6 +42,21 @@ export class DrizzleAchievementsRepository implements IAchievementsRepository {
           eq(leads.assignedUserId, scope.userId),
           eq(funnels.kind, 'POST_SALE'),
           inArray(sql<string>`${activityLog.metadata}->>'toStage'`, stageNames),
+        ),
+      )
+    return row?.at ?? null
+  }
+
+  async firstChecklistItemAt(scope: AchievementsScope, itemKeys: string[]): Promise<Date | null> {
+    const [row] = await this.db
+      .select({ at: min(leadChecklistItems.checkedAt) })
+      .from(leadChecklistItems)
+      .innerJoin(leads, eq(leads.id, leadChecklistItems.leadId))
+      .where(
+        and(
+          eq(leads.organizationId, scope.organizationId),
+          eq(leads.assignedUserId, scope.userId),
+          inArray(leadChecklistItems.itemKey, itemKeys),
         ),
       )
     return row?.at ?? null

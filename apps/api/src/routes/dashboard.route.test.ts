@@ -346,6 +346,7 @@ describe('GET /dashboard/me/achievements', () => {
           .fn()
           .mockResolvedValue([{ wonAt: new Date('2026-10-01T12:00:00Z'), valueCents: 600_000_00 }]),
         firstPostSaleStageAt: vi.fn().mockResolvedValue(null),
+        firstChecklistItemAt: vi.fn().mockResolvedValue(null),
       },
     })
 

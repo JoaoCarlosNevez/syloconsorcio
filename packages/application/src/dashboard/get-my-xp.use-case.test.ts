@@ -36,6 +36,7 @@ function setup() {
       { wonAt: new Date('2026-10-05T12:00:00Z'), valueCents: 450_000_00 }, // cruza 500K
     ]),
     firstPostSaleStageAt: vi.fn().mockResolvedValue(null),
+    firstChecklistItemAt: vi.fn().mockResolvedValue(null),
   }
   return new GetMyXpUseCase(
     engagementRepository,

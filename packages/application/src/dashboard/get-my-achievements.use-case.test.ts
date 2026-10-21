@@ -11,6 +11,7 @@ function setup(
   sales: { wonAt: Date; valueCents: number }[],
   assemblyAt: Date | null = null,
   contemplationAt: Date | null = null,
+  checkAssemblyAt: Date | null = null,
 ) {
   const repository: IAchievementsRepository = {
     listWonSales: vi.fn().mockResolvedValue(sales),
@@ -18,6 +19,11 @@ function setup(
       .fn()
       .mockImplementation(async (_scope, stages: string[]) =>
         stages.includes('Em dia') ? assemblyAt : contemplationAt,
+      ),
+    firstChecklistItemAt: vi
+      .fn()
+      .mockImplementation(async (_scope, keys: string[]) =>
+        keys.includes('first_installment_paid') ? checkAssemblyAt : null,
       ),
   }
   return { useCase: new GetMyAchievementsUseCase(repository), repository }
@@ -69,5 +75,13 @@ describe('GetMyAchievementsUseCase', () => {
       'Atrasado',
       'Contemplado',
     ])
+  })
+
+  it('counts the checklist "1ª parcela paga" for the first assembly, whichever comes first', async () => {
+    const { useCase } = setup([], d(15), null, d(12))
+
+    const achievements = await useCase.execute(scope)
+
+    expect(achievements.find((a) => a.id === 'first_assembly')?.unlockedAt).toEqual(d(12))
   })
 })

@@ -39,5 +39,6 @@ export { DrizzleLeadQueueRepository } from './database/repositories/drizzle-lead
 export { DrizzleStreakRepository } from './database/repositories/drizzle-streak.repository'
 export { DrizzleLeadAdhesionRepository } from './database/repositories/drizzle-lead-adhesion.repository'
 export { DrizzleAchievementsRepository } from './database/repositories/drizzle-achievements.repository'
+export { DrizzleLeadChecklistRepository } from './database/repositories/drizzle-lead-checklist.repository'
 export { DrizzleEngagementRepository } from './database/repositories/drizzle-engagement.repository'
 export { DrizzleManagementDashboardRepository } from './database/repositories/drizzle-management-dashboard.repository'

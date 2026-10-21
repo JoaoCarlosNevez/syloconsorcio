@@ -55,6 +55,7 @@ import {
   formatTaskDateTime,
 } from '../tarefas/tarefas.types'
 import { AdhesionTab } from './AdhesionTab'
+import { FunnelChecklistTab } from './FunnelChecklistTab'
 import { LeadAttachments } from './LeadAttachments'
 import styles from './LeadModal.module.css'
 
@@ -1016,6 +1017,8 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
   // perde e edita é o Administrativo (a API também barra).
   const isSeller = membership?.role === 'SELLER'
   const isFollowOnly = funnel.kind === 'BACKOFFICE' && isSeller
+  // ADM e Pós-venda têm checklist próprio (aba Checklist).
+  const hasFunnelChecklist = funnel.kind === 'BACKOFFICE' || funnel.kind === 'POST_SALE'
 
   function handleReassign(userId: string) {
     updateLead.mutate(
@@ -1645,9 +1648,9 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
     return () => document.removeEventListener('mousedown', handler)
   }, [addingTag])
 
-  const [activeTab, setActiveTab] = useState<'qualificacao' | 'simulacoes' | 'adesao' | 'anexos'>(
-    'qualificacao',
-  )
+  const [activeTab, setActiveTab] = useState<
+    'qualificacao' | 'simulacoes' | 'adesao' | 'checklist' | 'anexos'
+  >('qualificacao')
   const cota = parseCota(card.cota)
   // Índice real da etapa do lead — antes ficava travado em "Lead" (0)
   // independente da etapa de verdade.
@@ -2059,6 +2062,19 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                     >
                       Adesão
                     </button>
+                    {hasFunnelChecklist && (
+                      <button
+                        type="button"
+                        className={
+                          activeTab === 'checklist'
+                            ? `${styles.tab} ${styles.tabActive}`
+                            : styles.tab
+                        }
+                        onClick={() => setActiveTab('checklist')}
+                      >
+                        Checklist
+                      </button>
+                    )}
                     <button
                       type="button"
                       className={
@@ -2114,6 +2130,16 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                     members={members}
                     segments={leadSegments}
                     latestProposal={proposalsData?.proposals[0] ?? null}
+                  />
+                )}
+
+                {/* ── Aba: Checklist do funil (ADM / Pós-venda) ────────── */}
+                {activeTab === 'checklist' && hasFunnelChecklist && (
+                  <FunnelChecklistTab
+                    organizationId={organizationId}
+                    leadId={card.id}
+                    members={members}
+                    readOnly={isFollowOnly}
                   />
                 )}
 
@@ -2696,111 +2722,113 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
               </div>
 
               {/* Card: Tarefas — fica fora da aba Simulações, que já é longa. */}
-              {activeTab !== 'simulacoes' && activeTab !== 'adesao' && (
-                <div className={styles.card}>
-                  <div className={styles.taskHeader}>
-                    <div>
-                      <h2 className={styles.taskTitle}>Tarefas</h2>
-                      <p className={styles.taskSubtitle}>
-                        Acompanhe contatos telefônicos, envio de simulações e visitas presenciais.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className={styles.newTaskBtn}
-                      onClick={() => setTaskFormOpen(true)}
-                    >
-                      <PlusIcon />
-                      Nova Tarefa
-                    </button>
-                  </div>
-
-                  {/* Quick chips */}
-                  <div className={styles.chipsRow}>
-                    <span className={styles.chipsLabel}>Criar rápido:</span>
-                    <button
-                      type="button"
-                      className={styles.chip}
-                      disabled={createTask.isPending}
-                      onClick={() =>
-                        handleQuickCreateTask('Ligação', `Ligação de follow-up com ${card.name}`)
-                      }
-                    >
-                      <PhoneIcon />
-                      Ligação de Follow-up
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.chip}
-                      disabled={createTask.isPending}
-                      onClick={() =>
-                        handleQuickCreateTask('Simulação', `Simular lance para ${card.name}`)
-                      }
-                    >
-                      <CalendarIcon />
-                      Simulação de Lance
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.chip}
-                      disabled={createTask.isPending}
-                      onClick={() => handleQuickCreateTask('Reunião', `Reunião com ${card.name}`)}
-                    >
-                      <CalendarIcon />
-                      Agendar Reunião
-                    </button>
-                  </div>
-
-                  {/* Registrar o que acabou de acontecer — tarefa já concluída, agora */}
-                  <div className={styles.chipsRow}>
-                    <span className={styles.chipsLabel}>Registrar agora:</span>
-                    <button
-                      type="button"
-                      className={styles.chipDone}
-                      disabled={createTask.isPending}
-                      onClick={() => setRegisterDraft({ type: 'Visita', notes: '' })}
-                    >
-                      <HomeIcon />
-                      Visita feita
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.chipDone}
-                      disabled={createTask.isPending}
-                      onClick={() => setRegisterDraft({ type: 'Ligação', notes: '' })}
-                    >
-                      <PhoneIcon />
-                      Ligação feita
-                    </button>
-                  </div>
-
-                  {/* Lista de tarefas — abertas primeiro; as concluídas ficam
-                      recolhidas pra lista mostrar o que ainda falta fazer. */}
-                  <div className={styles.taskList}>
-                    {!hasLeadTasks && (
-                      <p className={styles.attrValueMuted}>
-                        Nenhuma tarefa criada pra este lead ainda.
-                      </p>
-                    )}
-                    {hasLeadTasks && openLeadTasks.length === 0 && (
-                      <p className={styles.attrValueMuted}>Nenhuma tarefa pendente.</p>
-                    )}
-                    {openLeadTasks.map(renderLeadTask)}
-                    {doneLeadTasks.length > 0 && (
+              {activeTab !== 'simulacoes' &&
+                activeTab !== 'adesao' &&
+                activeTab !== 'checklist' && (
+                  <div className={styles.card}>
+                    <div className={styles.taskHeader}>
+                      <div>
+                        <h2 className={styles.taskTitle}>Tarefas</h2>
+                        <p className={styles.taskSubtitle}>
+                          Acompanhe contatos telefônicos, envio de simulações e visitas presenciais.
+                        </p>
+                      </div>
                       <button
                         type="button"
-                        className={styles.doneTasksToggle}
-                        onClick={() => setShowDoneTasks((prev) => !prev)}
-                        aria-expanded={showDoneTasks}
+                        className={styles.newTaskBtn}
+                        onClick={() => setTaskFormOpen(true)}
                       >
-                        {showDoneTasks ? <ChevronDownIcon /> : <ChevronRightIcon />}
-                        {showDoneTasks ? 'Ocultar' : 'Ver'} concluídas ({doneLeadTasks.length})
+                        <PlusIcon />
+                        Nova Tarefa
                       </button>
-                    )}
-                    {showDoneTasks && doneLeadTasks.map(renderLeadTask)}
+                    </div>
+
+                    {/* Quick chips */}
+                    <div className={styles.chipsRow}>
+                      <span className={styles.chipsLabel}>Criar rápido:</span>
+                      <button
+                        type="button"
+                        className={styles.chip}
+                        disabled={createTask.isPending}
+                        onClick={() =>
+                          handleQuickCreateTask('Ligação', `Ligação de follow-up com ${card.name}`)
+                        }
+                      >
+                        <PhoneIcon />
+                        Ligação de Follow-up
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.chip}
+                        disabled={createTask.isPending}
+                        onClick={() =>
+                          handleQuickCreateTask('Simulação', `Simular lance para ${card.name}`)
+                        }
+                      >
+                        <CalendarIcon />
+                        Simulação de Lance
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.chip}
+                        disabled={createTask.isPending}
+                        onClick={() => handleQuickCreateTask('Reunião', `Reunião com ${card.name}`)}
+                      >
+                        <CalendarIcon />
+                        Agendar Reunião
+                      </button>
+                    </div>
+
+                    {/* Registrar o que acabou de acontecer — tarefa já concluída, agora */}
+                    <div className={styles.chipsRow}>
+                      <span className={styles.chipsLabel}>Registrar agora:</span>
+                      <button
+                        type="button"
+                        className={styles.chipDone}
+                        disabled={createTask.isPending}
+                        onClick={() => setRegisterDraft({ type: 'Visita', notes: '' })}
+                      >
+                        <HomeIcon />
+                        Visita feita
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.chipDone}
+                        disabled={createTask.isPending}
+                        onClick={() => setRegisterDraft({ type: 'Ligação', notes: '' })}
+                      >
+                        <PhoneIcon />
+                        Ligação feita
+                      </button>
+                    </div>
+
+                    {/* Lista de tarefas — abertas primeiro; as concluídas ficam
+                      recolhidas pra lista mostrar o que ainda falta fazer. */}
+                    <div className={styles.taskList}>
+                      {!hasLeadTasks && (
+                        <p className={styles.attrValueMuted}>
+                          Nenhuma tarefa criada pra este lead ainda.
+                        </p>
+                      )}
+                      {hasLeadTasks && openLeadTasks.length === 0 && (
+                        <p className={styles.attrValueMuted}>Nenhuma tarefa pendente.</p>
+                      )}
+                      {openLeadTasks.map(renderLeadTask)}
+                      {doneLeadTasks.length > 0 && (
+                        <button
+                          type="button"
+                          className={styles.doneTasksToggle}
+                          onClick={() => setShowDoneTasks((prev) => !prev)}
+                          aria-expanded={showDoneTasks}
+                        >
+                          {showDoneTasks ? <ChevronDownIcon /> : <ChevronRightIcon />}
+                          {showDoneTasks ? 'Ocultar' : 'Ver'} concluídas ({doneLeadTasks.length})
+                        </button>
+                      )}
+                      {showDoneTasks && doneLeadTasks.map(renderLeadTask)}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
 
             {/* Coluna direita — Histórico (conteúdo real) */}

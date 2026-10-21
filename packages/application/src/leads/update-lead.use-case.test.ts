@@ -405,6 +405,45 @@ describe('UpdateLeadUseCase', () => {
     })
   })
 
+  it('requires the full ADM checklist before marking it as won (Efetivado)', async () => {
+    const admLast = {
+      ...TARGET_FUNNEL,
+      stages: [{ ...TARGET_FUNNEL.stages[0], id: LAST_STAGE_ID }],
+    }
+    const leadRepository = buildLeadRepository({
+      findById: vi
+        .fn()
+        .mockResolvedValue({ ...SAMPLE_LEAD, funnelId: TARGET_FUNNEL_ID, stageId: LAST_STAGE_ID }),
+    })
+    const checklistRepository = {
+      listChecked: vi
+        .fn()
+        .mockResolvedValue([
+          { itemKey: 'docs_checked', checkedByUserId: 'u', checkedAt: new Date() },
+        ]),
+      check: vi.fn(),
+      uncheck: vi.fn(),
+    }
+    const useCase = new UpdateLeadUseCase(
+      leadRepository,
+      buildOrganizationRepository(),
+      buildFunnelRepository({ findById: vi.fn().mockResolvedValue(admLast) }),
+      undefined,
+      null,
+      checklistRepository,
+    )
+
+    await expect(
+      useCase.execute({
+        id: 'lead-01',
+        userId: 'user-01',
+        membership: MEMBERSHIP,
+        changes: { won: true },
+      }),
+    ).rejects.toThrow('Marque o checklist do ADM')
+    expect(leadRepository.update).not.toHaveBeenCalled()
+  })
+
   it('does not let a seller change a lead in the ADM funnel', async () => {
     const leadRepository = buildLeadRepository({
       findById: vi.fn().mockResolvedValue({ ...SAMPLE_LEAD, funnelId: TARGET_FUNNEL_ID }),

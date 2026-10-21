@@ -402,3 +402,33 @@ export interface PublicProposal {
 export function getPublicProposal(token: string): Promise<PublicProposal> {
   return apiClient.get<PublicProposal>(`/public/proposals/${encodeURIComponent(token)}`)
 }
+
+// ── Checklist do funil (ADM / Pós-venda) ────────────────────────────────────
+
+export interface LeadChecklist {
+  funnelKind: 'COMMERCIAL' | 'SALES' | 'BACKOFFICE' | 'POST_SALE'
+  items: {
+    key: string
+    label: string
+    checked: boolean
+    checkedAt: string | null
+    checkedByUserId: string | null
+  }[]
+}
+
+export function getLeadChecklist(organizationId: string, leadId: string): Promise<LeadChecklist> {
+  return apiClient.get<LeadChecklist>(`/leads/${leadId}/checklist`, { organizationId })
+}
+
+export function setLeadChecklistItem(
+  organizationId: string,
+  leadId: string,
+  itemKey: string,
+  checked: boolean,
+): Promise<LeadChecklist> {
+  return apiClient.put<LeadChecklist>(
+    `/leads/${leadId}/checklist/${itemKey}`,
+    { checked },
+    { organizationId },
+  )
+}

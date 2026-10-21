@@ -148,6 +148,10 @@ export function describeActivity(
       return `comentou no lead ${label}${str(m, 'preview') ? `: ${quoted(str(m, 'preview'))}` : ''}`
     case 'lead.adhesion_updated':
       return `atualizou a ficha de adesão do lead ${label}`
+    case 'lead.checklist_checked':
+      return `marcou "${str(entry.metadata, 'label') ?? 'item'}" no checklist do lead ${label}`
+    case 'lead.checklist_unchecked':
+      return `desmarcou "${str(entry.metadata, 'label') ?? 'item'}" no checklist do lead ${label}`
     case 'lead.document_uploaded':
       return `anexou ${documentLabel(entry.metadata)} ao lead ${label}`
     case 'lead.document_deleted':

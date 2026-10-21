@@ -31,6 +31,9 @@
 // POST   /leads/:id/adhesion/documents — envia (multipart: kind + file) e
 //                              substitui o do mesmo tipo (lead.update)
 // DELETE /leads/:id/adhesion/documents/:documentId — apaga (lead.update)
+// GET    /leads/:id/checklist — checklist do funil do lead (ADM/Pós-venda)
+// PUT    /leads/:id/checklist/:itemKey — marca/desmarca ({ checked }); pode
+//                              mover o card pra frente (lead.update)
 // POST   /leads/:id/proposals/:proposalId/share — gera (ou devolve) o token do
 //                              link público da proposta, pra mandar pro
 //                              cliente (lead.read). A página pública é
@@ -45,6 +48,7 @@ import type {
   IAuthProvider,
   IFunnelRepository,
   ILeadAdhesionRepository,
+  ILeadChecklistRepository,
   ILeadProposalRepository,
   ILeadRepository,
   IMembershipRepository,
@@ -60,6 +64,7 @@ import {
   DeleteLeadUseCase,
   DuplicateLeadUseCase,
   GetLeadAdhesionUseCase,
+  GetLeadChecklistUseCase,
   GetLeadHistoryUseCase,
   GetLeadUseCase,
   ListAdhesionDocumentsUseCase,
@@ -67,6 +72,7 @@ import {
   ListLeadsUseCase,
   SaveLeadAdhesionUseCase,
   ShareLeadProposalUseCase,
+  ToggleLeadChecklistItemUseCase,
   UpdateLeadUseCase,
   UploadAdhesionDocumentUseCase,
 } from '@sylocrm/application'
@@ -87,6 +93,7 @@ interface LeadsRouteOptions {
   funnelRepository: IFunnelRepository
   leadProposalRepository: ILeadProposalRepository
   leadAdhesionRepository: ILeadAdhesionRepository
+  leadChecklistRepository: ILeadChecklistRepository
   storageProvider: IStorageProvider
   activityLogRepository: IActivityLogRepository
 }
@@ -251,6 +258,21 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
     options.funnelRepository,
     options.activityLogRepository,
     { leadAdhesionRepository: options.leadAdhesionRepository, storage: options.storageProvider },
+    options.leadChecklistRepository,
+  )
+  const getLeadChecklist = new GetLeadChecklistUseCase(
+    options.leadRepository,
+    options.organizationRepository,
+    options.funnelRepository,
+    options.leadChecklistRepository,
+  )
+  const toggleLeadChecklistItem = new ToggleLeadChecklistItemUseCase(
+    options.leadRepository,
+    options.organizationRepository,
+    options.funnelRepository,
+    options.leadChecklistRepository,
+    updateLead,
+    options.activityLogRepository,
   )
   const deleteLead = new DeleteLeadUseCase(
     options.leadRepository,
@@ -585,6 +607,66 @@ export const leadsRoute: FastifyPluginAsync<LeadsRouteOptions> = async (fastify,
             code: error.code,
             status: 400,
           })
+        }
+        throw error
+      }
+    },
+  )
+
+  // ── GET /leads/:id/checklist ──────────────────────────────────────────────
+  fastify.get<{ Params: { id: string } }>(
+    '/leads/:id/checklist',
+    {
+      preHandler: [authMiddleware, tenantMiddleware, requirePermission(Permission.LEAD_READ)],
+    },
+    async (request, reply) => {
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      const view = await getLeadChecklist.execute({
+        leadId: request.params.id,
+        userId: context.userId,
+        membership: context.currentMembership,
+      })
+      if (!view) {
+        return reply
+          .status(404)
+          .send({ error: 'Lead não encontrado.', code: 'LEAD_NOT_FOUND', status: 404 })
+      }
+      return view
+    },
+  )
+
+  // ── PUT /leads/:id/checklist/:itemKey ─────────────────────────────────────
+  fastify.put<{ Params: { id: string; itemKey: string } }>(
+    '/leads/:id/checklist/:itemKey',
+    {
+      preHandler: [authMiddleware, tenantMiddleware, requirePermission(Permission.LEAD_UPDATE)],
+    },
+    async (request, reply) => {
+      const parsed = z.object({ checked: z.boolean() }).safeParse(request.body)
+      if (!parsed.success) {
+        return reply.status(400).send(validationErrorResponse(parsed.error.flatten().fieldErrors))
+      }
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      try {
+        const view = await toggleLeadChecklistItem.execute({
+          leadId: request.params.id,
+          userId: context.userId,
+          membership: context.currentMembership,
+          itemKey: request.params.itemKey,
+          checked: parsed.data.checked,
+        })
+        if (!view) {
+          return reply
+            .status(404)
+            .send({ error: 'Lead não encontrado.', code: 'LEAD_NOT_FOUND', status: 404 })
+        }
+        return view
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          return reply.status(400).send({ error: error.message, code: error.code, status: 400 })
+        }
+        if (error instanceof AuthorizationError) {
+          return reply.status(403).send({ error: error.message, code: error.code, status: 403 })
         }
         throw error
       }

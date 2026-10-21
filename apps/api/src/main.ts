@@ -14,6 +14,7 @@ import {
   DrizzleEngagementRepository,
   DrizzleFunnelRepository,
   DrizzleLeadAdhesionRepository,
+  DrizzleLeadChecklistRepository,
   DrizzleLeadProposalRepository,
   DrizzleLeadQueueRepository,
   DrizzleLeadRepository,
@@ -60,6 +61,7 @@ const apiKeyRepository = database ? new DrizzleApiKeyRepository(database) : unde
 const leadQueueRepository = database ? new DrizzleLeadQueueRepository(database) : undefined
 const streakRepository = database ? new DrizzleStreakRepository(database) : undefined
 const leadAdhesionRepository = database ? new DrizzleLeadAdhesionRepository(database) : undefined
+const leadChecklistRepository = database ? new DrizzleLeadChecklistRepository(database) : undefined
 const achievementsRepository = database ? new DrizzleAchievementsRepository(database) : undefined
 const engagementRepository = database ? new DrizzleEngagementRepository(database) : undefined
 const managementDashboardRepository = database
@@ -90,6 +92,7 @@ const app = buildApp({
   leadQueueRepository,
   streakRepository,
   leadAdhesionRepository,
+  leadChecklistRepository,
   managementDashboardRepository,
   engagementRepository,
   achievementsRepository,

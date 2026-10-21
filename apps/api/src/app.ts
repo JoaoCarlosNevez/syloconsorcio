@@ -17,6 +17,7 @@ import type {
   IEngagementRepository,
   IFunnelRepository,
   ILeadAdhesionRepository,
+  ILeadChecklistRepository,
   ILeadProposalRepository,
   ILeadQueueRepository,
   ILeadRepository,
@@ -68,6 +69,7 @@ export interface BuildAppDeps {
   leadQueueRepository: ILeadQueueRepository
   streakRepository: IStreakRepository
   leadAdhesionRepository: ILeadAdhesionRepository
+  leadChecklistRepository: ILeadChecklistRepository
   managementDashboardRepository: IManagementDashboardRepository
   engagementRepository: IEngagementRepository
   achievementsRepository: IAchievementsRepository
@@ -312,6 +314,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     achievementsRepository: deps?.achievementsRepository ?? {
       listWonSales: async () => [],
       firstPostSaleStageAt: async () => null,
+      firstChecklistItemAt: async () => null,
     },
     engagementRepository: deps?.engagementRepository ?? {
       countLeadsWorked: async () => 0,
@@ -322,6 +325,13 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
       statsByAssignee: async () => [],
       countPendingQueueOffers: async () => 0,
       wonInFunnelByAssignee: async () => [],
+    },
+    leadChecklistRepository: deps?.leadChecklistRepository ?? {
+      listChecked: async () => [],
+      check: async () => {
+        throw new Error('Database not configured — cannot save checklist items.')
+      },
+      uncheck: async () => false,
     },
     leadAdhesionRepository: deps?.leadAdhesionRepository ?? {
       findByLead: async () => null,
@@ -394,6 +404,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     funnelRepository: resolvedDeps.funnelRepository,
     leadProposalRepository: resolvedDeps.leadProposalRepository,
     leadAdhesionRepository: resolvedDeps.leadAdhesionRepository,
+    leadChecklistRepository: resolvedDeps.leadChecklistRepository,
     storageProvider: resolvedDeps.storageProvider,
     activityLogRepository: resolvedDeps.activityLogRepository,
   })

@@ -19,11 +19,13 @@ import {
   deleteLead,
   duplicateLead,
   getLeadAdhesion,
+  getLeadChecklist,
   getLeadHistory,
   listAdhesionDocuments,
   listLeadProposals,
   listLeads,
   saveLeadAdhesion,
+  setLeadChecklistItem,
   shareLeadProposal,
   updateLead,
   uploadAdhesionDocument,
@@ -206,6 +208,37 @@ export function useCreateLeadProposal(organizationId: string | null, leadId: str
       createLeadProposal(organizationId as string, leadId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: leadProposalsQueryKey(organizationId, leadId) })
+    },
+  })
+}
+
+function leadChecklistQueryKey(organizationId: string | null, leadId: string) {
+  return ['leads', organizationId, leadId, 'checklist'] as const
+}
+
+export function useLeadChecklistQuery(
+  organizationId: string | null,
+  leadId: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: leadChecklistQueryKey(organizationId, leadId),
+    queryFn: () => getLeadChecklist(organizationId as string, leadId),
+    enabled: enabled && Boolean(organizationId) && Boolean(leadId),
+  })
+}
+
+export function useSetLeadChecklistItem(organizationId: string | null, leadId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ itemKey, checked }: { itemKey: string; checked: boolean }) =>
+      setLeadChecklistItem(organizationId as string, leadId, itemKey, checked),
+    onSuccess: (view) => {
+      queryClient.setQueryData(leadChecklistQueryKey(organizationId, leadId), view)
+      // Marcar pode mover o card de etapa e liberar conquistas.
+      queryClient.invalidateQueries({ queryKey: ['leads', organizationId] })
+      queryClient.invalidateQueries({ queryKey: ['funnels', organizationId] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
 }
