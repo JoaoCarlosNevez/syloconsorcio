@@ -240,6 +240,8 @@ export { UpdateTeamMemberSalesGoalUseCase } from './team/update-team-member-sale
 export type { UpdateTeamMemberSalesGoalInput } from './team/update-team-member-sales-goal.use-case'
 
 export { UpdateTeamMemberTierUseCase } from './team/update-team-member-tier.use-case'
+export { UpdateTeamMemberSupervisorUseCase } from './team/update-team-member-supervisor.use-case'
+export type { UpdateTeamMemberSupervisorInput } from './team/update-team-member-supervisor.use-case'
 export { UpdateTeamMemberRoleUseCase } from './team/update-team-member-role.use-case'
 export type { UpdateTeamMemberRoleInput } from './team/update-team-member-role.use-case'
 export type { UpdateTeamMemberTierInput } from './team/update-team-member-tier.use-case'
@@ -314,12 +316,17 @@ export {
 export type {
   BackofficeCard,
   BackofficeStageMetrics,
+  DashboardScopeKind,
   FunnelStageMetrics,
   GetManagementDashboardInput,
   ManagementDashboard,
   ManagementPeriod,
+  PerformanceMetrics,
+  SellerPerformance,
+  SupervisorPerformance,
 } from './dashboard/get-management-dashboard.use-case'
 export type {
+  AssigneePeriodStats,
   IManagementDashboardRepository,
   OpenLeadSnapshot,
 } from './ports/management-dashboard.repository'

@@ -127,10 +127,21 @@ export function createTenantMiddleware(
     // (disparada em paralelo lá em cima — só aguarda aqui)
     const allMemberships = await allMembershipsPromise
 
+    // Supervisor com time (Vendedores ligados a ele) passa a enxergar só o
+    // time — ver resolveLeadScope. Sem time, nada muda.
+    const currentMembership = buildMembershipContext(currentMembershipData)
+    if (currentMembership.role === Role.MANAGER) {
+      const teamUserIds = await membershipRepository.findTeamUserIds(
+        currentMembership.organizationId,
+        identity.id,
+      )
+      if (teamUserIds.length > 0) currentMembership.teamUserIds = teamUserIds
+    }
+
     const authContext: AuthenticatedContext = {
       identityId: identity.id,
       userId: identity.id,
-      currentMembership: buildMembershipContext(currentMembershipData),
+      currentMembership,
       availableMemberships: allMemberships.map(buildMembershipContext),
     }
 

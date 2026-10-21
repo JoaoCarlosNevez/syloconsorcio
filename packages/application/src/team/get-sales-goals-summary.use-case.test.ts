@@ -21,6 +21,7 @@ function member(userId: string, salesGoalCents: number | null): TeamMember {
     status: 'ACTIVE',
     salesGoalCents,
     tier: 'bronze',
+    supervisorUserId: null,
   }
 }
 

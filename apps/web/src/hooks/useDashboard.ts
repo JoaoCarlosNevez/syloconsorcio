@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import {
+  type ManagementFilters,
   type ManagementPeriod,
   type SalesRankingPeriod,
   getActivityRanking,
@@ -61,10 +62,11 @@ export function useManagementDashboardQuery(
   organizationId: string | null,
   period: ManagementPeriod,
   funnelId: string | null,
+  filters: ManagementFilters,
 ) {
   return useQuery({
-    queryKey: ['dashboard', 'management', organizationId, period, funnelId],
-    queryFn: () => getManagementDashboard(organizationId as string, period, funnelId),
+    queryKey: ['dashboard', 'management', organizationId, period, funnelId, filters],
+    queryFn: () => getManagementDashboard(organizationId as string, period, funnelId, filters),
     enabled: Boolean(organizationId),
     refetchInterval: 2 * 60_000,
     placeholderData: (previous) => previous,

@@ -530,3 +530,182 @@
     display: none;
   }
 }
+
+/* ── Filtro de visão ──────────────────────────────────────────────────── */
+
+.headerControls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.viewSelect {
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  font-family: var(--font-family-base);
+  font-size: 13px;
+  font-weight: 600;
+  color: #0b1c30;
+  max-width: 260px;
+}
+
+.clearFilter {
+  margin-left: 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--font-family-base);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-accent-link);
+  cursor: pointer;
+}
+
+/* ── Tabelas de desempenho ────────────────────────────────────────────── */
+
+.tableScroller {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table th {
+  padding: 0 12px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.numAlert {
+  font-weight: 700;
+  color: #b91c1c !important;
+}
+
+.rowClickable {
+  cursor: pointer;
+}
+
+.rowClickable:hover td {
+  background: #fffbeb;
+}
+
+.rowMuted td {
+  color: #64748b;
+  font-style: italic;
+}
+
+.nameCell {
+  font-weight: 700;
+  color: #0b1c30 !important;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.personAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.cellSub {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.muted {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.goalCell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 130px;
+}
+
+.goalCellTrack {
+  height: 6px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+
+.goalCellFill,
+.goalCellFillDone {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+
+.goalCellFill {
+  background: linear-gradient(90deg, #fcd34d, #f59e0b);
+}
+
+.goalCellFillDone {
+  background: #10b981;
+}
+
+.goalCellText {
+  font-size: 11px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.rowButton {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rowButton:disabled {
+  cursor: default;
+}
+
+.rowButton:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}

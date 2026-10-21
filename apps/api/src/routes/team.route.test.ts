@@ -114,6 +114,9 @@ function buildMembershipRepository(membership: UserMembership): IMembershipRepos
     findPersonalGoal: vi.fn().mockResolvedValue(null),
     updatePersonalGoal: vi.fn(),
     removeAllForUser: vi.fn(),
+    updateSupervisor: vi.fn(),
+    findTeamUserIds: vi.fn().mockResolvedValue([]),
+    clearSupervisorLinks: vi.fn(),
   }
 }
 
@@ -255,6 +258,9 @@ describe('DELETE /team/members/:userId', () => {
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
     }
   }
 
@@ -451,6 +457,9 @@ describe('POST /team/members/:userId/reactivate', () => {
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
     }
   }
 
@@ -601,6 +610,9 @@ describe('PATCH /team/members/:userId', () => {
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
     }
   }
 
@@ -728,6 +740,9 @@ describe('PUT /team/members/:userId/tier', () => {
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
     }
   }
 
@@ -863,6 +878,7 @@ describe('GET /team/goals/summary', () => {
         status: 'ACTIVE',
         salesGoalCents: 200_000_00,
         tier: 'bronze',
+        supervisorUserId: null,
       },
       {
         userId: 'colleague-uuid',
@@ -873,6 +889,7 @@ describe('GET /team/goals/summary', () => {
         status: 'ACTIVE',
         salesGoalCents: 300_000_00,
         tier: 'bronze',
+        supervisorUserId: null,
       },
     ])
     const app = buildApp({
@@ -976,6 +993,9 @@ describe('PUT /team/members/:userId/role', () => {
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
     }
   }
 
@@ -1031,5 +1051,89 @@ describe('PUT /team/members/:userId/role', () => {
     })
 
     expect((await putRole(app, 'CEO')).statusCode).toBe(400)
+  })
+})
+
+describe('PUT /team/members/:userId/supervisor', () => {
+  const SELLER_ID = '1b4f0e7a-0c2d-4e5f-8a9b-0c1d2e3f4a5b'
+  const SUPERVISOR_ID = '2c5a1f8b-1d3e-4f60-9bac-1d2e3f4a5b6c'
+
+  function appWithTeam(membership: UserMembership) {
+    const membershipRepository = buildMembershipRepository(membership)
+    vi.mocked(membershipRepository.findActiveByOrganizationId).mockResolvedValue([
+      {
+        userId: SELLER_ID,
+        name: 'Ana',
+        email: 'ana@x.com',
+        avatarUrl: null,
+        role: Role.SELLER,
+        status: 'ACTIVE',
+        salesGoalCents: null,
+        tier: 'bronze',
+        supervisorUserId: null,
+      },
+      {
+        userId: SUPERVISOR_ID,
+        name: 'Carlos',
+        email: 'carlos@x.com',
+        avatarUrl: null,
+        role: Role.MANAGER,
+        status: 'ACTIVE',
+        salesGoalCents: null,
+        tier: 'bronze',
+        supervisorUserId: null,
+      },
+    ])
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository,
+    })
+    return { app, membershipRepository }
+  }
+
+  it('lets the owner link a seller to a supervisor', async () => {
+    const { app, membershipRepository } = appWithTeam(ADMIN_MEMBERSHIP)
+
+    const response = await app.inject({
+      method: 'PUT',
+      url: `/team/members/${SELLER_ID}/supervisor`,
+      headers: AUTH_HEADERS,
+      payload: { supervisorUserId: SUPERVISOR_ID },
+    })
+
+    expect(response.statusCode).toBe(204)
+    expect(membershipRepository.updateSupervisor).toHaveBeenCalledWith(
+      SELLER_ID,
+      ORG_ID,
+      SUPERVISOR_ID,
+    )
+  })
+
+  it('returns 403 for a supervisor (only the owner sets teams)', async () => {
+    const { app, membershipRepository } = appWithTeam(MANAGER_MEMBERSHIP)
+
+    const response = await app.inject({
+      method: 'PUT',
+      url: `/team/members/${SELLER_ID}/supervisor`,
+      headers: AUTH_HEADERS,
+      payload: { supervisorUserId: SUPERVISOR_ID },
+    })
+
+    expect(response.statusCode).toBe(403)
+    expect(membershipRepository.updateSupervisor).not.toHaveBeenCalled()
+  })
+
+  it('returns 400 when the supervisor is not a supervisor', async () => {
+    const { app } = appWithTeam(ADMIN_MEMBERSHIP)
+
+    const response = await app.inject({
+      method: 'PUT',
+      url: `/team/members/${SUPERVISOR_ID}/supervisor`,
+      headers: AUTH_HEADERS,
+      payload: { supervisorUserId: SELLER_ID },
+    })
+
+    expect(response.statusCode).toBe(400)
   })
 })

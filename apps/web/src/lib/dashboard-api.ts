@@ -119,10 +119,49 @@ export interface BackofficeStageMetrics {
   staleCount: number
 }
 
+export interface PerformanceMetrics {
+  openLeads: number
+  newLeads: number
+  wonCount: number
+  wonValueCents: number
+  conversionPercent: number | null
+  goalCents: number | null
+  goalPercent: number | null
+  staleLeads: number
+}
+
+export interface SellerPerformance extends PerformanceMetrics {
+  userId: string
+  name: string
+  avatarUrl: string | null
+  supervisorName: string | null
+}
+
+export interface SupervisorPerformance extends PerformanceMetrics {
+  /** null = a linha dos vendedores sem supervisor. */
+  userId: string | null
+  name: string
+  teamSize: number
+}
+
+export interface ManagementFilters {
+  sellerUserId: string | null
+  /** Só o Dono. */
+  supervisorUserId: string | null
+}
+
 export interface ManagementDashboard {
   period: ManagementPeriod
   periodStart: string
   periodEnd: string
+  scope: { kind: 'organization' | 'team' | 'supervisor' | 'seller'; label: string }
+  filters: {
+    supervisors: { userId: string; name: string }[]
+    sellers: { userId: string; name: string }[]
+  }
+  sellers: SellerPerformance[]
+  /** Comparativo de supervisores — só pro Dono, na representação inteira. */
+  supervisors: SupervisorPerformance[] | null
   summary: {
     openLeads: number
     newLeads: number
@@ -164,8 +203,11 @@ export function getManagementDashboard(
   organizationId: string,
   period: ManagementPeriod,
   funnelId: string | null,
+  filters: ManagementFilters,
 ): Promise<ManagementDashboard> {
   const params = new URLSearchParams({ period })
   if (funnelId) params.set('funnelId', funnelId)
+  if (filters.sellerUserId) params.set('sellerUserId', filters.sellerUserId)
+  if (filters.supervisorUserId) params.set('supervisorUserId', filters.supervisorUserId)
   return apiClient.get<ManagementDashboard>(`/dashboard/management?${params}`, { organizationId })
 }

@@ -13,6 +13,7 @@ import {
   updateMyPersonalGoal,
   updateTeamMemberRole,
   updateTeamMemberSalesGoal,
+  updateTeamMemberSupervisor,
   updateTeamMemberTier,
 } from '../lib/team-api'
 
@@ -82,6 +83,22 @@ export function useUpdateTeamMemberRole(organizationId: string | null) {
       updateTeamMemberRole(organizationId as string, userId, role),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['team', 'members', organizationId] })
+    },
+  })
+}
+
+export function useUpdateTeamMemberSupervisor(organizationId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      userId,
+      supervisorUserId,
+    }: { userId: string; supervisorUserId: string | null }) =>
+      updateTeamMemberSupervisor(organizationId as string, userId, supervisorUserId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team', 'members', organizationId] })
+      // O time do Supervisor muda o que ele enxerga e os números do painel.
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'management', organizationId] })
     },
   })
 }

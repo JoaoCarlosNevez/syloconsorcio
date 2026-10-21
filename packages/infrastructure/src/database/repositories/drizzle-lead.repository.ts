@@ -91,6 +91,10 @@ function buildScopeConditions(scope: LeadScopeFilter) {
   if (scope.assignedUserId) {
     conditions.push(eq(leads.assignedUserId, scope.assignedUserId))
   }
+  if (scope.teamUserIds) {
+    const team = or(inArray(leads.assignedUserId, scope.teamUserIds), isNull(leads.assignedUserId))
+    if (team) conditions.push(team)
+  }
   return conditions
 }
 

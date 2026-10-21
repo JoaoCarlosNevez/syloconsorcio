@@ -98,6 +98,8 @@ export interface LeadScopeFilter {
   organizationIds: string[]
   /** Presente apenas quando DataScope.OWN — restringe aos leads do próprio usuário. */
   assignedUserId?: string
+  /** Supervisor com time — atribuídos a um destes usuários ou sem responsável. */
+  teamUserIds?: string[]
 }
 
 export interface LeadListFilter extends LeadScopeFilter {

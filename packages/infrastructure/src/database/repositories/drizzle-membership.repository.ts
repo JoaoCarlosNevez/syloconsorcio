@@ -14,7 +14,7 @@ import type {
   UserMembership,
 } from '@sylocrm/application'
 import type { MemberTier, OrganizationType, Role } from '@sylocrm/domain'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, or } from 'drizzle-orm'
 import type { Database } from '../client'
 import { organizationMemberships, organizations, users } from '../schema'
 
@@ -127,6 +127,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         status: organizationMemberships.status,
         salesGoalCents: organizationMemberships.salesGoalCents,
         tier: organizationMemberships.tier,
+        supervisorUserId: organizationMemberships.supervisorUserId,
       })
       .from(organizationMemberships)
       .innerJoin(users, eq(organizationMemberships.userId, users.id))
@@ -151,6 +152,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         status: organizationMemberships.status,
         salesGoalCents: organizationMemberships.salesGoalCents,
         tier: organizationMemberships.tier,
+        supervisorUserId: organizationMemberships.supervisorUserId,
       })
       .from(organizationMemberships)
       .innerJoin(users, eq(organizationMemberships.userId, users.id))
@@ -170,6 +172,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         status: organizationMemberships.status,
         salesGoalCents: organizationMemberships.salesGoalCents,
         tier: organizationMemberships.tier,
+        supervisorUserId: organizationMemberships.supervisorUserId,
         organizationId: organizationMemberships.organizationId,
         organizationName: organizations.name,
       })
@@ -192,6 +195,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         status: organizationMemberships.status,
         salesGoalCents: organizationMemberships.salesGoalCents,
         tier: organizationMemberships.tier,
+        supervisorUserId: organizationMemberships.supervisorUserId,
         organizationId: organizationMemberships.organizationId,
         organizationName: organizations.name,
       })
@@ -246,6 +250,51 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         and(
           eq(organizationMemberships.userId, userId),
           eq(organizationMemberships.organizationId, organizationId),
+        ),
+      )
+  }
+
+  async updateSupervisor(
+    userId: string,
+    organizationId: string,
+    supervisorUserId: string | null,
+  ): Promise<void> {
+    await this.db
+      .update(organizationMemberships)
+      .set({ supervisorUserId, updatedAt: new Date() })
+      .where(
+        and(
+          eq(organizationMemberships.userId, userId),
+          eq(organizationMemberships.organizationId, organizationId),
+        ),
+      )
+  }
+
+  async findTeamUserIds(organizationId: string, supervisorUserId: string): Promise<string[]> {
+    const rows = await this.db
+      .select({ userId: organizationMemberships.userId })
+      .from(organizationMemberships)
+      .where(
+        and(
+          eq(organizationMemberships.organizationId, organizationId),
+          eq(organizationMemberships.supervisorUserId, supervisorUserId),
+          eq(organizationMemberships.status, 'ACTIVE'),
+        ),
+      )
+    return rows.map((row) => row.userId)
+  }
+
+  async clearSupervisorLinks(userId: string, organizationId: string): Promise<void> {
+    await this.db
+      .update(organizationMemberships)
+      .set({ supervisorUserId: null, updatedAt: new Date() })
+      .where(
+        and(
+          eq(organizationMemberships.organizationId, organizationId),
+          or(
+            eq(organizationMemberships.userId, userId),
+            eq(organizationMemberships.supervisorUserId, userId),
+          ),
         ),
       )
   }

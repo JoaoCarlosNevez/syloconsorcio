@@ -9,7 +9,12 @@ import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { useManagementDashboardQuery } from '../../hooks/useDashboard'
 import { useActiveOrganization } from '../../hooks/useOrganization'
-import type { ManagementDashboard, ManagementPeriod } from '../../lib/dashboard-api'
+import type {
+  ManagementDashboard,
+  ManagementFilters,
+  ManagementPeriod,
+  PerformanceMetrics,
+} from '../../lib/dashboard-api'
 import { FunnelChart } from './FunnelChart'
 import styles from './ManagementHome.module.css'
 
@@ -373,42 +378,281 @@ function DashboardSkeleton() {
   )
 }
 
+function GoalCell({ metrics }: { metrics: PerformanceMetrics }) {
+  if (metrics.goalCents === null || metrics.goalPercent === null) {
+    return <span className={styles.muted}>sem meta</span>
+  }
+  return (
+    <span className={styles.goalCell}>
+      <span className={styles.goalCellTrack}>
+        <span
+          className={metrics.goalPercent >= 100 ? styles.goalCellFillDone : styles.goalCellFill}
+          style={{ width: `${Math.min(100, metrics.goalPercent)}%` }}
+        />
+      </span>
+      <span className={styles.goalCellText}>
+        {formatPercent(metrics.goalPercent)} de {formatMoneyShort(metrics.goalCents)}
+      </span>
+    </span>
+  )
+}
+
+/** Colunas comuns de desempenho (depois do nome). */
+function MetricCells({ metrics }: { metrics: PerformanceMetrics }) {
+  return (
+    <>
+      <td className={styles.num}>
+        <strong>{formatMoneyShort(metrics.wonValueCents)}</strong>
+        <span className={styles.cellSub}>{plural(metrics.wonCount, 'venda', 'vendas')}</span>
+      </td>
+      <td className={styles.num}>{metrics.newLeads}</td>
+      <td className={styles.num}>{formatPercent(metrics.conversionPercent)}</td>
+      <td className={styles.num}>{metrics.openLeads}</td>
+      <td className={metrics.staleLeads > 0 ? `${styles.num} ${styles.numAlert}` : styles.num}>
+        {metrics.staleLeads}
+      </td>
+      <td>
+        <GoalCell metrics={metrics} />
+      </td>
+    </>
+  )
+}
+
+function MetricHeaders() {
+  return (
+    <>
+      <th className={styles.num}>Vendas</th>
+      <th className={styles.num}>Novos leads</th>
+      <th className={styles.num}>Conversão</th>
+      <th className={styles.num}>Em aberto</th>
+      <th className={styles.num}>Parados +7d</th>
+      <th>Meta</th>
+    </>
+  )
+}
+
+function SupervisorsTable({
+  data,
+  onSelect,
+}: {
+  data: ManagementDashboard
+  onSelect: (supervisorUserId: string) => void
+}) {
+  if (!data.supervisors || data.supervisors.length === 0) return null
+  return (
+    <section className={styles.panel}>
+      <div className={styles.panelHeader}>
+        <h2 className={styles.panelTitle}>Desempenho dos supervisores</h2>
+        <span className={styles.muted}>Soma do time de cada um · clique pra ver o time</span>
+      </div>
+      <div className={styles.tableScroller}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>Supervisor</th>
+              <th className={styles.num}>Time</th>
+              <MetricHeaders />
+            </tr>
+          </thead>
+          <tbody>
+            {data.supervisors.map((row) => (
+              <tr
+                key={row.userId ?? 'sem-supervisor'}
+                className={row.userId ? styles.rowClickable : styles.rowMuted}
+              >
+                <td className={styles.nameCell}>
+                  {row.userId ? (
+                    <button
+                      type="button"
+                      className={styles.rowButton}
+                      onClick={() => onSelect(row.userId as string)}
+                    >
+                      {row.name}
+                    </button>
+                  ) : (
+                    row.name
+                  )}
+                </td>
+                <td className={styles.num}>{plural(row.teamSize, 'vendedor', 'vendedores')}</td>
+                <MetricCells metrics={row} />
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {data.supervisors.some((row) => row.userId === null) && (
+        <p className={styles.panelFootnote}>
+          Vendedores sem supervisor entram na última linha — ligue cada um ao supervisor em
+          Configurações → Equipe.
+        </p>
+      )}
+    </section>
+  )
+}
+
+function SellersTable({
+  data,
+  onSelect,
+}: {
+  data: ManagementDashboard
+  onSelect: (sellerUserId: string) => void
+}) {
+  if (data.sellers.length === 0) return null
+  const isSingle = data.scope.kind === 'seller'
+  return (
+    <section className={styles.panel}>
+      <div className={styles.panelHeader}>
+        <h2 className={styles.panelTitle}>
+          {isSingle ? 'Desempenho do vendedor' : 'Desempenho dos vendedores'}
+        </h2>
+        {!isSingle && (
+          <span className={styles.muted}>Clique num vendedor pra ver só os números dele</span>
+        )}
+      </div>
+      <div className={styles.tableScroller}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>Vendedor</th>
+              <MetricHeaders />
+            </tr>
+          </thead>
+          <tbody>
+            {data.sellers.map((row) => (
+              <tr key={row.userId} className={isSingle ? undefined : styles.rowClickable}>
+                <td className={styles.nameCell}>
+                  <button
+                    type="button"
+                    className={styles.rowButton}
+                    onClick={() => onSelect(row.userId)}
+                    disabled={isSingle}
+                  >
+                    <span className={styles.person}>
+                      <img
+                        src={row.avatarUrl ?? '/default-avatar.svg'}
+                        alt=""
+                        className={styles.personAvatar}
+                      />
+                      <span>
+                        {row.name}
+                        {row.supervisorName && (
+                          <span className={styles.cellSub}>Time de {row.supervisorName}</span>
+                        )}
+                      </span>
+                    </span>
+                  </button>
+                </td>
+                <MetricCells metrics={row} />
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )
+}
+
+/** "" = visão padrão; "sup:<id>" = time de um supervisor; "sel:<id>" = vendedor. */
+function filterValue(filters: ManagementFilters): string {
+  if (filters.sellerUserId) return `sel:${filters.sellerUserId}`
+  if (filters.supervisorUserId) return `sup:${filters.supervisorUserId}`
+  return ''
+}
+
+function parseFilter(value: string): ManagementFilters {
+  if (value.startsWith('sel:')) return { sellerUserId: value.slice(4), supervisorUserId: null }
+  if (value.startsWith('sup:')) return { sellerUserId: null, supervisorUserId: value.slice(4) }
+  return { sellerUserId: null, supervisorUserId: null }
+}
+
 // ── Página ───────────────────────────────────────────────────────────────────
 
 export function ManagementHome() {
   const { organizationId, membership } = useActiveOrganization()
   const [period, setPeriod] = useState<ManagementPeriod>('month')
   const [funnelId, setFunnelId] = useState<string | null>(null)
+  const [filters, setFilters] = useState<ManagementFilters>({
+    sellerUserId: null,
+    supervisorUserId: null,
+  })
   const { data, isLoading, isError, error, refetch } = useManagementDashboardQuery(
     organizationId,
     period,
     funnelId,
+    filters,
   )
+  // Opções do seletor de visão — mantém as últimas enquanto recarrega.
+  const options = data?.filters
+  const baseLabel = data && data.scope.kind === 'team' ? 'Meu time' : 'Toda a representação'
+  const isTeamView = data?.scope.kind === 'team' || (data?.filters.supervisors.length ?? 1) === 0
 
   return (
     <AppLayout>
       <div className={styles.page}>
         <header className={styles.header}>
           <div>
-            <h1 className={styles.title}>Visão da representação</h1>
-            <p className={styles.subtitle}>{membership?.organizationName}</p>
+            <h1 className={styles.title}>
+              {isTeamView && !filters.sellerUserId ? 'Visão do time' : 'Visão da representação'}
+            </h1>
+            <p className={styles.subtitle}>
+              {data?.scope.label ?? membership?.organizationName}
+              {(filters.sellerUserId || filters.supervisorUserId) && (
+                <button
+                  type="button"
+                  className={styles.clearFilter}
+                  onClick={() => setFilters({ sellerUserId: null, supervisorUserId: null })}
+                >
+                  Limpar filtro
+                </button>
+              )}
+            </p>
           </div>
-          <fieldset className={styles.periodToggle} aria-label="Período">
-            {PERIODS.map((p) => (
-              <button
-                key={p.key}
-                type="button"
-                className={
-                  p.key === period
-                    ? `${styles.periodBtn} ${styles.periodBtnActive}`
-                    : styles.periodBtn
-                }
-                onClick={() => setPeriod(p.key)}
+          <div className={styles.headerControls}>
+            {options && (options.sellers.length > 0 || options.supervisors.length > 0) && (
+              <select
+                className={styles.viewSelect}
+                aria-label="Visão"
+                value={filterValue(filters)}
+                onChange={(e) => setFilters(parseFilter(e.target.value))}
               >
-                {p.label}
-              </button>
-            ))}
-          </fieldset>
+                <option value="">{baseLabel}</option>
+                {options.supervisors.length > 0 && (
+                  <optgroup label="Supervisores">
+                    {options.supervisors.map((s) => (
+                      <option key={s.userId} value={`sup:${s.userId}`}>
+                        Time de {s.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {options.sellers.length > 0 && (
+                  <optgroup label="Vendedores">
+                    {options.sellers.map((s) => (
+                      <option key={s.userId} value={`sel:${s.userId}`}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+            )}
+            <fieldset className={styles.periodToggle} aria-label="Período">
+              {PERIODS.map((p) => (
+                <button
+                  key={p.key}
+                  type="button"
+                  className={
+                    p.key === period
+                      ? `${styles.periodBtn} ${styles.periodBtnActive}`
+                      : styles.periodBtn
+                  }
+                  onClick={() => setPeriod(p.key)}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </fieldset>
+          </div>
         </header>
 
         {isError ? (
@@ -477,6 +721,15 @@ export function ManagementHome() {
                 icon={<QueueIcon />}
               />
             </div>
+
+            <SupervisorsTable
+              data={data}
+              onSelect={(supervisorUserId) => setFilters({ sellerUserId: null, supervisorUserId })}
+            />
+            <SellersTable
+              data={data}
+              onSelect={(sellerUserId) => setFilters({ sellerUserId, supervisorUserId: null })}
+            />
 
             <SalesFunnelCard data={data} onSelectFunnel={setFunnelId} />
             <BackofficeCard data={data} />

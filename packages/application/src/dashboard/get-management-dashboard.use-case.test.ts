@@ -1,16 +1,21 @@
 // Tests: GetManagementDashboardUseCase — resumo do período, saúde do pipeline,
-// conversão por etapa e o funil ADM.
+// conversão por etapa, funil ADM, recorte (time/supervisor/vendedor) e o
+// desempenho por vendedor e por supervisor.
 
+import { AuthorizationError, Role } from '@sylocrm/domain'
 import { describe, expect, it, vi } from 'vitest'
 import type { FunnelRecord, IFunnelRepository } from '../ports/funnel.repository'
-import type { ILeadRepository } from '../ports/lead.repository'
 import type {
+  AssigneePeriodStats,
   IManagementDashboardRepository,
   OpenLeadSnapshot,
 } from '../ports/management-dashboard.repository'
-import type { IMembershipRepository } from '../ports/membership.repository'
+import type { IMembershipRepository, TeamMember } from '../ports/membership.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
-import { GetManagementDashboardUseCase } from './get-management-dashboard.use-case'
+import {
+  type GetManagementDashboardInput,
+  GetManagementDashboardUseCase,
+} from './get-management-dashboard.use-case'
 
 // 15/10/2026 12:00 em Brasília.
 const NOW = new Date('2026-10-15T15:00:00Z')
@@ -40,6 +45,30 @@ function funnel(id: string, kind: 'SALES' | 'BACKOFFICE', stages: string[], isDe
 const SALES = funnel('padrao', 'SALES', ['lead', 'proposta', 'fechado'], true)
 const ADM = funnel('adm', 'BACKOFFICE', ['conferencia', 'digitado'])
 
+function member(userId: string, role: Role, overrides: Partial<TeamMember> = {}): TeamMember {
+  return {
+    userId,
+    name: userId,
+    email: `${userId}@x.com`,
+    avatarUrl: null,
+    role,
+    status: 'ACTIVE',
+    salesGoalCents: null,
+    tier: 'bronze',
+    supervisorUserId: null,
+    ...overrides,
+  }
+}
+
+// Carlos supervisiona Ana e Bia; Duda está sem supervisor.
+const MEMBERS = [
+  member('dono', Role.ADMIN),
+  member('carlos', Role.MANAGER),
+  member('ana', Role.SELLER, { supervisorUserId: 'carlos', salesGoalCents: 500_000_00 }),
+  member('bia', Role.SELLER, { supervisorUserId: 'carlos', salesGoalCents: 300_000_00 }),
+  member('duda', Role.SELLER),
+]
+
 function lead(overrides: Partial<OpenLeadSnapshot>): OpenLeadSnapshot {
   return {
     id: Math.random().toString(36).slice(2),
@@ -53,48 +82,73 @@ function lead(overrides: Partial<OpenLeadSnapshot>): OpenLeadSnapshot {
   }
 }
 
+function stats(
+  assignedUserId: string | null,
+  overrides: Partial<AssigneePeriodStats> = {},
+): AssigneePeriodStats {
+  return {
+    assignedUserId,
+    created: 0,
+    wonOfCreated: 0,
+    wonCount: 0,
+    wonValueCents: 0,
+    ...overrides,
+  }
+}
+
+const STATS = [
+  stats('ana', { created: 6, wonOfCreated: 2, wonCount: 3, wonValueCents: 300_000_00 }),
+  stats('bia', { created: 2, wonOfCreated: 0, wonCount: 1, wonValueCents: 100_000_00 }),
+  stats('duda', { created: 2, wonOfCreated: 0 }),
+]
+
 function setup(
   openLeads: OpenLeadSnapshot[],
-  wonInFunnel = 0,
-  funnels: FunnelRecord[] = [SALES, ADM],
+  options: { wonInFunnel?: number; funnels?: FunnelRecord[]; stats?: AssigneePeriodStats[] } = {},
 ) {
   const dashboardRepository: IManagementDashboardRepository = {
     listOpenLeads: vi.fn().mockResolvedValue(openLeads),
-    countCreatedInSalesFunnels: vi.fn().mockResolvedValue({ created: 10, wonOfCreated: 2 }),
+    statsByAssignee: vi.fn().mockResolvedValue(options.stats ?? STATS),
     countPendingQueueOffers: vi.fn().mockResolvedValue(3),
-    countWonInFunnel: vi.fn().mockResolvedValue(wonInFunnel),
+    wonInFunnelByAssignee: vi
+      .fn()
+      .mockResolvedValue([{ assignedUserId: 'ana', count: options.wonInFunnel ?? 0 }]),
   }
   const funnelRepository = {
-    listByOrganization: vi.fn().mockResolvedValue(funnels),
+    listByOrganization: vi.fn().mockResolvedValue(options.funnels ?? [SALES, ADM]),
   } as unknown as IFunnelRepository
-  const leadRepository = {
-    countWonInDefaultFunnel: vi.fn().mockResolvedValue(4),
-    sumWonValueCentsInDefaultFunnel: vi.fn().mockResolvedValue(400_000_00),
-  } as unknown as ILeadRepository
   const organizationRepository = {
-    findById: vi.fn().mockResolvedValue({ salesGoalCents: 1_000_000_00 }),
+    findById: vi.fn().mockResolvedValue({ name: 'Sylo', salesGoalCents: 1_000_000_00 }),
   } as unknown as IOrganizationRepository
   const membershipRepository = {
-    findActiveByOrganizationId: vi
-      .fn()
-      .mockResolvedValue([{ userId: 'ana', name: 'Ana', email: 'ana@x.com' }]),
+    findActiveByOrganizationId: vi.fn().mockResolvedValue(MEMBERS),
   } as unknown as IMembershipRepository
   const useCase = new GetManagementDashboardUseCase(
     dashboardRepository,
     funnelRepository,
-    leadRepository,
     organizationRepository,
     membershipRepository,
   )
-  return { useCase, dashboardRepository, leadRepository }
+  return { useCase, dashboardRepository }
+}
+
+const OWNER: GetManagementDashboardInput = {
+  organizationId: 'org-01',
+  viewer: { userId: 'dono', role: Role.ADMIN },
+  now: NOW,
+}
+const SUPERVISOR: GetManagementDashboardInput = {
+  ...OWNER,
+  viewer: { userId: 'carlos', role: Role.MANAGER, teamUserIds: ['ana', 'bia'] },
 }
 
 describe('GetManagementDashboardUseCase', () => {
   it('summarizes the period: new leads, sales, cohort conversion, ticket and projection', async () => {
     const { useCase } = setup([lead({}), lead({})])
 
-    const result = await useCase.execute({ organizationId: 'org-01', now: NOW })
+    const result = await useCase.execute(OWNER)
 
+    expect(result.scope).toEqual({ kind: 'organization', label: 'Sylo' })
     expect(result.summary).toEqual({
       openLeads: 2,
       newLeads: 10,
@@ -111,19 +165,17 @@ describe('GetManagementDashboardUseCase', () => {
   })
 
   it('uses the previous month for last_month, without projection', async () => {
-    const { useCase, leadRepository } = setup([])
+    const { useCase, dashboardRepository } = setup([])
 
-    const result = await useCase.execute({
-      organizationId: 'org-01',
-      period: 'last_month',
-      now: NOW,
-    })
+    const result = await useCase.execute({ ...OWNER, period: 'last_month' })
 
     expect(result.periodStart.toISOString()).toBe('2026-09-01T03:00:00.000Z')
     expect(result.periodEnd.toISOString()).toBe('2026-10-01T03:00:00.000Z')
     expect(result.summary.projectedCents).toBeNull()
-    expect(leadRepository.countWonInDefaultFunnel).toHaveBeenCalledWith(
-      expect.objectContaining({ wonFrom: result.periodStart, wonTo: result.periodEnd }),
+    expect(dashboardRepository.statsByAssignee).toHaveBeenCalledWith(
+      'org-01',
+      result.periodStart,
+      result.periodEnd,
     )
   })
 
@@ -135,7 +187,7 @@ describe('GetManagementDashboardUseCase', () => {
       lead({ funnelId: ADM.id, stageId: 'adm-conferencia', stageChangedAt: daysAgo(30) }),
     ])
 
-    const result = await useCase.execute({ organizationId: 'org-01', now: NOW })
+    const result = await useCase.execute(OWNER)
 
     expect(result.health).toEqual({
       unassigned: 1,
@@ -154,10 +206,10 @@ describe('GetManagementDashboardUseCase', () => {
         lead({ stageId: 'padrao-proposta', valueCents: 50_000_00 }),
         lead({ stageId: 'padrao-fechado' }),
       ],
-      2,
+      { wonInFunnel: 2 },
     )
 
-    const result = await useCase.execute({ organizationId: 'org-01', now: NOW })
+    const result = await useCase.execute(OWNER)
     const [first, second, last] = result.salesFunnel?.stages ?? []
 
     // alcançou: lead 2+1+1+2 = 6, proposta 1+1+2 = 4, fechado 1+2 = 3, ganho 2.
@@ -189,7 +241,7 @@ describe('GetManagementDashboardUseCase', () => {
       }),
     ])
 
-    const result = await useCase.execute({ organizationId: 'org-01', now: NOW })
+    const result = await useCase.execute(OWNER)
 
     expect(result.backoffice?.stages.map((s) => [s.count, s.staleCount])).toEqual([
       [2, 1],
@@ -201,18 +253,113 @@ describe('GetManagementDashboardUseCase', () => {
       name: 'Velho',
       stageName: 'conferencia',
       daysInStage: 5,
-      sellerName: 'Ana',
+      sellerName: 'ana',
     })
     expect(result.backoffice?.oldest[1]?.sellerName).toBeNull()
   })
 
   it('charts the requested sales funnel', async () => {
     const other = funnel('outro', 'SALES', ['a'])
-    const { useCase } = setup([], 0, [SALES, other, ADM])
+    const { useCase } = setup([], { funnels: [SALES, other, ADM] })
 
-    const result = await useCase.execute({ organizationId: 'org-01', funnelId: 'outro', now: NOW })
+    const result = await useCase.execute({ ...OWNER, funnelId: 'outro' })
 
     expect(result.salesFunnel?.id).toBe('outro')
     expect(result.salesFunnels.map((f) => f.id)).toEqual(['padrao', 'outro'])
+  })
+
+  describe('recorte e desempenho', () => {
+    const LEADS = [
+      lead({ assignedUserId: 'ana' }),
+      lead({ assignedUserId: 'bia', stageChangedAt: daysAgo(9) }),
+      lead({ assignedUserId: 'duda' }),
+      lead({ assignedUserId: null }),
+    ]
+
+    it('gives the owner every seller and the supervisors comparison', async () => {
+      const { useCase } = setup(LEADS)
+
+      const result = await useCase.execute(OWNER)
+
+      expect(result.filters.supervisors).toEqual([{ userId: 'carlos', name: 'carlos' }])
+      expect(result.filters.sellers.map((s) => s.userId)).toEqual(['ana', 'bia', 'duda'])
+      expect(result.sellers.map((s) => s.userId)).toEqual(['ana', 'bia', 'duda'])
+      expect(result.sellers[0]).toMatchObject({
+        userId: 'ana',
+        supervisorName: 'carlos',
+        openLeads: 1,
+        newLeads: 6,
+        wonCount: 3,
+        wonValueCents: 300_000_00,
+        conversionPercent: 33.3,
+        goalCents: 500_000_00,
+        goalPercent: 60,
+      })
+      expect(result.supervisors).toEqual([
+        expect.objectContaining({
+          userId: 'carlos',
+          teamSize: 2,
+          openLeads: 2,
+          wonValueCents: 400_000_00,
+          goalCents: 800_000_00,
+          goalPercent: 50,
+          staleLeads: 1,
+        }),
+        expect.objectContaining({ userId: null, name: 'Sem supervisor', teamSize: 1 }),
+      ])
+    })
+
+    it('limits a supervisor with a team to the team, themselves and unassigned leads', async () => {
+      const { useCase } = setup(LEADS)
+
+      const result = await useCase.execute(SUPERVISOR)
+
+      expect(result.scope).toEqual({ kind: 'team', label: 'Meu time' })
+      expect(result.summary.openLeads).toBe(3) // ana, bia e o sem responsável
+      expect(result.summary.wonValueCents).toBe(400_000_00)
+      expect(result.summary.goalCents).toBe(800_000_00)
+      expect(result.sellers.map((s) => s.userId)).toEqual(['ana', 'bia'])
+      expect(result.filters).toEqual({
+        supervisors: [],
+        sellers: [
+          { userId: 'ana', name: 'ana' },
+          { userId: 'bia', name: 'bia' },
+        ],
+      })
+      expect(result.supervisors).toBeNull()
+    })
+
+    it('filters by seller', async () => {
+      const { useCase } = setup(LEADS)
+
+      const result = await useCase.execute({ ...SUPERVISOR, sellerUserId: 'bia' })
+
+      expect(result.scope).toEqual({ kind: 'seller', label: 'bia' })
+      expect(result.summary).toMatchObject({ openLeads: 1, wonCount: 1, goalCents: 300_000_00 })
+      expect(result.health.unassigned).toBe(0)
+      expect(result.sellers.map((s) => s.userId)).toEqual(['bia'])
+    })
+
+    it('does not let a supervisor see a seller outside the team', async () => {
+      const { useCase } = setup(LEADS)
+
+      await expect(useCase.execute({ ...SUPERVISOR, sellerUserId: 'duda' })).rejects.toBeInstanceOf(
+        AuthorizationError,
+      )
+    })
+
+    it('lets only the owner filter by supervisor', async () => {
+      const { useCase } = setup(LEADS)
+
+      const result = await useCase.execute({ ...OWNER, supervisorUserId: 'carlos' })
+
+      expect(result.scope).toEqual({ kind: 'supervisor', label: 'Time de carlos' })
+      expect(result.summary.openLeads).toBe(2)
+      expect(result.sellers.map((s) => s.userId)).toEqual(['ana', 'bia'])
+      expect(result.supervisors).toBeNull()
+      await expect(
+        useCase.execute({ ...SUPERVISOR, supervisorUserId: 'carlos' }),
+      ).rejects.toBeInstanceOf(AuthorizationError)
+    })
   })
 })

@@ -38,6 +38,10 @@ export interface MembershipContext {
   dataScope: DataScope
   /** Ações autorizadas para este contexto de membership */
   permissions: readonly Permission[]
+  /** Supervisor com time (Vendedores ligados a ele em Configurações →
+   * Equipe): ids desses Vendedores. Presente = a visão de leads e tarefas
+   * fica restrita ao time (ver lead-scope.ts). Ausente = sem restrição extra. */
+  teamUserIds?: readonly string[]
 }
 
 export interface AuthenticatedContext {

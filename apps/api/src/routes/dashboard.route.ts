@@ -19,8 +19,11 @@
 // GET /dashboard/management — início do Dono e do Supervisor (reports.read):
 //                             resumo do período (?period=week|month|last_month,
 //                             padrão mês), saúde do pipeline, funil de vendas
-//                             (?funnelId, padrão o funil padrão) e funil ADM
-//                             (GetManagementDashboardUseCase).
+//                             (?funnelId, padrão o funil padrão), funil ADM e
+//                             desempenho por vendedor/supervisor. Recorte pelo
+//                             papel (Supervisor com time vê o time) e pelos
+//                             filtros ?sellerUserId e ?supervisorUserId (só o
+//                             Dono) (GetManagementDashboardUseCase).
 //
 // Roda authMiddleware → tenantMiddleware (→ requirePermission onde indicado).
 
@@ -42,7 +45,7 @@ import {
   GetMyStreakUseCase,
   GetSalesRankingUseCase,
 } from '@sylocrm/application'
-import { Permission } from '@sylocrm/domain'
+import { AuthorizationError, Permission } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { createAuthMiddleware } from '../middleware/auth.middleware'
@@ -65,6 +68,8 @@ const rankingQuerySchema = z.object({ period: z.enum(['week', 'month']).optional
 const managementQuerySchema = z.object({
   period: z.enum(['week', 'month', 'last_month']).optional(),
   funnelId: z.string().uuid().optional(),
+  sellerUserId: z.string().uuid().optional(),
+  supervisorUserId: z.string().uuid().optional(),
 })
 
 export const dashboardRoute: FastifyPluginAsync<DashboardRouteOptions> = async (
@@ -98,7 +103,6 @@ export const dashboardRoute: FastifyPluginAsync<DashboardRouteOptions> = async (
   const getManagementDashboard = new GetManagementDashboardUseCase(
     options.managementDashboardRepository,
     options.funnelRepository,
-    options.leadRepository,
     options.organizationRepository,
     options.membershipRepository,
   )
@@ -117,15 +121,29 @@ export const dashboardRoute: FastifyPluginAsync<DashboardRouteOptions> = async (
           .send({ error: 'Filtro inválido.', code: 'VALIDATION_ERROR', status: 400 })
       }
       const context = request.authContext as NonNullable<typeof request.authContext>
-      const dashboard = await getManagementDashboard.execute({
-        organizationId: context.currentMembership.organizationId,
-        period: query.data.period,
-        funnelId: query.data.funnelId,
-      })
-      return {
-        ...dashboard,
-        periodStart: dashboard.periodStart.toISOString(),
-        periodEnd: dashboard.periodEnd.toISOString(),
+      try {
+        const dashboard = await getManagementDashboard.execute({
+          organizationId: context.currentMembership.organizationId,
+          period: query.data.period,
+          funnelId: query.data.funnelId,
+          sellerUserId: query.data.sellerUserId,
+          supervisorUserId: query.data.supervisorUserId,
+          viewer: {
+            userId: context.userId,
+            role: context.currentMembership.role,
+            teamUserIds: context.currentMembership.teamUserIds,
+          },
+        })
+        return {
+          ...dashboard,
+          periodStart: dashboard.periodStart.toISOString(),
+          periodEnd: dashboard.periodEnd.toISOString(),
+        }
+      } catch (error) {
+        if (error instanceof AuthorizationError) {
+          return reply.status(403).send({ error: error.message, code: error.code, status: 403 })
+        }
+        throw error
       }
     },
   )

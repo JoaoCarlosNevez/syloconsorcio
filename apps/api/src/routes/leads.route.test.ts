@@ -194,6 +194,9 @@ function buildMembershipRepository(
     findPersonalGoal: vi.fn().mockResolvedValue(null),
     updatePersonalGoal: vi.fn(),
     removeAllForUser: vi.fn(),
+    updateSupervisor: vi.fn(),
+    findTeamUserIds: vi.fn().mockResolvedValue([]),
+    clearSupervisorLinks: vi.fn(),
   }
 }
 
@@ -258,13 +261,19 @@ function buildTestApp(options: {
   funnelRepository?: IFunnelRepository
   leadProposalRepository?: ILeadProposalRepository
   activityLogRepository?: IActivityLogRepository
+  /** Time do Supervisor (Vendedores ligados a ele). */
+  teamUserIds?: string[]
 }) {
+  const membershipRepository = buildMembershipRepository(options.membership)
+  if (options.teamUserIds) {
+    vi.mocked(membershipRepository.findTeamUserIds).mockResolvedValue(options.teamUserIds)
+  }
   return buildApp({
     ...(options.activityLogRepository
       ? { activityLogRepository: options.activityLogRepository }
       : {}),
     authProvider: buildAuthProvider(),
-    membershipRepository: buildMembershipRepository(options.membership),
+    membershipRepository,
     leadRepository: options.leadRepository ?? buildLeadRepository(),
     organizationRepository: buildOrganizationRepository(),
     funnelRepository: options.funnelRepository ?? buildFunnelRepository(),
@@ -369,6 +378,24 @@ describe('GET /leads', () => {
     expect(response.statusCode).toBe(200)
     expect(leadRepository.list).toHaveBeenCalledWith(
       expect.objectContaining({ outcome: 'todos' }),
+      expect.anything(),
+      expect.anything(),
+    )
+  })
+
+  it('limits a supervisor with a team to the team (and unassigned leads)', async () => {
+    const leadRepository = buildLeadRepository()
+    const app = buildTestApp({
+      membership: MANAGER_MEMBERSHIP,
+      leadRepository,
+      teamUserIds: ['seller-ana', 'seller-bia'],
+    })
+
+    const response = await app.inject({ method: 'GET', url: '/leads', headers: AUTH_HEADERS })
+
+    expect(response.statusCode).toBe(200)
+    expect(leadRepository.list).toHaveBeenCalledWith(
+      expect.objectContaining({ teamUserIds: ['seller-ana', 'seller-bia', IDENTITY.id] }),
       expect.anything(),
       expect.anything(),
     )

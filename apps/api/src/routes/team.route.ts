@@ -36,6 +36,10 @@
 //                                            Vendedor). Exige team.role_update
 //                                            (só Dono); regras finas em
 //                                            UpdateTeamMemberRoleUseCase.
+// PUT    /team/members/:userId/supervisor — liga o Vendedor a um Supervisor
+//                                            (ou null). Exige team.role_update
+//                                            (só Dono); regras em
+//                                            UpdateTeamMemberSupervisorUseCase.
 // PUT    /team/me/personal-goal           — o próprio usuário define a sua
 //                                            meta pessoal (Perfil), separada
 //                                            da meta da equipe. Qualquer
@@ -65,6 +69,7 @@ import {
   UpdateMyPersonalGoalUseCase,
   UpdateTeamMemberRoleUseCase,
   UpdateTeamMemberSalesGoalUseCase,
+  UpdateTeamMemberSupervisorUseCase,
   UpdateTeamMemberTierUseCase,
 } from '@sylocrm/application'
 import {
@@ -101,6 +106,10 @@ const inviteMemberSchema = z.object({
 
 const updateMemberSchema = z.object({
   salesGoalCents: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable(),
+})
+
+const updateMemberSupervisorSchema = z.object({
+  supervisorUserId: z.string().uuid().nullable(),
 })
 
 const updateMemberRoleSchema = z.object({
@@ -147,6 +156,10 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
     options.activityLogRepository,
   )
   const updateRole = new UpdateTeamMemberRoleUseCase(
+    options.membershipRepository,
+    options.activityLogRepository,
+  )
+  const updateSupervisor = new UpdateTeamMemberSupervisorUseCase(
     options.membershipRepository,
     options.activityLogRepository,
   )
@@ -519,6 +532,53 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
         }
         if (error instanceof AuthorizationError) {
           return reply.status(403).send({ error: error.message, code: error.code, status: 403 })
+        }
+        throw error
+      }
+    },
+  )
+
+  // ── PUT /team/members/:userId/supervisor ──────────────────────────────────
+  fastify.put<{ Params: { userId: string } }>(
+    '/team/members/:userId/supervisor',
+    {
+      preHandler: [
+        authMiddleware,
+        tenantMiddleware,
+        requirePermission(Permission.TEAM_ROLE_UPDATE),
+      ],
+    },
+    async (request, reply) => {
+      const parsed = updateMemberSupervisorSchema.safeParse(request.body)
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: 'Dados inválidos.',
+          code: 'VALIDATION_ERROR',
+          status: 400,
+          details: parsed.error.flatten().fieldErrors,
+        })
+      }
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      try {
+        const updated = await updateSupervisor.execute({
+          actorUserId: context.userId,
+          organizationId: context.currentMembership.organizationId,
+          targetUserId: request.params.userId,
+          supervisorUserId: parsed.data.supervisorUserId,
+        })
+        if (!updated) {
+          return reply
+            .status(404)
+            .send({ error: 'Membro não encontrado.', code: 'MEMBER_NOT_FOUND', status: 404 })
+        }
+        return reply.status(204).send()
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          return reply.status(400).send({
+            error: error.issues[0]?.message ?? 'Dados inválidos.',
+            code: error.code,
+            status: 400,
+          })
         }
         throw error
       }

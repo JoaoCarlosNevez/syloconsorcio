@@ -12,6 +12,7 @@ function member(userId: string, name: string, organizationId = 'org-1'): Platfor
     status: 'ACTIVE',
     salesGoalCents: null,
     tier: 'bronze',
+    supervisorUserId: null,
     organizationId,
     organizationName: 'Representação A',
   }

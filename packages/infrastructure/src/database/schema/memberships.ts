@@ -48,6 +48,14 @@ export const organizationMemberships = pgTable(
     // Patente do membro nesta organização, definida pelo gestor em
     // Configurações → Equipe. Todo mundo começa em Bronze.
     tier: memberTierEnum('tier').notNull().default('bronze'),
+    // Supervisor do Vendedor nesta organização (Configurações → Equipe, só o
+    // Dono define). O time de um Supervisor = os Vendedores que apontam pra
+    // ele; o Supervisor com time só enxerga os leads e tarefas do time (ver
+    // lead-scope.ts). null = sem supervisor. Limpo quando um dos dois muda de
+    // papel ou sai da organização (ver clearSupervisorLinks).
+    supervisorUserId: uuid('supervisor_user_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },

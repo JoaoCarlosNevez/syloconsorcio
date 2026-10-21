@@ -1,0 +1,2 @@
+ALTER TABLE "organization_memberships" ADD COLUMN "supervisor_user_id" uuid;--> statement-breakpoint
+ALTER TABLE "organization_memberships" ADD CONSTRAINT "organization_memberships_supervisor_user_id_users_id_fk" FOREIGN KEY ("supervisor_user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;

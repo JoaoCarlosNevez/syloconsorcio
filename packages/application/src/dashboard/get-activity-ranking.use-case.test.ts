@@ -20,6 +20,7 @@ function member(userId: string, role: Role): TeamMember {
     status: 'ACTIVE',
     salesGoalCents: null,
     tier: 'bronze',
+    supervisorUserId: null,
   }
 }
 

@@ -71,6 +71,9 @@ function buildMembershipRepository(membership: UserMembership): IMembershipRepos
     findPersonalGoal: vi.fn().mockResolvedValue(null),
     updatePersonalGoal: vi.fn(),
     removeAllForUser: vi.fn(),
+    updateSupervisor: vi.fn(),
+    findTeamUserIds: vi.fn().mockResolvedValue([]),
+    clearSupervisorLinks: vi.fn(),
   }
 }
 
@@ -232,7 +235,25 @@ describe('GET /dashboard/management', () => {
   })
 
   it('returns the management numbers for a supervisor', async () => {
-    const { app } = buildTestApp(MANAGER_MEMBERSHIP)
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository: buildMembershipRepository(MANAGER_MEMBERSHIP),
+      managementDashboardRepository: {
+        listOpenLeads: vi.fn().mockResolvedValue([]),
+        statsByAssignee: vi.fn().mockResolvedValue([
+          {
+            assignedUserId: 'seller-01',
+            created: 4,
+            wonOfCreated: 1,
+            wonCount: 2,
+            wonValueCents: 300_000_00,
+          },
+        ]),
+        countPendingQueueOffers: vi.fn().mockResolvedValue(0),
+        wonInFunnelByAssignee: vi.fn().mockResolvedValue([]),
+      },
+    })
 
     const response = await app.inject({
       method: 'GET',
@@ -243,7 +264,8 @@ describe('GET /dashboard/management', () => {
     expect(response.statusCode).toBe(200)
     expect(response.json()).toMatchObject({
       period: 'last_month',
-      summary: { wonCount: 2, wonValueCents: 300_000_00, projectedCents: null },
+      scope: { kind: 'organization' },
+      summary: { newLeads: 4, wonCount: 2, wonValueCents: 300_000_00, projectedCents: null },
       health: { unassigned: 0, staleAttention: 0, staleRisk: 0, pendingQueue: 0 },
     })
   })
@@ -258,5 +280,19 @@ describe('GET /dashboard/management', () => {
     })
 
     expect(response.statusCode).toBe(400)
+  })
+})
+
+describe('GET /dashboard/management — recorte', () => {
+  it('returns 403 when a supervisor filters by supervisor', async () => {
+    const { app } = buildTestApp({ ...SELLER_MEMBERSHIP, role: Role.MANAGER })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/dashboard/management?supervisorUserId=8d6c6a5e-2f7b-4b5e-9c1d-1a2b3c4d5e6f',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(403)
   })
 })

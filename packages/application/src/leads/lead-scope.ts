@@ -3,7 +3,8 @@
 //
 // Hierarquia (AGENTS.md §8):
 //   OWN            → só os leads do próprio usuário, na organização ativa
-//   REPRESENTATION → todos os leads da organização ativa
+//   REPRESENTATION → todos os leads da organização ativa — exceto Supervisor
+//                    com time: só os do time, os dele e os sem responsável
 //   MASTER         → a organização ativa + todas as suas Representações
 //   INCORPORADORA  → a organização ativa + todos os Masters + todas as Representações deles
 //
@@ -17,6 +18,9 @@ import type { IOrganizationRepository } from '../ports/organization.repository'
 export interface LeadScope {
   organizationIds: string[]
   assignedUserId?: string
+  /** Supervisor com time: só leads/tarefas atribuídos a estes usuários (o
+   * time + o próprio supervisor) ou sem responsável (a distribuir). */
+  teamUserIds?: string[]
 }
 
 export async function resolveLeadScope(
@@ -29,6 +33,14 @@ export async function resolveLeadScope(
       return { organizationIds: [membership.organizationId], assignedUserId: userId }
 
     case DataScope.REPRESENTATION:
+      // Supervisor com time vê só o time; sem time (ainda não configurado),
+      // continua vendo a representação inteira.
+      if (membership.teamUserIds && membership.teamUserIds.length > 0) {
+        return {
+          organizationIds: [membership.organizationId],
+          teamUserIds: [...membership.teamUserIds, userId],
+        }
+      }
       return { organizationIds: [membership.organizationId] }
 
     case DataScope.MASTER: {

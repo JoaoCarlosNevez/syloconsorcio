@@ -110,6 +110,9 @@ function buildMembershipRepository(): IMembershipRepository {
     findPersonalGoal: vi.fn().mockResolvedValue(null),
     updatePersonalGoal: vi.fn(),
     removeAllForUser: vi.fn(),
+    updateSupervisor: vi.fn(),
+    findTeamUserIds: vi.fn().mockResolvedValue([]),
+    clearSupervisorLinks: vi.fn(),
   }
 }
 

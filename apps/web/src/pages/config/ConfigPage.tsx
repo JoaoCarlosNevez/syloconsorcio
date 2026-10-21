@@ -36,6 +36,7 @@ import {
   useTeamMembersQuery,
   useUpdateTeamMemberRole,
   useUpdateTeamMemberSalesGoal,
+  useUpdateTeamMemberSupervisor,
   useUpdateTeamMemberTier,
 } from '../../hooks/useTeam'
 import type { ActivityEntityType, ActivityEntry } from '../../lib/activity-api'
@@ -908,6 +909,12 @@ function EquipeView() {
             detailMember.status === 'ACTIVE' &&
             (membership?.permissions.includes('team.role_update') ?? false) &&
             (isPlatformAdmin || detailMember.role !== 'ADMIN')
+          }
+          // Supervisor do Vendedor: só o Dono define (mesma permissão do papel).
+          supervisors={
+            membership?.permissions.includes('team.role_update')
+              ? members.filter((m) => m.role === 'MANAGER' && m.status === 'ACTIVE')
+              : null
           }
           onSaved={(msg) => setToast(msg)}
           onClose={() => setDetailUserId(null)}
@@ -2854,6 +2861,7 @@ function MemberDetailModal({
   member,
   canEdit,
   canChangeRole,
+  supervisors,
   onSaved,
   onClose,
 }: {
@@ -2861,11 +2869,17 @@ function MemberDetailModal({
   member: TeamMember
   canEdit: boolean
   canChangeRole: boolean
+  /** Supervisores ativos — presente só pra quem pode ligar Vendedor a Supervisor. */
+  supervisors: TeamMember[] | null
   onSaved: (msg: string) => void
   onClose: () => void
 }) {
   const [role, setRole] = useState<TeamMember['role']>(member.role)
   const updateRole = useUpdateTeamMemberRole(organizationId)
+  const updateSupervisor = useUpdateTeamMemberSupervisor(organizationId)
+  const [supervisorUserId, setSupervisorUserId] = useState(member.supervisorUserId ?? '')
+  // Só Vendedor tem supervisor (considerando o papel escolhido agora).
+  const showSupervisor = supervisors !== null && member.status === 'ACTIVE' && role === 'SELLER'
   const [goal, setGoal] = useState(
     member.salesGoalCents !== null ? formatGoalInput(String(member.salesGoalCents / 100)) : '',
   )
@@ -2875,7 +2889,11 @@ function MemberDetailModal({
   const [formError, setFormError] = useState('')
   const updateGoal = useUpdateTeamMemberSalesGoal(organizationId)
   const updateTier = useUpdateTeamMemberTier(organizationId)
-  const isSaving = updateGoal.isPending || updateTier.isPending || updateRole.isPending
+  const isSaving =
+    updateGoal.isPending ||
+    updateTier.isPending ||
+    updateRole.isPending ||
+    updateSupervisor.isPending
   const displayName = member.name ?? member.email
 
   async function handleRemoveGoal() {
@@ -2896,26 +2914,43 @@ function MemberDetailModal({
     const goalChanged = salesGoalCents !== member.salesGoalCents
     const tierChanged = hasTier && tier !== member.tier
     const roleChanged = canChangeRole && role !== member.role
-    if (!goalChanged && !tierChanged && !roleChanged) {
+    // Mudar o papel limpa o supervisor na API — quem vira Vendedor agora
+    // ganha o supervisor escolhido logo depois.
+    const supervisorChanged =
+      showSupervisor &&
+      (supervisorUserId || null) !== (roleChanged ? null : member.supervisorUserId)
+    if (!goalChanged && !tierChanged && !roleChanged && !supervisorChanged) {
       onClose()
       return
     }
     try {
       if (roleChanged) await updateRole.mutateAsync({ userId: member.userId, role })
+      if (supervisorChanged) {
+        await updateSupervisor.mutateAsync({
+          userId: member.userId,
+          supervisorUserId: supervisorUserId || null,
+        })
+      }
       if (tierChanged) await updateTier.mutateAsync({ userId: member.userId, tier })
       if (goalChanged) await updateGoal.mutateAsync({ userId: member.userId, salesGoalCents })
       onSaved(
-        roleChanged && !tierChanged && !goalChanged
-          ? `${displayName} agora é ${ROLE_LABEL[role]}.`
-          : roleChanged
-            ? `Alterações de ${displayName} salvas.`
-            : tierChanged && goalChanged
-              ? `Patente e meta de ${displayName} atualizadas.`
-              : tierChanged
-                ? `${displayName} agora é ${TIER_LABELS[tier]}.`
-                : salesGoalCents === null
-                  ? `Meta de ${displayName} removida.`
-                  : `Meta de ${displayName} atualizada.`,
+        supervisorChanged && !roleChanged && !tierChanged && !goalChanged
+          ? supervisorUserId
+            ? `${displayName} agora é do time de ${
+                supervisors?.find((s) => s.userId === supervisorUserId)?.name ?? 'outro supervisor'
+              }.`
+            : `${displayName} ficou sem supervisor.`
+          : roleChanged && !tierChanged && !goalChanged
+            ? `${displayName} agora é ${ROLE_LABEL[role]}.`
+            : roleChanged
+              ? `Alterações de ${displayName} salvas.`
+              : tierChanged && goalChanged
+                ? `Patente e meta de ${displayName} atualizadas.`
+                : tierChanged
+                  ? `${displayName} agora é ${TIER_LABELS[tier]}.`
+                  : salesGoalCents === null
+                    ? `Meta de ${displayName} removida.`
+                    : `Meta de ${displayName} atualizada.`,
       )
       onClose()
     } catch (error) {
@@ -2979,6 +3014,31 @@ function MemberDetailModal({
                     : 'Define o que o membro pode ver e fazer na organização.'}
                 </span>
               </fieldset>
+            )}
+            {showSupervisor && (
+              <div className={styles.formRow}>
+                <label className={styles.formLabel} htmlFor="member-supervisor">
+                  Supervisor
+                </label>
+                <select
+                  id="member-supervisor"
+                  className={styles.formSelect}
+                  value={supervisorUserId}
+                  onChange={(e) => setSupervisorUserId(e.target.value)}
+                >
+                  <option value="">Sem supervisor</option>
+                  {(supervisors ?? []).map((s) => (
+                    <option key={s.userId} value={s.userId}>
+                      {s.name ?? s.email}
+                    </option>
+                  ))}
+                </select>
+                <span className={styles.formHint}>
+                  {(supervisors ?? []).length === 0
+                    ? 'Nenhum Supervisor na equipe ainda — mude o papel de alguém pra Supervisor.'
+                    : 'O supervisor passa a ver só os leads e tarefas do time dele, e o painel compara os times.'}
+                </span>
+              </div>
             )}
             {hasTier && (
               <fieldset className={`${styles.formRow} ${styles.tierFieldset}`}>

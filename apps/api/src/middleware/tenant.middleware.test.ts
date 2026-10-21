@@ -171,6 +171,9 @@ describe('tenantMiddleware', () => {
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
     }
     const app = buildTestAppWithoutAuth(mockRepo)
 
@@ -204,6 +207,9 @@ describe('tenantMiddleware', () => {
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
 
@@ -233,6 +239,9 @@ describe('tenantMiddleware', () => {
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
 
@@ -265,6 +274,9 @@ describe('tenantMiddleware', () => {
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
     }
     const app = buildTestApp(
       mockRepo,
@@ -302,6 +314,9 @@ describe('tenantMiddleware', () => {
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
     }
     const organizationRepo = buildOrganizationRepository({
       findById: vi.fn().mockResolvedValue({
@@ -348,6 +363,9 @@ describe('tenantMiddleware', () => {
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
     }
     const organizationRepo = buildOrganizationRepository({
       findById: vi.fn().mockResolvedValue({
@@ -395,6 +413,9 @@ describe('tenantMiddleware', () => {
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
     }
     const app = buildTestApp(mockRepo, IDENTITY, buildUserRepository(true))
 
@@ -427,6 +448,9 @@ describe('tenantMiddleware', () => {
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
 
@@ -459,6 +483,9 @@ describe('tenantMiddleware', () => {
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
 
@@ -496,6 +523,9 @@ describe('tenantMiddleware', () => {
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
 
@@ -528,6 +558,9 @@ describe('tenantMiddleware', () => {
         findPersonalGoal: vi.fn().mockResolvedValue(null),
         updatePersonalGoal: vi.fn(),
         removeAllForUser: vi.fn(),
+        updateSupervisor: vi.fn(),
+        findTeamUserIds: vi.fn().mockResolvedValue([]),
+        clearSupervisorLinks: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
 
@@ -559,6 +592,9 @@ describe('tenantMiddleware', () => {
         findPersonalGoal: vi.fn().mockResolvedValue(null),
         updatePersonalGoal: vi.fn(),
         removeAllForUser: vi.fn(),
+        updateSupervisor: vi.fn(),
+        findTeamUserIds: vi.fn().mockResolvedValue([]),
+        clearSupervisorLinks: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
 
@@ -590,6 +626,9 @@ describe('tenantMiddleware', () => {
         findPersonalGoal: vi.fn().mockResolvedValue(null),
         updatePersonalGoal: vi.fn(),
         removeAllForUser: vi.fn(),
+        updateSupervisor: vi.fn(),
+        findTeamUserIds: vi.fn().mockResolvedValue([]),
+        clearSupervisorLinks: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
 
@@ -623,6 +662,9 @@ describe('tenantMiddleware', () => {
         findPersonalGoal: vi.fn().mockResolvedValue(null),
         updatePersonalGoal: vi.fn(),
         removeAllForUser: vi.fn(),
+        updateSupervisor: vi.fn(),
+        findTeamUserIds: vi.fn().mockResolvedValue([]),
+        clearSupervisorLinks: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
 
@@ -658,6 +700,9 @@ describe('tenantMiddleware', () => {
         findPersonalGoal: vi.fn().mockResolvedValue(null),
         updatePersonalGoal: vi.fn(),
         removeAllForUser: vi.fn(),
+        updateSupervisor: vi.fn(),
+        findTeamUserIds: vi.fn().mockResolvedValue([]),
+        clearSupervisorLinks: vi.fn(),
       }
       const app = buildTestApp(mockRepo)
 
@@ -691,6 +736,9 @@ describe('tenantMiddleware', () => {
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
     }
     const app = buildTestApp(mockRepo)
 

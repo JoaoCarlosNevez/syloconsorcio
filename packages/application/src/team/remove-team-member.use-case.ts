@@ -43,6 +43,8 @@ export class RemoveTeamMemberUseCase implements UseCase<RemoveTeamMemberInput, v
     }
 
     await this.membershipRepository.deactivate(input.targetUserId, input.organizationId)
+    // Quem sai deixa de ter supervisor e de supervisionar alguém.
+    await this.membershipRepository.clearSupervisorLinks(input.targetUserId, input.organizationId)
 
     await this.activityLog.record({
       organizationId: input.organizationId,

@@ -19,6 +19,7 @@ function member(userId: string, role: Role): TeamMember {
     status: 'ACTIVE',
     salesGoalCents: null,
     tier: 'bronze',
+    supervisorUserId: null,
   }
 }
 
@@ -26,6 +27,7 @@ function setup(members: TeamMember[] = [member('dono', Role.ADMIN)]) {
   const membershipRepository = {
     findActiveByOrganizationId: vi.fn().mockResolvedValue(members),
     updateRole: vi.fn().mockResolvedValue(undefined),
+    clearSupervisorLinks: vi.fn().mockResolvedValue(undefined),
   } as unknown as IMembershipRepository
   const activityLog: IActivityLogRepository = { record: vi.fn(), list: vi.fn() }
   return {
@@ -50,6 +52,8 @@ describe('UpdateTeamMemberRoleUseCase', () => {
     })
 
     expect(membershipRepository.updateRole).toHaveBeenCalledWith('ennyo', ORG, Role.ADMIN)
+    // Ex-Supervisor: o time dele fica sem supervisor.
+    expect(membershipRepository.clearSupervisorLinks).toHaveBeenCalledWith('ennyo', ORG)
     expect(activityLog.record).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'team.role_updated',

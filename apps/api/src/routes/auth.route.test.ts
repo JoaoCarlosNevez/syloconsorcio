@@ -552,6 +552,9 @@ describe('GET /auth/memberships', () => {
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
     }
     const app = buildTestApp(mockProvider, mockRepo)
 
@@ -603,6 +606,9 @@ describe('GET /auth/memberships', () => {
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
     }
     const app = buildApp({
       authProvider: mockProvider,
@@ -691,6 +697,9 @@ describe('GET /auth/memberships', () => {
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
     }
     const app = buildApp({
       authProvider: mockProvider,
@@ -816,6 +825,9 @@ describe('GET /auth/context', () => {
       findPersonalGoal: vi.fn().mockResolvedValue(null),
       updatePersonalGoal: vi.fn(),
       removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
     }
     const app = buildTestApp(mockProvider, mockRepo)
 

@@ -15,7 +15,7 @@ import type {
   TaskStatus,
   UpdateTaskInput,
 } from '@sylocrm/application'
-import { and, asc, count, eq, gte, ilike, inArray, lt, ne, sql } from 'drizzle-orm'
+import { and, asc, count, eq, gte, ilike, inArray, isNull, lt, ne, or, sql } from 'drizzle-orm'
 import type { Database } from '../client'
 import { type DbTask, tasks } from '../schema'
 
@@ -43,6 +43,10 @@ function buildScopeConditions(scope: TaskScopeFilter) {
   const conditions = [inArray(tasks.organizationId, scope.organizationIds)]
   if (scope.assignedUserId) {
     conditions.push(eq(tasks.assignedUserId, scope.assignedUserId))
+  }
+  if (scope.teamUserIds) {
+    const team = or(inArray(tasks.assignedUserId, scope.teamUserIds), isNull(tasks.assignedUserId))
+    if (team) conditions.push(team)
   }
   return conditions
 }

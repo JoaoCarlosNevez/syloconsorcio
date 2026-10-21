@@ -62,6 +62,8 @@ export interface TaskScopeFilter {
   organizationIds: string[]
   /** Presente apenas quando DataScope.OWN — restringe às tarefas do próprio usuário. */
   assignedUserId?: string
+  /** Supervisor com time — atribuídas a um destes usuários ou sem responsável. */
+  teamUserIds?: string[]
 }
 
 export interface TaskListFilter extends TaskScopeFilter {

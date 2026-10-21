@@ -87,6 +87,7 @@ function buildTestApp(role: Role, leadQueueRepository = buildLeadQueueRepository
   const membershipRepository = {
     findActiveByUserId: vi.fn().mockResolvedValue([membership(role)]),
     findActiveByUserAndOrganization: vi.fn().mockResolvedValue(membership(role)),
+    findTeamUserIds: vi.fn().mockResolvedValue([]),
     findActiveByOrganizationId: vi.fn().mockResolvedValue([
       {
         userId: IDENTITY.id,
@@ -97,6 +98,7 @@ function buildTestApp(role: Role, leadQueueRepository = buildLeadQueueRepository
         status: 'ACTIVE',
         salesGoalCents: null,
         tier: 'bronze',
+        supervisorUserId: null,
       },
     ]),
   } as unknown as IMembershipRepository

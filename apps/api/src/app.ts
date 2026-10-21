@@ -118,6 +118,11 @@ function createNoOpMembershipRepository(): IMembershipRepository {
     removeAllForUser: async () => {
       throw new Error('Database not configured — cannot remove memberships.')
     },
+    updateSupervisor: async () => {
+      throw new Error('Database not configured — cannot update memberships.')
+    },
+    findTeamUserIds: async () => [],
+    clearSupervisorLinks: async () => {},
   }
 }
 
@@ -302,9 +307,9 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     streakRepository: deps?.streakRepository ?? { listActiveDays: async () => [] },
     managementDashboardRepository: deps?.managementDashboardRepository ?? {
       listOpenLeads: async () => [],
-      countCreatedInSalesFunnels: async () => ({ created: 0, wonOfCreated: 0 }),
+      statsByAssignee: async () => [],
       countPendingQueueOffers: async () => 0,
-      countWonInFunnel: async () => 0,
+      wonInFunnelByAssignee: async () => [],
     },
     leadAdhesionRepository: deps?.leadAdhesionRepository ?? {
       findByLead: async () => null,

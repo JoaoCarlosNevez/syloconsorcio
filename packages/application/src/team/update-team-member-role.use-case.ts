@@ -54,6 +54,9 @@ export class UpdateTeamMemberRoleUseCase implements UseCase<UpdateTeamMemberRole
     }
 
     await this.membershipRepository.updateRole(input.targetUserId, input.organizationId, input.role)
+    // Supervisão só existe entre Supervisor e Vendedor: quem muda de papel
+    // perde as ligações (o time de um ex-Supervisor fica sem supervisor).
+    await this.membershipRepository.clearSupervisorLinks(input.targetUserId, input.organizationId)
 
     await this.activityLog.record({
       organizationId: input.organizationId,

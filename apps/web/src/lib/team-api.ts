@@ -17,6 +17,8 @@ export interface TeamMember {
   salesGoalCents: number | null
   /** Patente do membro na organização. */
   tier: Tier
+  /** Supervisor do Vendedor (só o Dono define); null = sem supervisor. */
+  supervisorUserId: string | null
 }
 
 export interface InviteTeamMemberPayload {
@@ -71,6 +73,18 @@ export function updateTeamMemberRole(
   role: TeamMember['role'],
 ): Promise<void> {
   return apiClient.put<void>(`/team/members/${userId}/role`, { role }, { organizationId })
+}
+
+export function updateTeamMemberSupervisor(
+  organizationId: string,
+  userId: string,
+  supervisorUserId: string | null,
+): Promise<void> {
+  return apiClient.put<void>(
+    `/team/members/${userId}/supervisor`,
+    { supervisorUserId },
+    { organizationId },
+  )
 }
 
 export interface SalesGoalProgress {

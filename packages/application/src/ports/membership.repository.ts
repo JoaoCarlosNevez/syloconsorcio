@@ -40,6 +40,8 @@ export interface TeamMember {
   salesGoalCents: number | null
   /** Patente do membro na organização. */
   tier: MemberTier
+  /** Supervisor do Vendedor (Configurações → Equipe); null = sem supervisor. */
+  supervisorUserId: string | null
 }
 
 /** TeamMember com os dados da organização — usado na listagem cross-org do Super Admin. */
@@ -119,6 +121,21 @@ export interface IMembershipRepository {
 
   /** Muda o papel do membro na organização. */
   updateRole(userId: string, organizationId: string, role: Role): Promise<void>
+
+  /** Define (ou limpa, com null) o supervisor do Vendedor na organização. */
+  updateSupervisor(
+    userId: string,
+    organizationId: string,
+    supervisorUserId: string | null,
+  ): Promise<void>
+
+  /** Vendedores ativos que têm este supervisor na organização (o time dele). */
+  findTeamUserIds(organizationId: string, supervisorUserId: string): Promise<string[]>
+
+  /** Desfaz as ligações de supervisão do membro nos dois sentidos — o
+   * supervisor dele e os vendedores que apontam pra ele. Usado quando o
+   * membro muda de papel ou sai da organização. */
+  clearSupervisorLinks(userId: string, organizationId: string): Promise<void>
 
   /** Meta pessoal do membro na organização (definida por ele no Perfil).
    * null quando não definida ou quando o vínculo não existe. Não faz parte de
