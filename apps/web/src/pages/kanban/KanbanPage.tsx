@@ -910,6 +910,36 @@ export function KanbanPage() {
         {/* ── Header ──────────────────────────────────────────────────── */}
         <header className={styles.header}>
           <h1 className={styles.title}>Kanban</h1>
+          <button
+            type="button"
+            className={styles.newLeadBtn}
+            onClick={() => setIsCreateOpen(true)}
+            disabled={!organizationId || isFollowOnly}
+            title={
+              isFollowOnly
+                ? 'Leads do funil ADM chegam sozinhos quando uma venda é ganha.'
+                : undefined
+            }
+          >
+            <PlusIcon /> Novo Lead
+          </button>
+        </header>
+
+        {/* Busca e filtros numa linha própria — na barra de cima espremiam o Novo Lead. */}
+        <div className={styles.searchRow}>
+          <div className={styles.searchBox}>
+            <span className={styles.searchIcon}>
+              <SearchIcon />
+            </span>
+            <input
+              type="text"
+              className={styles.searchInput}
+              placeholder="Buscar por nome ou telefone..."
+              aria-label="Buscar lead por nome ou telefone"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
           <div className={styles.actions}>
             <div className={styles.viewToggle}>
               <button
@@ -940,19 +970,6 @@ export function KanbanPage() {
               </button>
             </div>
             <span className={styles.headerDivider} />
-            <div className={styles.searchBox}>
-              <span className={styles.searchIcon}>
-                <SearchIcon />
-              </span>
-              <input
-                type="text"
-                className={styles.searchInput}
-                placeholder="Buscar por nome ou telefone..."
-                aria-label="Buscar lead por nome ou telefone"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
             {funnels.length > 1 && (
               <Dropdown
                 trigger={
@@ -1061,21 +1078,8 @@ export function KanbanPage() {
             <button type="button" className={styles.filterBtn}>
               <TransferIcon /> Transferência
             </button>
-            <button
-              type="button"
-              className={styles.newLeadBtn}
-              onClick={() => setIsCreateOpen(true)}
-              disabled={!organizationId || isFollowOnly}
-              title={
-                isFollowOnly
-                  ? 'Leads do funil ADM chegam sozinhos quando uma venda é ganha.'
-                  : undefined
-              }
-            >
-              <PlusIcon /> Novo Lead
-            </button>
           </div>
-        </header>
+        </div>
 
         {/* ── Metrics Strip ────────────────────────────────────────────── */}
         <div className={styles.metricsStrip}>
