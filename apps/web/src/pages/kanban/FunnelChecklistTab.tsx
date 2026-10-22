@@ -4,7 +4,11 @@
 // (application/src/funnels/funnel-checklists.ts).
 
 import { Skeleton, useToast } from '@sylocrm/ui'
-import { useLeadChecklistQuery, useSetLeadChecklistItem } from '../../hooks/useLeads'
+import {
+  useAnswerInstallmentPayment,
+  useLeadChecklistQuery,
+  useSetLeadChecklistItem,
+} from '../../hooks/useLeads'
 import type { TeamMember } from '../../lib/team-api'
 import styles from './AdhesionTab.module.css'
 
@@ -22,7 +26,27 @@ export function FunnelChecklistTab({
 }) {
   const { data, isLoading } = useLeadChecklistQuery(organizationId, leadId)
   const setItem = useSetLeadChecklistItem(organizationId, leadId)
+  const answerPayment = useAnswerInstallmentPayment(organizationId, leadId)
   const { toast } = useToast()
+
+  async function answer(paid: boolean) {
+    try {
+      await answerPayment.mutateAsync(paid)
+      toast({
+        type: paid ? 'success' : 'warning',
+        title: paid ? 'Pagamento confirmado' : 'Parcela marcada como atrasada',
+        description: paid
+          ? 'A tarefa foi concluída e a parcela entrou no checklist.'
+          : 'A tarefa foi concluída e o card foi pra Atrasado.',
+      })
+    } catch (error) {
+      toast({
+        type: 'error',
+        title: 'Não foi possível registrar o pagamento',
+        description: error instanceof Error ? error.message : undefined,
+      })
+    }
+  }
 
   async function toggle(itemKey: string, checked: boolean) {
     try {
@@ -79,6 +103,44 @@ export function FunnelChecklistTab({
           {readOnly && ' Você acompanha — quem marca é o Administrativo.'}
         </p>
       </div>
+
+      {data.funnelKind === 'POST_SALE' && (
+        <div
+          className={styles.documentRow}
+          style={
+            data.pendingPayment ? { borderColor: '#fcd34d', background: '#fffbeb' } : undefined
+          }
+        >
+          <span className={styles.documentInfo}>
+            <span className={styles.documentLabel}>
+              {data.pendingPayment ? data.pendingPayment.title : 'Parcela do mês'}
+            </span>
+            <span className={styles.documentHint}>
+              {data.pendingPayment
+                ? 'O cliente pagou o boleto desta parcela?'
+                : 'Sem confirmação pendente. A tarefa chega no dia seguinte ao vencimento (dia do vencimento na aba Adesão).'}
+            </span>
+          </span>
+          <span className={styles.documentActions}>
+            <button
+              type="button"
+              className={styles.dangerBtn}
+              onClick={() => answer(false)}
+              disabled={answerPayment.isPending}
+            >
+              Não pagou
+            </button>
+            <button
+              type="button"
+              className={styles.uploadBtn}
+              onClick={() => answer(true)}
+              disabled={answerPayment.isPending}
+            >
+              Pagou
+            </button>
+          </span>
+        </div>
+      )}
 
       <div className={styles.documents}>
         {data.items.map((item) => {

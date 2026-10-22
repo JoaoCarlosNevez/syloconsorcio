@@ -18,6 +18,8 @@ export interface LeadAdhesionFields {
   downPaymentCents: number | null
   prepaidInstallments: number | null
   paymentMethod: string | null
+  /** Dia do mês do vencimento do boleto (1–31). */
+  installmentDueDay: number | null
   birthplace: string | null
   spouseName: string | null
   phone2: string | null

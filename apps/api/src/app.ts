@@ -25,6 +25,7 @@ import type {
   IMembershipRepository,
   INotificationRepository,
   IOrganizationRepository,
+  IPostSalePaymentRepository,
   IStorageProvider,
   IStreakRepository,
   ITaskRepository,
@@ -70,6 +71,7 @@ export interface BuildAppDeps {
   streakRepository: IStreakRepository
   leadAdhesionRepository: ILeadAdhesionRepository
   leadChecklistRepository: ILeadChecklistRepository
+  postSalePaymentRepository: IPostSalePaymentRepository
   managementDashboardRepository: IManagementDashboardRepository
   engagementRepository: IEngagementRepository
   achievementsRepository: IAchievementsRepository
@@ -326,6 +328,13 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
       countPendingQueueOffers: async () => 0,
       wonInFunnelByAssignee: async () => [],
     },
+    postSalePaymentRepository: deps?.postSalePaymentRepository ?? {
+      listOpenLeadsWithDueDay: async () => [],
+      createAutoTask: async () => false,
+      deleteOrphanAutoTasks: async () => 0,
+      findOpenAutoTasks: async () => [],
+      completeTasks: async () => {},
+    },
     leadChecklistRepository: deps?.leadChecklistRepository ?? {
       listChecked: async () => [],
       check: async () => {
@@ -405,6 +414,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     leadProposalRepository: resolvedDeps.leadProposalRepository,
     leadAdhesionRepository: resolvedDeps.leadAdhesionRepository,
     leadChecklistRepository: resolvedDeps.leadChecklistRepository,
+    postSalePaymentRepository: resolvedDeps.postSalePaymentRepository,
     storageProvider: resolvedDeps.storageProvider,
     activityLogRepository: resolvedDeps.activityLogRepository,
   })

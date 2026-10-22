@@ -41,6 +41,7 @@ const EMPTY_FIELDS: LeadAdhesionFields = {
   downPaymentCents: null,
   prepaidInstallments: null,
   paymentMethod: null,
+  installmentDueDay: null,
   birthplace: null,
   spouseName: null,
   phone2: null,

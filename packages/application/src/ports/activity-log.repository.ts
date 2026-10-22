@@ -29,6 +29,8 @@ export type ActivityAction =
   | 'lead.document_deleted'
   | 'lead.checklist_checked'
   | 'lead.checklist_unchecked'
+  | 'lead.installment_paid'
+  | 'lead.installment_late'
   | 'task.created'
   | 'task.updated'
   | 'task.completed'

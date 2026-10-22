@@ -43,6 +43,9 @@ export const leadAdhesions = pgTable('lead_adhesions', {
   prepaidInstallments: integer('prepaid_installments'),
   /** Boleto, débito em conta, cartão de crédito, PIX… */
   paymentMethod: text('payment_method'),
+  /** Dia do mês do vencimento do boleto (1–31) — gera a tarefa mensal
+   * "Confirmar pagamento" no Pós-venda (ver post-sale-payments.use-cases.ts). */
+  installmentDueDay: integer('installment_due_day'),
   // Dados pessoais que o lead não tem
   birthplace: text('birthplace'),
   spouseName: text('spouse_name'),

@@ -17,9 +17,14 @@ import type { FunnelKind, IFunnelRepository } from '../ports/funnel.repository'
 import type { ILeadChecklistRepository } from '../ports/lead-checklist.repository'
 import type { ILeadRepository } from '../ports/lead.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
+import type { IPostSalePaymentRepository } from '../ports/post-sale-payment.repository'
 import type { UseCase } from '../ports/use-case'
 import { resolveLeadScope } from './lead-scope'
 import type { UpdateLeadUseCase } from './update-lead.use-case'
+
+/** Mesmo prefixo de post-sale-payments.use-cases.ts (importar de lá criaria
+ * um ciclo entre os dois arquivos). */
+const PAYMENT_TASK_PREFIX = 'post_sale_payment:'
 
 export interface LeadChecklistInput {
   leadId: string
@@ -29,6 +34,8 @@ export interface LeadChecklistInput {
 
 export interface LeadChecklistView {
   funnelKind: FunnelKind
+  /** Pós-venda: parcela esperando "pagou / não pagou" (tarefa automática aberta). */
+  pendingPayment?: { title: string; dueAt: Date } | null
   items: {
     key: string
     label: string
@@ -69,6 +76,7 @@ export class GetLeadChecklistUseCase
     private readonly organizationRepository: IOrganizationRepository,
     private readonly funnelRepository: IFunnelRepository,
     private readonly checklistRepository: ILeadChecklistRepository,
+    private readonly paymentRepository: IPostSalePaymentRepository | null = null,
   ) {}
 
   /** null quando o lead não existe ou está fora do escopo. */
@@ -82,7 +90,12 @@ export class GetLeadChecklistUseCase
     if (!lead) return null
     const funnel = await this.funnelRepository.findById(lead.funnelId, lead.organizationId)
     if (!funnel) return null
-    return loadView(this.checklistRepository, lead.id, funnel.kind)
+    const view = await loadView(this.checklistRepository, lead.id, funnel.kind)
+    if (funnel.kind === 'POST_SALE' && this.paymentRepository) {
+      const [task] = await this.paymentRepository.findOpenAutoTasks(lead.id, PAYMENT_TASK_PREFIX)
+      view.pendingPayment = task ? { title: task.title, dueAt: task.dueAt } : null
+    }
+    return view
   }
 }
 

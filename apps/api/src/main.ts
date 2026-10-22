@@ -6,7 +6,11 @@
 // It creates the concrete adapters and injects them into the app factory.
 
 import 'dotenv/config'
-import { OfferLeadToQueueUseCase, ProcessExpiredLeadOffersUseCase } from '@sylocrm/application'
+import {
+  GeneratePostSalePaymentTasksUseCase,
+  OfferLeadToQueueUseCase,
+  ProcessExpiredLeadOffersUseCase,
+} from '@sylocrm/application'
 import {
   DrizzleAchievementsRepository,
   DrizzleActivityLogRepository,
@@ -22,6 +26,7 @@ import {
   DrizzleMembershipRepository,
   DrizzleNotificationRepository,
   DrizzleOrganizationRepository,
+  DrizzlePostSalePaymentRepository,
   DrizzleStreakRepository,
   DrizzleTaskRepository,
   DrizzleUserRepository,
@@ -32,6 +37,7 @@ import {
 import { buildApp } from './app'
 import { env } from './config/env'
 import { startLeadOfferExpiryWorker } from './workers/lead-offer-expiry'
+import { startPostSalePaymentsWorker } from './workers/post-sale-payments'
 
 // Create infrastructure adapters when env vars are present
 const authProvider =
@@ -62,6 +68,9 @@ const leadQueueRepository = database ? new DrizzleLeadQueueRepository(database) 
 const streakRepository = database ? new DrizzleStreakRepository(database) : undefined
 const leadAdhesionRepository = database ? new DrizzleLeadAdhesionRepository(database) : undefined
 const leadChecklistRepository = database ? new DrizzleLeadChecklistRepository(database) : undefined
+const postSalePaymentRepository = database
+  ? new DrizzlePostSalePaymentRepository(database)
+  : undefined
 const achievementsRepository = database ? new DrizzleAchievementsRepository(database) : undefined
 const engagementRepository = database ? new DrizzleEngagementRepository(database) : undefined
 const managementDashboardRepository = database
@@ -93,6 +102,7 @@ const app = buildApp({
   streakRepository,
   leadAdhesionRepository,
   leadChecklistRepository,
+  postSalePaymentRepository,
   managementDashboardRepository,
   engagementRepository,
   achievementsRepository,
@@ -101,7 +111,11 @@ const app = buildApp({
 // Fila de Leads: passa adiante os leads que ninguém aceitou no prazo. O
 // worker sobe depois do listen; o hook de onClose precisa ser registrado antes.
 let stopLeadOfferWorker: (() => void) | null = null
-app.addHook('onClose', async () => stopLeadOfferWorker?.())
+let stopPostSalePaymentsWorker: (() => void) | null = null
+app.addHook('onClose', async () => {
+  stopLeadOfferWorker?.()
+  stopPostSalePaymentsWorker?.()
+})
 
 try {
   await app.listen({ port: env.PORT, host: env.HOST })
@@ -118,4 +132,11 @@ if (leadQueueRepository && leadRepository && membershipRepository) {
     notificationRepository,
   )
   stopLeadOfferWorker = startLeadOfferExpiryWorker(processExpiredLeadOffers, app.log)
+}
+
+if (postSalePaymentRepository) {
+  stopPostSalePaymentsWorker = startPostSalePaymentsWorker(
+    new GeneratePostSalePaymentTasksUseCase(postSalePaymentRepository),
+    app.log,
+  )
 }

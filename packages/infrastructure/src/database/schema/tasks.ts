@@ -12,36 +12,45 @@
 // type é texto livre (não pg enum), mesmo padrão de leads.segment/source —
 // os 6 valores hoje (Ligação, Reunião, Visita, Follow-up, Tarefa, Simulação)
 // são só sugeridos pela UI.
+//
+// autoKey: chave de tarefa criada pelo sistema (ex: "post_sale_payment:<lead>:
+// <AAAA-MM>" — confirmação mensal do boleto no Pós-venda). Única: o processo
+// que cria pode rodar várias vezes sem duplicar. null nas tarefas manuais.
 
-import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { leads } from './leads'
 import { organizations } from './organizations'
 import { users } from './users'
 
-export const tasks = pgTable('tasks', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  organizationId: uuid('organization_id')
-    .notNull()
-    .references(() => organizations.id),
-  leadId: uuid('lead_id').references(() => leads.id, { onDelete: 'cascade' }),
-  assignedUserId: uuid('assigned_user_id')
-    .notNull()
-    .references(() => users.id),
-  createdByUserId: uuid('created_by_user_id')
-    .notNull()
-    .references(() => users.id),
-  type: text('type').notNull(),
-  title: text('title').notNull(),
-  notes: text('notes'),
-  status: text('status').notNull().default('pendente'),
-  dueAt: timestamp('due_at', { withTimezone: true }).notNull(),
-  // Quando foi concluída — é o "Ligação feita em 02/10 às 14:55" do histórico
-  // do lead. Preenchido ao concluir, limpo ao reabrir (ver
-  // DrizzleTaskRepository); null enquanto não concluída.
-  completedAt: timestamp('completed_at', { withTimezone: true }),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-})
+export const tasks = pgTable(
+  'tasks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id),
+    leadId: uuid('lead_id').references(() => leads.id, { onDelete: 'cascade' }),
+    assignedUserId: uuid('assigned_user_id')
+      .notNull()
+      .references(() => users.id),
+    createdByUserId: uuid('created_by_user_id')
+      .notNull()
+      .references(() => users.id),
+    type: text('type').notNull(),
+    title: text('title').notNull(),
+    notes: text('notes'),
+    status: text('status').notNull().default('pendente'),
+    dueAt: timestamp('due_at', { withTimezone: true }).notNull(),
+    // Quando foi concluída — é o "Ligação feita em 02/10 às 14:55" do histórico
+    // do lead. Preenchido ao concluir, limpo ao reabrir (ver
+    // DrizzleTaskRepository); null enquanto não concluída.
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+    autoKey: text('auto_key'),
+  },
+  (table) => [uniqueIndex('tasks_auto_key_idx').on(table.autoKey)],
+)
 
 export type DbTask = typeof tasks.$inferSelect
 export type NewDbTask = typeof tasks.$inferInsert

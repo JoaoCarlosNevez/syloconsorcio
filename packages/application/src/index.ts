@@ -357,6 +357,20 @@ export type {
   ToggleLeadChecklistItemInput,
 } from './leads/lead-checklist.use-cases'
 export type { CheckedItem, ILeadChecklistRepository } from './ports/lead-checklist.repository'
+export {
+  AnswerInstallmentPaymentUseCase,
+  GeneratePostSalePaymentTasksUseCase,
+  PAYMENT_TASK_PREFIX,
+  paymentTaskDay,
+  paymentTaskKey,
+} from './leads/post-sale-payments.use-cases'
+export type { AnswerInstallmentPaymentInput } from './leads/post-sale-payments.use-cases'
+export type {
+  IPostSalePaymentRepository,
+  NewAutoTaskInput,
+  OpenAutoTask,
+  PostSalePaymentLead,
+} from './ports/post-sale-payment.repository'
 export { GetMyAchievementsUseCase } from './dashboard/get-my-achievements.use-case'
 export type { Achievement, AchievementId } from './dashboard/get-my-achievements.use-case'
 export type {

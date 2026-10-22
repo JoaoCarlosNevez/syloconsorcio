@@ -148,6 +148,10 @@ export function describeActivity(
       return `comentou no lead ${label}${str(m, 'preview') ? `: ${quoted(str(m, 'preview'))}` : ''}`
     case 'lead.adhesion_updated':
       return `atualizou a ficha de adesão do lead ${label}`
+    case 'lead.installment_paid':
+      return `confirmou o pagamento da parcela de ${str(entry.metadata, 'month') ?? 'mês'} do lead ${label}`
+    case 'lead.installment_late':
+      return `registrou a parcela de ${str(entry.metadata, 'month') ?? 'mês'} como não paga — lead ${label}`
     case 'lead.checklist_checked':
       return `marcou "${str(entry.metadata, 'label') ?? 'item'}" no checklist do lead ${label}`
     case 'lead.checklist_unchecked':

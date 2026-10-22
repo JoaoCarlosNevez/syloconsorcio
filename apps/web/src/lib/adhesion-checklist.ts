@@ -24,6 +24,7 @@ export interface AdhesionForm {
   downPayment: string
   prepaidInstallments: string
   paymentMethod: string
+  installmentDueDay: string
   name: string
   profession: string
   income: string
@@ -74,6 +75,12 @@ export const ADHESION_ITEMS: AdhesionItem[] = [
   { key: 'downPayment', label: 'Entrada', section: 'plano', required: never },
   { key: 'prepaidInstallments', label: 'Parcelas antecipadas', section: 'plano', required: never },
   { key: 'paymentMethod', label: 'Forma de pagamento', section: 'plano', required: always },
+  {
+    key: 'installmentDueDay',
+    label: 'Dia do vencimento do boleto',
+    section: 'plano',
+    required: never,
+  },
   { key: 'name', label: 'Nome', section: 'pessoais', required: always },
   { key: 'profession', label: 'Profissão', section: 'pessoais', required: always },
   { key: 'income', label: 'Renda', section: 'pessoais', required: always },
@@ -198,6 +205,10 @@ export function buildAdhesionForm(
         ? String(adhesion.prepaidInstallments)
         : '',
     paymentMethod: adhesion?.paymentMethod ?? '',
+    installmentDueDay:
+      adhesion?.installmentDueDay !== null && adhesion?.installmentDueDay !== undefined
+        ? String(adhesion.installmentDueDay)
+        : '',
     name: card.name,
     profession: card.profession ?? '',
     income: moneyOrEmpty(card.incomeCents),
@@ -217,6 +228,12 @@ export function buildAdhesionForm(
 
 const textOrNull = (value: string) => value.trim() || null
 
+/** "10" → 10; vazio ou fora de 1–31 → null. */
+function dueDayOrNull(value: string): number | null {
+  const day = Number.parseInt(value, 10)
+  return Number.isInteger(day) && day >= 1 && day <= 31 ? day : null
+}
+
 /** Campos da ficha (o que não é do lead) pra API. */
 export function adhesionFields(form: AdhesionForm): LeadAdhesionFields {
   const prepaid = Number.parseInt(form.prepaidInstallments, 10)
@@ -231,6 +248,7 @@ export function adhesionFields(form: AdhesionForm): LeadAdhesionFields {
     downPaymentCents: form.downPayment.trim() ? parseValueToCents(form.downPayment) : null,
     prepaidInstallments: Number.isNaN(prepaid) ? null : prepaid,
     paymentMethod: textOrNull(form.paymentMethod),
+    installmentDueDay: dueDayOrNull(form.installmentDueDay),
     birthplace: textOrNull(form.birthplace),
     spouseName: needsSpouse(form.maritalStatus) ? textOrNull(form.spouseName) : null,
     phone2: textOrNull(form.phone2),

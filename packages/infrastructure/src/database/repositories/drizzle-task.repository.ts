@@ -35,7 +35,7 @@ const TASK_COLUMNS = {
   updatedAt: tasks.updatedAt,
 } as const
 
-function toTaskRecord(row: DbTask): TaskRecord {
+function toTaskRecord(row: Omit<DbTask, 'autoKey'>): TaskRecord {
   return { ...row, status: row.status as TaskStatus }
 }
 

@@ -12,6 +12,7 @@ import {
   type LeadProposal,
   type ListLeadsParams,
   type UpdateLeadPayload,
+  answerInstallmentPayment,
   createLead,
   createLeadComment,
   createLeadProposal,
@@ -237,6 +238,21 @@ export function useSetLeadChecklistItem(organizationId: string | null, leadId: s
       queryClient.setQueryData(leadChecklistQueryKey(organizationId, leadId), view)
       // Marcar pode mover o card de etapa e liberar conquistas.
       queryClient.invalidateQueries({ queryKey: ['leads', organizationId] })
+      queryClient.invalidateQueries({ queryKey: ['funnels', organizationId] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+    },
+  })
+}
+
+export function useAnswerInstallmentPayment(organizationId: string | null, leadId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (paid: boolean) => answerInstallmentPayment(organizationId as string, leadId, paid),
+    onSuccess: () => {
+      // Conclui a tarefa, pode marcar parcela e mover o card de etapa.
+      queryClient.invalidateQueries({ queryKey: leadChecklistQueryKey(organizationId, leadId) })
+      queryClient.invalidateQueries({ queryKey: ['leads', organizationId] })
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
       queryClient.invalidateQueries({ queryKey: ['funnels', organizationId] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },

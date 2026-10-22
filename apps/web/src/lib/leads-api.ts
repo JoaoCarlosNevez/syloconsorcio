@@ -208,6 +208,8 @@ export interface LeadAdhesionFields {
   downPaymentCents: number | null
   prepaidInstallments: number | null
   paymentMethod: string | null
+  /** Dia do mês do vencimento do boleto (1–31). */
+  installmentDueDay: number | null
   birthplace: string | null
   spouseName: string | null
   phone2: string | null
@@ -407,6 +409,8 @@ export function getPublicProposal(token: string): Promise<PublicProposal> {
 
 export interface LeadChecklist {
   funnelKind: 'COMMERCIAL' | 'SALES' | 'BACKOFFICE' | 'POST_SALE'
+  /** Pós-venda: parcela esperando "pagou / não pagou". */
+  pendingPayment?: { title: string; dueAt: string } | null
   items: {
     key: string
     label: string
@@ -429,6 +433,19 @@ export function setLeadChecklistItem(
   return apiClient.put<LeadChecklist>(
     `/leads/${leadId}/checklist/${itemKey}`,
     { checked },
+    { organizationId },
+  )
+}
+
+/** Pós-venda: responde a parcela do mês (pagou / não pagou). */
+export function answerInstallmentPayment(
+  organizationId: string,
+  leadId: string,
+  paid: boolean,
+): Promise<{ completedTasks: number }> {
+  return apiClient.post<{ completedTasks: number }>(
+    `/leads/${leadId}/installment-payment`,
+    { paid },
     { organizationId },
   )
 }

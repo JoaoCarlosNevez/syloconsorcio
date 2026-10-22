@@ -57,6 +57,7 @@ const PLACEHOLDER: Partial<Record<keyof AdhesionForm, string>> = {
   planTable: 'Ex: Imóvel Plano Leve 200',
   groupCode: 'Ex: 1234',
   prepaidInstallments: 'Quantidade',
+  installmentDueDay: 'Ex: 10 (todo dia 10)',
   birthplace: 'Cidade/UF',
   address: 'Rua, número, complemento, bairro, cidade/UF',
   zipCode: '00000-000',
@@ -180,6 +181,10 @@ export function AdhesionTab({
     else if (PHONE_KEYS.has(key)) value = formatPhoneBR(raw)
     else if (key === 'zipCode') value = formatZipCode(raw)
     else if (key === 'prepaidInstallments') value = raw.replace(/\D/g, '').slice(0, 3)
+    else if (key === 'installmentDueDay') {
+      const digits = raw.replace(/\D/g, '').slice(0, 2)
+      value = digits && Number(digits) > 31 ? '31' : digits
+    }
     setForm((prev) => (prev ? { ...prev, [key]: value } : prev))
     setDirty(true)
     if (key === 'zipCode' && value.replace(/\D/g, '').length === 8) void fillAddress(value)
@@ -340,7 +345,10 @@ export function AdhesionTab({
           id={id}
           className={styles.input}
           inputMode={
-            MONEY_KEYS.has(item.key) || item.key === 'prepaidInstallments' || item.key === 'zipCode'
+            MONEY_KEYS.has(item.key) ||
+            item.key === 'prepaidInstallments' ||
+            item.key === 'installmentDueDay' ||
+            item.key === 'zipCode'
               ? 'numeric'
               : PHONE_KEYS.has(item.key)
                 ? 'tel'

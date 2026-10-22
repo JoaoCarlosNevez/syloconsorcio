@@ -45,6 +45,7 @@ const ADHESION_COLUMNS = {
   downPaymentCents: leadAdhesions.downPaymentCents,
   prepaidInstallments: leadAdhesions.prepaidInstallments,
   paymentMethod: leadAdhesions.paymentMethod,
+  installmentDueDay: leadAdhesions.installmentDueDay,
   birthplace: leadAdhesions.birthplace,
   spouseName: leadAdhesions.spouseName,
   phone2: leadAdhesions.phone2,
