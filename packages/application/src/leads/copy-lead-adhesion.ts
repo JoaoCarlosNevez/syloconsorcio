@@ -1,5 +1,6 @@
 // copyLeadAdhesion — leva a ficha de adesão e os documentos de um lead pra
-// cópia dele em outro funil (ex: o Ganho que vai pro funil ADM). Os arquivos
+// cópia dele em outro funil (ex: o Ganho que vai pro funil ADM). Numa venda
+// com várias cotas, cada card de destino recebe só a sua (quotaIndex). Os arquivos
 // são COPIADOS no Storage (pasta do lead novo): apagar um dos leads não pode
 // apagar os documentos do outro.
 
@@ -13,6 +14,8 @@ export async function copyLeadAdhesion(
   source: LeadRecord,
   target: LeadRecord,
   actorUserId: string,
+  /** Venda com várias cotas: o card de destino leva só esta cota (índice). */
+  quotaIndex?: number,
 ): Promise<void> {
   const adhesion = await leadAdhesionRepository.findByLead(source.id)
   if (adhesion) {
@@ -24,8 +27,10 @@ export async function copyLeadAdhesion(
       updatedAt: _updatedAt,
       ...fields
     } = adhesion
+    const quota = quotaIndex === undefined ? undefined : fields.quotas[quotaIndex]
     await leadAdhesionRepository.upsert({
       ...fields,
+      quotas: quotaIndex === undefined ? fields.quotas : quota ? [quota] : [],
       leadId: target.id,
       organizationId: target.organizationId,
       updatedByUserId: actorUserId,

@@ -395,3 +395,68 @@
   font-size: 13px;
   color: #64748b;
 }
+
+/* ── Cotas da venda ───────────────────────────────────────────────────── */
+
+.quotaHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.quotaTotal {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0b1c30;
+}
+
+.quotaTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.quotaTab,
+.quotaAdd {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 7px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px 10px 0 0;
+  background: #f8fafc;
+  font-family: var(--font-family-base);
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+}
+
+.quotaTabActive {
+  border-color: #0b1c30;
+  background: #0b1c30;
+  color: #fff;
+}
+
+.quotaTabSub {
+  font-size: 10px;
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+.quotaAdd {
+  justify-content: center;
+  border-style: dashed;
+  background: #fff;
+  color: var(--color-accent-link);
+}
+
+.quotaFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}

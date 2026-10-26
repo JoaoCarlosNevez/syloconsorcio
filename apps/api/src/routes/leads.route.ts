@@ -75,6 +75,7 @@ import {
   ListAdhesionDocumentsUseCase,
   ListLeadProposalsUseCase,
   ListLeadsUseCase,
+  MAX_ADHESION_QUOTAS,
   SaveLeadAdhesionUseCase,
   ShareLeadProposalUseCase,
   ToggleLeadChecklistItemUseCase,
@@ -115,19 +116,22 @@ const optionalText = (max: number) =>
 
 const optionalCents = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable()
 
-const saveAdhesionSchema = z.object({
+const adhesionQuotaSchema = z.object({
   administrator: optionalText(120),
-  sellerUserId: z.string().uuid().nullable(),
   assetValueCents: optionalCents,
   assetCode: optionalText(60),
   planTable: optionalText(120),
   assetType: optionalText(60),
   groupCode: optionalText(40),
-  quotaNumber: optionalText(40).optional().default(null),
+  quotaNumber: optionalText(40),
   downPaymentCents: optionalCents,
   prepaidInstallments: z.number().int().min(0).max(999).nullable(),
   paymentMethod: optionalText(60),
-  installmentDueDay: z.number().int().min(1).max(31).nullable().optional().default(null),
+  installmentDueDay: z.number().int().min(1).max(31).nullable(),
+})
+
+const saveAdhesionSchema = z.object({
+  sellerUserId: z.string().uuid().nullable(),
   birthplace: optionalText(120),
   spouseName: optionalText(160),
   phone2: optionalText(30),
@@ -136,6 +140,8 @@ const saveAdhesionSchema = z.object({
   preferredAdministrator: optionalText(120),
   contactHours: optionalText(200),
   notes: optionalText(2000),
+  // Uma venda pode ter várias cotas (ex: 2 grupos pra fechar o valor).
+  quotas: z.array(adhesionQuotaSchema).max(MAX_ADHESION_QUOTAS),
 })
 
 const createLeadSchema = z.object({

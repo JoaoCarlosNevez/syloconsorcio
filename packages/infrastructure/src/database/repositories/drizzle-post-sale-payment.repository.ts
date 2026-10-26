@@ -9,7 +9,7 @@ import type {
 } from '@sylocrm/application'
 import { and, eq, inArray, isNotNull, isNull, like, ne, sql } from 'drizzle-orm'
 import type { Database } from '../client'
-import { funnels, leadAdhesions, leads, tasks } from '../schema'
+import { funnels, leadAdhesionQuotas, leads, tasks } from '../schema'
 
 export class DrizzlePostSalePaymentRepository implements IPostSalePaymentRepository {
   constructor(private readonly db: Database) {}
@@ -22,17 +22,21 @@ export class DrizzlePostSalePaymentRepository implements IPostSalePaymentReposit
         name: leads.name,
         assignedUserId: leads.assignedUserId,
         createdAt: leads.createdAt,
-        dueDay: leadAdhesions.installmentDueDay,
+        dueDay: leadAdhesionQuotas.installmentDueDay,
       })
       .from(leads)
       .innerJoin(funnels, eq(funnels.id, leads.funnelId))
-      .innerJoin(leadAdhesions, eq(leadAdhesions.leadId, leads.id))
+      // Card do Pós-venda = uma cota (a venda com várias vira um card por cota).
+      .innerJoin(
+        leadAdhesionQuotas,
+        and(eq(leadAdhesionQuotas.leadId, leads.id), eq(leadAdhesionQuotas.position, 1)),
+      )
       .where(
         and(
           eq(funnels.kind, 'POST_SALE'),
           isNull(leads.wonAt),
           isNull(leads.lostAt),
-          isNotNull(leadAdhesions.installmentDueDay),
+          isNotNull(leadAdhesionQuotas.installmentDueDay),
         ),
       )
     return rows.flatMap((row) => (row.dueDay ? [{ ...row, dueDay: row.dueDay }] : []))

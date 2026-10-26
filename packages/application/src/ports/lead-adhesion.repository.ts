@@ -3,13 +3,13 @@
 // Definido na camada Application (o consumidor define o contrato).
 // Implementação concreta: packages/infrastructure/src/database/repositories/
 //
-// Uma ficha por lead. Dados pessoais que o lead já tem ficam no lead — ver
-// schema/lead-adhesions.ts.
+// Uma ficha por lead, com uma ou mais cotas. Dados pessoais que o lead já tem
+// ficam no lead — ver schema/lead-adhesions.ts.
 
-/** Campos editáveis da ficha — todos opcionais (vazio = null). */
-export interface LeadAdhesionFields {
+/** Dados do plano de UMA cota — uma venda pode ter várias (2 cotas em grupos
+ * diferentes pra fechar o valor). Todos opcionais (vazio = null). */
+export interface AdhesionQuotaFields {
   administrator: string | null
-  sellerUserId: string | null
   assetValueCents: number | null
   assetCode: string | null
   planTable: string | null
@@ -22,6 +22,15 @@ export interface LeadAdhesionFields {
   paymentMethod: string | null
   /** Dia do mês do vencimento do boleto (1–31). */
   installmentDueDay: number | null
+}
+
+/** Máximo de cotas numa venda. */
+export const MAX_ADHESION_QUOTAS = 10
+
+/** Campos editáveis da ficha — dados da venda e pessoais (uma vez por venda)
+ * e as cotas, na ordem. */
+export interface LeadAdhesionFields {
+  sellerUserId: string | null
   birthplace: string | null
   spouseName: string | null
   phone2: string | null
@@ -30,6 +39,7 @@ export interface LeadAdhesionFields {
   preferredAdministrator: string | null
   contactHours: string | null
   notes: string | null
+  quotas: AdhesionQuotaFields[]
 }
 
 export interface LeadAdhesionRecord extends LeadAdhesionFields {

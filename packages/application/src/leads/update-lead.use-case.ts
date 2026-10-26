@@ -198,35 +198,56 @@ export class UpdateLeadUseCase implements UseCase<UpdateLeadUseCaseInput, LeadRe
         updated.organizationId,
         nextKind,
       )
-      const copy = await duplicateLeadRecord(
-        this.leadRepository,
-        this.funnelRepository,
-        updated,
-        wonFunnel.name,
-        targetFunnel.id,
-      )
-      if (this.adhesionCopy) {
-        await copyLeadAdhesion(
-          this.adhesionCopy.leadAdhesionRepository,
-          this.adhesionCopy.storage,
+      // Venda com várias cotas: um card por cota (cada uma é digitada, paga
+      // e contemplada separado). Com uma cota (ou sem ficha), um card só.
+      const quotas = this.adhesionCopy
+        ? ((await this.adhesionCopy.leadAdhesionRepository.findByLead(updated.id))?.quotas ?? [])
+        : []
+      const perQuota = quotas.length > 1
+      const copies = perQuota ? quotas.map((quota, index) => ({ quota, index })) : [null]
+      for (const item of copies) {
+        const overrides = item
+          ? {
+              name: `${updated.name} — Cota ${item.index + 1}/${quotas.length}${
+                item.quota.groupCode ? ` · Grupo ${item.quota.groupCode}` : ''
+              }`,
+              valueCents: item.quota.assetValueCents ?? updated.valueCents,
+              quotaCount: 1,
+            }
+          : {}
+        const copy = await duplicateLeadRecord(
+          this.leadRepository,
+          this.funnelRepository,
           updated,
-          copy,
-          input.userId,
+          wonFunnel.name,
+          targetFunnel.id,
+          overrides,
         )
+        if (this.adhesionCopy) {
+          await copyLeadAdhesion(
+            this.adhesionCopy.leadAdhesionRepository,
+            this.adhesionCopy.storage,
+            updated,
+            copy,
+            input.userId,
+            item ? item.index : undefined,
+          )
+        }
+        await this.activityLog.record({
+          organizationId: updated.organizationId,
+          actorUserId: null,
+          action: 'lead.duplicated',
+          entityType: 'lead',
+          entityId: copy.id,
+          entityLabel: copy.name,
+          metadata: {
+            fromFunnelName: wonFunnel.name,
+            toFunnelName: targetFunnel.name,
+            automatic: true,
+            ...(item ? { quota: item.index + 1, quotaTotal: quotas.length } : {}),
+          },
+        })
       }
-      await this.activityLog.record({
-        organizationId: updated.organizationId,
-        actorUserId: null,
-        action: 'lead.duplicated',
-        entityType: 'lead',
-        entityId: copy.id,
-        entityLabel: copy.name,
-        metadata: {
-          fromFunnelName: wonFunnel.name,
-          toFunnelName: targetFunnel.name,
-          automatic: true,
-        },
-      })
     }
 
     return updated

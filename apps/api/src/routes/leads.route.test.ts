@@ -1421,17 +1421,21 @@ describe('DELETE /leads/:id', () => {
 // ── GET/PUT /leads/:id/adhesion ──────────────────────────────────────────────
 
 describe('PUT /leads/:id/adhesion', () => {
-  const FIELDS = {
+  const QUOTA = {
     administrator: '  Porto Seguro ',
-    sellerUserId: null,
     assetValueCents: 350_000_00,
     assetCode: '',
     planTable: 'Imóvel 200',
     assetType: 'Imóvel',
     groupCode: null,
+    quotaNumber: null,
     downPaymentCents: null,
     prepaidInstallments: 2,
     paymentMethod: ' Boleto ',
+    installmentDueDay: 10,
+  }
+  const FIELDS = {
+    sellerUserId: null,
     birthplace: 'Goiânia/GO',
     spouseName: null,
     phone2: null,
@@ -1440,6 +1444,7 @@ describe('PUT /leads/:id/adhesion', () => {
     preferredAdministrator: null,
     contactHours: 'Depois das 18h',
     notes: null,
+    quotas: [QUOTA, { ...QUOTA, administrator: 'Embracon', groupCode: '5678' }],
   }
 
   it('saves the adhesion with trimmed texts and empty ones as null', async () => {
@@ -1466,10 +1471,16 @@ describe('PUT /leads/:id/adhesion', () => {
     expect(response.statusCode).toBe(200)
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        administrator: 'Porto Seguro',
-        assetCode: null,
-        prepaidInstallments: 2,
-        paymentMethod: 'Boleto',
+        birthplace: 'Goiânia/GO',
+        quotas: [
+          expect.objectContaining({
+            administrator: 'Porto Seguro',
+            assetCode: null,
+            prepaidInstallments: 2,
+            paymentMethod: 'Boleto',
+          }),
+          expect.objectContaining({ administrator: 'Embracon', groupCode: '5678' }),
+        ],
       }),
     )
   })
@@ -1481,7 +1492,7 @@ describe('PUT /leads/:id/adhesion', () => {
       method: 'PUT',
       url: '/leads/lead-01/adhesion',
       headers: AUTH_HEADERS,
-      payload: { ...FIELDS, assetValueCents: -1 },
+      payload: { ...FIELDS, quotas: [{ ...QUOTA, assetValueCents: -1 }] },
     })
 
     expect(response.statusCode).toBe(400)

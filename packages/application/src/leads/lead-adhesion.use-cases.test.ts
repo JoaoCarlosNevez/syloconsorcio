@@ -4,7 +4,11 @@ import { DataScope, OrganizationType, Role, ValidationError } from '@sylocrm/dom
 import { describe, expect, it, vi } from 'vitest'
 import type { MembershipContext } from '../auth/auth-context'
 import type { IActivityLogRepository } from '../ports/activity-log.repository'
-import type { ILeadAdhesionRepository, LeadAdhesionFields } from '../ports/lead-adhesion.repository'
+import type {
+  AdhesionQuotaFields,
+  ILeadAdhesionRepository,
+  LeadAdhesionFields,
+} from '../ports/lead-adhesion.repository'
 import type { ILeadRepository, LeadRecord } from '../ports/lead.repository'
 import type { IMembershipRepository } from '../ports/membership.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
@@ -30,9 +34,8 @@ const MEMBERSHIP: MembershipContext = {
 
 const LEAD = { id: 'lead-01', organizationId: 'org-01', name: 'Maria' } as LeadRecord
 
-const EMPTY_FIELDS: LeadAdhesionFields = {
+const EMPTY_QUOTA: AdhesionQuotaFields = {
   administrator: null,
-  sellerUserId: null,
   assetValueCents: null,
   assetCode: null,
   planTable: null,
@@ -43,6 +46,10 @@ const EMPTY_FIELDS: LeadAdhesionFields = {
   prepaidInstallments: null,
   paymentMethod: null,
   installmentDueDay: null,
+}
+
+const EMPTY_FIELDS: LeadAdhesionFields = {
+  sellerUserId: null,
   birthplace: null,
   spouseName: null,
   phone2: null,
@@ -51,6 +58,7 @@ const EMPTY_FIELDS: LeadAdhesionFields = {
   preferredAdministrator: null,
   contactHours: null,
   notes: null,
+  quotas: [],
 }
 
 function setup(lead: LeadRecord | null = LEAD) {
@@ -140,7 +148,14 @@ describe('lead adhesion', () => {
 
     await save.execute({
       ...access,
-      fields: { ...EMPTY_FIELDS, administrator: 'Porto Seguro', sellerUserId: 'ana' },
+      fields: {
+        ...EMPTY_FIELDS,
+        sellerUserId: 'ana',
+        quotas: [
+          { ...EMPTY_QUOTA, administrator: 'Porto Seguro' },
+          { ...EMPTY_QUOTA, groupCode: '5678' },
+        ],
+      },
     })
 
     expect(leadAdhesionRepository.upsert).toHaveBeenCalledWith(
@@ -148,14 +163,17 @@ describe('lead adhesion', () => {
         leadId: 'lead-01',
         organizationId: 'org-01',
         updatedByUserId: 'user-01',
-        administrator: 'Porto Seguro',
         sellerUserId: 'ana',
+        quotas: [
+          expect.objectContaining({ administrator: 'Porto Seguro' }),
+          expect.objectContaining({ groupCode: '5678' }),
+        ],
       }),
     )
     expect(activityLog.record).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'lead.adhesion_updated',
-        metadata: { filledFields: 2 },
+        metadata: { filledFields: 3, quotaCount: 2 },
       }),
     )
   })

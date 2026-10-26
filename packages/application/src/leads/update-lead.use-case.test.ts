@@ -330,6 +330,67 @@ describe('UpdateLeadUseCase', () => {
       )
     })
 
+    it('creates one ADM card per quota when the sale has several', async () => {
+      const { useCase, leadRepository, leadAdhesionRepository } = setupWon()
+      const quota = (groupCode: string, assetValueCents: number) => ({
+        administrator: 'Porto',
+        assetValueCents,
+        assetCode: null,
+        planTable: null,
+        assetType: null,
+        groupCode,
+        quotaNumber: null,
+        downPaymentCents: null,
+        prepaidInstallments: null,
+        paymentMethod: 'Boleto',
+        installmentDueDay: 10,
+      })
+      const adhesion = {
+        leadId: SAMPLE_LEAD.id,
+        organizationId: ORG_ID,
+        sellerUserId: null,
+        birthplace: 'Goiânia/GO',
+        spouseName: null,
+        phone2: null,
+        address: null,
+        zipCode: null,
+        preferredAdministrator: null,
+        contactHours: null,
+        notes: null,
+        updatedByUserId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        quotas: [quota('1234', 200_000_00), quota('5678', 150_000_00)],
+      }
+      vi.mocked(leadAdhesionRepository.findByLead).mockResolvedValue(adhesion)
+
+      await useCase.execute(markWon)
+
+      expect(leadRepository.create).toHaveBeenCalledTimes(2)
+      expect(leadRepository.create).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          name: `${SAMPLE_LEAD.name} — Cota 1/2 · Grupo 1234`,
+          valueCents: 200_000_00,
+          quotaCount: 1,
+        }),
+      )
+      expect(leadRepository.create).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          name: `${SAMPLE_LEAD.name} — Cota 2/2 · Grupo 5678`,
+          valueCents: 150_000_00,
+        }),
+      )
+      // Cada card leva os dados pessoais e só a sua cota.
+      expect(leadAdhesionRepository.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          birthplace: 'Goiânia/GO',
+          quotas: [expect.objectContaining({ groupCode: '5678' })],
+        }),
+      )
+    })
+
     it('takes the adhesion documents along, copying the files', async () => {
       const { useCase, storage, leadAdhesionRepository } = setupWon()
 

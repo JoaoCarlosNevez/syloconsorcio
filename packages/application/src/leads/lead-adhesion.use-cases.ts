@@ -14,6 +14,7 @@ import {
   type LeadAdhesionDocumentRecord,
   type LeadAdhesionFields,
   type LeadAdhesionRecord,
+  MAX_ADHESION_QUOTAS,
 } from '../ports/lead-adhesion.repository'
 import type { ILeadRepository } from '../ports/lead.repository'
 import type { IMembershipRepository } from '../ports/membership.repository'
@@ -80,6 +81,12 @@ export class SaveLeadAdhesionUseCase
     const lead = await this.leadRepository.findById(input.leadId, scope)
     if (!lead) return null
 
+    if (input.fields.quotas.length > MAX_ADHESION_QUOTAS) {
+      throw new ValidationError([
+        { field: 'quotas', message: `No máximo ${MAX_ADHESION_QUOTAS} cotas por venda.` },
+      ])
+    }
+
     if (input.fields.sellerUserId) {
       const members = await this.membershipRepository.findActiveByOrganizationId(
         lead.organizationId,
@@ -101,7 +108,13 @@ export class SaveLeadAdhesionUseCase
       updatedByUserId: input.userId,
     })
 
-    const filled = Object.values(input.fields).filter((value) => value !== null).length
+    const { quotas, ...personal } = input.fields
+    const filled =
+      Object.values(personal).filter((value) => value !== null).length +
+      quotas.reduce(
+        (total, quota) => total + Object.values(quota).filter((value) => value !== null).length,
+        0,
+      )
     await this.activityLog.record({
       organizationId: lead.organizationId,
       actorUserId: input.userId,
@@ -109,7 +122,7 @@ export class SaveLeadAdhesionUseCase
       entityType: 'lead',
       entityId: lead.id,
       entityLabel: lead.name,
-      metadata: { filledFields: filled },
+      metadata: { filledFields: filled, quotaCount: quotas.length },
     })
 
     return adhesion

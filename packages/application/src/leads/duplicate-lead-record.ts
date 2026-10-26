@@ -27,6 +27,8 @@ export async function duplicateLeadRecord(
   source: LeadRecord,
   sourceFunnelName: string,
   targetFunnelId: string,
+  /** Venda com várias cotas: cada cópia é uma cota (nome, valor, quantidade). */
+  overrides: { name?: string; valueCents?: number; quotaCount?: number } = {},
 ): Promise<LeadRecord> {
   const targetFunnel = await funnelRepository.findById(targetFunnelId, source.organizationId)
   if (!targetFunnel) {
@@ -43,12 +45,12 @@ export async function duplicateLeadRecord(
 
   return leadRepository.create({
     organizationId: source.organizationId,
-    name: source.name,
+    name: overrides.name ?? source.name,
     phone: source.phone,
     email: source.email,
     segment: source.segment,
-    valueCents: source.valueCents,
-    quotaCount: source.quotaCount,
+    valueCents: overrides.valueCents ?? source.valueCents,
+    quotaCount: overrides.quotaCount ?? source.quotaCount,
     source: source.source,
     funnelId: targetFunnelId,
     stageId: firstStage.id,

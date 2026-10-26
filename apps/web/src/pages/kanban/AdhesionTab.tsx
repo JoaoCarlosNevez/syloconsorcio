@@ -2,7 +2,9 @@
 // precisa pra fazer a adesão na administradora, preenchido ainda na etapa da
 // venda. Dados pessoais que o lead já tem (nome, telefone, e-mail, profissão,
 // renda, estado civil) são salvos no próprio lead; o resto na ficha de
-// adesão. Lógica do checklist em lib/adhesion-checklist.ts.
+// adesão. Uma venda pode ter várias cotas (ex: 2 grupos pra fechar o valor):
+// os dados do plano ficam numa aba por cota; ao marcar Ganho, cada cota vira
+// um card no ADM. Lógica do checklist em lib/adhesion-checklist.ts.
 
 import { Skeleton, useToast } from '@sylocrm/ui'
 import { useEffect, useState } from 'react'
@@ -15,19 +17,26 @@ import {
 } from '../../hooks/useLeads'
 import {
   ADHESION_ITEMS,
+  type AdhesionFieldKey,
   type AdhesionForm,
   type AdhesionItem,
   type AdhesionSection,
+  MAX_QUOTAS,
   PAYMENT_METHOD_OPTIONS,
+  QUOTA_ITEMS,
+  type QuotaForm,
+  type QuotaItem,
   adhesionFields,
   adhesionProgress,
   adhesionText,
   buildAdhesionForm,
+  emptyQuota,
   formatZipCode,
   isFilled,
+  isQuotaFilled,
   leadChanges,
 } from '../../lib/adhesion-checklist'
-import { formatMoneyInput, formatPhoneBR } from '../../lib/lead-adapters'
+import { formatMoneyInput, formatPhoneBR, parseValueToCents } from '../../lib/lead-adapters'
 import type { LeadProposal } from '../../lib/leads-api'
 import type { TeamMember } from '../../lib/team-api'
 import { AdhesionDocuments } from './AdhesionDocuments'
@@ -42,16 +51,14 @@ const MARITAL_STATUS_OPTIONS = [
 ]
 
 const SECTIONS: { key: AdhesionSection; title: string }[] = [
-  { key: 'venda', title: 'Venda' },
-  { key: 'plano', title: 'Dados do plano' },
   { key: 'pessoais', title: 'Dados pessoais' },
   { key: 'preferencias', title: 'Preferências' },
 ]
 
-const MONEY_KEYS: ReadonlySet<keyof AdhesionForm> = new Set(['assetValue', 'downPayment', 'income'])
-const PHONE_KEYS: ReadonlySet<keyof AdhesionForm> = new Set(['phone', 'phone2'])
+const MONEY_KEYS: ReadonlySet<string> = new Set(['assetValue', 'downPayment', 'income'])
+const PHONE_KEYS: ReadonlySet<string> = new Set(['phone', 'phone2'])
 
-const PLACEHOLDER: Partial<Record<keyof AdhesionForm, string>> = {
+const QUOTA_PLACEHOLDER: Partial<Record<keyof QuotaForm, string>> = {
   administrator: 'Ex: Porto Seguro, Embracon…',
   assetCode: 'Código na tabela da administradora',
   planTable: 'Ex: Imóvel Plano Leve 200',
@@ -59,6 +66,9 @@ const PLACEHOLDER: Partial<Record<keyof AdhesionForm, string>> = {
   quotaNumber: 'Ex: 0123',
   prepaidInstallments: 'Quantidade',
   installmentDueDay: 'Ex: 10 (todo dia 10)',
+}
+
+const PLACEHOLDER: Partial<Record<AdhesionFieldKey, string>> = {
   birthplace: 'Cidade/UF',
   address: 'Rua, número, complemento, bairro, cidade/UF',
   zipCode: '00000-000',
@@ -142,6 +152,7 @@ export function AdhesionTab({
   const { toast } = useToast()
   const [form, setForm] = useState<AdhesionForm | null>(null)
   const [dirty, setDirty] = useState(false)
+  const [activeQuota, setActiveQuota] = useState(0)
 
   // Monta o formulário quando a ficha chega (e de novo se trocar de lead).
   // De propósito NÃO depende de card/latestProposal: eles mudam a cada
@@ -150,6 +161,7 @@ export function AdhesionTab({
   useEffect(() => {
     if (!data) return
     setForm(buildAdhesionForm(card, data.adhesion, latestProposal))
+    setActiveQuota(0)
     // Sem ficha salva, as sugestões (vendedor, valor, tabela…) ainda não
     // estão gravadas — o botão já começa liberado.
     setDirty(data.adhesion === null)
@@ -173,22 +185,66 @@ export function AdhesionTab({
     activeMembers.find((m) => m.userId === form.sellerUserId)?.name ??
     members.find((m) => m.userId === form.sellerUserId)?.email ??
     null
-  const typeOptions = [...new Set([...segments, form.assetType].filter(Boolean))]
+  const quota = form.quotas[activeQuota] ?? form.quotas[0] ?? emptyQuota()
+  const typeOptions = [...new Set([...segments, quota.assetType].filter(Boolean))]
   const isSaving = saveAdhesion.isPending || updateLead.isPending
 
-  function update(key: keyof AdhesionForm, raw: string) {
+  function update(key: AdhesionFieldKey, raw: string) {
     let value = raw
     if (MONEY_KEYS.has(key)) value = formatMoneyInput(raw)
     else if (PHONE_KEYS.has(key)) value = formatPhoneBR(raw)
     else if (key === 'zipCode') value = formatZipCode(raw)
+    setForm((prev) => (prev ? { ...prev, [key]: value } : prev))
+    setDirty(true)
+    if (key === 'zipCode' && value.replace(/\D/g, '').length === 8) void fillAddress(value)
+  }
+
+  function updateQuota(key: keyof QuotaForm, raw: string) {
+    let value = raw
+    if (MONEY_KEYS.has(key)) value = formatMoneyInput(raw)
     else if (key === 'prepaidInstallments') value = raw.replace(/\D/g, '').slice(0, 3)
     else if (key === 'installmentDueDay') {
       const digits = raw.replace(/\D/g, '').slice(0, 2)
       value = digits && Number(digits) > 31 ? '31' : digits
     }
-    setForm((prev) => (prev ? { ...prev, [key]: value } : prev))
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            quotas: prev.quotas.map((q, i) => (i === activeQuota ? { ...q, [key]: value } : q)),
+          }
+        : prev,
+    )
     setDirty(true)
-    if (key === 'zipCode' && value.replace(/\D/g, '').length === 8) void fillAddress(value)
+  }
+
+  function addQuota() {
+    setForm((prev) => {
+      if (!prev || prev.quotas.length >= MAX_QUOTAS) return prev
+      // A nova cota já vem com o que costuma se repetir (administradora,
+      // tipo, forma de pagamento e vencimento).
+      const base = prev.quotas[prev.quotas.length - 1] ?? emptyQuota()
+      const next: QuotaForm = {
+        ...emptyQuota(),
+        administrator: base.administrator,
+        assetType: base.assetType,
+        paymentMethod: base.paymentMethod,
+        installmentDueDay: base.installmentDueDay,
+      }
+      setActiveQuota(prev.quotas.length)
+      return { ...prev, quotas: [...prev.quotas, next] }
+    })
+    setDirty(true)
+  }
+
+  function removeQuota(index: number) {
+    setForm((prev) =>
+      prev && prev.quotas.length > 1
+        ? { ...prev, quotas: prev.quotas.filter((_, i) => i !== index) }
+        : prev,
+    )
+    setActiveQuota((current) => Math.max(0, current >= index ? current - 1 : current))
+    setDirty(true)
   }
 
   async function fillAddress(zipCode: string) {
@@ -275,24 +331,6 @@ export function AdhesionTab({
         </select>
       )
     }
-    if (item.key === 'paymentMethod') {
-      const options = [...new Set([...PAYMENT_METHOD_OPTIONS, value].filter(Boolean))]
-      return (
-        <select
-          id={id}
-          className={styles.input}
-          value={value}
-          onChange={(e) => update(item.key, e.target.value)}
-        >
-          <option value="">Selecione…</option>
-          {options.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      )
-    }
     if (item.key === 'maritalStatus') {
       return (
         <select
@@ -303,23 +341,6 @@ export function AdhesionTab({
         >
           <option value="">Selecione…</option>
           {MARITAL_STATUS_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      )
-    }
-    if (item.key === 'assetType') {
-      return (
-        <select
-          id={id}
-          className={styles.input}
-          value={value}
-          onChange={(e) => update(item.key, e.target.value)}
-        >
-          <option value="">Selecione…</option>
-          {typeOptions.map((option) => (
             <option key={option} value={option}>
               {option}
             </option>
@@ -346,10 +367,7 @@ export function AdhesionTab({
           id={id}
           className={styles.input}
           inputMode={
-            MONEY_KEYS.has(item.key) ||
-            item.key === 'prepaidInstallments' ||
-            item.key === 'installmentDueDay' ||
-            item.key === 'zipCode'
+            MONEY_KEYS.has(item.key) || item.key === 'zipCode'
               ? 'numeric'
               : PHONE_KEYS.has(item.key)
                 ? 'tel'
@@ -364,6 +382,71 @@ export function AdhesionTab({
       </div>
     )
   }
+
+  function renderQuotaInput(item: QuotaItem) {
+    const id = `adhesion-quota-${item.key}`
+    const value = quota[item.key]
+    const select = (options: string[]) => (
+      <select
+        id={id}
+        className={styles.input}
+        value={value}
+        onChange={(e) => updateQuota(item.key, e.target.value)}
+      >
+        <option value="">Selecione…</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    )
+    if (item.key === 'paymentMethod') {
+      return select([...new Set([...PAYMENT_METHOD_OPTIONS, value].filter(Boolean))])
+    }
+    if (item.key === 'assetType') return select(typeOptions)
+    return (
+      <div className={MONEY_KEYS.has(item.key) ? styles.moneyWrap : undefined}>
+        {MONEY_KEYS.has(item.key) && <span className={styles.moneyPrefix}>R$</span>}
+        <input
+          id={id}
+          className={styles.input}
+          inputMode={
+            MONEY_KEYS.has(item.key) ||
+            item.key === 'prepaidInstallments' ||
+            item.key === 'installmentDueDay'
+              ? 'numeric'
+              : undefined
+          }
+          placeholder={QUOTA_PLACEHOLDER[item.key]}
+          value={value}
+          onChange={(e) => updateQuota(item.key, e.target.value)}
+        />
+      </div>
+    )
+  }
+
+  function fieldLabel(htmlFor: string, label: string, filled: boolean, required: boolean) {
+    return (
+      <label htmlFor={htmlFor} className={styles.label}>
+        <span
+          className={
+            filled ? styles.checkDone : required ? styles.checkMissing : styles.checkOptional
+          }
+          aria-hidden="true"
+        >
+          {filled && <CheckIcon />}
+        </span>
+        {label}
+        {!required && <span className={styles.optional}>(opcional)</span>}
+      </label>
+    )
+  }
+
+  const quotaTotalCents = form.quotas.reduce(
+    (sum, q) => sum + (q.assetValue.trim() ? (parseValueToCents(q.assetValue) ?? 0) : 0),
+    0,
+  )
 
   return (
     <div className={styles.tab}>
@@ -392,6 +475,96 @@ export function AdhesionTab({
         <span className={styles.representationName}>{organizationName}</span>
       </div>
 
+      <section className={styles.section}>
+        <h3 className={styles.sectionTitle}>Venda</h3>
+        <div className={styles.grid}>
+          {ADHESION_ITEMS.filter((item) => item.section === 'venda').map((item) => (
+            <div key={item.key} className={styles.field}>
+              {fieldLabel(
+                `adhesion-${item.key}`,
+                item.label,
+                isFilled(form, item.key),
+                item.required(form),
+              )}
+              {renderInput(item)}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.quotaHeader}>
+          <h3 className={styles.sectionTitle}>
+            {form.quotas.length > 1
+              ? `Cotas desta venda (${form.quotas.length})`
+              : 'Dados do plano'}
+          </h3>
+          {form.quotas.length > 1 && quotaTotalCents > 0 && (
+            <span className={styles.quotaTotal}>
+              Total:{' '}
+              {(quotaTotalCents / 100).toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+              })}
+            </span>
+          )}
+        </div>
+        <div className={styles.quotaTabs} role="tablist" aria-label="Cotas">
+          {form.quotas.map((q, index) => (
+            <button
+              // biome-ignore lint/suspicious/noArrayIndexKey: cotas são posicionais
+              key={index}
+              type="button"
+              role="tab"
+              aria-selected={index === activeQuota}
+              className={
+                index === activeQuota
+                  ? `${styles.quotaTab} ${styles.quotaTabActive}`
+                  : styles.quotaTab
+              }
+              onClick={() => setActiveQuota(index)}
+            >
+              Cota {index + 1}
+              {q.groupCode.trim() && (
+                <span className={styles.quotaTabSub}>Grupo {q.groupCode.trim()}</span>
+              )}
+            </button>
+          ))}
+          {form.quotas.length < MAX_QUOTAS && (
+            <button type="button" className={styles.quotaAdd} onClick={addQuota}>
+              + Adicionar cota
+            </button>
+          )}
+        </div>
+        <div className={styles.grid}>
+          {QUOTA_ITEMS.map((item) => (
+            <div key={item.key} className={styles.field}>
+              {fieldLabel(
+                `adhesion-quota-${item.key}`,
+                item.label,
+                isQuotaFilled(quota, item.key),
+                item.required,
+              )}
+              {renderQuotaInput(item)}
+            </div>
+          ))}
+        </div>
+        {form.quotas.length > 1 && (
+          <div className={styles.quotaFooter}>
+            <span className={styles.documentNote}>
+              Ao marcar Ganho, cada cota vira um card no ADM — cada uma com o próprio boleto.
+            </span>
+            <button
+              type="button"
+              className={styles.linkBtn}
+              onClick={() => removeQuota(activeQuota)}
+            >
+              Remover cota {activeQuota + 1}
+            </button>
+          </div>
+        )}
+      </section>
+
       {SECTIONS.map((section) => (
         <section key={section.key} className={styles.section}>
           <h3 className={styles.sectionTitle}>{section.title}</h3>
@@ -411,22 +584,7 @@ export function AdhesionTab({
                       : styles.field
                   }
                 >
-                  <label htmlFor={`adhesion-${item.key}`} className={styles.label}>
-                    <span
-                      className={
-                        filled
-                          ? styles.checkDone
-                          : required
-                            ? styles.checkMissing
-                            : styles.checkOptional
-                      }
-                      aria-hidden="true"
-                    >
-                      {filled && <CheckIcon />}
-                    </span>
-                    {item.label}
-                    {!required && <span className={styles.optional}>(opcional)</span>}
-                  </label>
+                  {fieldLabel(`adhesion-${item.key}`, item.label, filled, required)}
                   {renderInput(item)}
                 </div>
               )

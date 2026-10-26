@@ -1,21 +1,25 @@
 // Checklist de adesão — o que o vendedor precisa ter em mãos pra fazer a
 // adesão na administradora. Lógica pura (sem React): os campos, quais são
 // obrigatórios, o progresso e o texto pra colar no portal da administradora.
+//
+// Uma venda pode ter VÁRIAS cotas (ex: 2 grupos pra fechar o valor): os dados
+// da venda e pessoais aparecem uma vez; os do plano, uma vez por cota. Ao
+// marcar Ganho, cada cota vira um card no ADM.
 
 import type { CardData } from '../data/kanban-mock'
 import { centsToMoneyInput, formatBRL, parseValueToCents } from './lead-adapters'
 import type {
   AdhesionDocumentKind,
+  AdhesionQuotaFields,
   LeadAdhesion,
   LeadAdhesionFields,
   LeadProposal,
   UpdateLeadPayload,
 } from './leads-api'
 
-/** Valores do formulário, como o usuário digita (dinheiro com máscara). */
-export interface AdhesionForm {
+/** Dados do plano de uma cota, como o usuário digita (dinheiro com máscara). */
+export interface QuotaForm {
   administrator: string
-  sellerUserId: string
   assetValue: string
   assetCode: string
   planTable: string
@@ -26,6 +30,11 @@ export interface AdhesionForm {
   prepaidInstallments: string
   paymentMethod: string
   installmentDueDay: string
+}
+
+/** Valores do formulário, como o usuário digita. */
+export interface AdhesionForm {
+  sellerUserId: string
   name: string
   profession: string
   income: string
@@ -40,16 +49,24 @@ export interface AdhesionForm {
   preferredAdministrator: string
   contactHours: string
   notes: string
+  quotas: QuotaForm[]
 }
 
-export type AdhesionSection = 'venda' | 'plano' | 'pessoais' | 'preferencias'
+export type AdhesionFieldKey = Exclude<keyof AdhesionForm, 'quotas'>
+export type AdhesionSection = 'venda' | 'pessoais' | 'preferencias'
 
 export interface AdhesionItem {
-  key: keyof AdhesionForm
+  key: AdhesionFieldKey
   label: string
   section: AdhesionSection
   /** Conta no progresso. Cônjuge só quando casado/união estável. */
   required: (form: AdhesionForm) => boolean
+}
+
+export interface QuotaItem {
+  key: keyof QuotaForm
+  label: string
+  required: boolean
 }
 
 const always = () => true
@@ -61,28 +78,7 @@ export function needsSpouse(maritalStatus: string): boolean {
 }
 
 export const ADHESION_ITEMS: AdhesionItem[] = [
-  {
-    key: 'administrator',
-    label: 'Administradora / intermediação',
-    section: 'venda',
-    required: always,
-  },
   { key: 'sellerUserId', label: 'Vendedor', section: 'venda', required: always },
-  { key: 'assetValue', label: 'Valor do bem', section: 'plano', required: always },
-  { key: 'assetCode', label: 'Código do bem', section: 'plano', required: never },
-  { key: 'planTable', label: 'Tabela / plano', section: 'plano', required: always },
-  { key: 'assetType', label: 'Tipo do bem', section: 'plano', required: always },
-  { key: 'groupCode', label: 'Grupo', section: 'plano', required: never },
-  { key: 'quotaNumber', label: 'Número da cota', section: 'plano', required: never },
-  { key: 'downPayment', label: 'Entrada', section: 'plano', required: never },
-  { key: 'prepaidInstallments', label: 'Parcelas antecipadas', section: 'plano', required: never },
-  { key: 'paymentMethod', label: 'Forma de pagamento', section: 'plano', required: always },
-  {
-    key: 'installmentDueDay',
-    label: 'Dia do vencimento do boleto',
-    section: 'plano',
-    required: never,
-  },
   { key: 'name', label: 'Nome', section: 'pessoais', required: always },
   { key: 'profession', label: 'Profissão', section: 'pessoais', required: always },
   { key: 'income', label: 'Renda', section: 'pessoais', required: always },
@@ -113,6 +109,23 @@ export const ADHESION_ITEMS: AdhesionItem[] = [
   },
   { key: 'notes', label: 'Observação', section: 'preferencias', required: never },
 ]
+
+/** Campos de cada cota (dados do plano). */
+export const QUOTA_ITEMS: QuotaItem[] = [
+  { key: 'administrator', label: 'Administradora / intermediação', required: true },
+  { key: 'assetValue', label: 'Valor do bem', required: true },
+  { key: 'assetCode', label: 'Código do bem', required: false },
+  { key: 'planTable', label: 'Tabela / plano', required: true },
+  { key: 'assetType', label: 'Tipo do bem', required: true },
+  { key: 'groupCode', label: 'Grupo', required: false },
+  { key: 'quotaNumber', label: 'Número da cota', required: false },
+  { key: 'downPayment', label: 'Entrada', required: false },
+  { key: 'prepaidInstallments', label: 'Parcelas antecipadas', required: false },
+  { key: 'paymentMethod', label: 'Forma de pagamento', required: true },
+  { key: 'installmentDueDay', label: 'Dia do vencimento do boleto', required: false },
+]
+
+export const MAX_QUOTAS = 10
 
 export const PAYMENT_METHOD_OPTIONS = [
   'Boleto',
@@ -154,8 +167,12 @@ export const ADHESION_DOCUMENTS: {
   },
 ]
 
-export function isFilled(form: AdhesionForm, key: keyof AdhesionForm): boolean {
+export function isFilled(form: AdhesionForm, key: AdhesionFieldKey): boolean {
   return form[key].trim() !== ''
+}
+
+export function isQuotaFilled(quota: QuotaForm, key: keyof QuotaForm): boolean {
+  return quota[key].trim() !== ''
 }
 
 export interface AdhesionProgress {
@@ -165,18 +182,32 @@ export interface AdhesionProgress {
   missing: string[]
 }
 
-/** Progresso dos campos obrigatórios + anexos obrigatórios já enviados. */
+/** Progresso: campos obrigatórios + obrigatórios de cada cota + anexos. */
 export function adhesionProgress(
   form: AdhesionForm,
   uploadedKinds: ReadonlySet<AdhesionDocumentKind> = new Set(),
 ): AdhesionProgress {
   const required = ADHESION_ITEMS.filter((item) => item.required(form))
+  const requiredQuota = QUOTA_ITEMS.filter((item) => item.required)
   const requiredDocuments = ADHESION_DOCUMENTS.filter((doc) => doc.required)
+  const several = form.quotas.length > 1
+  const quotaMissing = form.quotas.flatMap((quota, index) =>
+    requiredQuota
+      .filter((item) => !isQuotaFilled(quota, item.key))
+      .map((item) => (several ? `Cota ${index + 1}: ${item.label}` : item.label)),
+  )
   const missing = [
-    ...required.filter((item) => !isFilled(form, item.key)).map((item) => item.label),
+    ...required
+      .filter((item) => item.section === 'venda' && !isFilled(form, item.key))
+      .map((item) => item.label),
+    ...quotaMissing,
+    ...required
+      .filter((item) => item.section !== 'venda' && !isFilled(form, item.key))
+      .map((item) => item.label),
     ...requiredDocuments.filter((doc) => !uploadedKinds.has(doc.kind)).map((doc) => doc.label),
   ]
-  const total = required.length + requiredDocuments.length
+  const total =
+    required.length + requiredQuota.length * form.quotas.length + requiredDocuments.length
   return { done: total - missing.length, total, missing }
 }
 
@@ -184,34 +215,60 @@ function moneyOrEmpty(cents: number | null | undefined): string {
   return cents === null || cents === undefined ? '' : centsToMoneyInput(cents)
 }
 
+function numberOrEmpty(value: number | null | undefined): string {
+  return value === null || value === undefined ? '' : String(value)
+}
+
+export function emptyQuota(): QuotaForm {
+  return {
+    administrator: '',
+    assetValue: '',
+    assetCode: '',
+    planTable: '',
+    assetType: '',
+    groupCode: '',
+    quotaNumber: '',
+    downPayment: '',
+    prepaidInstallments: '',
+    paymentMethod: '',
+    installmentDueDay: '',
+  }
+}
+
+function quotaToForm(quota: AdhesionQuotaFields): QuotaForm {
+  return {
+    administrator: quota.administrator ?? '',
+    assetValue: moneyOrEmpty(quota.assetValueCents),
+    assetCode: quota.assetCode ?? '',
+    planTable: quota.planTable ?? '',
+    assetType: quota.assetType ?? '',
+    groupCode: quota.groupCode ?? '',
+    quotaNumber: quota.quotaNumber ?? '',
+    downPayment: moneyOrEmpty(quota.downPaymentCents),
+    prepaidInstallments: numberOrEmpty(quota.prepaidInstallments),
+    paymentMethod: quota.paymentMethod ?? '',
+    installmentDueDay: numberOrEmpty(quota.installmentDueDay),
+  }
+}
+
 /** Monta o formulário: a ficha salva, ou sugestões do lead e da última
- * proposta quando ainda não existe ficha. */
+ * proposta quando ainda não existe ficha (uma cota). */
 export function buildAdhesionForm(
   card: CardData,
   adhesion: LeadAdhesion | null,
   latestProposal: LeadProposal | null,
 ): AdhesionForm {
+  const suggested: QuotaForm = {
+    ...emptyQuota(),
+    assetValue: moneyOrEmpty(card.valueCents || null),
+    planTable: latestProposal?.tableName ?? '',
+    assetType: card.segment,
+    downPayment: moneyOrEmpty(latestProposal?.downPaymentCents ?? null),
+  }
+  const quotas =
+    adhesion && adhesion.quotas.length > 0 ? adhesion.quotas.map(quotaToForm) : [suggested]
   return {
-    administrator: adhesion?.administrator ?? '',
     sellerUserId: adhesion ? (adhesion.sellerUserId ?? '') : (card.assignedUserId ?? ''),
-    assetValue: moneyOrEmpty(adhesion ? adhesion.assetValueCents : card.valueCents || null),
-    assetCode: adhesion?.assetCode ?? '',
-    planTable: adhesion ? (adhesion.planTable ?? '') : (latestProposal?.tableName ?? ''),
-    assetType: adhesion ? (adhesion.assetType ?? '') : card.segment,
-    groupCode: adhesion?.groupCode ?? '',
-    quotaNumber: adhesion?.quotaNumber ?? '',
-    downPayment: moneyOrEmpty(
-      adhesion ? adhesion.downPaymentCents : (latestProposal?.downPaymentCents ?? null),
-    ),
-    prepaidInstallments:
-      adhesion?.prepaidInstallments !== null && adhesion?.prepaidInstallments !== undefined
-        ? String(adhesion.prepaidInstallments)
-        : '',
-    paymentMethod: adhesion?.paymentMethod ?? '',
-    installmentDueDay:
-      adhesion?.installmentDueDay !== null && adhesion?.installmentDueDay !== undefined
-        ? String(adhesion.installmentDueDay)
-        : '',
     name: card.name,
     profession: card.profession ?? '',
     income: moneyOrEmpty(card.incomeCents),
@@ -226,6 +283,7 @@ export function buildAdhesionForm(
     preferredAdministrator: adhesion?.preferredAdministrator ?? '',
     contactHours: adhesion?.contactHours ?? '',
     notes: adhesion?.notes ?? '',
+    quotas,
   }
 }
 
@@ -237,22 +295,27 @@ function dueDayOrNull(value: string): number | null {
   return Number.isInteger(day) && day >= 1 && day <= 31 ? day : null
 }
 
+function quotaFields(quota: QuotaForm): AdhesionQuotaFields {
+  const prepaid = Number.parseInt(quota.prepaidInstallments, 10)
+  return {
+    administrator: textOrNull(quota.administrator),
+    assetValueCents: quota.assetValue.trim() ? parseValueToCents(quota.assetValue) : null,
+    assetCode: textOrNull(quota.assetCode),
+    planTable: textOrNull(quota.planTable),
+    assetType: textOrNull(quota.assetType),
+    groupCode: textOrNull(quota.groupCode),
+    quotaNumber: textOrNull(quota.quotaNumber),
+    downPaymentCents: quota.downPayment.trim() ? parseValueToCents(quota.downPayment) : null,
+    prepaidInstallments: Number.isNaN(prepaid) ? null : prepaid,
+    paymentMethod: textOrNull(quota.paymentMethod),
+    installmentDueDay: dueDayOrNull(quota.installmentDueDay),
+  }
+}
+
 /** Campos da ficha (o que não é do lead) pra API. */
 export function adhesionFields(form: AdhesionForm): LeadAdhesionFields {
-  const prepaid = Number.parseInt(form.prepaidInstallments, 10)
   return {
-    administrator: textOrNull(form.administrator),
     sellerUserId: textOrNull(form.sellerUserId),
-    assetValueCents: form.assetValue.trim() ? parseValueToCents(form.assetValue) : null,
-    assetCode: textOrNull(form.assetCode),
-    planTable: textOrNull(form.planTable),
-    assetType: textOrNull(form.assetType),
-    groupCode: textOrNull(form.groupCode),
-    quotaNumber: textOrNull(form.quotaNumber),
-    downPaymentCents: form.downPayment.trim() ? parseValueToCents(form.downPayment) : null,
-    prepaidInstallments: Number.isNaN(prepaid) ? null : prepaid,
-    paymentMethod: textOrNull(form.paymentMethod),
-    installmentDueDay: dueDayOrNull(form.installmentDueDay),
     birthplace: textOrNull(form.birthplace),
     spouseName: needsSpouse(form.maritalStatus) ? textOrNull(form.spouseName) : null,
     phone2: textOrNull(form.phone2),
@@ -261,10 +324,12 @@ export function adhesionFields(form: AdhesionForm): LeadAdhesionFields {
     preferredAdministrator: textOrNull(form.preferredAdministrator),
     contactHours: textOrNull(form.contactHours),
     notes: textOrNull(form.notes),
+    quotas: form.quotas.map(quotaFields),
   }
 }
 
-/** Dados pessoais que moram no lead — só os que mudaram. */
+/** Dados que moram no lead — só os que mudaram. O valor do lead vira a soma
+ * das cotas (quando todas têm valor) e a quantidade de cotas, a da ficha. */
 export function leadChanges(form: AdhesionForm, card: CardData): UpdateLeadPayload {
   const changes: UpdateLeadPayload = {}
   if (form.name.trim() && form.name.trim() !== card.name) changes.name = form.name.trim()
@@ -277,6 +342,16 @@ export function leadChanges(form: AdhesionForm, card: CardData): UpdateLeadPaylo
   if (incomeCents !== (card.incomeCents ?? null)) changes.incomeCents = incomeCents
   const maritalStatus = textOrNull(form.maritalStatus)
   if (maritalStatus !== (card.maritalStatus ?? null)) changes.maritalStatus = maritalStatus
+  const values = form.quotas.map((quota) =>
+    quota.assetValue.trim() ? parseValueToCents(quota.assetValue) : null,
+  )
+  if (values.length > 0 && values.every((value): value is number => value !== null)) {
+    const total = values.reduce((sum, value) => sum + value, 0)
+    if (total > 0 && total !== card.valueCents) changes.valueCents = total
+  }
+  if (form.quotas.length > 0 && form.quotas.length !== (card.quotaCount ?? 1)) {
+    changes.quotaCount = form.quotas.length
+  }
   return changes
 }
 
@@ -286,33 +361,47 @@ export function formatZipCode(raw: string): string {
   return digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits
 }
 
-const SECTION_TITLE: Record<AdhesionSection, string> = {
-  venda: 'VENDA',
-  plano: 'DADOS DO PLANO',
-  pessoais: 'DADOS PESSOAIS',
-  preferencias: 'PREFERÊNCIAS',
-}
+const MONEY_QUOTA_KEYS: ReadonlySet<keyof QuotaForm> = new Set(['assetValue', 'downPayment'])
 
 /** Ficha em texto, pra colar no portal da administradora ou mandar no chat. */
 export function adhesionText(
   form: AdhesionForm,
   context: { organizationName: string; sellerName: string | null },
 ): string {
-  const value = (item: AdhesionItem): string => {
-    if (item.key === 'sellerUserId') return context.sellerName ?? ''
-    if (item.key === 'assetValue' || item.key === 'downPayment' || item.key === 'income') {
-      const cents = parseValueToCents(form[item.key])
-      return cents === null ? '' : `R$ ${formatBRL(cents)}`
-    }
-    return form[item.key].trim()
+  const money = (raw: string) => {
+    const cents = parseValueToCents(raw)
+    return cents === null ? '' : `R$ ${formatBRL(cents)}`
   }
+  const personal = (item: AdhesionItem) =>
+    item.key === 'sellerUserId'
+      ? (context.sellerName ?? '')
+      : item.key === 'income'
+        ? money(form.income)
+        : form[item.key].trim()
   const lines: string[] = [`FICHA DE ADESÃO — ${form.name.trim()}`, '']
-  for (const section of Object.keys(SECTION_TITLE) as AdhesionSection[]) {
-    lines.push(SECTION_TITLE[section])
-    if (section === 'venda') lines.push(`Representação: ${context.organizationName}`)
+  lines.push('VENDA', `Representação: ${context.organizationName}`)
+  for (const item of ADHESION_ITEMS.filter((i) => i.section === 'venda')) {
+    lines.push(`${item.label}: ${personal(item) || '—'}`)
+  }
+  lines.push('')
+  form.quotas.forEach((quota, index) => {
+    lines.push(
+      form.quotas.length > 1 ? `COTA ${index + 1} DE ${form.quotas.length}` : 'DADOS DO PLANO',
+    )
+    for (const item of QUOTA_ITEMS) {
+      const value = MONEY_QUOTA_KEYS.has(item.key) ? money(quota[item.key]) : quota[item.key].trim()
+      lines.push(`${item.label}: ${value || '—'}`)
+    }
+    lines.push('')
+  })
+  for (const [section, title] of [
+    ['pessoais', 'DADOS PESSOAIS'],
+    ['preferencias', 'PREFERÊNCIAS'],
+  ] as const) {
+    lines.push(title)
     for (const item of ADHESION_ITEMS.filter((i) => i.section === section)) {
       if (item.key === 'spouseName' && !needsSpouse(form.maritalStatus)) continue
-      lines.push(`${item.label}: ${value(item) || '—'}`)
+      lines.push(`${item.label}: ${personal(item) || '—'}`)
     }
     lines.push('')
   }

@@ -98,3 +98,37 @@ export const leadAdhesionDocuments = pgTable(
 )
 
 export type DbLeadAdhesionDocument = typeof leadAdhesionDocuments.$inferSelect
+
+// Cotas da ficha de adesão — uma venda pode ter várias (ex: 2 cotas em grupos
+// diferentes pra fechar o valor). Dados do plano por cota; os pessoais ficam
+// em lead_adhesions. Ao marcar Ganho, cada cota vira um card no ADM (e depois
+// no Pós-venda), cada uma com o próprio boleto. As colunas de plano antigas
+// de lead_adhesions foram copiadas pra cá como "Cota 1" (migration 0040) e
+// não são mais usadas.
+export const leadAdhesionQuotas = pgTable(
+  'lead_adhesion_quotas',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    leadId: uuid('lead_id')
+      .notNull()
+      .references(() => leads.id, { onDelete: 'cascade' }),
+    /** 1, 2, 3… — ordem das cotas na ficha. */
+    position: integer('position').notNull(),
+    administrator: text('administrator'),
+    assetValueCents: bigint('asset_value_cents', { mode: 'number' }),
+    assetCode: text('asset_code'),
+    planTable: text('plan_table'),
+    assetType: text('asset_type'),
+    groupCode: text('group_code'),
+    quotaNumber: text('quota_number'),
+    downPaymentCents: bigint('down_payment_cents', { mode: 'number' }),
+    prepaidInstallments: integer('prepaid_installments'),
+    paymentMethod: text('payment_method'),
+    installmentDueDay: integer('installment_due_day'),
+  },
+  (table) => [
+    uniqueIndex('lead_adhesion_quotas_lead_position_idx').on(table.leadId, table.position),
+  ],
+)
+
+export type DbLeadAdhesionQuota = typeof leadAdhesionQuotas.$inferSelect

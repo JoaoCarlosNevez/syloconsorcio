@@ -134,11 +134,12 @@ export {
   UpdateLeadQueueSettingsUseCase,
 } from './leads/lead-queue-settings.use-case'
 export type { LeadQueueOverview } from './leads/lead-queue-settings.use-case'
-export { ADHESION_DOCUMENT_KINDS } from './ports/lead-adhesion.repository'
+export { ADHESION_DOCUMENT_KINDS, MAX_ADHESION_QUOTAS } from './ports/lead-adhesion.repository'
 export type {
   AdhesionDocumentKind,
   ILeadAdhesionRepository,
   LeadAdhesionDocumentRecord,
+  AdhesionQuotaFields,
   LeadAdhesionFields,
   LeadAdhesionRecord,
 } from './ports/lead-adhesion.repository'

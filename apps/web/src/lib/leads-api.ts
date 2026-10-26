@@ -197,9 +197,9 @@ export interface LeadOutcomeChange {
 /** Ficha (checklist) de adesão do lead — dados da venda/plano e os pessoais
  * que o lead não tem. Nome, telefone, e-mail, profissão, renda e estado civil
  * ficam no próprio lead. Ver lead-adhesion.repository.ts no backend. */
-export interface LeadAdhesionFields {
+/** Dados do plano de UMA cota — uma venda pode ter várias. */
+export interface AdhesionQuotaFields {
   administrator: string | null
-  sellerUserId: string | null
   assetValueCents: number | null
   assetCode: string | null
   planTable: string | null
@@ -212,6 +212,11 @@ export interface LeadAdhesionFields {
   paymentMethod: string | null
   /** Dia do mês do vencimento do boleto (1–31). */
   installmentDueDay: number | null
+}
+
+/** Ficha de adesão: dados da venda e pessoais (uma vez) + as cotas. */
+export interface LeadAdhesionFields {
+  sellerUserId: string | null
   birthplace: string | null
   spouseName: string | null
   phone2: string | null
@@ -220,6 +225,7 @@ export interface LeadAdhesionFields {
   preferredAdministrator: string | null
   contactHours: string | null
   notes: string | null
+  quotas: AdhesionQuotaFields[]
 }
 
 export interface LeadAdhesion extends LeadAdhesionFields {
