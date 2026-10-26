@@ -21,6 +21,7 @@ export interface AdhesionForm {
   planTable: string
   assetType: string
   groupCode: string
+  quotaNumber: string
   downPayment: string
   prepaidInstallments: string
   paymentMethod: string
@@ -72,6 +73,7 @@ export const ADHESION_ITEMS: AdhesionItem[] = [
   { key: 'planTable', label: 'Tabela / plano', section: 'plano', required: always },
   { key: 'assetType', label: 'Tipo do bem', section: 'plano', required: always },
   { key: 'groupCode', label: 'Grupo', section: 'plano', required: never },
+  { key: 'quotaNumber', label: 'Número da cota', section: 'plano', required: never },
   { key: 'downPayment', label: 'Entrada', section: 'plano', required: never },
   { key: 'prepaidInstallments', label: 'Parcelas antecipadas', section: 'plano', required: never },
   { key: 'paymentMethod', label: 'Forma de pagamento', section: 'plano', required: always },
@@ -197,6 +199,7 @@ export function buildAdhesionForm(
     planTable: adhesion ? (adhesion.planTable ?? '') : (latestProposal?.tableName ?? ''),
     assetType: adhesion ? (adhesion.assetType ?? '') : card.segment,
     groupCode: adhesion?.groupCode ?? '',
+    quotaNumber: adhesion?.quotaNumber ?? '',
     downPayment: moneyOrEmpty(
       adhesion ? adhesion.downPaymentCents : (latestProposal?.downPaymentCents ?? null),
     ),
@@ -245,6 +248,7 @@ export function adhesionFields(form: AdhesionForm): LeadAdhesionFields {
     planTable: textOrNull(form.planTable),
     assetType: textOrNull(form.assetType),
     groupCode: textOrNull(form.groupCode),
+    quotaNumber: textOrNull(form.quotaNumber),
     downPaymentCents: form.downPayment.trim() ? parseValueToCents(form.downPayment) : null,
     prepaidInstallments: Number.isNaN(prepaid) ? null : prepaid,
     paymentMethod: textOrNull(form.paymentMethod),

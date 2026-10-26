@@ -39,6 +39,8 @@ export const leadAdhesions = pgTable('lead_adhesions', {
   planTable: text('plan_table'),
   assetType: text('asset_type'),
   groupCode: text('group_code'),
+  /** Número da cota dentro do grupo (ex: 0123). */
+  quotaNumber: text('quota_number'),
   downPaymentCents: bigint('down_payment_cents', { mode: 'number' }),
   prepaidInstallments: integer('prepaid_installments'),
   /** Boleto, débito em conta, cartão de crédito, PIX… */

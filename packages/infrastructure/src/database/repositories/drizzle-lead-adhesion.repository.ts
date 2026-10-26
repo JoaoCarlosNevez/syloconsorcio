@@ -42,6 +42,7 @@ const ADHESION_COLUMNS = {
   planTable: leadAdhesions.planTable,
   assetType: leadAdhesions.assetType,
   groupCode: leadAdhesions.groupCode,
+  quotaNumber: leadAdhesions.quotaNumber,
   downPaymentCents: leadAdhesions.downPaymentCents,
   prepaidInstallments: leadAdhesions.prepaidInstallments,
   paymentMethod: leadAdhesions.paymentMethod,

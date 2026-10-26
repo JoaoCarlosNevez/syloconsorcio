@@ -205,6 +205,8 @@ export interface LeadAdhesionFields {
   planTable: string | null
   assetType: string | null
   groupCode: string | null
+  /** Número da cota dentro do grupo. */
+  quotaNumber: string | null
   downPaymentCents: number | null
   prepaidInstallments: number | null
   paymentMethod: string | null

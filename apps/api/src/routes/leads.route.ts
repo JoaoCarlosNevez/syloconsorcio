@@ -123,6 +123,7 @@ const saveAdhesionSchema = z.object({
   planTable: optionalText(120),
   assetType: optionalText(60),
   groupCode: optionalText(40),
+  quotaNumber: optionalText(40).optional().default(null),
   downPaymentCents: optionalCents,
   prepaidInstallments: z.number().int().min(0).max(999).nullable(),
   paymentMethod: optionalText(60),

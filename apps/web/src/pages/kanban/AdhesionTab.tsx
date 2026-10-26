@@ -56,6 +56,7 @@ const PLACEHOLDER: Partial<Record<keyof AdhesionForm, string>> = {
   assetCode: 'Código na tabela da administradora',
   planTable: 'Ex: Imóvel Plano Leve 200',
   groupCode: 'Ex: 1234',
+  quotaNumber: 'Ex: 0123',
   prepaidInstallments: 'Quantidade',
   installmentDueDay: 'Ex: 10 (todo dia 10)',
   birthplace: 'Cidade/UF',

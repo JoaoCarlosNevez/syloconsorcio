@@ -1,0 +1,1 @@
+ALTER TABLE "lead_adhesions" ADD COLUMN "quota_number" text;

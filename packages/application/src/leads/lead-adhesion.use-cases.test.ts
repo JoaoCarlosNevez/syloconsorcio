@@ -38,6 +38,7 @@ const EMPTY_FIELDS: LeadAdhesionFields = {
   planTable: null,
   assetType: null,
   groupCode: null,
+  quotaNumber: null,
   downPaymentCents: null,
   prepaidInstallments: null,
   paymentMethod: null,
