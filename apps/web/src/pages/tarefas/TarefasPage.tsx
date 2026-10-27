@@ -314,6 +314,10 @@ interface CalCell {
   isToday: boolean
   events: Task[]
   extraCount: number
+  /** Dia completo (só nos dias do mês exibido) — abre o painel do dia. */
+  day: Date | null
+  /** Todas as tarefas do dia, em ordem de horário. */
+  allEvents: Task[]
 }
 
 function buildCalendarGrid(year: number, month: number, today: Date, tasks: Task[]): CalCell[] {
@@ -345,6 +349,8 @@ function buildCalendarGrid(year: number, month: number, today: Date, tasks: Task
       isToday: false,
       events: [],
       extraCount: 0,
+      day: null,
+      allEvents: [],
     })
   }
 
@@ -357,27 +363,152 @@ function buildCalendarGrid(year: number, month: number, today: Date, tasks: Task
       isToday: year === today.getFullYear() && month === today.getMonth() && d === today.getDate(),
       events: allEvents.slice(0, 2),
       extraCount: Math.max(0, allEvents.length - 2),
+      day: new Date(year, month, d),
+      allEvents,
     })
   }
 
   const remaining = (7 - (cells.length % 7)) % 7
   for (let d = 1; d <= remaining; d++) {
-    cells.push({ date: d, isCurrentMonth: false, isToday: false, events: [], extraCount: 0 })
+    cells.push({
+      date: d,
+      isCurrentMonth: false,
+      isToday: false,
+      events: [],
+      extraCount: 0,
+      day: null,
+      allEvents: [],
+    })
   }
 
   return cells
 }
 
+// Painel lateral com todas as tarefas de um dia do calendário.
+function DayPanel({
+  day,
+  tasks,
+  leadNameById,
+  onTaskClick,
+  onClose,
+}: {
+  day: Date
+  tasks: Task[]
+  leadNameById: Map<string, string>
+  onTaskClick: (task: Task) => void
+  onClose: () => void
+}) {
+  const label = day.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+  // "terça-feira, 27 de outubro" → "Terça-feira, 27 de outubro"
+  const title = label.charAt(0).toUpperCase() + label.slice(1)
+  const pending = tasks.filter((task) => task.status !== 'concluida').length
+  return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: fundo do painel fecha ao clicar
+    <div
+      className={styles.dayOverlay}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
+    >
+      <aside className={styles.dayPanel} aria-label={`Tarefas de ${title}`}>
+        <header className={styles.dayPanelHeader}>
+          <div>
+            <h3 className={styles.dayPanelTitle}>{title}</h3>
+            <span className={styles.dayPanelSub}>
+              {tasks.length === 0
+                ? 'Nenhuma tarefa'
+                : `${tasks.length} tarefa(s) · ${pending} em aberto`}
+            </span>
+          </div>
+          <button
+            type="button"
+            className={styles.dayPanelClose}
+            onClick={onClose}
+            aria-label="Fechar"
+          >
+            ×
+          </button>
+        </header>
+        {tasks.length === 0 ? (
+          <p className={styles.dayPanelEmpty}>Nada agendado pra este dia.</p>
+        ) : (
+          <ul className={styles.dayList}>
+            {tasks.map((task) => {
+              const badge = TYPE_BADGES[task.type]
+              const leadName = task.leadId ? leadNameById.get(task.leadId) : undefined
+              return (
+                <li key={task.id}>
+                  <button
+                    type="button"
+                    className={styles.dayItem}
+                    onClick={() => onTaskClick(task)}
+                  >
+                    <span className={styles.dayItemTime}>
+                      {formatTaskDateTime(task.dueAt).split('· ')[1]}
+                    </span>
+                    <span className={styles.dayItemBody}>
+                      <span
+                        className={
+                          task.status === 'concluida'
+                            ? styles.dayItemTitleDone
+                            : styles.dayItemTitle
+                        }
+                      >
+                        {task.title}
+                      </span>
+                      <span className={styles.dayItemMeta}>
+                        <span
+                          className={styles.dayItemType}
+                          style={{
+                            background: badge.bg,
+                            borderColor: badge.border,
+                            color: badge.color,
+                          }}
+                        >
+                          {task.type}
+                        </span>
+                        {leadName && <span>{leadName}</span>}
+                      </span>
+                    </span>
+                    <StatusBadge task={task} />
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </aside>
+    </div>
+  )
+}
+
 function CalendarView({
   tasks,
+  leadNameById,
   onTaskClick,
 }: {
   tasks: Task[]
+  leadNameById: Map<string, string>
   onTaskClick: (task: Task) => void
 }) {
   const today = useMemo(() => new Date(), [])
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
+  const [openDay, setOpenDay] = useState<Date | null>(null)
+  // Tarefas do dia aberto (do mês todo, não só as 2 que cabem na célula).
+  const openDayTasks = useMemo(() => {
+    if (!openDay) return []
+    return tasks
+      .filter((task) => {
+        const d = new Date(task.dueAt)
+        return (
+          d.getFullYear() === openDay.getFullYear() &&
+          d.getMonth() === openDay.getMonth() &&
+          d.getDate() === openDay.getDate()
+        )
+      })
+      .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime())
+  }, [openDay, tasks])
 
   const cells = useMemo(
     () => buildCalendarGrid(year, month, today, tasks),
@@ -435,6 +566,7 @@ function CalendarView({
             onClick={() => {
               setYear(today.getFullYear())
               setMonth(today.getMonth())
+              setOpenDay(today)
             }}
           >
             Hoje
@@ -467,14 +599,20 @@ function CalendarView({
                     .join(' ')}
                 >
                   <div className={styles.calCellTop}>
-                    {cell.isToday ? (
-                      <span className={styles.calTodayCircle}>{cell.date}</span>
-                    ) : (
-                      <span
-                        className={cell.isCurrentMonth ? styles.calDateNum : styles.calDateNumOther}
+                    {cell.day ? (
+                      <button
+                        type="button"
+                        className={styles.calDayBtn}
+                        onClick={() => setOpenDay(cell.day)}
+                        aria-label={`Ver as tarefas do dia ${cell.date}`}
+                        title="Ver as tarefas do dia"
                       >
-                        {cell.date}
-                      </span>
+                        <span className={cell.isToday ? styles.calTodayCircle : styles.calDateNum}>
+                          {cell.date}
+                        </span>
+                      </button>
+                    ) : (
+                      <span className={styles.calDateNumOther}>{cell.date}</span>
                     )}
                     {cell.isToday && <span className={styles.calHojeLabel}>HOJE</span>}
                   </div>
@@ -513,7 +651,13 @@ function CalendarView({
                       )
                     })}
                     {cell.extraCount > 0 && (
-                      <span className={styles.calMoreEvents}>+{cell.extraCount} atividades</span>
+                      <button
+                        type="button"
+                        className={`${styles.calMoreEvents} ${styles.calMoreBtn}`}
+                        onClick={() => setOpenDay(cell.day)}
+                      >
+                        +{cell.extraCount} atividades
+                      </button>
                     )}
                   </div>
                 </div>
@@ -522,6 +666,15 @@ function CalendarView({
           ))}
         </div>
       </div>
+      {openDay && (
+        <DayPanel
+          day={openDay}
+          tasks={openDayTasks}
+          leadNameById={leadNameById}
+          onTaskClick={onTaskClick}
+          onClose={() => setOpenDay(null)}
+        />
+      )}
     </div>
   )
 }
@@ -772,7 +925,7 @@ export function TarefasPage() {
           />
         )}
         {!isLoading && view === 'calendario' && (
-          <CalendarView tasks={tasks} onTaskClick={setSelectedTask} />
+          <CalendarView tasks={tasks} leadNameById={leadNameById} onTaskClick={setSelectedTask} />
         )}
       </div>
     </AppLayout>

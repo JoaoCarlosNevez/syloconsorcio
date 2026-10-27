@@ -889,3 +889,171 @@
 .ntSubmitBtn:hover {
   opacity: 0.88;
 }
+
+/* ── Calendário: abrir o dia ──────────────────────────────────────────── */
+
+.calDayBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.calDayBtn:hover .calDateNum {
+  text-decoration: underline;
+}
+
+.calDayBtn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.calMoreBtn {
+  border: none;
+  background: none;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.calMoreBtn:hover {
+  text-decoration: underline;
+}
+
+.dayOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(11, 28, 48, 0.35);
+}
+
+.dayPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: min(440px, 100%);
+  height: 100%;
+  padding: 24px;
+  background: #fff;
+  box-shadow: -12px 0 32px rgba(15, 23, 42, 0.18);
+  overflow-y: auto;
+}
+
+.dayPanelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dayPanelTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0b1c30;
+}
+
+.dayPanelSub {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.dayPanelClose {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 18px;
+  line-height: 1;
+  color: #475569;
+  cursor: pointer;
+}
+
+.dayPanelEmpty {
+  margin: 0;
+  padding: 24px 0;
+  text-align: center;
+  font-size: 14px;
+  color: #94a3b8;
+}
+
+.dayList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dayItem {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  font-family: var(--font-family-base);
+  text-align: left;
+  cursor: pointer;
+}
+
+.dayItem:hover {
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
+.dayItemTime {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0b1c30;
+}
+
+.dayItemBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.dayItemTitle,
+.dayItemTitleDone {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0b1c30;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dayItemTitleDone {
+  color: #94a3b8;
+  text-decoration: line-through;
+}
+
+.dayItemMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.dayItemType {
+  padding: 1px 8px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
