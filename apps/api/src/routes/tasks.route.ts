@@ -51,7 +51,7 @@ interface TasksRouteOptions {
 }
 
 // Espelhado no frontend (tarefas.types.ts) — mantenha em sincronia.
-const TASK_TYPES = ['Ligação', 'Reunião', 'Visita', 'Follow-up', 'Tarefa', 'Simulação'] as const
+const TASK_TYPES = ['Ligação', 'Reunião', 'Visita', 'Follow-up', 'Tarefa'] as const
 const TASK_STATUSES = ['pendente', 'em_andamento', 'concluida'] as const
 
 const createTaskSchema = z.object({

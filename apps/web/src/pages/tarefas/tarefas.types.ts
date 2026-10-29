@@ -25,17 +25,9 @@ export const TYPE_BADGES: Record<TaskType, TypeBadge> = {
   Visita: { label: 'Visita', bg: '#ecfdf5', border: '#a7f3d0', color: '#047857' },
   'Follow-up': { label: 'Follow-up', bg: '#faf5ff', border: '#e9d5ff', color: '#7e22ce' },
   Tarefa: { label: 'Tarefa', bg: '#f3f4f6', border: '#e5e7eb', color: '#4b5563' },
-  Simulação: { label: 'Simulação', bg: '#eef2ff', border: '#c7d2fe', color: '#4338ca' },
 }
 
-export const TASK_TYPES: TaskType[] = [
-  'Ligação',
-  'Reunião',
-  'Visita',
-  'Follow-up',
-  'Tarefa',
-  'Simulação',
-]
+export const TASK_TYPES: TaskType[] = ['Ligação', 'Reunião', 'Visita', 'Follow-up', 'Tarefa']
 
 export const STATUS_CFG: Record<
   DisplayStatus,

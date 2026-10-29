@@ -10,7 +10,7 @@
 // ficaria com o status errado até alguém tocar nela de novo.
 //
 // type é texto livre (não pg enum), mesmo padrão de leads.segment/source —
-// os 6 valores hoje (Ligação, Reunião, Visita, Follow-up, Tarefa, Simulação)
+// os 5 valores hoje (Ligação, Reunião, Visita, Follow-up, Tarefa)
 // são só sugeridos pela UI.
 //
 // autoKey: chave de tarefa criada pelo sistema (ex: "post_sale_payment:<lead>:

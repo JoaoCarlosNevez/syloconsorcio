@@ -2761,17 +2761,6 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                         type="button"
                         className={styles.chip}
                         disabled={createTask.isPending}
-                        onClick={() =>
-                          handleQuickCreateTask('Simulação', `Simular lance para ${card.name}`)
-                        }
-                      >
-                        <CalendarIcon />
-                        Simulação de Lance
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.chip}
-                        disabled={createTask.isPending}
                         onClick={() => handleQuickCreateTask('Reunião', `Reunião com ${card.name}`)}
                       >
                         <CalendarIcon />
