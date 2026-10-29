@@ -30,6 +30,22 @@ const SELLER_MEMBERSHIP: UserMembership = {
   status: 'ACTIVE',
 }
 
+const NO_BACKOFFICE_WORK = {
+  quotasEffective: 0,
+  checklistItems: 0,
+  documents: 0,
+  paymentsPaid: 0,
+  paymentsLate: 0,
+  tasksCompleted: 0,
+}
+
+const NO_BACKOFFICE_ACHIEVEMENTS = {
+  listEffectiveQuotaDates: vi.fn().mockResolvedValue([]),
+  listChecklistCheckDates: vi.fn().mockResolvedValue([]),
+  firstPaymentCheckAt: vi.fn().mockResolvedValue(null),
+  firstPostSaleStageMoveAt: vi.fn().mockResolvedValue(null),
+}
+
 function buildAuthProvider(): IAuthProvider {
   return {
     verifyToken: vi.fn().mockResolvedValue(IDENTITY),
@@ -302,6 +318,7 @@ describe('GET /dashboard/me/engagement', () => {
     const engagementRepository = {
       countLeadsWorked: vi.fn().mockResolvedValue(5),
       proposalStats: vi.fn().mockResolvedValue({ created: 3, shared: 2, opened: 1 }),
+      backofficeWork: vi.fn().mockResolvedValue(NO_BACKOFFICE_WORK),
     }
     const app = buildApp({
       authProvider: buildAuthProvider(),
@@ -347,6 +364,7 @@ describe('GET /dashboard/me/achievements', () => {
           .mockResolvedValue([{ wonAt: new Date('2026-10-01T12:00:00Z'), valueCents: 600_000_00 }]),
         firstPostSaleStageAt: vi.fn().mockResolvedValue(null),
         firstChecklistItemAt: vi.fn().mockResolvedValue(null),
+        ...NO_BACKOFFICE_ACHIEVEMENTS,
       },
     })
 
@@ -378,6 +396,7 @@ describe('GET /dashboard/me/xp', () => {
       engagementRepository: {
         countLeadsWorked: vi.fn().mockResolvedValue(3),
         proposalStats: vi.fn().mockResolvedValue({ created: 0, shared: 0, opened: 0 }),
+        backofficeWork: vi.fn().mockResolvedValue(NO_BACKOFFICE_WORK),
       },
     })
 
@@ -394,5 +413,40 @@ describe('GET /dashboard/me/xp', () => {
       level: { level: 1, name: 'Iniciante Sylo' },
       nextLevel: { level: 2, minXp: 500 },
     })
+  })
+})
+
+describe('GET /dashboard/me/xp — Administrativo', () => {
+  it('scores the back-office work instead of sales', async () => {
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository: buildMembershipRepository({
+        ...SELLER_MEMBERSHIP,
+        role: Role.BACKOFFICE,
+      }),
+      engagementRepository: {
+        countLeadsWorked: vi.fn().mockResolvedValue(99),
+        proposalStats: vi.fn().mockResolvedValue({ created: 0, shared: 0, opened: 0 }),
+        backofficeWork: vi.fn().mockResolvedValue({ ...NO_BACKOFFICE_WORK, quotasEffective: 2 }),
+      },
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/dashboard/me/xp',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    const body = response.json()
+    expect(body.month.items[0]).toEqual({
+      key: 'effective',
+      label: 'Cotas efetivadas',
+      count: 2,
+      xp: 60,
+    })
+    expect(body.month.items.map((i: { key: string }) => i.key)).not.toContain('leads')
+    expect(body.levels[1]).toMatchObject({ name: 'Operador Ágil' })
   })
 })

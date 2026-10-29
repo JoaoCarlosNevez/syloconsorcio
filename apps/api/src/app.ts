@@ -317,10 +317,22 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
       listWonSales: async () => [],
       firstPostSaleStageAt: async () => null,
       firstChecklistItemAt: async () => null,
+      listEffectiveQuotaDates: async () => [],
+      listChecklistCheckDates: async () => [],
+      firstPaymentCheckAt: async () => null,
+      firstPostSaleStageMoveAt: async () => null,
     },
     engagementRepository: deps?.engagementRepository ?? {
       countLeadsWorked: async () => 0,
       proposalStats: async () => ({ created: 0, shared: 0, opened: 0 }),
+      backofficeWork: async () => ({
+        quotasEffective: 0,
+        checklistItems: 0,
+        documents: 0,
+        paymentsPaid: 0,
+        paymentsLate: 0,
+        tasksCompleted: 0,
+      }),
     },
     managementDashboardRepository: deps?.managementDashboardRepository ?? {
       listOpenLeads: async () => [],

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import type { MyEngagement } from './dashboard-api'
+import type { BackofficeEngagement, SellerEngagement } from './dashboard-api'
 import { comparison, engagementCards } from './engagement-cards'
 
-const BASE: MyEngagement = {
+const BASE: SellerEngagement = {
+  kind: 'seller',
   periodStart: '',
   periodEnd: '',
   leadsWorked: 12,
@@ -55,6 +56,30 @@ describe('engagementCards', () => {
       'Nenhuma proposta gerada',
       'Envie o link da proposta pelo lead',
       'Nenhuma venda no período',
+    ])
+  })
+})
+
+describe('engagementCards — Administrativo', () => {
+  const WORK: BackofficeEngagement = {
+    kind: 'backoffice',
+    periodStart: '',
+    periodEnd: '',
+    quotasEffective: 6,
+    quotasEffectivePrevious: 4,
+    checklistItems: 31,
+    documents: 1,
+    paymentsPaid: 5,
+    paymentsLate: 2,
+    tasksCompleted: 0,
+  }
+
+  it('shows the back-office work instead of sales', () => {
+    expect(engagementCards(WORK).map((c) => [c.label, c.value, c.sub])).toEqual([
+      ['Cotas\nEfetivadas', '6', '↑ 50% vs 30 dias anteriores'],
+      ['Itens de\nChecklist', '31', '1 documento anexado'],
+      ['Parcelas\nConferidas', '7', '5 pagas · 2 atrasadas'],
+      ['Tarefas\nConcluídas', '0', 'Nenhuma tarefa concluída'],
     ])
   })
 })

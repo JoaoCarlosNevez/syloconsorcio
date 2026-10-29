@@ -338,6 +338,8 @@ export type {
 } from './ports/management-dashboard.repository'
 export {
   ACHIEVEMENT_XP,
+  BACKOFFICE_XP_LEVELS,
+  BACKOFFICE_XP_RULES,
   GetMyXpUseCase,
   XP_LEVELS,
   XP_RULES,
@@ -373,14 +375,27 @@ export type {
   PostSalePaymentLead,
 } from './ports/post-sale-payment.repository'
 export { GetMyAchievementsUseCase } from './dashboard/get-my-achievements.use-case'
-export type { Achievement, AchievementId } from './dashboard/get-my-achievements.use-case'
+export type {
+  Achievement,
+  AchievementId,
+  GetMyAchievementsInput,
+} from './dashboard/get-my-achievements.use-case'
 export type {
   AchievementsScope,
   IAchievementsRepository,
 } from './ports/achievements.repository'
 export { ENGAGEMENT_DAYS, GetMyEngagementUseCase } from './dashboard/get-my-engagement.use-case'
-export type { GetMyEngagementInput, MyEngagement } from './dashboard/get-my-engagement.use-case'
-export type { EngagementRange, IEngagementRepository } from './ports/engagement.repository'
+export type {
+  BackofficeEngagement,
+  GetMyEngagementInput,
+  MyEngagement,
+  SellerEngagement,
+} from './dashboard/get-my-engagement.use-case'
+export type {
+  BackofficeWorkCounts,
+  EngagementRange,
+  IEngagementRepository,
+} from './ports/engagement.repository'
 export { GetSalesRankingUseCase } from './dashboard/get-sales-ranking.use-case'
 export type {
   GetSalesRankingInput,

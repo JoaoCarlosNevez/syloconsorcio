@@ -614,8 +614,8 @@ function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
             </section>
           )}
 
-          {/* Meta de vendas */}
-          {membership && (
+          {/* Meta de vendas — o Administrativo não vende: as metas dele são as do XP */}
+          {membership && membership.role !== 'BACKOFFICE' && (
             <section className={styles.editSection}>
               <h3 className={styles.editSectionTitle}>Meta pessoal do mês</h3>
               <p className={styles.editSectionSubtitle}>

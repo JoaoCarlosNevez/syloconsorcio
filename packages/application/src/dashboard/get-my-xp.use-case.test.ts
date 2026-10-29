@@ -1,5 +1,6 @@
 // Tests: GetMyXpUseCase — XP do mês, XP acumulado e nível.
 
+import { Role } from '@sylocrm/domain'
 import { describe, expect, it, vi } from 'vitest'
 import type { IAchievementsRepository } from '../ports/achievements.repository'
 import type { IEngagementRepository } from '../ports/engagement.repository'
@@ -21,6 +22,27 @@ function setup() {
         ? { created: 4, shared: 2, opened: 1 }
         : { created: 8, shared: 4, opened: 2 },
     ),
+    // Administrativo — outubro: 2 cotas efetivadas, 10 itens, 3 documentos,
+    // 2 parcelas (1 paga, 1 atrasada), 4 tarefas. Desde sempre: o dobro.
+    backofficeWork: vi.fn(async (range) =>
+      inOctober(range)
+        ? {
+            quotasEffective: 2,
+            checklistItems: 10,
+            documents: 3,
+            paymentsPaid: 1,
+            paymentsLate: 1,
+            tasksCompleted: 4,
+          }
+        : {
+            quotasEffective: 4,
+            checklistItems: 20,
+            documents: 6,
+            paymentsPaid: 2,
+            paymentsLate: 2,
+            tasksCompleted: 8,
+          },
+    ),
   }
   const leadRepository = {
     countWonInDefaultFunnel: vi.fn(async (filter: { wonFrom: Date }) =>
@@ -37,6 +59,10 @@ function setup() {
     ]),
     firstPostSaleStageAt: vi.fn().mockResolvedValue(null),
     firstChecklistItemAt: vi.fn().mockResolvedValue(null),
+    listEffectiveQuotaDates: vi.fn().mockResolvedValue([new Date('2026-10-03T12:00:00Z')]),
+    listChecklistCheckDates: vi.fn().mockResolvedValue([]),
+    firstPaymentCheckAt: vi.fn().mockResolvedValue(null),
+    firstPostSaleStageMoveAt: vi.fn().mockResolvedValue(null),
   }
   return new GetMyXpUseCase(
     engagementRepository,
@@ -68,6 +94,31 @@ describe('GetMyXpUseCase', () => {
     expect(result.totalXp).toBe(469)
     expect(result.level).toMatchObject({ level: 1, name: 'Iniciante Sylo' })
     expect(result.nextLevel).toMatchObject({ level: 2, minXp: 500 })
+  })
+})
+
+describe('GetMyXpUseCase — Administrativo', () => {
+  it('scores the back-office work and its own achievements', async () => {
+    const result = await setup().execute({
+      organizationId: 'org-01',
+      userId: 'bia',
+      role: Role.BACKOFFICE,
+      now: NOW,
+    })
+
+    expect(result.month.items.map((i) => [i.key, i.count, i.xp])).toEqual([
+      ['effective', 2, 60],
+      ['checklist', 10, 30],
+      ['documents', 3, 6],
+      ['payments', 2, 8],
+      ['tasks', 4, 8],
+      ['streak', 2, 10],
+      ['achievements', 1, 100], // Primeira cota efetivada em outubro
+    ])
+    expect(result.month.total).toBe(222)
+    // 4×30 + 20×3 + 6×2 + 4×4 + 8×2 + 3×5 + 100 = 339
+    expect(result.totalXp).toBe(339)
+    expect(result.levels[3]).toMatchObject({ name: 'Mestre da Operação' })
   })
 })
 

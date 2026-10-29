@@ -8,8 +8,13 @@
 // - Propostas: as enviadas por link; abertas = o cliente abriu o link.
 // - Cotas fechadas: leads dele ganhos no funil padrão (Comercial) — o mesmo
 //   recorte das metas e do ranking.
+//
+// O Administrativo (BACKOFFICE) vê o trabalho dele: cotas efetivadas no ADM
+// (vs 30 dias anteriores), itens de checklist, parcelas conferidas e tarefas
+// concluídas (ver BackofficeWorkCounts).
 
-import type { IEngagementRepository } from '../ports/engagement.repository'
+import { Role } from '@sylocrm/domain'
+import type { BackofficeWorkCounts, IEngagementRepository } from '../ports/engagement.repository'
 import type { ILeadRepository } from '../ports/lead.repository'
 import type { UseCase } from '../ports/use-case'
 
@@ -19,10 +24,13 @@ const DAY_MS = 24 * 60 * 60 * 1000
 export interface GetMyEngagementInput {
   organizationId: string
   userId: string
+  /** Papel na organização ativa — o Administrativo vê o trabalho dele. */
+  role?: Role
   now?: Date
 }
 
-export interface MyEngagement {
+export interface SellerEngagement {
+  kind: 'seller'
   periodStart: Date
   periodEnd: Date
   leadsWorked: number
@@ -35,6 +43,16 @@ export interface MyEngagement {
   wonValueCents: number
 }
 
+export interface BackofficeEngagement extends BackofficeWorkCounts {
+  kind: 'backoffice'
+  periodStart: Date
+  periodEnd: Date
+  /** Cotas efetivadas nos 30 dias anteriores, pra comparar. */
+  quotasEffectivePrevious: number
+}
+
+export type MyEngagement = SellerEngagement | BackofficeEngagement
+
 export class GetMyEngagementUseCase implements UseCase<GetMyEngagementInput, MyEngagement> {
   constructor(
     private readonly engagementRepository: IEngagementRepository,
@@ -46,6 +64,20 @@ export class GetMyEngagementUseCase implements UseCase<GetMyEngagementInput, MyE
     const from = new Date(to.getTime() - ENGAGEMENT_DAYS * DAY_MS)
     const previousFrom = new Date(from.getTime() - ENGAGEMENT_DAYS * DAY_MS)
     const range = { organizationId: input.organizationId, userId: input.userId, from, to }
+    if (input.role === Role.BACKOFFICE) {
+      const [work, previous] = await Promise.all([
+        this.engagementRepository.backofficeWork(range),
+        this.engagementRepository.backofficeWork({ ...range, from: previousFrom, to: from }),
+      ])
+      return {
+        kind: 'backoffice',
+        periodStart: from,
+        periodEnd: to,
+        ...work,
+        quotasEffectivePrevious: previous.quotasEffective,
+      }
+    }
+
     const won = {
       organizationId: input.organizationId,
       assignedUserId: input.userId,
@@ -63,6 +95,7 @@ export class GetMyEngagementUseCase implements UseCase<GetMyEngagementInput, MyE
       ])
 
     return {
+      kind: 'seller',
       periodStart: from,
       periodEnd: to,
       leadsWorked,

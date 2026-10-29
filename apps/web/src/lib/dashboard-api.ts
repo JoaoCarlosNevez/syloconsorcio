@@ -221,7 +221,8 @@ export function getManagementDashboard(
 
 // ── Engajamento operacional (Perfil) ─────────────────────────────────────────
 
-export interface MyEngagement {
+export interface SellerEngagement {
+  kind: 'seller'
   periodStart: string
   periodEnd: string
   leadsWorked: number
@@ -232,6 +233,22 @@ export interface MyEngagement {
   wonCount: number
   wonValueCents: number
 }
+
+/** Administrativo: o trabalho dele na operação (não vende). */
+export interface BackofficeEngagement {
+  kind: 'backoffice'
+  periodStart: string
+  periodEnd: string
+  quotasEffective: number
+  quotasEffectivePrevious: number
+  checklistItems: number
+  documents: number
+  paymentsPaid: number
+  paymentsLate: number
+  tasksCompleted: number
+}
+
+export type MyEngagement = SellerEngagement | BackofficeEngagement
 
 export function getMyEngagement(organizationId: string): Promise<MyEngagement> {
   return apiClient.get<MyEngagement>('/dashboard/me/engagement', { organizationId })
@@ -249,10 +266,20 @@ export interface Achievement {
     | 'sold_10m'
     | 'first_assembly'
     | 'first_contemplation'
+    // Administrativo
+    | 'first_effective'
+    | 'effective_10'
+    | 'effective_50'
+    | 'effective_100'
+    | 'checklist_100'
+    | 'first_payment_check'
+    | 'assembly_followed'
+    | 'contemplation_followed'
   title: string
   description: string
   unlockedAt: string | null
-  progress: { currentCents: number; targetCents: number } | null
+  /** Metas com alvo: crédito vendido (centavos) ou quantidade. */
+  progress: { current: number; target: number; unit: 'cents' | 'count' } | null
 }
 
 export function getMyAchievements(

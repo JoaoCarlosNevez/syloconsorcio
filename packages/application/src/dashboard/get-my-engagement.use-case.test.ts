@@ -1,5 +1,6 @@
 // Tests: GetMyEngagementUseCase — últimos 30 dias vs os 30 anteriores.
 
+import { Role } from '@sylocrm/domain'
 import { describe, expect, it, vi } from 'vitest'
 import type { IEngagementRepository } from '../ports/engagement.repository'
 import type { ILeadRepository } from '../ports/lead.repository'
@@ -12,6 +13,7 @@ describe('GetMyEngagementUseCase', () => {
     const engagementRepository: IEngagementRepository = {
       countLeadsWorked: vi.fn().mockResolvedValueOnce(12).mockResolvedValueOnce(8),
       proposalStats: vi.fn().mockResolvedValue({ created: 6, shared: 4, opened: 3 }),
+      backofficeWork: vi.fn(),
     }
     const leadRepository = {
       countWonInDefaultFunnel: vi.fn().mockResolvedValue(2),
@@ -22,6 +24,7 @@ describe('GetMyEngagementUseCase', () => {
     const result = await useCase.execute({ organizationId: 'org-01', userId: 'ana', now: NOW })
 
     expect(result).toMatchObject({
+      kind: 'seller',
       leadsWorked: 12,
       leadsWorkedPrevious: 8,
       proposalsCreated: 6,
@@ -40,5 +43,39 @@ describe('GetMyEngagementUseCase', () => {
     expect(leadRepository.countWonInDefaultFunnel).toHaveBeenCalledWith(
       expect.objectContaining({ assignedUserId: 'ana', wonFrom: result.periodStart, wonTo: NOW }),
     )
+  })
+})
+
+describe('GetMyEngagementUseCase — Administrativo', () => {
+  it('shows the back-office work, comparing effective quotas with the 30 days before', async () => {
+    const work = {
+      quotasEffective: 5,
+      checklistItems: 30,
+      documents: 8,
+      paymentsPaid: 6,
+      paymentsLate: 1,
+      tasksCompleted: 12,
+    }
+    const engagementRepository: IEngagementRepository = {
+      countLeadsWorked: vi.fn(),
+      proposalStats: vi.fn(),
+      backofficeWork: vi
+        .fn()
+        .mockResolvedValueOnce(work)
+        .mockResolvedValueOnce({ ...work, quotasEffective: 3 }),
+    }
+    const leadRepository = { countWonInDefaultFunnel: vi.fn() } as unknown as ILeadRepository
+    const useCase = new GetMyEngagementUseCase(engagementRepository, leadRepository)
+
+    const result = await useCase.execute({
+      organizationId: 'org-01',
+      userId: 'bia',
+      role: Role.BACKOFFICE,
+      now: NOW,
+    })
+
+    expect(result).toMatchObject({ kind: 'backoffice', ...work, quotasEffectivePrevious: 3 })
+    expect(engagementRepository.countLeadsWorked).not.toHaveBeenCalled()
+    expect(leadRepository.countWonInDefaultFunnel).not.toHaveBeenCalled()
   })
 })

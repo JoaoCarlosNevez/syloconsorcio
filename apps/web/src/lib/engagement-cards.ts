@@ -1,7 +1,9 @@
 // Cards do "Engajamento operacional" do Perfil a partir dos números da API
-// (GET /dashboard/me/engagement — últimos 30 dias do usuário).
+// (GET /dashboard/me/engagement — últimos 30 dias do usuário). O
+// Administrativo tem os cards dele (cotas efetivadas, checklist, parcelas e
+// tarefas).
 
-import type { MyEngagement } from './dashboard-api'
+import type { BackofficeEngagement, MyEngagement, SellerEngagement } from './dashboard-api'
 
 export interface EngagementCard {
   label: string
@@ -29,11 +31,15 @@ function formatMoneyShort(cents: number): string {
 }
 
 /** "↑ 25% vs 30 dias anteriores" — sem base anterior, não inventa percentual. */
-export function comparison(current: number, previous: number): { text: string; positive: boolean } {
+export function comparison(
+  current: number,
+  previous: number,
+  emptyText = 'Nenhum lead nos últimos 30 dias',
+): { text: string; positive: boolean } {
   if (previous === 0) {
     return current > 0
       ? { text: 'Sem registro nos 30 dias anteriores', positive: true }
-      : { text: 'Nenhum lead nos últimos 30 dias', positive: false }
+      : { text: emptyText, positive: false }
   }
   const change = Math.round(((current - previous) / previous) * 100)
   if (change === 0) return { text: 'Igual aos 30 dias anteriores', positive: false }
@@ -42,6 +48,51 @@ export function comparison(current: number, previous: number): { text: string; p
 }
 
 export function engagementCards(e: MyEngagement): EngagementCard[] {
+  return e.kind === 'backoffice' ? backofficeCards(e) : sellerCards(e)
+}
+
+function backofficeCards(e: BackofficeEngagement): EngagementCard[] {
+  const effective = comparison(
+    e.quotasEffective,
+    e.quotasEffectivePrevious,
+    'Nenhuma cota efetivada no período',
+  )
+  const payments = e.paymentsPaid + e.paymentsLate
+  return [
+    {
+      label: 'Cotas\nEfetivadas',
+      value: e.quotasEffective.toLocaleString('pt-BR'),
+      sub: effective.text,
+      positive: effective.positive,
+    },
+    {
+      label: 'Itens de\nChecklist',
+      value: e.checklistItems.toLocaleString('pt-BR'),
+      sub:
+        e.documents === 0
+          ? 'Nenhum documento anexado'
+          : `${plural(e.documents, 'documento anexado', 'documentos anexados')}`,
+      positive: false,
+    },
+    {
+      label: 'Parcelas\nConferidas',
+      value: payments.toLocaleString('pt-BR'),
+      sub:
+        payments === 0
+          ? 'Responda os "Confirmar pagamento"'
+          : `${plural(e.paymentsPaid, 'paga', 'pagas')} · ${plural(e.paymentsLate, 'atrasada', 'atrasadas')}`,
+      positive: payments > 0 && e.paymentsLate === 0,
+    },
+    {
+      label: 'Tarefas\nConcluídas',
+      value: e.tasksCompleted.toLocaleString('pt-BR'),
+      sub: e.tasksCompleted === 0 ? 'Nenhuma tarefa concluída' : 'Nos últimos 30 dias',
+      positive: e.tasksCompleted > 0,
+    },
+  ]
+}
+
+function sellerCards(e: SellerEngagement): EngagementCard[] {
   const leads = comparison(e.leadsWorked, e.leadsWorkedPrevious)
   return [
     {

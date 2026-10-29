@@ -19,12 +19,23 @@ describe('toBadge', () => {
       title: '500K',
       description: 'Somou R$ 500 mil.',
       unlockedAt: null,
-      progress: { currentCents: 400_000_00, targetCents: 500_000_00 },
+      progress: { current: 400_000_00, target: 500_000_00, unit: 'cents' },
     })
     expect(badge).toMatchObject({
       unlocked: false,
       date: null,
       progressText: 'R$ 400 mil de R$ 500 mil',
     })
+  })
+
+  it('shows the count progress of a back-office milestone', () => {
+    const badge = toBadge({
+      id: 'effective_10',
+      title: '10 cotas efetivadas',
+      description: 'Efetivou 10 cotas.',
+      unlockedAt: null,
+      progress: { current: 7, target: 10, unit: 'count' },
+    })
+    expect(badge).toMatchObject({ emoji: '📋', progressText: '7 de 10' })
   })
 })

@@ -14,6 +14,9 @@
 //                             atendidos, simulações, propostas e cotas fechadas
 //                             do usuário nos últimos 30 dias (GetMyEngagementUseCase).
 //                             Qualquer papel — só os dados de quem está logado.
+//                             O Administrativo (BACKOFFICE) tem engajamento, XP
+//                             e Mural próprios (cotas efetivadas, checklist,
+//                             parcelas conferidas, tarefas).
 // GET /dashboard/me/streak  — ofensiva do Perfil: dias seguidos com atividade
 //                             de trabalho, recorde e a semana atual (ver
 //                             GetMyStreakUseCase). Do usuário, em todas as
@@ -235,6 +238,7 @@ export const dashboardRoute: FastifyPluginAsync<DashboardRouteOptions> = async (
       return getMyXp.execute({
         organizationId: context.currentMembership.organizationId,
         userId: context.userId,
+        role: context.currentMembership.role,
       })
     },
   )
@@ -248,6 +252,7 @@ export const dashboardRoute: FastifyPluginAsync<DashboardRouteOptions> = async (
       const achievements = await getMyAchievements.execute({
         organizationId: context.currentMembership.organizationId,
         userId: context.userId,
+        role: context.currentMembership.role,
       })
       return {
         achievements: achievements.map((a) => ({
@@ -267,6 +272,7 @@ export const dashboardRoute: FastifyPluginAsync<DashboardRouteOptions> = async (
       const engagement = await getMyEngagement.execute({
         organizationId: context.currentMembership.organizationId,
         userId: context.userId,
+        role: context.currentMembership.role,
       })
       return {
         ...engagement,

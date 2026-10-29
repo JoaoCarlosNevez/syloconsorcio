@@ -9,9 +9,15 @@
 //   assembleia" no checklist — o que vier primeiro.
 // - Primeira contemplação: uma cota dele chega a "Contemplado" no Pós-venda
 //   ou tem "Contemplado" marcado no checklist.
+//
+// O Administrativo (BACKOFFICE) não vende: o Mural dele conta o que ELE faz
+// na operação — cotas efetivadas no ADM (1, 10, 50, 100), checklist (100
+// itens marcados), a primeira parcela conferida e a primeira assembleia /
+// contemplação que ele acompanhou no Pós-venda.
 
+import { Role } from '@sylocrm/domain'
 import { ASSEMBLY_CHECKLIST_KEYS, CONTEMPLATION_CHECKLIST_KEYS } from '../funnels/funnel-checklists'
-import type { IAchievementsRepository } from '../ports/achievements.repository'
+import type { AchievementsScope, IAchievementsRepository } from '../ports/achievements.repository'
 import type { UseCase } from '../ports/use-case'
 
 export type AchievementId =
@@ -23,17 +29,35 @@ export type AchievementId =
   | 'sold_10m'
   | 'first_assembly'
   | 'first_contemplation'
+  // Administrativo
+  | 'first_effective'
+  | 'effective_10'
+  | 'effective_50'
+  | 'effective_100'
+  | 'checklist_100'
+  | 'first_payment_check'
+  | 'assembly_followed'
+  | 'contemplation_followed'
 
 export interface Achievement {
   id: AchievementId
   title: string
   description: string
   unlockedAt: Date | null
-  /** Pras metas de valor: quanto já vendeu e o alvo, em centavos. */
-  progress: { currentCents: number; targetCents: number } | null
+  /** Pras metas com alvo: onde está e o alvo — em centavos (crédito
+   * vendido) ou em quantidade (cotas efetivadas, itens marcados). */
+  progress: { current: number; target: number; unit: 'cents' | 'count' } | null
 }
 
 const MILLION = 1_000_000_00
+
+const EFFECTIVE_MILESTONES: { id: AchievementId; title: string; target: number }[] = [
+  { id: 'effective_10', title: '10 cotas efetivadas', target: 10 },
+  { id: 'effective_50', title: '50 cotas efetivadas', target: 50 },
+  { id: 'effective_100', title: '100 cotas efetivadas', target: 100 },
+]
+
+const CHECKLIST_TARGET = 100
 
 const SALES_MILESTONES: { id: AchievementId; title: string; targetCents: number }[] = [
   { id: 'sold_500k', title: '500K', targetCents: 500_000_00 },
@@ -60,12 +84,19 @@ function formatMillions(cents: number): string {
     : `R$ ${(reais / 1000).toLocaleString('pt-BR')} mil`
 }
 
-export class GetMyAchievementsUseCase
-  implements UseCase<{ organizationId: string; userId: string }, Achievement[]>
-{
+export interface GetMyAchievementsInput extends AchievementsScope {
+  /** Papel na organização ativa — o Administrativo tem o Mural dele. */
+  role?: Role
+}
+
+export class GetMyAchievementsUseCase implements UseCase<GetMyAchievementsInput, Achievement[]> {
   constructor(private readonly achievementsRepository: IAchievementsRepository) {}
 
-  async execute(scope: { organizationId: string; userId: string }): Promise<Achievement[]> {
+  async execute({ role, ...scope }: GetMyAchievementsInput): Promise<Achievement[]> {
+    return role === Role.BACKOFFICE ? this.backoffice(scope) : this.seller(scope)
+  }
+
+  private async seller(scope: AchievementsScope): Promise<Achievement[]> {
     const [sales, assemblyStageAt, contemplationStageAt, assemblyCheckAt, contemplationCheckAt] =
       await Promise.all([
         this.achievementsRepository.listWonSales(scope),
@@ -103,8 +134,9 @@ export class GetMyAchievementsUseCase
         description: `Somou ${formatMillions(milestone.targetCents)} em crédito vendido.`,
         unlockedAt: crossedAt.get(milestone.id) ?? null,
         progress: {
-          currentCents: Math.min(total, milestone.targetCents),
-          targetCents: milestone.targetCents,
+          current: Math.min(total, milestone.targetCents),
+          target: milestone.targetCents,
+          unit: 'cents' as const,
         },
       })),
       {
@@ -120,6 +152,73 @@ export class GetMyAchievementsUseCase
         title: 'Primeira contemplação',
         description: 'Um cliente seu foi contemplado.',
         unlockedAt: firstContemplationAt,
+        progress: null,
+      },
+    ]
+  }
+
+  private async backoffice(scope: AchievementsScope): Promise<Achievement[]> {
+    const [effective, checks, paymentAt, assemblyChecks, contemplationChecks, movedAt] =
+      await Promise.all([
+        this.achievementsRepository.listEffectiveQuotaDates(scope),
+        this.achievementsRepository.listChecklistCheckDates(scope),
+        this.achievementsRepository.firstPaymentCheckAt(scope),
+        this.achievementsRepository.listChecklistCheckDates(scope, [...ASSEMBLY_CHECKLIST_KEYS]),
+        this.achievementsRepository.listChecklistCheckDates(scope, [
+          ...CONTEMPLATION_CHECKLIST_KEYS,
+        ]),
+        this.achievementsRepository.firstPostSaleStageMoveAt(scope, CONTEMPLATION_STAGES),
+      ])
+
+    return [
+      {
+        id: 'first_effective',
+        title: 'Primeira cota efetivada',
+        description: 'Levou a primeira cota até Efetivado no funil ADM.',
+        unlockedAt: effective[0] ?? null,
+        progress: null,
+      },
+      ...EFFECTIVE_MILESTONES.map((milestone) => ({
+        id: milestone.id,
+        title: milestone.title,
+        description: `Efetivou ${milestone.target} cotas no funil ADM.`,
+        unlockedAt: effective[milestone.target - 1] ?? null,
+        progress: {
+          current: Math.min(effective.length, milestone.target),
+          target: milestone.target,
+          unit: 'count' as const,
+        },
+      })),
+      {
+        id: 'checklist_100',
+        title: 'Checklist em dia',
+        description: `Marcou ${CHECKLIST_TARGET} itens de checklist no ADM e no Pós-venda.`,
+        unlockedAt: checks[CHECKLIST_TARGET - 1] ?? null,
+        progress: {
+          current: Math.min(checks.length, CHECKLIST_TARGET),
+          target: CHECKLIST_TARGET,
+          unit: 'count',
+        },
+      },
+      {
+        id: 'first_payment_check',
+        title: 'Primeira parcela conferida',
+        description: 'Respondeu a primeira tarefa "Confirmar pagamento" do Pós-venda.',
+        unlockedAt: paymentAt,
+        progress: null,
+      },
+      {
+        id: 'assembly_followed',
+        title: 'Primeira assembleia acompanhada',
+        description: 'Marcou "1ª parcela paga" ou "Participou da 1ª assembleia" numa cota.',
+        unlockedAt: assemblyChecks[0] ?? null,
+        progress: null,
+      },
+      {
+        id: 'contemplation_followed',
+        title: 'Primeira contemplação acompanhada',
+        description: 'Levou uma cota até Contemplado no Pós-venda.',
+        unlockedAt: earliest(contemplationChecks[0] ?? null, movedAt),
         progress: null,
       },
     ]

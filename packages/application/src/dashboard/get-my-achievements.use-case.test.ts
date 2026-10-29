@@ -1,5 +1,6 @@
 // Tests: GetMyAchievementsUseCase — marcos de venda acumulada e do Pós-venda.
 
+import { Role } from '@sylocrm/domain'
 import { describe, expect, it, vi } from 'vitest'
 import type { IAchievementsRepository } from '../ports/achievements.repository'
 import { GetMyAchievementsUseCase } from './get-my-achievements.use-case'
@@ -25,6 +26,10 @@ function setup(
       .mockImplementation(async (_scope, keys: string[]) =>
         keys.includes('first_installment_paid') ? checkAssemblyAt : null,
       ),
+    listEffectiveQuotaDates: vi.fn().mockResolvedValue([]),
+    listChecklistCheckDates: vi.fn().mockResolvedValue([]),
+    firstPaymentCheckAt: vi.fn().mockResolvedValue(null),
+    firstPostSaleStageMoveAt: vi.fn().mockResolvedValue(null),
   }
   return { useCase: new GetMyAchievementsUseCase(repository), repository }
 }
@@ -45,11 +50,12 @@ describe('GetMyAchievementsUseCase', () => {
     expect(byId.sold_1m?.unlockedAt).toEqual(d(9))
     expect(byId.sold_3m).toMatchObject({
       unlockedAt: null,
-      progress: { currentCents: 1_100_000_00, targetCents: 3_000_000_00 },
+      progress: { current: 1_100_000_00, target: 3_000_000_00, unit: 'cents' },
     })
     expect(byId.sold_500k?.progress).toEqual({
-      currentCents: 500_000_00,
-      targetCents: 500_000_00,
+      current: 500_000_00,
+      target: 500_000_00,
+      unit: 'cents',
     })
   })
 
@@ -83,5 +89,48 @@ describe('GetMyAchievementsUseCase', () => {
     const achievements = await useCase.execute(scope)
 
     expect(achievements.find((a) => a.id === 'first_assembly')?.unlockedAt).toEqual(d(12))
+  })
+})
+
+describe('GetMyAchievementsUseCase — Administrativo', () => {
+  const days = (count: number) => Array.from({ length: count }, (_, i) => d((i % 28) + 1))
+
+  it('has its own wall, unlocked by the back-office work of the user', async () => {
+    const { repository, useCase } = setup([{ wonAt: d(1), valueCents: 900_000_00 }])
+    vi.mocked(repository.listEffectiveQuotaDates).mockResolvedValue([d(2), ...days(11)])
+    vi.mocked(repository.listChecklistCheckDates).mockImplementation(async (_scope, keys) =>
+      keys?.includes('first_installment_paid') ? [d(7)] : keys ? [] : days(40),
+    )
+    vi.mocked(repository.firstPaymentCheckAt).mockResolvedValue(d(9))
+    vi.mocked(repository.firstPostSaleStageMoveAt).mockResolvedValue(d(20))
+
+    const achievements = await useCase.execute({ ...scope, role: Role.BACKOFFICE })
+    const byId = Object.fromEntries(achievements.map((a) => [a.id, a]))
+
+    expect(achievements.map((a) => a.id)).toEqual([
+      'first_effective',
+      'effective_10',
+      'effective_50',
+      'effective_100',
+      'checklist_100',
+      'first_payment_check',
+      'assembly_followed',
+      'contemplation_followed',
+    ])
+    expect(byId.first_effective?.unlockedAt).toEqual(d(2))
+    expect(byId.effective_10?.unlockedAt).toEqual(d(9)) // 10ª cota
+    expect(byId.effective_50).toMatchObject({
+      unlockedAt: null,
+      progress: { current: 12, target: 50, unit: 'count' },
+    })
+    expect(byId.checklist_100).toMatchObject({
+      unlockedAt: null,
+      progress: { current: 40, target: 100 },
+    })
+    expect(byId.first_payment_check?.unlockedAt).toEqual(d(9))
+    expect(byId.assembly_followed?.unlockedAt).toEqual(d(7))
+    expect(byId.contemplation_followed?.unlockedAt).toEqual(d(20))
+    // As vendas não entram no Mural dele.
+    expect(repository.listWonSales).not.toHaveBeenCalled()
   })
 })
