@@ -1,17 +1,19 @@
-// MobileLayout — casca do app do celular (/m): exige login, troca pra
-// organização que veio no link do push (?org=), registra o service worker e
-// mostra a barra de abas.
+// MobileLayout — casca do app do celular (/m): pede login (MobileLoginPage,
+// no lugar da tela — a URL não muda, então o link do push continua valendo),
+// troca pra organização que veio no link do push (?org=), registra o service
+// worker e mostra a barra de abas.
 //
 // Fica fora do ProtectedRoute do /app: o celular não monta o AppLayout, o
 // prompt de oferta nem o som do sininho do desktop — aqui o aviso é o push.
 
 import { useEffect } from 'react'
-import { NavLink, Navigate, Outlet, useLocation, useSearchParams } from 'react-router-dom'
+import { NavLink, Outlet, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useNotificationsQuery } from '../../hooks/useNotifications'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { registerServiceWorker } from '../../lib/web-push'
 import styles from './Mobile.module.css'
+import { MobileLoginPage } from './MobileLoginPage'
 import { BellIcon, CheckSquareIcon, HomeIcon, UsersIcon } from './icons'
 
 const TABS = [
@@ -63,7 +65,6 @@ function useOrganizationFromLink() {
 
 export function MobileLayout() {
   const { isSignedIn, isLoading } = useAuth()
-  const location = useLocation()
 
   useEffect(() => {
     registerServiceWorker().catch((error: unknown) => {
@@ -73,8 +74,11 @@ export function MobileLayout() {
 
   if (isLoading) return <div className={styles.shell} />
   if (!isSignedIn) {
-    const next = `${location.pathname}${location.search}`
-    return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />
+    return (
+      <div className={styles.shell}>
+        <MobileLoginPage />
+      </div>
+    )
   }
   return <SignedInShell />
 }

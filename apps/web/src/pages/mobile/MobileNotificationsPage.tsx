@@ -65,7 +65,7 @@ export function MobileNotificationsPage() {
       console.error('[pwa] não deu pra desinscrever o push', error)
     }
     await signOut()
-    navigate('/login?next=%2Fm', { replace: true })
+    navigate('/m', { replace: true })
   }
 
   const items = notifications.data?.items ?? []
