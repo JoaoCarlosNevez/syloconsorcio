@@ -59,7 +59,8 @@ const POST_SALE = funnel('POST_SALE', [
 ])
 const ADM = funnel('BACKOFFICE', [
   'Conferência de documentos',
-  'Digitado na administradora',
+  'Checado',
+  'Enviado',
   'Pendência',
   'Efetivado',
 ])
@@ -148,6 +149,20 @@ describe('lead checklist', () => {
           label: '1ª parcela paga',
         }),
       }),
+    )
+  })
+
+  it('ADM: "Documentos conferidos" moves to "Checado", "Proposta digitada" to "Enviado"', async () => {
+    const docs = setup(ADM, { stageId: 'stage-0' }) // em "Conferência de documentos"
+    await docs.toggle.execute({ ...base, itemKey: 'docs_checked', checked: true })
+    expect(docs.updateLead.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ changes: { stageId: 'stage-1' } }),
+    )
+
+    const typed = setup(ADM, { stageId: 'stage-1' }) // em "Checado"
+    await typed.toggle.execute({ ...base, itemKey: 'proposal_typed', checked: true })
+    expect(typed.updateLead.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ changes: { stageId: 'stage-2' } }),
     )
   })
 

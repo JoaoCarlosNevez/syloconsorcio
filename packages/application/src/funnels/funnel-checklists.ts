@@ -18,11 +18,11 @@ export interface ChecklistItemDefinition {
 
 export const FUNNEL_CHECKLISTS: Partial<Record<FunnelKind, readonly ChecklistItemDefinition[]>> = {
   BACKOFFICE: [
-    { key: 'docs_checked', label: 'Documentos conferidos' },
+    { key: 'docs_checked', label: 'Documentos conferidos', moveTo: 'Checado' },
     {
       key: 'proposal_typed',
       label: 'Proposta digitada na administradora',
-      moveTo: 'Digitado na administradora',
+      moveTo: 'Enviado',
     },
     { key: 'first_boleto_sent', label: 'Boleto da 1ª parcela enviado ao cliente' },
     { key: 'quota_effective', label: 'Grupo e cota informados (efetivada)', moveTo: 'Efetivado' },
