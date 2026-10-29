@@ -52,6 +52,7 @@ import { organizationSettingsRoute } from './routes/organization-settings.route'
 import { organizationsRoute } from './routes/organizations.route'
 import { publicProposalsRoute } from './routes/public-proposals.route'
 import { pushRoute } from './routes/push.route'
+import { pwaRoute } from './routes/pwa.route'
 import { tasksRoute } from './routes/tasks.route'
 import { teamRoute } from './routes/team.route'
 import { webhooksRoute } from './routes/webhooks.route'
@@ -548,6 +549,11 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     userRepository: resolvedDeps.userRepository,
     apiKeyRepository: resolvedDeps.apiKeyRepository,
     activityLogRepository: resolvedDeps.activityLogRepository,
+  })
+
+  app.register(pwaRoute, {
+    organizationRepository: resolvedDeps.organizationRepository,
+    allowedOrigins,
   })
 
   app.register(pushRoute, {
