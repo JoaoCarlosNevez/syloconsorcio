@@ -1,6 +1,8 @@
 // Ficha do lead no celular: ligar/WhatsApp, etapa do funil, registrar
 // ligação e visita, reenviar a proposta, histórico com comentário e
-// ganho/perdido. A ficha de adesão completa e os documentos ficam no web.
+// ganho/perdido. Nos funis ADM e Pós-venda, o checklist (e a parcela
+// pagou/não pagou) no lugar de ganho/perdido; pra Dono, Supervisor e ADM, a
+// troca de responsável. A ficha de adesão completa e os documentos ficam no web.
 
 import { Skeleton } from '@sylocrm/ui'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
@@ -12,7 +14,14 @@ import { describeProposalViews } from '../../lib/proposal-share'
 import styles from './Mobile.module.css'
 import { BackBar, Sheet, useToast } from './MobileUi'
 import { TaskRow } from './TaskRow'
-import { PhoneIcon, ShareIcon, UsersIcon, WhatsappIcon } from './icons'
+import { PhoneIcon, ShareIcon, TickIcon, UsersIcon, WhatsappIcon } from './icons'
+
+const ROLE_LABEL = {
+  ADMIN: 'Dono',
+  MANAGER: 'Supervisor',
+  BACKOFFICE: 'ADM',
+  SELLER: 'Vendedor',
+} as const
 
 type SheetState =
   | { kind: 'call' }
@@ -20,6 +29,7 @@ type SheetState =
   | { kind: 'lost'; reason: string | null }
   | { kind: 'share'; proposal: LeadProposal; url: string }
   | { kind: 'won' }
+  | { kind: 'assign' }
 
 function formatWhen(iso: string): string {
   return new Date(iso).toLocaleString('pt-BR', {
@@ -81,6 +91,7 @@ export function MobileLeadPage() {
   }
 
   const closed = Boolean(lead.wonAt || lead.lostAt)
+  const checklist = m.checklist.data
   const stage = m.stages[m.stageIndex]
   const proposals = m.proposals.data?.proposals ?? []
   const firstName = lead.name.split(' ')[0] ?? lead.name
@@ -166,9 +177,31 @@ export function MobileLeadPage() {
         </a>
       </div>
 
+      {m.canAssign && (
+        <section className={styles.card}>
+          <div className={styles.row}>
+            <div className={styles.grow}>
+              <span className={styles.statLabel}>Responsável</span>
+              <span className={styles.rowTitle}>
+                {m.assigneeName(lead.assignedUserId) ?? 'Sem responsável'}
+              </span>
+            </div>
+            {!closed && (
+              <button
+                type="button"
+                className={styles.link}
+                onClick={() => setSheet({ kind: 'assign' })}
+              >
+                Trocar
+              </button>
+            )}
+          </div>
+        </section>
+      )}
+
       {m.stages.length > 0 && (
         <section>
-          <h2 className={styles.sectionTitle}>Etapa</h2>
+          <h2 className={styles.sectionTitle}>Etapa · {m.funnel?.name}</h2>
           <div className={styles.card}>
             <div
               className={styles.stepper}
@@ -210,15 +243,77 @@ export function MobileLeadPage() {
               <PhoneIcon />
               Ligação feita
             </button>
-            <button
-              type="button"
-              className={`${styles.btn} ${styles.btnGhost}`}
-              disabled={m.isSaving}
-              onClick={() => run(m.registerVisit, 'Visita registrada')}
-            >
-              <UsersIcon size={18} />
-              Visita feita
-            </button>
+            {!m.isSystemFunnel && (
+              <button
+                type="button"
+                className={`${styles.btn} ${styles.btnGhost}`}
+                disabled={m.isSaving}
+                onClick={() => run(m.registerVisit, 'Visita registrada')}
+              >
+                <UsersIcon size={18} />
+                Visita feita
+              </button>
+            )}
+          </div>
+        </section>
+      )}
+
+      {m.isSystemFunnel && (
+        <section>
+          <h2 className={styles.sectionTitle}>Checklist</h2>
+          {checklist?.pendingPayment && (
+            <div className={`${styles.card} ${styles.pushCard}`}>
+              <b>{checklist.pendingPayment.title}</b>
+              <p className={styles.note}>
+                Venceu em {new Date(checklist.pendingPayment.dueAt).toLocaleDateString('pt-BR')}. O
+                cliente pagou?
+              </p>
+              <div className={styles.two}>
+                <button
+                  type="button"
+                  className={`${styles.btn} ${styles.btnLine}`}
+                  disabled={m.isAnsweringPayment}
+                  onClick={() => run(() => m.answerPayment(false), 'Marcado como atrasado')}
+                >
+                  Não pagou
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.btn} ${styles.btnPrimary}`}
+                  disabled={m.isAnsweringPayment}
+                  onClick={() => run(() => m.answerPayment(true), 'Pagamento registrado')}
+                >
+                  Pagou
+                </button>
+              </div>
+            </div>
+          )}
+          <div className={`${styles.card} ${styles.list}`}>
+            {m.checklist.isLoading ? (
+              <div className={styles.row}>
+                <Skeleton width="100%" height={36} />
+              </div>
+            ) : (
+              checklist?.items.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={styles.checkItem}
+                  disabled={m.isTogglingChecklist}
+                  onClick={() =>
+                    run(
+                      () => m.toggleChecklistItem({ itemKey: item.key, checked: !item.checked }),
+                      item.checked ? 'Item desmarcado' : 'Item marcado',
+                    )
+                  }
+                >
+                  <span className={`${styles.check} ${item.checked ? styles.checkOn : ''}`}>
+                    {item.checked ? <TickIcon /> : null}
+                  </span>
+                  <span className={styles.grow}>{item.label}</span>
+                </button>
+              ))
+            )}
           </div>
         </section>
       )}
@@ -308,7 +403,7 @@ export function MobileLeadPage() {
         </div>
       </section>
 
-      {!closed && (
+      {!closed && !m.isSystemFunnel && (
         <div className={styles.two}>
           <button
             type="button"
@@ -374,6 +469,36 @@ export function MobileLeadPage() {
                 {s.name}
               </button>
             ))}
+          </div>
+        </Sheet>
+      )}
+
+      {sheet?.kind === 'assign' && (
+        <Sheet onClose={() => setSheet(null)}>
+          <h3>Passar {firstName} pra quem?</h3>
+          <div className={styles.options}>
+            {m.assignees.map((member) => (
+              <button
+                key={member.userId}
+                type="button"
+                className={`${styles.option} ${member.userId === lead.assignedUserId ? styles.optionOn : ''}`}
+                disabled={m.isSaving}
+                onClick={() =>
+                  run(() => m.assignTo(member.userId), `Agora com ${member.name ?? member.email}`)
+                }
+              >
+                {member.name ?? member.email}
+                <small>{ROLE_LABEL[member.role]}</small>
+              </button>
+            ))}
+            <button
+              type="button"
+              className={styles.option}
+              disabled={m.isSaving || !lead.assignedUserId}
+              onClick={() => run(() => m.assignTo(null), 'Lead sem responsável')}
+            >
+              Sem responsável
+            </button>
           </div>
         </Sheet>
       )}

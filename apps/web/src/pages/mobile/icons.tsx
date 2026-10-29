@@ -110,3 +110,27 @@ export const ClockIcon = () => (
     <path d="M12 7v5l3 2" />
   </Icon>
 )
+
+export const ChartIcon = () => (
+  <Icon>
+    <path d="M3 3v18h18" />
+    <path d="M7 15l4-4 3 3 5-6" />
+  </Icon>
+)
+
+export const NetworkIcon = () => (
+  <Icon>
+    <circle cx="12" cy="5" r="2.5" />
+    <circle cx="5" cy="19" r="2.5" />
+    <circle cx="19" cy="19" r="2.5" />
+    <path d="M12 7.5v4M12 11.5 6.5 17M12 11.5l5.5 5.5" />
+  </Icon>
+)
+
+export const ColumnsIcon = () => (
+  <Icon>
+    <rect x="3" y="4" width="5" height="16" rx="1.5" />
+    <rect x="10" y="4" width="5" height="11" rx="1.5" />
+    <rect x="17" y="4" width="4" height="7" rx="1.5" />
+  </Icon>
+)

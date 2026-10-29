@@ -1,21 +1,28 @@
 // useMobileLead — o lead aberto no app do celular e as ações de rua: registrar
 // ligação/visita (como tarefa já concluída, que conta no histórico e na
 // ofensiva), mudar etapa, ganhar, perder, comentar e reenviar a proposta.
+// Nos funis ADM e Pós-venda, o checklist e a parcela pagou/não pagou; pra
+// quem distribui leads, a troca de responsável.
 
 import { useCallback, useMemo } from 'react'
 import { proposalShareUrl } from '../lib/leads-api'
 import { tomorrowAtTen } from '../lib/mobile'
 import { useFunnelsQuery } from './useFunnels'
 import {
+  useAnswerInstallmentPayment,
   useCreateLeadComment,
+  useLeadChecklistQuery,
   useLeadHistoryQuery,
   useLeadProposalsQuery,
   useLeadQuery,
+  useSetLeadChecklistItem,
   useShareLeadProposal,
   useUpdateLead,
 } from './useLeads'
+import { useMobileProfile } from './useMobileProfile'
 import { useActiveOrganization } from './useOrganization'
 import { useCreateTask, useTasksQuery } from './useTasks'
+import { useTeamMembersQuery } from './useTeam'
 
 export type CallResult = 'atendeu' | 'nao_atendeu'
 
@@ -30,6 +37,10 @@ export function useMobileLead(leadId: string) {
   const createTask = useCreateTask(organizationId)
   const createComment = useCreateLeadComment(organizationId, leadId)
   const shareProposal = useShareLeadProposal(organizationId, leadId)
+  const { canAssign } = useMobileProfile()
+  const team = useTeamMembersQuery(canAssign ? organizationId : null)
+  const setChecklistItem = useSetLeadChecklistItem(organizationId, leadId)
+  const answerPayment = useAnswerInstallmentPayment(organizationId, leadId)
 
   const funnel = useMemo(
     () => funnels.data?.funnels.find((f) => f.id === lead.data?.funnelId) ?? null,
@@ -37,6 +48,12 @@ export function useMobileLead(leadId: string) {
   )
   const stages = funnel?.stages ?? []
   const stageIndex = stages.findIndex((stage) => stage.id === lead.data?.stageId)
+  /** ADM e Pós-venda: etapas fixas, checklist no lugar de ganho/perdido. */
+  const isSystemFunnel = funnel?.kind === 'BACKOFFICE' || funnel?.kind === 'POST_SALE'
+  const checklist = useLeadChecklistQuery(organizationId, leadId, isSystemFunnel)
+  const assignees = (team.data?.members ?? []).filter((m) => m.status === 'ACTIVE')
+  const assigneeName = (userId: string | null) =>
+    userId ? (assignees.find((m) => m.userId === userId)?.name ?? null) : null
 
   const logDone = useCallback(
     (type: 'Ligação' | 'Visita', title: string, notes?: string) =>
@@ -95,6 +112,12 @@ export function useMobileLead(leadId: string) {
     [leadId, updateLead],
   )
 
+  const assignTo = useCallback(
+    (userId: string | null) =>
+      updateLead.mutateAsync({ id: leadId, payload: { assignedUserId: userId } }),
+    [leadId, updateLead],
+  )
+
   /** Gera (ou reaproveita) o link público e devolve a URL pra mandar. */
   const proposalLink = useCallback(
     async (proposalId: string, existingToken: string | null) => {
@@ -106,8 +129,19 @@ export function useMobileLead(leadId: string) {
 
   return {
     lead,
+    funnel,
     stages,
     stageIndex,
+    isSystemFunnel,
+    checklist,
+    toggleChecklistItem: setChecklistItem.mutateAsync,
+    isTogglingChecklist: setChecklistItem.isPending,
+    answerPayment: answerPayment.mutateAsync,
+    isAnsweringPayment: answerPayment.isPending,
+    canAssign,
+    assignees,
+    assigneeName,
+    assignTo,
     history,
     proposals,
     openTasks,
