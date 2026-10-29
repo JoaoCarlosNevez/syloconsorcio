@@ -686,8 +686,6 @@ function HubView({
 
 // ── Equipe view ──────────────────────────────────────────────────────────────────
 
-const PER_PAGE = 5
-
 function EquipeView() {
   const { organizationId, membership } = useActiveOrganization()
   const { data: currentUser } = useCurrentUser()
@@ -695,7 +693,6 @@ function EquipeView() {
   const removeMember = useRemoveTeamMember(organizationId)
   const reactivateMember = useReactivateTeamMember(organizationId)
   const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
   const [inviteOpen, setInviteOpen] = useState(false)
   const [removeTarget, setRemoveTarget] = useState<TeamMember | null>(null)
   const [detailUserId, setDetailUserId] = useState<string | null>(null)
@@ -733,8 +730,6 @@ function EquipeView() {
       (m.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
       m.email.toLowerCase().includes(search.toLowerCase()),
   )
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
-  const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
   return (
     <div className={styles.equipeContent}>
@@ -749,10 +744,7 @@ function EquipeView() {
             type="text"
             placeholder="Buscar usuário..."
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         {canInvite && (
@@ -785,14 +777,14 @@ function EquipeView() {
                   Carregando…
                 </td>
               </tr>
-            ) : paged.length === 0 ? (
+            ) : filtered.length === 0 ? (
               <tr>
                 <td className={styles.td} colSpan={6}>
                   Nenhum membro encontrado.
                 </td>
               </tr>
             ) : (
-              paged.map((member) => {
+              filtered.map((member) => {
                 const manageable =
                   member.userId !== currentUser?.id &&
                   membership !== null &&
@@ -932,40 +924,14 @@ function EquipeView() {
 
       {toast && <Toast msg={toast} onDone={() => setToast('')} />}
 
-      {/* Pagination */}
+      {/* Lista cresce com a equipe (sem paginação) — só a contagem. */}
       {filtered.length > 0 && (
         <div className={styles.pagination}>
           <span className={styles.paginationInfo}>
-            Mostrando {Math.min(page * PER_PAGE, filtered.length)} de {filtered.length} usuários
+            {filtered.length === members.length
+              ? `${members.length} ${members.length === 1 ? 'usuário' : 'usuários'}`
+              : `${filtered.length} de ${members.length} usuários`}
           </span>
-          <div className={styles.paginationControls}>
-            <button
-              type="button"
-              className={styles.pageBtn}
-              disabled={page === 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              <ChevronLeftIcon />
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                type="button"
-                className={`${styles.pageBtn} ${p === page ? styles.pageBtnActive : ''}`}
-                onClick={() => setPage(p)}
-              >
-                {p}
-              </button>
-            ))}
-            <button
-              type="button"
-              className={styles.pageBtn}
-              disabled={page === totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            >
-              <ChevronRightIcon />
-            </button>
-          </div>
         </div>
       )}
     </div>
