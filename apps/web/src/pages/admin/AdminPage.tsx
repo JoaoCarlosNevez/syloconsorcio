@@ -40,6 +40,7 @@ function RepresentacoesTab() {
   const { data, isLoading } = useOrganizationsQuery()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const navigate = useNavigate()
+  const organizations = data?.organizations ?? []
 
   const columns: ColumnDef<Organization>[] = [
     {
@@ -58,21 +59,33 @@ function RepresentacoesTab() {
     },
     { key: 'name', header: 'Nome', render: (row) => row.name },
     { key: 'type', header: 'Tipo', render: (row) => TYPE_LABEL[row.type] },
+    {
+      key: 'master',
+      header: 'Master',
+      render: (row) => {
+        if (row.type === 'MASTER') {
+          const count = organizations.filter((o) => o.parentOrganizationId === row.id).length
+          return `${count} ${count === 1 ? 'representação' : 'representações'}`
+        }
+        const master = organizations.find((o) => o.id === row.parentOrganizationId)
+        return master ? master.name : <span className={styles.muted}>Independente</span>
+      },
+    },
   ]
 
   return (
     <div className={styles.tabContent}>
       <div className={styles.tabHeader}>
-        <p className={styles.subtitle}>Representações cadastradas na plataforma.</p>
+        <p className={styles.subtitle}>Representações e Masters cadastrados na plataforma.</p>
         <Button type="button" onClick={() => setIsCreateOpen(true)}>
-          Nova Representação
+          Nova organização
         </Button>
       </div>
 
       <div className={styles.tableWrapper}>
         <DataTable
           columns={columns}
-          data={data?.organizations ?? []}
+          data={organizations}
           rowKey={(row) => row.id}
           isLoading={isLoading}
           emptyTitle="Nenhuma representação ainda"

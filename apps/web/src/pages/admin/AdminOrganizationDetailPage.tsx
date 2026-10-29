@@ -1,5 +1,7 @@
-// AdminOrganizationDetailPage — detalhe de uma Representação no painel do
-// Super Admin: editar nome, definir ícone, ver a equipe.
+// AdminOrganizationDetailPage — detalhe de uma organização no painel do
+// Super Admin: editar nome, definir ícone, ver a equipe. Numa Representação,
+// escolher o Master dela (ou deixá-la independente); num Master, ver as
+// Representações ligadas a ele.
 //
 // Restrita a isPlatformAdmin=true, igual à AdminPage (lista).
 
@@ -25,8 +27,15 @@ import {
   useUploadOrganizationIcon,
 } from '../../hooks/useOrganizations'
 import { validateIconFile } from '../../lib/icon-validation'
+import type { Organization } from '../../lib/organizations-api'
 import type { TeamMember } from '../../lib/team-api'
 import styles from './AdminPage.module.css'
+
+const TYPE_LABEL: Record<Organization['type'], string> = {
+  INCORPORADORA: 'Incorporadora',
+  MASTER: 'Master',
+  REPRESENTACAO: 'Representação',
+}
 
 const ROLE_LABEL: Record<TeamMember['role'], string> = {
   ADMIN: 'Dono',
@@ -48,7 +57,28 @@ export function AdminOrganizationDetailPage() {
   const [isEditingName, setIsEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
 
-  const organization = orgsData?.organizations.find((org) => org.id === id)
+  const organizations = orgsData?.organizations ?? []
+  const organization = organizations.find((org) => org.id === id)
+  const masters = organizations.filter((org) => org.type === 'MASTER')
+  const linkedRepresentations = organizations.filter((org) => org.parentOrganizationId === id)
+
+  async function changeMaster(masterOrganizationId: string) {
+    try {
+      await updateOrganization.mutateAsync({ masterOrganizationId: masterOrganizationId || null })
+      toast({
+        type: 'success',
+        title: masterOrganizationId
+          ? 'Representação ligada ao Master'
+          : 'Representação independente',
+      })
+    } catch (error) {
+      toast({
+        type: 'error',
+        title: 'Não foi possível alterar o Master',
+        description: error instanceof Error ? error.message : undefined,
+      })
+    }
+  }
 
   function startEditingName() {
     setNameDraft(organization?.name ?? '')
@@ -223,9 +253,59 @@ export function AdminOrganizationDetailPage() {
                     </Button>
                   </div>
                 )}
-                <p className={styles.subtitle}>{organization.type}</p>
+                <p className={styles.subtitle}>{TYPE_LABEL[organization.type]}</p>
               </div>
             </div>
+
+            {organization.type === 'REPRESENTACAO' && (
+              <div className={styles.masterRow}>
+                <span className={styles.selectLabel}>Master</span>
+                <select
+                  className={styles.select}
+                  value={organization.parentOrganizationId ?? ''}
+                  onChange={(e) => changeMaster(e.target.value)}
+                  disabled={updateOrganization.isPending}
+                  aria-label="Master da representação"
+                >
+                  <option value="">Independente (sem Master)</option>
+                  {masters.map((master) => (
+                    <option key={master.id} value={master.id}>
+                      {master.name}
+                    </option>
+                  ))}
+                </select>
+                <span className={styles.muted}>
+                  O Master acompanha os números desta representação (só leitura).
+                </span>
+              </div>
+            )}
+
+            {organization.type === 'MASTER' && (
+              <>
+                <h2 className={styles.sectionTitle}>Representações ligadas</h2>
+                {linkedRepresentations.length === 0 ? (
+                  <p className={styles.muted}>
+                    Nenhuma ainda. Abra uma Representação e escolha este Master no campo “Master”.
+                  </p>
+                ) : (
+                  <ul className={styles.linkedList}>
+                    {linkedRepresentations.map((rep) => (
+                      <li key={rep.id}>
+                        <Link to={`/app/admin/${rep.id}`} className={styles.linkedItem}>
+                          <OrganizationAvatar
+                            id={rep.id}
+                            name={rep.name}
+                            iconUrl={rep.isWhiteLabel ? rep.branding?.iconUrl : null}
+                            size={28}
+                          />
+                          {rep.name}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
 
             <h2 className={styles.sectionTitle}>Equipe</h2>
             <div className={styles.tableWrapper}>

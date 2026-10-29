@@ -36,6 +36,14 @@
 //                             papel (Supervisor com time vê o time) e pelos
 //                             filtros ?sellerUserId e ?supervisorUserId (só o
 //                             Dono) (GetManagementDashboardUseCase).
+// GET /dashboard/master     — início do Master (network.read): comparativo
+//                             das Representações ligadas a ele e ranking
+//                             unificado dos vendedores (?period, como acima)
+//                             (GetMasterDashboardUseCase).
+// GET /dashboard/master/representations/:id — o painel do Dono de uma das
+//                             Representações do Master, só leitura (mesmos
+//                             filtros do /dashboard/management)
+//                             (GetMasterRepresentationDashboardUseCase).
 //
 // Roda authMiddleware → tenantMiddleware (→ requirePermission onde indicado).
 
@@ -55,6 +63,8 @@ import type {
 import {
   GetActivityRankingUseCase,
   GetManagementDashboardUseCase,
+  GetMasterDashboardUseCase,
+  GetMasterRepresentationDashboardUseCase,
   GetMyAchievementsUseCase,
   GetMyEngagementUseCase,
   GetMyMonthlyStatsUseCase,
@@ -124,6 +134,77 @@ export const dashboardRoute: FastifyPluginAsync<DashboardRouteOptions> = async (
     options.funnelRepository,
     options.organizationRepository,
     options.membershipRepository,
+  )
+
+  const getMasterDashboard = new GetMasterDashboardUseCase(
+    getManagementDashboard,
+    options.organizationRepository,
+  )
+  const getMasterRepresentationDashboard = new GetMasterRepresentationDashboardUseCase(
+    getManagementDashboard,
+    options.organizationRepository,
+  )
+
+  // ── GET /dashboard/master ─────────────────────────────────────────────────
+  fastify.get(
+    '/dashboard/master',
+    {
+      preHandler: [authMiddleware, tenantMiddleware, requirePermission(Permission.NETWORK_READ)],
+    },
+    async (request, reply) => {
+      const query = managementQuerySchema.pick({ period: true }).safeParse(request.query)
+      if (!query.success) {
+        return reply
+          .status(400)
+          .send({ error: 'Período inválido.', code: 'VALIDATION_ERROR', status: 400 })
+      }
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      const dashboard = await getMasterDashboard.execute({
+        masterOrganizationId: context.currentMembership.organizationId,
+        userId: context.userId,
+        period: query.data.period,
+      })
+      return {
+        ...dashboard,
+        periodStart: dashboard.periodStart.toISOString(),
+        periodEnd: dashboard.periodEnd.toISOString(),
+      }
+    },
+  )
+
+  // ── GET /dashboard/master/representations/:id ─────────────────────────────
+  fastify.get<{ Params: { id: string } }>(
+    '/dashboard/master/representations/:id',
+    {
+      preHandler: [authMiddleware, tenantMiddleware, requirePermission(Permission.NETWORK_READ)],
+    },
+    async (request, reply) => {
+      const query = managementQuerySchema.safeParse(request.query)
+      if (!query.success) {
+        return reply
+          .status(400)
+          .send({ error: 'Filtro inválido.', code: 'VALIDATION_ERROR', status: 400 })
+      }
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      try {
+        const dashboard = await getMasterRepresentationDashboard.execute({
+          masterOrganizationId: context.currentMembership.organizationId,
+          representationId: request.params.id,
+          userId: context.userId,
+          ...query.data,
+        })
+        return {
+          ...dashboard,
+          periodStart: dashboard.periodStart.toISOString(),
+          periodEnd: dashboard.periodEnd.toISOString(),
+        }
+      } catch (error) {
+        if (error instanceof AuthorizationError) {
+          return reply.status(403).send({ error: error.message, code: error.code, status: 403 })
+        }
+        throw error
+      }
+    },
   )
 
   // ── GET /dashboard/management ─────────────────────────────────────────────

@@ -2,11 +2,13 @@
 //
 // GET /dashboard/me/monthly — números do mês de quem está logado (qualquer
 // papel).
+// GET /dashboard/master     — comparativo da rede, só pra organização MASTER.
 
 import type {
   IAuthProvider,
   ILeadRepository,
   IMembershipRepository,
+  IOrganizationRepository,
   ITaskRepository,
   IUserRepository,
   UserMembership,
@@ -448,5 +450,87 @@ describe('GET /dashboard/me/xp — Administrativo', () => {
     })
     expect(body.month.items.map((i: { key: string }) => i.key)).not.toContain('leads')
     expect(body.levels[1]).toMatchObject({ name: 'Operador Ágil' })
+  })
+})
+
+describe('GET /dashboard/master', () => {
+  const OWNER_MEMBERSHIP: UserMembership = { ...SELLER_MEMBERSHIP, role: Role.ADMIN }
+  const MASTER_MEMBERSHIP: UserMembership = {
+    ...OWNER_MEMBERSHIP,
+    organizationType: OrganizationType.MASTER,
+    organizationName: 'Rede Teste',
+  }
+
+  function buildMasterApp(membership: UserMembership) {
+    const organizationRepository = {
+      findChildOrganizationIds: vi.fn().mockResolvedValue(['rep-a']),
+      findById: vi.fn().mockResolvedValue({ id: 'rep-a', name: 'Filial A', salesGoalCents: null }),
+    } as unknown as IOrganizationRepository
+    return buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(),
+      membershipRepository: buildMembershipRepository(membership),
+      organizationRepository,
+      managementDashboardRepository: {
+        listOpenLeads: vi.fn().mockResolvedValue([]),
+        statsByAssignee: vi.fn().mockResolvedValue([
+          {
+            assignedUserId: null,
+            created: 3,
+            wonOfCreated: 0,
+            wonCount: 1,
+            wonValueCents: 500_00,
+          },
+        ]),
+        countPendingQueueOffers: vi.fn().mockResolvedValue(0),
+        wonInFunnelByAssignee: vi.fn().mockResolvedValue([]),
+      },
+    })
+  }
+
+  it('returns 403 for the owner of a representação (no network.read)', async () => {
+    const response = await buildMasterApp(OWNER_MEMBERSHIP).inject({
+      method: 'GET',
+      url: '/dashboard/master',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(403)
+  })
+
+  it('compares the representações linked to the Master', async () => {
+    const response = await buildMasterApp(MASTER_MEMBERSHIP).inject({
+      method: 'GET',
+      url: '/dashboard/master?period=month',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({
+      period: 'month',
+      totals: { newLeads: 3, wonCount: 1, wonValueCents: 500_00 },
+      representations: [{ id: 'rep-a', name: 'Filial A' }],
+    })
+  })
+
+  it("refuses the dashboard of a representação outside the Master's network", async () => {
+    const response = await buildMasterApp(MASTER_MEMBERSHIP).inject({
+      method: 'GET',
+      url: '/dashboard/master/representations/rep-z',
+      headers: AUTH_HEADERS,
+    })
+
+    expect(response.statusCode).toBe(403)
+  })
+
+  it('a Master cannot operate: no access to the leads of its own organization', async () => {
+    const response = await buildMasterApp(MASTER_MEMBERSHIP).inject({
+      method: 'POST',
+      url: '/leads',
+      headers: AUTH_HEADERS,
+      payload: { name: 'Teste', phone: '11999999999' },
+    })
+
+    expect(response.statusCode).toBe(403)
   })
 })

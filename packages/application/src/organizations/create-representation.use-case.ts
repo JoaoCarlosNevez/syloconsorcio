@@ -9,11 +9,12 @@
 // A checagem de "é Super Admin" acontece na camada HTTP (requirePlatformAdmin
 // middleware) — este use case assume que a chamada já foi autorizada.
 //
-// Representações criadas aqui nascem sempre independentes (sem
-// parentOrganizationId) — vincular a um Master é evolução futura, fora do
-// escopo atual (AGENTS.md §6).
+// Também cria organizações Master (type MASTER): sem funis — o Master não
+// opera leads, só acompanha as Representações ligadas a ele. Uma Representação
+// pode nascer já ligada a um Master (masterOrganizationId) ou independente;
+// o vínculo muda depois por SetRepresentationMasterUseCase.
 
-import { OrganizationType, Role } from '@sylocrm/domain'
+import { OrganizationType, Role, ValidationError } from '@sylocrm/domain'
 import { generateTemporaryPassword } from '../auth/generate-temporary-password'
 import { DEFAULT_FUNNEL_NAME, DEFAULT_FUNNEL_STAGES } from '../funnels/default-funnel'
 import type { AuthIdentity, IAuthProvider } from '../ports/auth.provider'
@@ -31,6 +32,10 @@ import {
 } from '../funnels/system-funnels'
 export interface CreateRepresentationInput {
   organizationName: string
+  /** Padrão: REPRESENTACAO. */
+  type?: typeof OrganizationType.REPRESENTACAO | typeof OrganizationType.MASTER
+  /** Só pra Representação: o Master ao qual ela pertence (null = independente). */
+  masterOrganizationId?: string | null
   /** null = criar só a organização, sem dono por enquanto. */
   owner: { name: string; email: string } | null
 }
@@ -53,35 +58,29 @@ export class CreateRepresentationUseCase
   ) {}
 
   async execute(input: CreateRepresentationInput): Promise<CreateRepresentationOutput> {
+    const type = input.type ?? OrganizationType.REPRESENTACAO
+    const masterOrganizationId =
+      type === OrganizationType.REPRESENTACAO ? (input.masterOrganizationId ?? null) : null
+    if (masterOrganizationId) {
+      const master = await this.organizationRepository.findById(masterOrganizationId)
+      if (master?.type !== OrganizationType.MASTER) {
+        throw new ValidationError([
+          { field: 'masterOrganizationId', message: 'Master não encontrado.' },
+        ])
+      }
+    }
+
     // O login do dono é criado antes da organização: se o e-mail já existir
     // (ConflictError), nada fica pela metade.
     const owner = input.owner ? await this.createOwnerIdentity(input.owner) : null
 
     const organization = await this.organizationRepository.create({
       name: input.organizationName,
-      type: OrganizationType.REPRESENTACAO,
-      parentOrganizationId: null,
+      type,
+      parentOrganizationId: masterOrganizationId,
     })
 
-    await this.funnelRepository.create({
-      organizationId: organization.id,
-      name: DEFAULT_FUNNEL_NAME,
-      stages: [...DEFAULT_FUNNEL_STAGES],
-      isDefault: true,
-      kind: 'COMMERCIAL',
-    })
-    await this.funnelRepository.create({
-      organizationId: organization.id,
-      name: BACKOFFICE_FUNNEL_NAME,
-      stages: [...BACKOFFICE_FUNNEL_STAGES],
-      kind: 'BACKOFFICE',
-    })
-    await this.funnelRepository.create({
-      organizationId: organization.id,
-      name: POST_SALE_FUNNEL_NAME,
-      stages: [...POST_SALE_FUNNEL_STAGES],
-      kind: 'POST_SALE',
-    })
+    if (type === OrganizationType.REPRESENTACAO) await this.createFunnels(organization.id)
 
     if (owner) {
       await this.membershipRepository.create({
@@ -92,6 +91,28 @@ export class CreateRepresentationUseCase
     }
 
     return { organization, owner }
+  }
+
+  private async createFunnels(organizationId: string): Promise<void> {
+    await this.funnelRepository.create({
+      organizationId,
+      name: DEFAULT_FUNNEL_NAME,
+      stages: [...DEFAULT_FUNNEL_STAGES],
+      isDefault: true,
+      kind: 'COMMERCIAL',
+    })
+    await this.funnelRepository.create({
+      organizationId,
+      name: BACKOFFICE_FUNNEL_NAME,
+      stages: [...BACKOFFICE_FUNNEL_STAGES],
+      kind: 'BACKOFFICE',
+    })
+    await this.funnelRepository.create({
+      organizationId,
+      name: POST_SALE_FUNNEL_NAME,
+      stages: [...POST_SALE_FUNNEL_STAGES],
+      kind: 'POST_SALE',
+    })
   }
 
   private async createOwnerIdentity(owner: {

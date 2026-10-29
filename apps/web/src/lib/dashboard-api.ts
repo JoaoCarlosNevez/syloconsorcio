@@ -219,6 +219,65 @@ export function getManagementDashboard(
   return apiClient.get<ManagementDashboard>(`/dashboard/management?${params}`, { organizationId })
 }
 
+// ── Painel do Master (comparativo das Representações) ────────────────────────
+
+export interface RepresentationPerformance {
+  id: string
+  name: string
+  summary: ManagementDashboard['summary']
+  goalPercent: number | null
+  health: ManagementDashboard['health']
+  backoffice: { openCount: number; staleCount: number }
+  postSale: { activeCount: number; lateCount: number }
+  sellersCount: number
+}
+
+export interface NetworkSeller extends SellerPerformance {
+  representationId: string
+  representationName: string
+}
+
+export interface MasterDashboard {
+  period: ManagementPeriod
+  periodStart: string
+  periodEnd: string
+  totals: ManagementDashboard['summary'] & {
+    goalPercent: number | null
+    staleAttention: number
+    backofficeStale: number
+    postSaleLate: number
+  }
+  /** Pelo valor vendido no período, maior primeiro. */
+  representations: RepresentationPerformance[]
+  /** Vendedores de todas as Representações, pelo valor vendido no período. */
+  sellers: NetworkSeller[]
+}
+
+export function getMasterDashboard(
+  organizationId: string,
+  period: ManagementPeriod,
+): Promise<MasterDashboard> {
+  return apiClient.get<MasterDashboard>(`/dashboard/master?period=${period}`, { organizationId })
+}
+
+/** Painel do Dono de uma Representação do Master — só leitura. */
+export function getMasterRepresentationDashboard(
+  organizationId: string,
+  representationId: string,
+  period: ManagementPeriod,
+  funnelId: string | null,
+  filters: ManagementFilters,
+): Promise<ManagementDashboard> {
+  const params = new URLSearchParams({ period })
+  if (funnelId) params.set('funnelId', funnelId)
+  if (filters.sellerUserId) params.set('sellerUserId', filters.sellerUserId)
+  if (filters.supervisorUserId) params.set('supervisorUserId', filters.supervisorUserId)
+  return apiClient.get<ManagementDashboard>(
+    `/dashboard/master/representations/${representationId}?${params}`,
+    { organizationId },
+  )
+}
+
 // ── Engajamento operacional (Perfil) ─────────────────────────────────────────
 
 export interface SellerEngagement {

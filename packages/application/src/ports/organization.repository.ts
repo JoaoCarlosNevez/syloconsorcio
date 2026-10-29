@@ -47,6 +47,8 @@ export interface NewOrganizationInput {
 
 export interface UpdateOrganizationInput {
   name?: string
+  /** Master da Representação (null = independente) — SetRepresentationMasterUseCase. */
+  parentOrganizationId?: string | null
   isWhiteLabel?: boolean
   branding?: OrganizationBranding
   cnpj?: string | null

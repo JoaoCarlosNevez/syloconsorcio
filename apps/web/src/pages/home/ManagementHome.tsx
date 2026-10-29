@@ -2,12 +2,19 @@
 // resumo do período, saúde do pipeline, funil de conversão e o funil ADM do
 // pós-venda. As contas ficam na API (GetManagementDashboardUseCase); aqui só
 // apresentação. O Vendedor continua com o início dele (SellerHome).
+//
+// O Master abre o mesmo painel de uma das Representações dele (prop
+// `representation`), só leitura: os dados vêm de /dashboard/master/... e os
+// atalhos pro Kanban ficam desligados (o Master não opera leads).
 
 import { Skeleton } from '@sylocrm/ui'
 import { type ReactNode, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
-import { useManagementDashboardQuery } from '../../hooks/useDashboard'
+import {
+  useManagementDashboardQuery,
+  useMasterRepresentationDashboardQuery,
+} from '../../hooks/useDashboard'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import type {
   ManagementDashboard,
@@ -18,13 +25,13 @@ import type {
 import { FunnelChart } from './FunnelChart'
 import styles from './ManagementHome.module.css'
 
-const PERIODS: { key: ManagementPeriod; label: string }[] = [
+export const PERIODS: { key: ManagementPeriod; label: string }[] = [
   { key: 'week', label: 'Semana' },
   { key: 'month', label: 'Mês' },
   { key: 'last_month', label: 'Mês anterior' },
 ]
 
-const PERIOD_NOUN: Record<ManagementPeriod, string> = {
+export const PERIOD_NOUN: Record<ManagementPeriod, string> = {
   week: 'na semana',
   month: 'no mês',
   last_month: 'no mês anterior',
@@ -41,7 +48,7 @@ function formatMoney(cents: number): string {
 }
 
 /** "R$ 1,2 mi" / "R$ 350 mil" — pra caber nos cards. */
-function formatMoneyShort(cents: number): string {
+export function formatMoneyShort(cents: number): string {
   const reais = cents / 100
   if (reais >= 1_000_000) {
     return `R$ ${(reais / 1_000_000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mi`
@@ -52,7 +59,7 @@ function formatMoneyShort(cents: number): string {
   return formatMoney(cents)
 }
 
-function formatPercent(value: number | null): string {
+export function formatPercent(value: number | null): string {
   return value === null ? '—' : `${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`
 }
 
@@ -62,7 +69,7 @@ function formatDays(value: number | null): string {
   return `${Math.round(value)}d`
 }
 
-function plural(count: number, one: string, many: string): string {
+export function plural(count: number, one: string, many: string): string {
   return `${count.toLocaleString('pt-BR')} ${count === 1 ? one : many}`
 }
 
@@ -86,27 +93,27 @@ function Icon({ children }: { children: ReactNode }) {
   )
 }
 
-const TargetIcon = () => (
+export const TargetIcon = () => (
   <Icon>
     <circle cx="12" cy="12" r="9" />
     <circle cx="12" cy="12" r="5" />
     <circle cx="12" cy="12" r="1" />
   </Icon>
 )
-const UsersIcon = () => (
+export const UsersIcon = () => (
   <Icon>
     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
     <circle cx="9" cy="7" r="4" />
     <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
   </Icon>
 )
-const TrendIcon = () => (
+export const TrendIcon = () => (
   <Icon>
     <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
     <polyline points="16 7 22 7 22 13" />
   </Icon>
 )
-const TrophyIcon = () => (
+export const TrophyIcon = () => (
   <Icon>
     <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
     <path d="M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
@@ -121,13 +128,13 @@ const UserOffIcon = () => (
     <line x1="22" y1="8" x2="17" y2="13" />
   </Icon>
 )
-const ClockIcon = () => (
+export const ClockIcon = () => (
   <Icon>
     <circle cx="12" cy="12" r="9" />
     <polyline points="12 7 12 12 15 14" />
   </Icon>
 )
-const AlertIcon = () => (
+export const AlertIcon = () => (
   <Icon>
     <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
     <line x1="12" y1="9" x2="12" y2="13" />
@@ -144,7 +151,7 @@ const QueueIcon = () => (
 
 type CardTone = 'default' | 'gold' | 'danger'
 
-function StatCard({
+export function StatCard({
   label,
   value,
   caption,
@@ -282,7 +289,7 @@ function SalesFunnelCard({
   )
 }
 
-function BackofficeCard({ data }: { data: ManagementDashboard }) {
+function BackofficeCard({ data, readOnly }: { data: ManagementDashboard; readOnly: boolean }) {
   const navigate = useNavigate()
   const adm = data.backoffice
   if (!adm) return null
@@ -329,6 +336,7 @@ function BackofficeCard({ data }: { data: ManagementDashboard }) {
               <button
                 type="button"
                 className={styles.oldestRow}
+                disabled={readOnly}
                 onClick={() =>
                   navigate('/app/kanban', { state: { openLeadId: card.leadId, funnelId: adm.id } })
                 }
@@ -420,7 +428,11 @@ function DashboardSkeleton() {
   )
 }
 
-function GoalCell({ metrics }: { metrics: PerformanceMetrics }) {
+export function GoalCell({
+  metrics,
+}: {
+  metrics: Pick<PerformanceMetrics, 'goalCents' | 'goalPercent'>
+}) {
   if (metrics.goalCents === null || metrics.goalPercent === null) {
     return <span className={styles.muted}>sem meta</span>
   }
@@ -609,7 +621,12 @@ function parseFilter(value: string): ManagementFilters {
 
 // ── Página ───────────────────────────────────────────────────────────────────
 
-export function ManagementHome() {
+export interface ManagementHomeProps {
+  /** Master vendo uma das Representações dele. */
+  representation?: { id: string; name: string; onBack: () => void }
+}
+
+export function ManagementHome({ representation }: ManagementHomeProps = {}) {
   const { organizationId, membership } = useActiveOrganization()
   const [period, setPeriod] = useState<ManagementPeriod>('month')
   const [funnelId, setFunnelId] = useState<string | null>(null)
@@ -617,12 +634,20 @@ export function ManagementHome() {
     sellerUserId: null,
     supervisorUserId: null,
   })
-  const { data, isLoading, isError, error, refetch } = useManagementDashboardQuery(
-    organizationId,
+  const ownQuery = useManagementDashboardQuery(
+    representation ? null : organizationId,
     period,
     funnelId,
     filters,
   )
+  const networkQuery = useMasterRepresentationDashboardQuery(
+    organizationId,
+    representation?.id ?? null,
+    period,
+    funnelId,
+    filters,
+  )
+  const { data, isLoading, isError, error, refetch } = representation ? networkQuery : ownQuery
   // Opções do seletor de visão — mantém as últimas enquanto recarrega.
   const options = data?.filters
   const baseLabel = data && data.scope.kind === 'team' ? 'Meu time' : 'Toda a representação'
@@ -633,11 +658,16 @@ export function ManagementHome() {
       <div className={styles.page}>
         <header className={styles.header}>
           <div>
+            {representation && (
+              <button type="button" className={styles.backButton} onClick={representation.onBack}>
+                ← Todas as representações
+              </button>
+            )}
             <h1 className={styles.title}>
               {isTeamView && !filters.sellerUserId ? 'Visão do time' : 'Visão da representação'}
             </h1>
             <p className={styles.subtitle}>
-              {data?.scope.label ?? membership?.organizationName}
+              {data?.scope.label ?? representation?.name ?? membership?.organizationName}
               {(filters.sellerUserId || filters.supervisorUserId) && (
                 <button
                   type="button"
@@ -774,7 +804,7 @@ export function ManagementHome() {
             />
 
             <SalesFunnelCard data={data} onSelectFunnel={setFunnelId} />
-            <BackofficeCard data={data} />
+            <BackofficeCard data={data} readOnly={Boolean(representation)} />
 
             <PostSaleCard data={data} />
           </>

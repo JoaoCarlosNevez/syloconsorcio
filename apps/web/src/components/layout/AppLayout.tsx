@@ -211,10 +211,12 @@ function tierPaletteVars(tier: Tier | null): Record<string, string> {
 // Leads fica em Configurações, não no menu. `requiresPlatformAdmin`
 // restringe o item a quem tem `isPlatformAdmin` (super admin da plataforma) —
 // Administração é uma tela de operação da Sylo, não do ADMIN/MANAGER da organização.
+// `permission` esconde o item de quem não tem a permissão na organização ativa
+// (ex: o Master não opera leads nem tarefas — só acompanha a rede pelo início).
 const NAV_ITEMS = [
   { label: 'Início', path: '/app/home', icon: InicioIcon },
-  { label: 'Kanban', path: '/app/kanban', icon: KanbanIcon },
-  { label: 'Tarefas', path: '/app/tarefas', icon: TarefasIcon },
+  { label: 'Kanban', path: '/app/kanban', icon: KanbanIcon, permission: 'lead.read' },
+  { label: 'Tarefas', path: '/app/tarefas', icon: TarefasIcon, permission: 'task.read' },
   { label: 'Configurações', path: '/app/config', icon: ConfigIcon },
   { label: 'Administração', path: '/app/admin', icon: AdminIcon, requiresPlatformAdmin: true },
   { label: 'Ajuda', path: '/app/ajuda', icon: AjudaIcon },
@@ -357,7 +359,12 @@ export function AppLayout({ children }: AppLayoutProps) {
         {/* Navegação */}
         <nav className={styles.nav} aria-label="Navegação principal">
           {NAV_ITEMS.filter(
-            (item) => !('requiresPlatformAdmin' in item) || currentUser?.isPlatformAdmin === true,
+            (item) =>
+              (!('requiresPlatformAdmin' in item) || currentUser?.isPlatformAdmin === true) &&
+              // Enquanto a organização carrega, mostra tudo — evita o menu piscar.
+              (!('permission' in item) ||
+                !membership ||
+                membership.permissions.includes(item.permission)),
           ).map(({ label, path, icon: Icon }) => (
             <a
               key={path}
@@ -414,7 +421,13 @@ export function AppLayout({ children }: AppLayoutProps) {
             <div className={styles.userCardInfo}>
               <p className={styles.userCardName}>{displayName}</p>
               <p className={styles.userCardTier}>
-                {tier ? TIER_LABELS[tier] : membership ? ROLE_LABEL[membership.role] : ''}
+                {tier
+                  ? TIER_LABELS[tier]
+                  : membership
+                    ? membership.organizationType === 'MASTER'
+                      ? 'Master'
+                      : ROLE_LABEL[membership.role]
+                    : ''}
               </p>
             </div>
             <ChevronDownIcon />

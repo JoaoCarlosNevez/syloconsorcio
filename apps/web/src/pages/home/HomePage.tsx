@@ -32,6 +32,7 @@ import {
 } from '../tarefas/tarefas.types'
 import styles from './HomePage.module.css'
 import { ManagementHome } from './ManagementHome'
+import { MasterHome } from './MasterHome'
 
 // ── Ícones ────────────────────────────────────────────────────────────────────
 
@@ -234,10 +235,12 @@ function heroBackground(tier: Tier | null): string {
 
 // ── HomePage ──────────────────────────────────────────────────────────────────
 
-/** Início: Dono e Supervisor (reports.read) veem o painel de gestão; os
- * demais papéis, o início do vendedor. */
+/** Início: o Master (network.read) vê o comparativo da rede; Dono e
+ * Supervisor (reports.read), o painel de gestão; os demais papéis, o início
+ * do vendedor. */
 export function HomePage() {
   const { membership } = useActiveOrganization()
+  if (membership?.permissions.includes('network.read')) return <MasterHome />
   if (membership?.permissions.includes('reports.read')) return <ManagementHome />
   return <SellerHome />
 }

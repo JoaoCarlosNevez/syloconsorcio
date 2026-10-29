@@ -210,6 +210,9 @@ export type {
   CreateRepresentationOutput,
 } from './organizations/create-representation.use-case'
 
+export { SetRepresentationMasterUseCase } from './organizations/set-representation-master.use-case'
+export type { SetRepresentationMasterInput } from './organizations/set-representation-master.use-case'
+
 export { CreatePlatformUserUseCase } from './organizations/create-platform-user.use-case'
 export type {
   CreatePlatformUserInput,
@@ -319,6 +322,17 @@ export {
   GetManagementDashboardUseCase,
   STALE_DAYS,
 } from './dashboard/get-management-dashboard.use-case'
+export {
+  GetMasterDashboardUseCase,
+  GetMasterRepresentationDashboardUseCase,
+} from './dashboard/get-master-dashboard.use-case'
+export type {
+  GetMasterDashboardInput,
+  GetMasterRepresentationDashboardInput,
+  MasterDashboard,
+  NetworkSeller,
+  RepresentationPerformance,
+} from './dashboard/get-master-dashboard.use-case'
 export type {
   BackofficeCard,
   BackofficeStageMetrics,

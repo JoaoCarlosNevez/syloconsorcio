@@ -1,8 +1,8 @@
 // Tests: organizationsRoute
 //
-// POST  /organizations             — só Super Admin; cria Representação + dono (ADMIN)
+// POST  /organizations             — só Super Admin; cria Representação ou Master + dono (ADMIN)
 // GET   /organizations             — lista todas as organizações
-// PATCH /organizations/:id         — edita nome
+// PATCH /organizations/:id         — edita nome e o Master da Representação
 // POST  /organizations/:id/icon    — upload de ícone
 // GET   /organizations/:id/members — equipe de uma organização qualquer
 
@@ -258,6 +258,104 @@ describe('POST /organizations', () => {
     expect(funnelRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({ organizationId: 'org-uuid', isDefault: true }),
     )
+  })
+
+  it('creates a Master without funnels — it does not operate leads', async () => {
+    const organizationRepository = buildOrganizationRepository()
+    organizationRepository.create = vi.fn().mockImplementation((input: { type: string }) =>
+      Promise.resolve({
+        id: 'org-uuid',
+        name: 'Rede',
+        type: input.type,
+        parentOrganizationId: null,
+      }),
+    )
+    const funnelRepository = buildFunnelRepository()
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      organizationRepository,
+      membershipRepository: buildMembershipRepository(),
+      funnelRepository,
+    })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/organizations',
+      headers: AUTH_HEADERS,
+      payload: {
+        organizationName: 'Rede',
+        type: 'MASTER',
+        masterOrganizationId: '11111111-1111-4111-8111-111111111111',
+      },
+    })
+
+    expect(response.statusCode).toBe(201)
+    expect(organizationRepository.create).toHaveBeenCalledWith({
+      name: 'Rede',
+      type: 'MASTER',
+      parentOrganizationId: null,
+    })
+    expect(funnelRepository.create).not.toHaveBeenCalled()
+  })
+
+  it('creates a representação already linked to a Master', async () => {
+    const organizationRepository = buildOrganizationRepository()
+    organizationRepository.findById = vi
+      .fn()
+      .mockResolvedValue({ id: '11111111-1111-4111-8111-111111111111', type: 'MASTER' })
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      organizationRepository,
+      membershipRepository: buildMembershipRepository(),
+      funnelRepository: buildFunnelRepository(),
+    })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/organizations',
+      headers: AUTH_HEADERS,
+      payload: {
+        organizationName: 'Filial',
+        masterOrganizationId: '11111111-1111-4111-8111-111111111111',
+      },
+    })
+
+    expect(response.statusCode).toBe(201)
+    expect(organizationRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'REPRESENTACAO',
+        parentOrganizationId: '11111111-1111-4111-8111-111111111111',
+      }),
+    )
+  })
+
+  it('returns 400 when the chosen Master is not a MASTER organization', async () => {
+    const organizationRepository = buildOrganizationRepository()
+    organizationRepository.findById = vi
+      .fn()
+      .mockResolvedValue({ id: '11111111-1111-4111-8111-111111111111', type: 'REPRESENTACAO' })
+    const authProvider = buildAuthProvider()
+    const app = buildApp({
+      authProvider,
+      userRepository: buildUserRepository(true),
+      organizationRepository,
+      membershipRepository: buildMembershipRepository(),
+      funnelRepository: buildFunnelRepository(),
+    })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/organizations',
+      headers: AUTH_HEADERS,
+      payload: { ...validPayload, masterOrganizationId: '11111111-1111-4111-8111-111111111111' },
+    })
+
+    expect(response.statusCode).toBe(400)
+    expect(organizationRepository.create).not.toHaveBeenCalled()
+    // Nada fica pela metade: o login do dono nem chega a ser criado.
+    expect(authProvider.createUser).not.toHaveBeenCalled()
   })
 
   it('creates the organization and its owner when the caller is a platform admin', async () => {
@@ -669,6 +767,65 @@ describe('PATCH /organizations/:id', () => {
     expect(response.statusCode).toBe(200)
     const body = response.json<{ organization: { name: string } }>()
     expect(body.organization.name).toBe('Novo Nome')
+  })
+  it('links a representação to a Master', async () => {
+    const organizationRepository = buildOrganizationRepository()
+    organizationRepository.findById = vi
+      .fn()
+      .mockImplementation((id: string) =>
+        Promise.resolve(
+          id === '11111111-1111-4111-8111-111111111111'
+            ? { id, type: 'MASTER' }
+            : { id, name: 'Filial', type: 'REPRESENTACAO', parentOrganizationId: null },
+        ),
+      )
+    organizationRepository.update = vi.fn().mockResolvedValue({
+      id: 'org-uuid',
+      type: 'REPRESENTACAO',
+      parentOrganizationId: '11111111-1111-4111-8111-111111111111',
+    })
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      organizationRepository,
+      membershipRepository: buildMembershipRepository(),
+    })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/organizations/org-uuid',
+      headers: AUTH_HEADERS,
+      payload: { masterOrganizationId: '11111111-1111-4111-8111-111111111111' },
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(organizationRepository.update).toHaveBeenCalledWith('org-uuid', {
+      parentOrganizationId: '11111111-1111-4111-8111-111111111111',
+    })
+  })
+
+  it('returns 400 when trying to put a Master under another Master', async () => {
+    const organizationRepository = buildOrganizationRepository()
+    organizationRepository.findById = vi
+      .fn()
+      .mockImplementation((id: string) => Promise.resolve({ id, type: 'MASTER' }))
+    organizationRepository.update = vi.fn()
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(true),
+      organizationRepository,
+      membershipRepository: buildMembershipRepository(),
+    })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/organizations/org-uuid',
+      headers: AUTH_HEADERS,
+      payload: { masterOrganizationId: '11111111-1111-4111-8111-111111111111' },
+    })
+
+    expect(response.statusCode).toBe(400)
+    expect(organizationRepository.update).not.toHaveBeenCalled()
   })
 })
 

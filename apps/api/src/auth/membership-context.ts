@@ -6,7 +6,7 @@
 
 import type { MembershipContext, UserMembership } from '@sylocrm/application'
 import { calculateDataScope } from './data-scope'
-import { getPermissionsForRole } from './permissions'
+import { getPermissionsForMembership } from './permissions'
 
 export function buildMembershipContext(membership: UserMembership): MembershipContext {
   return {
@@ -18,6 +18,6 @@ export function buildMembershipContext(membership: UserMembership): MembershipCo
     role: membership.role,
     tier: membership.tier,
     dataScope: calculateDataScope(membership.organizationType, membership.role),
-    permissions: getPermissionsForRole(membership.role),
+    permissions: getPermissionsForMembership(membership.organizationType, membership.role),
   }
 }

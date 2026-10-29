@@ -3,7 +3,7 @@
 import { DataScope, OrganizationType, Permission, Role, canGrantRole } from '@sylocrm/domain'
 import { describe, expect, it } from 'vitest'
 import { calculateDataScope } from './data-scope'
-import { getPermissionsForRole } from './permissions'
+import { getPermissionsForMembership, getPermissionsForRole } from './permissions'
 
 describe('Administrativo (BACKOFFICE)', () => {
   const permissions = getPermissionsForRole(Role.BACKOFFICE)
@@ -46,5 +46,22 @@ describe('Administrativo (BACKOFFICE)', () => {
     expect(canGrantRole(Role.MANAGER, Role.BACKOFFICE)).toBe(false)
     expect(canGrantRole(Role.BACKOFFICE, Role.MANAGER)).toBe(false)
     expect(canGrantRole(Role.BACKOFFICE, Role.SELLER)).toBe(true)
+  })
+})
+
+describe('Master', () => {
+  it('only monitors: reads the reports of its network, operates nothing', () => {
+    for (const role of [Role.ADMIN, Role.MANAGER, Role.BACKOFFICE, Role.SELLER]) {
+      expect(getPermissionsForMembership(OrganizationType.MASTER, role)).toEqual([
+        Permission.REPORTS_READ,
+        Permission.NETWORK_READ,
+      ])
+    }
+  })
+
+  it('network view is exclusive to Master organizations — not even the owner of a representação has it', () => {
+    expect(getPermissionsForMembership(OrganizationType.REPRESENTACAO, Role.ADMIN)).not.toContain(
+      Permission.NETWORK_READ,
+    )
   })
 })

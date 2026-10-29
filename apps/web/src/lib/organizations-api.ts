@@ -35,6 +35,10 @@ export interface Organization {
 /** Dono opcional: nome e e-mail juntos, ou nenhum dos dois (só a organização). */
 export interface CreateRepresentationPayload {
   organizationName: string
+  /** Padrão: REPRESENTACAO. */
+  type?: 'REPRESENTACAO' | 'MASTER'
+  /** Só Representação: o Master dela (ausente/null = independente). */
+  masterOrganizationId?: string | null
   ownerName?: string
   ownerEmail?: string
 }
@@ -80,9 +84,16 @@ export function listOrganizations(): Promise<{ organizations: Organization[] }> 
   return apiClient.get<{ organizations: Organization[] }>('/organizations')
 }
 
+export interface UpdateOrganizationPayload {
+  name?: string
+  isWhiteLabel?: boolean
+  /** Só Representação: o Master dela (null = independente). */
+  masterOrganizationId?: string | null
+}
+
 export function updateOrganization(
   id: string,
-  payload: { name?: string; isWhiteLabel?: boolean },
+  payload: UpdateOrganizationPayload,
 ): Promise<{ organization: Organization }> {
   return apiClient.patch<{ organization: Organization }>(`/organizations/${id}`, payload)
 }

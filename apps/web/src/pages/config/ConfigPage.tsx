@@ -3127,9 +3127,11 @@ export function ConfigPage() {
   // depois pra quem pode do que piscarem pra quem não pode. As rotas da API
   // continuam exigindo as permissões de cada tela.
   // Administrativo (BACKOFFICE) também só vê "Minha Conta" — não gerencia
-  // equipe nem configurações da organização.
+  // equipe nem configurações da organização. O Master também não: só
+  // monitora as Representações da rede pelo início.
   const canSeeOrganization = membership
-    ? membership.role === 'ADMIN' || membership.role === 'MANAGER'
+    ? (membership.role === 'ADMIN' || membership.role === 'MANAGER') &&
+      membership.organizationType !== 'MASTER'
     : false
   const view = canSeeOrganization || ACCOUNT_VIEWS.has(requestedView) ? requestedView : 'hub'
 

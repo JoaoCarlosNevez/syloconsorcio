@@ -114,6 +114,9 @@ export class DrizzleOrganizationRepository implements IOrganizationRepository {
       .update(organizations)
       .set({
         ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.parentOrganizationId !== undefined
+          ? { parentOrganizationId: input.parentOrganizationId }
+          : {}),
         ...(input.isWhiteLabel !== undefined ? { isWhiteLabel: input.isWhiteLabel } : {}),
         ...(input.branding !== undefined ? { branding: input.branding } : {}),
         ...(input.cnpj !== undefined ? { cnpj: input.cnpj } : {}),

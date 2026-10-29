@@ -80,6 +80,28 @@ Rotas usam `requirePermission(Permission.X)` como preHandler; a checagem fina de
 (quem pode conceder/remover qual Role) fica dentro do use case, não do middleware — são
 invariantes de negócio diferentes (ver ADR-08).
 
+### Master: o tipo da organização define o teto (2026-10-29)
+
+Numa organização `MASTER`, as Permissions vêm do **tipo**, não do Role:
+`getPermissionsForMembership(organizationType, role)` devolve só
+`REPORTS_READ` + `NETWORK_READ` pra qualquer papel. O Master só **monitora** as
+Representações ligadas a ele (`parent_organization_id`): não opera leads,
+tarefas, equipe nem configurações — quem opera é o Dono de cada Representação.
+
+`NETWORK_READ` (`network.read`) é exclusiva do Master: o Dono de uma
+Representação recebe toda Permission nova automaticamente, **menos** essa (senão
+todo Dono cairia no início do Master). Ela libera:
+
+- `GET /dashboard/master` — comparativo das Representações + ranking unificado
+  dos vendedores (`GetMasterDashboardUseCase`, que roda o painel do Dono de cada
+  Representação e consolida)
+- `GET /dashboard/master/representations/:id` — o painel do Dono de uma delas,
+  só leitura; Representação fora da rede → 403
+
+Só o Super Admin cria um Master e liga/desliga Representações
+(`POST /organizations` com `type: MASTER`; `PATCH /organizations/:id` com
+`masterOrganizationId` → `SetRepresentationMasterUseCase`).
+
 ---
 
 ## Data Scope

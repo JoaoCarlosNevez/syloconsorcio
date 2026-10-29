@@ -50,6 +50,9 @@ export const Permission = {
   /** Configurar a fila de distribuição dos leads do webhook (Configurações >
    * Fila de Leads): ligar/desligar, tempo pra aceitar e quem participa. */
   LEAD_QUEUE_MANAGE: 'lead_queue.manage',
+  /** Ver o comparativo das Representações ligadas a um Master (início do
+   * Master). Só membros de uma organização MASTER — ver permissions.ts. */
+  NETWORK_READ: 'network.read',
 } as const
 
 export type Permission = (typeof Permission)[keyof typeof Permission]

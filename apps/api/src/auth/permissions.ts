@@ -6,9 +6,13 @@
 // Esta lógica é calculada a cada requisição no tenantMiddleware.
 // Se a tabela de permissões crescer, migrar para uma tabela no banco.
 
-import { Permission, Role } from '@sylocrm/domain'
+import { OrganizationType, Permission, Role } from '@sylocrm/domain'
 
-const ADMIN_PERMISSIONS: readonly Permission[] = Object.values(Permission) as Permission[]
+// Dono recebe toda Permission nova automaticamente — menos a da visão de rede,
+// que só faz sentido numa organização MASTER (ver MASTER_PERMISSIONS).
+const ADMIN_PERMISSIONS: readonly Permission[] = (Object.values(Permission) as Permission[]).filter(
+  (permission) => permission !== Permission.NETWORK_READ,
+)
 
 const MANAGER_PERMISSIONS: readonly Permission[] = [
   Permission.LEAD_READ,
@@ -65,6 +69,12 @@ const SELLER_PERMISSIONS: readonly Permission[] = [
   Permission.TASK_DELETE,
 ]
 
+// Master: só monitora as Representações ligadas a ele — vê os painéis, não
+// opera leads, equipe nem configurações de ninguém. Vale pra qualquer papel
+// numa organização MASTER (o tipo da organização define o teto, como no
+// DataScope).
+const MASTER_PERMISSIONS: readonly Permission[] = [Permission.REPORTS_READ, Permission.NETWORK_READ]
+
 const ROLE_PERMISSION_MAP: Record<Role, readonly Permission[]> = {
   [Role.ADMIN]: ADMIN_PERMISSIONS,
   [Role.MANAGER]: MANAGER_PERMISSIONS,
@@ -78,4 +88,16 @@ const ROLE_PERMISSION_MAP: Record<Role, readonly Permission[]> = {
  */
 export function getPermissionsForRole(role: Role): readonly Permission[] {
   return ROLE_PERMISSION_MAP[role]
+}
+
+/**
+ * Permissions de uma membership: numa organização MASTER, o tipo prevalece
+ * sobre o papel (só leitura); nas demais, vale o papel.
+ */
+export function getPermissionsForMembership(
+  organizationType: OrganizationType,
+  role: Role,
+): readonly Permission[] {
+  if (organizationType === OrganizationType.MASTER) return MASTER_PERMISSIONS
+  return getPermissionsForRole(role)
 }

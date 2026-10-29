@@ -183,7 +183,7 @@ export interface ManagementDashboard {
   supervisors: SupervisorPerformance[] | null
 }
 
-function periodRange(period: ManagementPeriod, now: Date): { start: Date; end: Date } {
+export function periodRange(period: ManagementPeriod, now: Date): { start: Date; end: Date } {
   if (period === 'week') return currentWeekInBrasilia(now)
   const current = currentMonthInBrasilia(now)
   if (period === 'month') return current

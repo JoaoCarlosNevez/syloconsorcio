@@ -1,9 +1,11 @@
 // Rotas de organizações — painel de Administração do Super Admin da plataforma.
 //
-// POST   /organizations             — cria uma Representação independente e, se
+// POST   /organizations             — cria uma Representação (independente ou já
+//                                      ligada a um Master) ou um Master e, se
 //                                      informado, o dono (ADMIN) — dono opcional
 // GET    /organizations             — lista todas as organizações
-// PATCH  /organizations/:id         — edita nome
+// PATCH  /organizations/:id         — edita nome, White Label e o Master da
+//                                      Representação (masterOrganizationId)
 // POST   /organizations/:id/icon    — envia o ícone (upload para Supabase Storage)
 // GET    /organizations/:id/members — lista a equipe ativa de uma organização qualquer
 // GET    /organizations/members     — lista TODOS os membros da plataforma (qualquer status, cross-org)
@@ -28,8 +30,15 @@ import {
   CreatePlatformUserUseCase,
   CreateRepresentationUseCase,
   DeletePlatformUserUseCase,
+  SetRepresentationMasterUseCase,
 } from '@sylocrm/application'
-import { AuthorizationError, ConflictError, Role } from '@sylocrm/domain'
+import {
+  AuthorizationError,
+  ConflictError,
+  OrganizationType,
+  Role,
+  ValidationError,
+} from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { validateIconUpload } from '../lib/icon-validation'
@@ -50,6 +59,8 @@ interface OrganizationsRouteOptions {
 const createRepresentationSchema = z
   .object({
     organizationName: z.string().trim().min(1),
+    type: z.enum([OrganizationType.REPRESENTACAO, OrganizationType.MASTER]).optional(),
+    masterOrganizationId: z.string().uuid().nullable().optional(),
     ownerName: z.string().trim().min(1).optional(),
     ownerEmail: z.string().trim().email().optional(),
   })
@@ -61,6 +72,8 @@ const createRepresentationSchema = z
 const updateOrganizationSchema = z.object({
   name: z.string().min(1).optional(),
   isWhiteLabel: z.boolean().optional(),
+  /** null = deixa a Representação independente. */
+  masterOrganizationId: z.string().uuid().nullable().optional(),
 })
 
 const createPlatformUserSchema = z.object({
@@ -72,6 +85,10 @@ const createPlatformUserSchema = z.object({
 
 function validationErrorResponse(fieldErrors: Record<string, string[] | undefined>) {
   return { error: 'Dados inválidos.', code: 'VALIDATION_ERROR', status: 400, details: fieldErrors }
+}
+
+function domainValidationResponse(error: ValidationError) {
+  return { error: error.issues[0]?.message ?? error.message, code: error.code, status: 400 }
 }
 
 function organizationNotFoundResponse() {
@@ -92,6 +109,8 @@ export const organizationsRoute: FastifyPluginAsync<OrganizationsRouteOptions> =
     options.membershipRepository,
     options.funnelRepository,
   )
+
+  const setRepresentationMaster = new SetRepresentationMasterUseCase(options.organizationRepository)
 
   const createPlatformUser = new CreatePlatformUserUseCase(
     options.authProvider,
@@ -206,9 +225,11 @@ export const organizationsRoute: FastifyPluginAsync<OrganizationsRouteOptions> =
       }
 
       try {
-        const { organizationName, ownerName, ownerEmail } = parsed.data
+        const { organizationName, type, masterOrganizationId, ownerName, ownerEmail } = parsed.data
         const result = await createRepresentation.execute({
           organizationName,
+          type,
+          masterOrganizationId,
           owner:
             ownerName !== undefined && ownerEmail !== undefined
               ? { name: ownerName, email: ownerEmail }
@@ -228,6 +249,9 @@ export const organizationsRoute: FastifyPluginAsync<OrganizationsRouteOptions> =
         if (error instanceof ConflictError) {
           return reply.status(409).send({ error: error.message, code: error.code, status: 409 })
         }
+        if (error instanceof ValidationError) {
+          return reply.status(400).send(domainValidationResponse(error))
+        }
         throw error
       }
     },
@@ -243,10 +267,26 @@ export const organizationsRoute: FastifyPluginAsync<OrganizationsRouteOptions> =
         return reply.status(400).send(validationErrorResponse(parsed.error.flatten().fieldErrors))
       }
 
-      const organization = await options.organizationRepository.update(
-        request.params.id,
-        parsed.data,
-      )
+      const { masterOrganizationId, ...fields } = parsed.data
+      try {
+        if (masterOrganizationId !== undefined) {
+          const linked = await setRepresentationMaster.execute({
+            organizationId: request.params.id,
+            masterOrganizationId,
+          })
+          if (!linked) return reply.status(404).send(organizationNotFoundResponse())
+        }
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          return reply.status(400).send(domainValidationResponse(error))
+        }
+        throw error
+      }
+
+      const organization =
+        Object.keys(fields).length > 0
+          ? await options.organizationRepository.update(request.params.id, fields)
+          : await options.organizationRepository.findById(request.params.id)
       if (!organization) {
         return reply.status(404).send(organizationNotFoundResponse())
       }
