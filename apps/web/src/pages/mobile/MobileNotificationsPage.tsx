@@ -9,7 +9,7 @@ import {
   useMarkNotificationRead,
   useNotificationsQuery,
 } from '../../hooks/useNotifications'
-import { useActiveOrganization } from '../../hooks/useOrganization'
+import { forgetActiveOrganization, useActiveOrganization } from '../../hooks/useOrganization'
 import { mobileNotificationPath } from '../../lib/mobile'
 import { describeNotification, notificationTimeLabel } from '../../lib/notification-format'
 import type { AppNotification } from '../../lib/notifications-api'
@@ -65,7 +65,10 @@ export function MobileNotificationsPage() {
       console.error('[pwa] não deu pra desinscrever o push', error)
     }
     await signOut()
-    navigate('/m', { replace: true })
+    // Recarrega do zero: nada da conta anterior (organização escolhida, cache
+    // das consultas) passa pra próxima pessoa que entrar neste celular.
+    forgetActiveOrganization()
+    window.location.replace('/m')
   }
 
   const items = notifications.data?.items ?? []

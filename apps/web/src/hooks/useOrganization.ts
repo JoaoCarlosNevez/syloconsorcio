@@ -40,6 +40,15 @@ function rememberOrganization(organizationId: string): void {
   }
 }
 
+/** Esquece a organização escolhida (logout no celular). */
+export function forgetActiveOrganization(): void {
+  try {
+    localStorage.removeItem(ACTIVE_ORG_STORAGE_KEY)
+  } catch {
+    // localStorage pode estar indisponível — não é crítico
+  }
+}
+
 function getRememberedOrganization(): string | null {
   try {
     return localStorage.getItem(ACTIVE_ORG_STORAGE_KEY)
