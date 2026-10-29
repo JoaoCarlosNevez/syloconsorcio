@@ -122,6 +122,10 @@ export function listLeads(
   return apiClient.get<LeadListPage>(`/leads${toQueryString(params)}`, { organizationId })
 }
 
+export function getLead(organizationId: string, id: string): Promise<Lead> {
+  return apiClient.get<Lead>(`/leads/${id}`, { organizationId })
+}
+
 export function createLead(organizationId: string, payload: CreateLeadPayload): Promise<Lead> {
   return apiClient.post<Lead>('/leads', payload, { organizationId })
 }

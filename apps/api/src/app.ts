@@ -26,6 +26,7 @@ import type {
   INotificationRepository,
   IOrganizationRepository,
   IPostSalePaymentRepository,
+  IPushSubscriptionRepository,
   IStorageProvider,
   IStreakRepository,
   ITaskRepository,
@@ -50,6 +51,7 @@ import { notificationsRoute } from './routes/notifications.route'
 import { organizationSettingsRoute } from './routes/organization-settings.route'
 import { organizationsRoute } from './routes/organizations.route'
 import { publicProposalsRoute } from './routes/public-proposals.route'
+import { pushRoute } from './routes/push.route'
 import { tasksRoute } from './routes/tasks.route'
 import { teamRoute } from './routes/team.route'
 import { webhooksRoute } from './routes/webhooks.route'
@@ -75,6 +77,9 @@ export interface BuildAppDeps {
   managementDashboardRepository: IManagementDashboardRepository
   engagementRepository: IEngagementRepository
   achievementsRepository: IAchievementsRepository
+  pushSubscriptionRepository: IPushSubscriptionRepository
+  /** Chave VAPID pública; null = Web Push desligado. */
+  vapidPublicKey: string | null
 }
 
 /** No-op auth provider used when Supabase env vars are not configured. */
@@ -313,6 +318,16 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     leadQueueRepository: deps?.leadQueueRepository ?? createNoOpLeadQueueRepository(),
     // Sem banco, ninguém tem ofensiva.
     streakRepository: deps?.streakRepository ?? { listActiveDays: async () => [] },
+    // Sem banco, nenhum aparelho fica inscrito.
+    pushSubscriptionRepository: deps?.pushSubscriptionRepository ?? {
+      save: async () => {
+        throw new Error('Database not configured — cannot save push subscriptions.')
+      },
+      remove: async () => {},
+      removeByEndpoint: async () => {},
+      listByUserIds: async () => [],
+    },
+    vapidPublicKey: deps?.vapidPublicKey ?? null,
     achievementsRepository: deps?.achievementsRepository ?? {
       listWonSales: async () => [],
       firstPostSaleStageAt: async () => null,
@@ -533,6 +548,12 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     userRepository: resolvedDeps.userRepository,
     apiKeyRepository: resolvedDeps.apiKeyRepository,
     activityLogRepository: resolvedDeps.activityLogRepository,
+  })
+
+  app.register(pushRoute, {
+    authProvider: resolvedDeps.authProvider,
+    pushSubscriptionRepository: resolvedDeps.pushSubscriptionRepository,
+    vapidPublicKey: resolvedDeps.vapidPublicKey,
   })
 
   app.register(webhooksRoute, {

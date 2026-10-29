@@ -292,6 +292,25 @@ export {
   resolveNotificationPreferences,
 } from './notifications/notification-preferences'
 export type { NotificationPreferences } from './notifications/notification-preferences'
+export type {
+  IPushOutboxRepository,
+  IPushSender,
+  IPushSubscriptionRepository,
+  PendingPush,
+  PushMessage,
+  PushSendResult,
+  PushSubscriptionKeys,
+  PushSubscriptionRecord,
+} from './ports/push.ports'
+export {
+  DispatchPushNotificationsUseCase,
+  PUSH_MAX_AGE_MS,
+} from './notifications/dispatch-push-notifications.use-case'
+export type {
+  DispatchPushInput,
+  DispatchPushResult,
+} from './notifications/dispatch-push-notifications.use-case'
+export { buildPushMessage, formatPushDate } from './notifications/push-message'
 export type { ApiKeyRecord, IApiKeyRepository, NewApiKeyInput } from './ports/api-key.repository'
 export {
   CreateWebhookLeadUseCase,

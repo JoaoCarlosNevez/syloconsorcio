@@ -14,9 +14,10 @@
 
 import { Button, Checkbox, Input } from '@sylocrm/ui'
 import { type FormEvent, useEffect, useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { applyDocumentBranding, documentBrandingFor } from '../../lib/document-branding'
+import { isStandalone } from '../../lib/web-push'
 import styles from './LoginPage.module.css'
 
 // ── RecoveryModal ─────────────────────────────────────────────────────────────
@@ -238,6 +239,12 @@ export function LoginPage() {
     applyDocumentBranding(documentBrandingFor(null))
   }, [])
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  // ?next= traz de volta pra onde o usuário estava (só caminhos internos); o
+  // app instalado no celular cai no /m.
+  const next = searchParams.get('next')
+  const destination =
+    next && /^\/(m|app)(\/|\?|$)/.test(next) ? next : isStandalone() ? '/m' : '/app/home'
   const { signIn, isSigningIn, signInError, isSignedIn, isLoading } = useAuth()
 
   const [email, setEmail] = useState('')
@@ -250,7 +257,7 @@ export function LoginPage() {
 
   // Já autenticado — redireciona direto para o dashboard
   if (!isLoading && isSignedIn) {
-    return <Navigate to="/app/home" replace />
+    return <Navigate to={destination} replace />
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -281,7 +288,7 @@ export function LoginPage() {
 
     try {
       await signIn({ email: email.trim(), password })
-      navigate('/app/home', { replace: true })
+      navigate(destination, { replace: true })
     } catch {
       // Erro exibido via signInError — sem ação adicional necessária
     }

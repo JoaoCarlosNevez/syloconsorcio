@@ -93,26 +93,18 @@
         "activity_log_organization_id_organizations_id_fk": {
           "name": "activity_log_organization_id_organizations_id_fk",
           "tableFrom": "activity_log",
-          "columnsFrom": [
-            "organization_id"
-          ],
+          "columnsFrom": ["organization_id"],
           "tableTo": "organizations",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         },
         "activity_log_actor_user_id_users_id_fk": {
           "name": "activity_log_actor_user_id_users_id_fk",
           "tableFrom": "activity_log",
-          "columnsFrom": [
-            "actor_user_id"
-          ],
+          "columnsFrom": ["actor_user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "set null"
         }
@@ -179,13 +171,9 @@
         "funnel_stages_funnel_id_funnels_id_fk": {
           "name": "funnel_stages_funnel_id_funnels_id_fk",
           "tableFrom": "funnel_stages",
-          "columnsFrom": [
-            "funnel_id"
-          ],
+          "columnsFrom": ["funnel_id"],
           "tableTo": "funnels",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -282,26 +270,18 @@
         "funnels_organization_id_organizations_id_fk": {
           "name": "funnels_organization_id_organizations_id_fk",
           "tableFrom": "funnels",
-          "columnsFrom": [
-            "organization_id"
-          ],
+          "columnsFrom": ["organization_id"],
           "tableTo": "organizations",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         },
         "funnels_duplicate_to_funnel_id_funnels_id_fk": {
           "name": "funnels_duplicate_to_funnel_id_funnels_id_fk",
           "tableFrom": "funnels",
-          "columnsFrom": [
-            "duplicate_to_funnel_id"
-          ],
+          "columnsFrom": ["duplicate_to_funnel_id"],
           "tableTo": "funnels",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "set null"
         }
@@ -421,39 +401,27 @@
         "lead_adhesion_documents_lead_id_leads_id_fk": {
           "name": "lead_adhesion_documents_lead_id_leads_id_fk",
           "tableFrom": "lead_adhesion_documents",
-          "columnsFrom": [
-            "lead_id"
-          ],
+          "columnsFrom": ["lead_id"],
           "tableTo": "leads",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "lead_adhesion_documents_organization_id_organizations_id_fk": {
           "name": "lead_adhesion_documents_organization_id_organizations_id_fk",
           "tableFrom": "lead_adhesion_documents",
-          "columnsFrom": [
-            "organization_id"
-          ],
+          "columnsFrom": ["organization_id"],
           "tableTo": "organizations",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "lead_adhesion_documents_uploaded_by_user_id_users_id_fk": {
           "name": "lead_adhesion_documents_uploaded_by_user_id_users_id_fk",
           "tableFrom": "lead_adhesion_documents",
-          "columnsFrom": [
-            "uploaded_by_user_id"
-          ],
+          "columnsFrom": ["uploaded_by_user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "set null"
         }
@@ -581,13 +549,9 @@
         "lead_adhesion_quotas_lead_id_leads_id_fk": {
           "name": "lead_adhesion_quotas_lead_id_leads_id_fk",
           "tableFrom": "lead_adhesion_quotas",
-          "columnsFrom": [
-            "lead_id"
-          ],
+          "columnsFrom": ["lead_id"],
           "tableTo": "leads",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -760,52 +724,36 @@
         "lead_adhesions_lead_id_leads_id_fk": {
           "name": "lead_adhesions_lead_id_leads_id_fk",
           "tableFrom": "lead_adhesions",
-          "columnsFrom": [
-            "lead_id"
-          ],
+          "columnsFrom": ["lead_id"],
           "tableTo": "leads",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "lead_adhesions_organization_id_organizations_id_fk": {
           "name": "lead_adhesions_organization_id_organizations_id_fk",
           "tableFrom": "lead_adhesions",
-          "columnsFrom": [
-            "organization_id"
-          ],
+          "columnsFrom": ["organization_id"],
           "tableTo": "organizations",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "lead_adhesions_seller_user_id_users_id_fk": {
           "name": "lead_adhesions_seller_user_id_users_id_fk",
           "tableFrom": "lead_adhesions",
-          "columnsFrom": [
-            "seller_user_id"
-          ],
+          "columnsFrom": ["seller_user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "set null"
         },
         "lead_adhesions_updated_by_user_id_users_id_fk": {
           "name": "lead_adhesions_updated_by_user_id_users_id_fk",
           "tableFrom": "lead_adhesions",
-          "columnsFrom": [
-            "updated_by_user_id"
-          ],
+          "columnsFrom": ["updated_by_user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "set null"
         }
@@ -864,52 +812,36 @@
         "lead_assignment_history_lead_id_leads_id_fk": {
           "name": "lead_assignment_history_lead_id_leads_id_fk",
           "tableFrom": "lead_assignment_history",
-          "columnsFrom": [
-            "lead_id"
-          ],
+          "columnsFrom": ["lead_id"],
           "tableTo": "leads",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "lead_assignment_history_from_user_id_users_id_fk": {
           "name": "lead_assignment_history_from_user_id_users_id_fk",
           "tableFrom": "lead_assignment_history",
-          "columnsFrom": [
-            "from_user_id"
-          ],
+          "columnsFrom": ["from_user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         },
         "lead_assignment_history_to_user_id_users_id_fk": {
           "name": "lead_assignment_history_to_user_id_users_id_fk",
           "tableFrom": "lead_assignment_history",
-          "columnsFrom": [
-            "to_user_id"
-          ],
+          "columnsFrom": ["to_user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         },
         "lead_assignment_history_changed_by_user_id_users_id_fk": {
           "name": "lead_assignment_history_changed_by_user_id_users_id_fk",
           "tableFrom": "lead_assignment_history",
-          "columnsFrom": [
-            "changed_by_user_id"
-          ],
+          "columnsFrom": ["changed_by_user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -955,26 +887,18 @@
         "lead_checklist_items_lead_id_leads_id_fk": {
           "name": "lead_checklist_items_lead_id_leads_id_fk",
           "tableFrom": "lead_checklist_items",
-          "columnsFrom": [
-            "lead_id"
-          ],
+          "columnsFrom": ["lead_id"],
           "tableTo": "leads",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "lead_checklist_items_checked_by_user_id_users_id_fk": {
           "name": "lead_checklist_items_checked_by_user_id_users_id_fk",
           "tableFrom": "lead_checklist_items",
-          "columnsFrom": [
-            "checked_by_user_id"
-          ],
+          "columnsFrom": ["checked_by_user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "set null"
         }
@@ -982,10 +906,7 @@
       "compositePrimaryKeys": {
         "lead_checklist_items_lead_id_item_key_pk": {
           "name": "lead_checklist_items_lead_id_item_key_pk",
-          "columns": [
-            "lead_id",
-            "item_key"
-          ]
+          "columns": ["lead_id", "item_key"]
         }
       },
       "uniqueConstraints": {},
@@ -1035,26 +956,18 @@
         "lead_comments_lead_id_leads_id_fk": {
           "name": "lead_comments_lead_id_leads_id_fk",
           "tableFrom": "lead_comments",
-          "columnsFrom": [
-            "lead_id"
-          ],
+          "columnsFrom": ["lead_id"],
           "tableTo": "leads",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "lead_comments_user_id_users_id_fk": {
           "name": "lead_comments_user_id_users_id_fk",
           "tableFrom": "lead_comments",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -1173,39 +1086,27 @@
         "lead_offers_organization_id_organizations_id_fk": {
           "name": "lead_offers_organization_id_organizations_id_fk",
           "tableFrom": "lead_offers",
-          "columnsFrom": [
-            "organization_id"
-          ],
+          "columnsFrom": ["organization_id"],
           "tableTo": "organizations",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "lead_offers_lead_id_leads_id_fk": {
           "name": "lead_offers_lead_id_leads_id_fk",
           "tableFrom": "lead_offers",
-          "columnsFrom": [
-            "lead_id"
-          ],
+          "columnsFrom": ["lead_id"],
           "tableTo": "leads",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "lead_offers_user_id_users_id_fk": {
           "name": "lead_offers_user_id_users_id_fk",
           "tableFrom": "lead_offers",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -1301,39 +1202,27 @@
         "lead_proposals_lead_id_leads_id_fk": {
           "name": "lead_proposals_lead_id_leads_id_fk",
           "tableFrom": "lead_proposals",
-          "columnsFrom": [
-            "lead_id"
-          ],
+          "columnsFrom": ["lead_id"],
           "tableTo": "leads",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "lead_proposals_created_by_user_id_users_id_fk": {
           "name": "lead_proposals_created_by_user_id_users_id_fk",
           "tableFrom": "lead_proposals",
-          "columnsFrom": [
-            "created_by_user_id"
-          ],
+          "columnsFrom": ["created_by_user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "set null"
         },
         "lead_proposals_shared_by_user_id_users_id_fk": {
           "name": "lead_proposals_shared_by_user_id_users_id_fk",
           "tableFrom": "lead_proposals",
-          "columnsFrom": [
-            "shared_by_user_id"
-          ],
+          "columnsFrom": ["shared_by_user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "set null"
         }
@@ -1342,9 +1231,7 @@
       "uniqueConstraints": {
         "lead_proposals_share_token_unique": {
           "name": "lead_proposals_share_token_unique",
-          "columns": [
-            "share_token"
-          ],
+          "columns": ["share_token"],
           "nullsNotDistinct": false
         }
       },
@@ -1381,26 +1268,18 @@
         "lead_queue_members_organization_id_organizations_id_fk": {
           "name": "lead_queue_members_organization_id_organizations_id_fk",
           "tableFrom": "lead_queue_members",
-          "columnsFrom": [
-            "organization_id"
-          ],
+          "columnsFrom": ["organization_id"],
           "tableTo": "organizations",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "lead_queue_members_user_id_users_id_fk": {
           "name": "lead_queue_members_user_id_users_id_fk",
           "tableFrom": "lead_queue_members",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -1408,10 +1287,7 @@
       "compositePrimaryKeys": {
         "lead_queue_members_organization_id_user_id_pk": {
           "name": "lead_queue_members_organization_id_user_id_pk",
-          "columns": [
-            "organization_id",
-            "user_id"
-          ]
+          "columns": ["organization_id", "user_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1456,13 +1332,9 @@
         "lead_queue_settings_organization_id_organizations_id_fk": {
           "name": "lead_queue_settings_organization_id_organizations_id_fk",
           "tableFrom": "lead_queue_settings",
-          "columnsFrom": [
-            "organization_id"
-          ],
+          "columnsFrom": ["organization_id"],
           "tableTo": "organizations",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -1633,52 +1505,36 @@
         "leads_organization_id_organizations_id_fk": {
           "name": "leads_organization_id_organizations_id_fk",
           "tableFrom": "leads",
-          "columnsFrom": [
-            "organization_id"
-          ],
+          "columnsFrom": ["organization_id"],
           "tableTo": "organizations",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         },
         "leads_funnel_id_funnels_id_fk": {
           "name": "leads_funnel_id_funnels_id_fk",
           "tableFrom": "leads",
-          "columnsFrom": [
-            "funnel_id"
-          ],
+          "columnsFrom": ["funnel_id"],
           "tableTo": "funnels",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         },
         "leads_stage_id_funnel_stages_id_fk": {
           "name": "leads_stage_id_funnel_stages_id_fk",
           "tableFrom": "leads",
-          "columnsFrom": [
-            "stage_id"
-          ],
+          "columnsFrom": ["stage_id"],
           "tableTo": "funnel_stages",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         },
         "leads_assigned_user_id_users_id_fk": {
           "name": "leads_assigned_user_id_users_id_fk",
           "tableFrom": "leads",
-          "columnsFrom": [
-            "assigned_user_id"
-          ],
+          "columnsFrom": ["assigned_user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -1817,52 +1673,36 @@
         "notifications_organization_id_organizations_id_fk": {
           "name": "notifications_organization_id_organizations_id_fk",
           "tableFrom": "notifications",
-          "columnsFrom": [
-            "organization_id"
-          ],
+          "columnsFrom": ["organization_id"],
           "tableTo": "organizations",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         },
         "notifications_user_id_users_id_fk": {
           "name": "notifications_user_id_users_id_fk",
           "tableFrom": "notifications",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "notifications_actor_user_id_users_id_fk": {
           "name": "notifications_actor_user_id_users_id_fk",
           "tableFrom": "notifications",
-          "columnsFrom": [
-            "actor_user_id"
-          ],
+          "columnsFrom": ["actor_user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "set null"
         },
         "notifications_task_id_tasks_id_fk": {
           "name": "notifications_task_id_tasks_id_fk",
           "tableFrom": "notifications",
-          "columnsFrom": [
-            "task_id"
-          ],
+          "columnsFrom": ["task_id"],
           "tableTo": "tasks",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -1955,26 +1795,18 @@
         "organization_api_keys_organization_id_organizations_id_fk": {
           "name": "organization_api_keys_organization_id_organizations_id_fk",
           "tableFrom": "organization_api_keys",
-          "columnsFrom": [
-            "organization_id"
-          ],
+          "columnsFrom": ["organization_id"],
           "tableTo": "organizations",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         },
         "organization_api_keys_created_by_user_id_users_id_fk": {
           "name": "organization_api_keys_created_by_user_id_users_id_fk",
           "tableFrom": "organization_api_keys",
-          "columnsFrom": [
-            "created_by_user_id"
-          ],
+          "columnsFrom": ["created_by_user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "set null"
         }
@@ -1983,9 +1815,7 @@
       "uniqueConstraints": {
         "organization_api_keys_key_hash_unique": {
           "name": "organization_api_keys_key_hash_unique",
-          "columns": [
-            "key_hash"
-          ],
+          "columns": ["key_hash"],
           "nullsNotDistinct": false
         }
       },
@@ -2077,39 +1907,27 @@
         "organization_memberships_user_id_users_id_fk": {
           "name": "organization_memberships_user_id_users_id_fk",
           "tableFrom": "organization_memberships",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         },
         "organization_memberships_organization_id_organizations_id_fk": {
           "name": "organization_memberships_organization_id_organizations_id_fk",
           "tableFrom": "organization_memberships",
-          "columnsFrom": [
-            "organization_id"
-          ],
+          "columnsFrom": ["organization_id"],
           "tableTo": "organizations",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         },
         "organization_memberships_supervisor_user_id_users_id_fk": {
           "name": "organization_memberships_supervisor_user_id_users_id_fk",
           "tableFrom": "organization_memberships",
-          "columnsFrom": [
-            "supervisor_user_id"
-          ],
+          "columnsFrom": ["supervisor_user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "set null"
         }
@@ -2118,10 +1936,7 @@
       "uniqueConstraints": {
         "organization_memberships_user_id_organization_id_unique": {
           "name": "organization_memberships_user_id_organization_id_unique",
-          "columns": [
-            "user_id",
-            "organization_id"
-          ],
+          "columns": ["user_id", "organization_id"],
           "nullsNotDistinct": false
         }
       },
@@ -2237,13 +2052,9 @@
         "organizations_parent_organization_id_organizations_id_fk": {
           "name": "organizations_parent_organization_id_organizations_id_fk",
           "tableFrom": "organizations",
-          "columnsFrom": [
-            "parent_organization_id"
-          ],
+          "columnsFrom": ["parent_organization_id"],
           "tableTo": "organizations",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -2368,52 +2179,36 @@
         "tasks_organization_id_organizations_id_fk": {
           "name": "tasks_organization_id_organizations_id_fk",
           "tableFrom": "tasks",
-          "columnsFrom": [
-            "organization_id"
-          ],
+          "columnsFrom": ["organization_id"],
           "tableTo": "organizations",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         },
         "tasks_lead_id_leads_id_fk": {
           "name": "tasks_lead_id_leads_id_fk",
           "tableFrom": "tasks",
-          "columnsFrom": [
-            "lead_id"
-          ],
+          "columnsFrom": ["lead_id"],
           "tableTo": "leads",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "tasks_assigned_user_id_users_id_fk": {
           "name": "tasks_assigned_user_id_users_id_fk",
           "tableFrom": "tasks",
-          "columnsFrom": [
-            "assigned_user_id"
-          ],
+          "columnsFrom": ["assigned_user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         },
         "tasks_created_by_user_id_users_id_fk": {
           "name": "tasks_created_by_user_id_users_id_fk",
           "tableFrom": "tasks",
-          "columnsFrom": [
-            "created_by_user_id"
-          ],
+          "columnsFrom": ["created_by_user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -2499,9 +2294,7 @@
       "uniqueConstraints": {
         "users_email_unique": {
           "name": "users_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "nullsNotDistinct": false
         }
       },
@@ -2514,41 +2307,22 @@
     "public.membership_status": {
       "name": "membership_status",
       "schema": "public",
-      "values": [
-        "ACTIVE",
-        "INVITED",
-        "SUSPENDED"
-      ]
+      "values": ["ACTIVE", "INVITED", "SUSPENDED"]
     },
     "public.organization_type": {
       "name": "organization_type",
       "schema": "public",
-      "values": [
-        "INCORPORADORA",
-        "MASTER",
-        "REPRESENTACAO"
-      ]
+      "values": ["INCORPORADORA", "MASTER", "REPRESENTACAO"]
     },
     "public.role": {
       "name": "role",
       "schema": "public",
-      "values": [
-        "ADMIN",
-        "MANAGER",
-        "BACKOFFICE",
-        "SELLER"
-      ]
+      "values": ["ADMIN", "MANAGER", "BACKOFFICE", "SELLER"]
     },
     "public.member_tier": {
       "name": "member_tier",
       "schema": "public",
-      "values": [
-        "bronze",
-        "prata",
-        "ouro",
-        "platina",
-        "diamante"
-      ]
+      "values": ["bronze", "prata", "ouro", "platina", "diamante"]
     }
   },
   "schemas": {},

@@ -7,6 +7,7 @@
 
 import 'dotenv/config'
 import {
+  DispatchPushNotificationsUseCase,
   GeneratePostSalePaymentTasksUseCase,
   OfferLeadToQueueUseCase,
   ProcessExpiredLeadOffersUseCase,
@@ -27,17 +28,21 @@ import {
   DrizzleNotificationRepository,
   DrizzleOrganizationRepository,
   DrizzlePostSalePaymentRepository,
+  DrizzlePushOutboxRepository,
+  DrizzlePushSubscriptionRepository,
   DrizzleStreakRepository,
   DrizzleTaskRepository,
   DrizzleUserRepository,
   SupabaseAuthAdapter,
   SupabaseStorageAdapter,
+  WebPushSender,
   createDatabase,
 } from '@sylocrm/infrastructure'
 import { buildApp } from './app'
 import { env } from './config/env'
 import { startLeadOfferExpiryWorker } from './workers/lead-offer-expiry'
 import { startPostSalePaymentsWorker } from './workers/post-sale-payments'
+import { startPushNotificationsWorker } from './workers/push-notifications'
 
 // Create infrastructure adapters when env vars are present
 const authProvider =
@@ -77,6 +82,19 @@ const managementDashboardRepository = database
   ? new DrizzleManagementDashboardRepository(database)
   : undefined
 
+const pushSubscriptionRepository = database
+  ? new DrizzlePushSubscriptionRepository(database)
+  : undefined
+// Web Push só liga com as duas chaves VAPID.
+const pushSender =
+  env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY
+    ? new WebPushSender({
+        publicKey: env.VAPID_PUBLIC_KEY,
+        privateKey: env.VAPID_PRIVATE_KEY,
+        subject: env.VAPID_SUBJECT,
+      })
+    : undefined
+
 const storageProvider =
   env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY
     ? new SupabaseStorageAdapter({
@@ -106,15 +124,19 @@ const app = buildApp({
   managementDashboardRepository,
   engagementRepository,
   achievementsRepository,
+  pushSubscriptionRepository,
+  vapidPublicKey: pushSender ? (env.VAPID_PUBLIC_KEY ?? null) : null,
 })
 
 // Fila de Leads: passa adiante os leads que ninguém aceitou no prazo. O
 // worker sobe depois do listen; o hook de onClose precisa ser registrado antes.
 let stopLeadOfferWorker: (() => void) | null = null
 let stopPostSalePaymentsWorker: (() => void) | null = null
+let stopPushWorker: (() => void) | null = null
 app.addHook('onClose', async () => {
   stopLeadOfferWorker?.()
   stopPostSalePaymentsWorker?.()
+  stopPushWorker?.()
 })
 
 try {
@@ -137,6 +159,17 @@ if (leadQueueRepository && leadRepository && membershipRepository) {
 if (postSalePaymentRepository) {
   stopPostSalePaymentsWorker = startPostSalePaymentsWorker(
     new GeneratePostSalePaymentTasksUseCase(postSalePaymentRepository),
+    app.log,
+  )
+}
+
+if (database && pushSubscriptionRepository && pushSender) {
+  stopPushWorker = startPushNotificationsWorker(
+    new DispatchPushNotificationsUseCase(
+      new DrizzlePushOutboxRepository(database),
+      pushSubscriptionRepository,
+      pushSender,
+    ),
     app.log,
   )
 }

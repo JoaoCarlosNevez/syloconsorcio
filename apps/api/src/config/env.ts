@@ -36,6 +36,13 @@ const envSchema = z.object({
   // Frontend URL for CORS (set in production to the Vercel URL)
   FRONTEND_URL: z.string().optional(),
 
+  // Web Push (app do celular) — chaves VAPID geradas com
+  // `npx web-push generate-vapid-keys`. Sem elas, o push fica desligado: as
+  // rotas de inscrição respondem sem chave pública e o worker não sobe.
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().default('mailto:contato@sylocrm.com.br'),
+
   // Observability — optional, activates Sentry when present
   SENTRY_DSN: z.string().url().optional(),
 })

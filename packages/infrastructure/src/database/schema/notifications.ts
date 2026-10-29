@@ -11,7 +11,12 @@
 // (INSERT ... ON CONFLICT DO NOTHING). A chave inclui o prazo da tarefa, então
 // remarcar o prazo gera um lembrete novo. Notificações disparadas por ação de
 // alguém (ex: atribuição) não têm chave — cada evento é uma notificação.
+//
+// pushed_at marca que o worker de Web Push já pegou a notificação (enviando ou
+// não — sem aparelho inscrito ou com o tipo desligado também conta). Null =
+// ainda na fila do push.
 
+import { sql } from 'drizzle-orm'
 import { index, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { organizations } from './organizations'
 import { tasks } from './tasks'
@@ -36,6 +41,7 @@ export const notifications = pgTable(
     metadata: jsonb('metadata').notNull().default({}),
     dedupeKey: text('dedupe_key'),
     readAt: timestamp('read_at', { withTimezone: true }),
+    pushedAt: timestamp('pushed_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
@@ -45,6 +51,10 @@ export const notifications = pgTable(
       table.createdAt,
     ),
     uniqueIndex('notifications_user_dedupe_key_idx').on(table.userId, table.dedupeKey),
+    // Fila do worker de Web Push.
+    index('notifications_unpushed_idx')
+      .on(table.createdAt)
+      .where(sql`${table.pushedAt} IS NULL`),
   ],
 )
 

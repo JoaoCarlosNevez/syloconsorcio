@@ -4,6 +4,7 @@
 //   /login        → público; redireciona para /app se já autenticado
 //   /p/:token     → público; proposta enviada ao cliente por link
 //   /app/*        → protegido (requer autenticação via ProtectedRoute)
+//   /m/*          → app do celular (PWA); exige login no MobileLayout
 //   *             → 404 (redireciona para /login)
 //
 // Lazy loading: todas as páginas são carregadas sob demanda via React.lazy +
@@ -50,6 +51,33 @@ const PublicProposalPage = lazy(() =>
     default: m.PublicProposalPage,
   })),
 )
+// App do celular (PWA) — /m
+const MobileLayout = lazy(() =>
+  import('../pages/mobile/MobileLayout').then((m) => ({ default: m.MobileLayout })),
+)
+const MobileHomePage = lazy(() =>
+  import('../pages/mobile/MobileHomePage').then((m) => ({ default: m.MobileHomePage })),
+)
+const MobileLeadsPage = lazy(() =>
+  import('../pages/mobile/MobileLeadsPage').then((m) => ({ default: m.MobileLeadsPage })),
+)
+const MobileNewLeadPage = lazy(() =>
+  import('../pages/mobile/MobileNewLeadPage').then((m) => ({ default: m.MobileNewLeadPage })),
+)
+const MobileLeadPage = lazy(() =>
+  import('../pages/mobile/MobileLeadPage').then((m) => ({ default: m.MobileLeadPage })),
+)
+const MobileTasksPage = lazy(() =>
+  import('../pages/mobile/MobileTasksPage').then((m) => ({ default: m.MobileTasksPage })),
+)
+const MobileNotificationsPage = lazy(() =>
+  import('../pages/mobile/MobileNotificationsPage').then((m) => ({
+    default: m.MobileNotificationsPage,
+  })),
+)
+const MobileOfferPage = lazy(() =>
+  import('../pages/mobile/MobileOfferPage').then((m) => ({ default: m.MobileOfferPage })),
+)
 const ConfigPage = lazy(() =>
   import('../pages/config/ConfigPage').then((m) => ({ default: m.ConfigPage })),
 )
@@ -77,6 +105,17 @@ export function AppRouter() {
           <Route path="ajuda" element={<ComingSoonPage />} />
           <Route path="perfil" element={<PerfilPage />} />
           <Route path="ranking" element={<RankingPage />} />
+        </Route>
+
+        {/* App do celular (PWA instalável, com Web Push) */}
+        <Route path="/m" element={<MobileLayout />}>
+          <Route index element={<MobileHomePage />} />
+          <Route path="leads" element={<MobileLeadsPage />} />
+          <Route path="leads/novo" element={<MobileNewLeadPage />} />
+          <Route path="leads/:id" element={<MobileLeadPage />} />
+          <Route path="tarefas" element={<MobileTasksPage />} />
+          <Route path="avisos" element={<MobileNotificationsPage />} />
+          <Route path="oferta/:offerId" element={<MobileOfferPage />} />
         </Route>
 
         {/* Raiz → home */}

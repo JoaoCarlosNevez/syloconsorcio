@@ -1,0 +1,69 @@
+# Stack da API de DEV (branch dev) pro Docker Swarm da VPS — roda ao lado da
+# produção, em outro domínio, com o mesmo banco.
+#
+# Deploy (na VPS, no clone da branch dev):
+#   cd /opt/sylocrm-dev && git pull
+#   docker build -f apps/api/Dockerfile -t sylocrm-api:dev .
+#   set -a; . ./api.env; set +a
+#   docker stack deploy -c deploy/api-dev-stack.yml sylocrm-dev
+#   docker service update --force sylocrm-dev_api
+#
+# /opt/sylocrm-dev/api.env (fica SÓ na VPS, nunca no git): o mesmo da
+# produção, com API_HOST=api-dev..., o CORS do preview da Vercel e as chaves
+# VAPID do Web Push (VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT).
+
+version: '3.8'
+
+services:
+  api:
+    image: sylocrm-api:dev
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: '3001'
+      # Atrás do Traefik: IP real do cliente pros limites por IP.
+      TRUST_PROXY: 'true'
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      DATABASE_URL: ${DATABASE_URL}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_SUBJECT: ${VAPID_SUBJECT}
+    networks:
+      - NevoNet
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      # 1 réplica só: os limites de requisição contam em memória.
+      replicas: 1
+      restart_policy:
+        condition: any
+      update_config:
+        # Sobe a nova antes de derrubar a antiga (sem tempo fora do ar). O
+        # worker da fila é seguro com 2 instâncias no meio da troca.
+        order: start-first
+        failure_action: rollback
+      resources:
+        limits:
+          memory: 384M
+      labels:
+        traefik.enable: 'true'
+        traefik.http.routers.sylocrm_dev_api.rule: Host(`${API_HOST}`)
+        traefik.http.routers.sylocrm_dev_api.entrypoints: websecure
+        traefik.http.routers.sylocrm_dev_api.tls.certresolver: letsencryptresolver
+        traefik.http.routers.sylocrm_dev_api.service: sylocrm_dev_api
+        traefik.http.services.sylocrm_dev_api.loadbalancer.server.port: '3001'
+        traefik.http.services.sylocrm_dev_api.loadbalancer.passHostHeader: 'true'
+
+networks:
+  NevoNet:
+    external: true

@@ -51,3 +51,5 @@ export type {
 } from './lead-adhesions'
 export { leadChecklistItems } from './lead-checklist'
 export type { DbLeadChecklistItem } from './lead-checklist'
+export { pushSubscriptions } from './push-subscriptions'
+export type { DbPushSubscription } from './push-subscriptions'

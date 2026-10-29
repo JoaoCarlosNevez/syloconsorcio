@@ -5,6 +5,9 @@
 //
 // Configuração de storage: sessionStorage em vez de localStorage.
 // Tokens são limpos quando o browser fecha — menor janela de exposição.
+// Exceção: o app do celular instalado (PWA, display-mode standalone) usa
+// localStorage — senão o vendedor teria que entrar de novo toda vez que
+// abrisse o app pela tela de início.
 //
 // As variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY são públicas
 // (anon key tem permissões limitadas e é projetada para ser exposta).
@@ -21,30 +24,42 @@ if (!supabaseUrl || !supabaseAnonKey) {
   )
 }
 
+function isInstalledApp(): boolean {
+  if (typeof window === 'undefined') return false
+  const nav = window.navigator as Navigator & { standalone?: boolean }
+  return (
+    window.matchMedia?.('(display-mode: standalone)').matches === true || nav.standalone === true
+  )
+}
+
 /**
- * Custom storage adapter using sessionStorage.
- * Tokens are cleared when the browser tab closes.
+ * Custom storage adapter: sessionStorage (tokens are cleared when the tab
+ * closes), or localStorage inside the installed mobile app.
  */
+function browserStorage(): Storage {
+  return isInstalledApp() ? localStorage : sessionStorage
+}
+
 const sessionStorageAdapter = {
   getItem: (key: string): string | null => {
     try {
-      return sessionStorage.getItem(key)
+      return browserStorage().getItem(key)
     } catch {
       return null
     }
   },
   setItem: (key: string, value: string): void => {
     try {
-      sessionStorage.setItem(key, value)
+      browserStorage().setItem(key, value)
     } catch {
-      // sessionStorage may be unavailable in some contexts (e.g., private browsing)
+      // storage may be unavailable in some contexts (e.g., private browsing)
     }
   },
   removeItem: (key: string): void => {
     try {
-      sessionStorage.removeItem(key)
+      browserStorage().removeItem(key)
     } catch {
-      // sessionStorage may be unavailable in some contexts
+      // storage may be unavailable in some contexts
     }
   },
 }

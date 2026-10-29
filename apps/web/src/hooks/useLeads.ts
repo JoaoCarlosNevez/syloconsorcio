@@ -19,6 +19,7 @@ import {
   deleteAdhesionDocument,
   deleteLead,
   duplicateLead,
+  getLead,
   getLeadAdhesion,
   getLeadChecklist,
   getLeadHistory,
@@ -41,6 +42,16 @@ export function useLeadsQuery(organizationId: string | null, params: ListLeadsPa
     queryKey: leadsQueryKey(organizationId, params),
     queryFn: () => listLeads(organizationId as string, params),
     enabled: Boolean(organizationId),
+  })
+}
+
+/** Um lead só (app do celular) — mesmo prefixo de chave da lista, então as
+ * mutations que invalidam ['leads', org] atualizam aqui também. */
+export function useLeadQuery(organizationId: string | null, leadId: string) {
+  return useQuery({
+    queryKey: ['leads', organizationId, 'detail', leadId] as const,
+    queryFn: () => getLead(organizationId as string, leadId),
+    enabled: Boolean(organizationId) && Boolean(leadId),
   })
 }
 
