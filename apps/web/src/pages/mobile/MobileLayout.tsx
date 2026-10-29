@@ -6,16 +6,13 @@
 // Fica fora do ProtectedRoute do /app: o celular não monta o AppLayout, o
 // prompt de oferta nem o som do sininho do desktop — aqui o aviso é o push.
 
-import { type ReactNode, useEffect, useLayoutEffect } from 'react'
+import { type ReactNode, useEffect } from 'react'
 import { NavLink, Outlet, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useMobileProfile } from '../../hooks/useMobileProfile'
 import { useNotificationsQuery } from '../../hooks/useNotifications'
 import { useActiveOrganization } from '../../hooks/useOrganization'
-import { applyBrandColor } from '../../lib/brand-theme'
-import { applyDocumentBranding, documentBrandingFor } from '../../lib/document-branding'
 import { type MobileProfile, type MobileTabKey, mobileTabs } from '../../lib/mobile-profile'
-import { applyPwaBranding, pwaBrandingFor } from '../../lib/pwa-branding'
 import { registerServiceWorker } from '../../lib/web-push'
 import styles from './Mobile.module.css'
 import { MobileLoginPage } from './MobileLoginPage'
@@ -104,24 +101,8 @@ export function MobileLayout() {
   return <SignedInShell />
 }
 
-/** Nome, ícone e cor da organização White Label — na aba, no app instalado
- * (manifest/ícone da tela de início) e nos botões em âmbar. */
-function useOrganizationBranding() {
-  const { membership } = useActiveOrganization()
-  const brandColor = membership?.organizationSecondaryColor ?? null
-  useEffect(() => {
-    applyDocumentBranding(documentBrandingFor(membership))
-    applyPwaBranding(pwaBrandingFor(membership, window.location.origin))
-  }, [membership])
-  useLayoutEffect(() => {
-    applyBrandColor(brandColor)
-    return () => applyBrandColor(null)
-  }, [brandColor])
-}
-
 function SignedInShell() {
   useOrganizationFromLink()
-  useOrganizationBranding()
   return (
     <div className={styles.shell}>
       <Outlet />
