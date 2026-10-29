@@ -18,6 +18,9 @@
   --color-bg-subtle: #f1f5f9; /* slate-100 — subtle bg, progress track */
   --color-border: #e2e8f0; /* slate-200 — card/input borders */
   --color-border-input: #cbd5e1; /* slate-300 — input border, dividers */
+  /* Nome usado pelos componentes do @sylocrm/ui (skeleton, abas, dropdown,
+   * modal…) — sem ele o fundo do skeleton ficava transparente. */
+  --color-border-default: var(--color-border);
   --color-text-disabled: #94a3b8; /* slate-400 — placeholder, table headers */
   --color-text-muted: #64748b; /* slate-500 — labels, descriptions */
   --color-text-option: #475569; /* slate-600 — subtle labels, options */
@@ -204,6 +207,7 @@
   --color-bg-subtle: #1e293b;
   --color-border: #334155;
   --color-border-input: #475569;
+  --color-border-default: var(--color-border);
   --color-text-disabled: #475569;
   --color-text-muted: #94a3b8;
   --color-text-option: #cbd5e1;
