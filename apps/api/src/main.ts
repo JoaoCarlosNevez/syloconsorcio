@@ -40,6 +40,7 @@ import {
 } from '@sylocrm/infrastructure'
 import { buildApp } from './app'
 import { env } from './config/env'
+import { HmacPushActionTokens } from './lib/push-action-tokens'
 import { startLeadOfferExpiryWorker } from './workers/lead-offer-expiry'
 import { startPostSalePaymentsWorker } from './workers/post-sale-payments'
 import { startPushNotificationsWorker } from './workers/push-notifications'
@@ -95,6 +96,11 @@ const pushSender =
       })
     : undefined
 
+// Token dos botões Aceitar/Recusar da oferta no push — assinado com a chave
+// VAPID privada, que já é segredo e só existe com o push ligado.
+const pushActionTokens =
+  pushSender && env.VAPID_PRIVATE_KEY ? new HmacPushActionTokens(env.VAPID_PRIVATE_KEY) : null
+
 const storageProvider =
   env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY
     ? new SupabaseStorageAdapter({
@@ -126,6 +132,7 @@ const app = buildApp({
   achievementsRepository,
   pushSubscriptionRepository,
   vapidPublicKey: pushSender ? (env.VAPID_PUBLIC_KEY ?? null) : null,
+  pushActionTokens,
 })
 
 // Fila de Leads: passa adiante os leads que ninguém aceitou no prazo. O
@@ -169,6 +176,7 @@ if (database && pushSubscriptionRepository && pushSender) {
       new DrizzlePushOutboxRepository(database),
       pushSubscriptionRepository,
       pushSender,
+      pushActionTokens,
     ),
     app.log,
   )

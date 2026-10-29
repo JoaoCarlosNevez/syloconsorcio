@@ -83,13 +83,56 @@ describe('DispatchPushNotificationsUseCase', () => {
   })
 })
 
+describe('queue offers', () => {
+  it('adds Accept/Decline with a signed token when tokens are configured', async () => {
+    const { outbox, subscriptions, sender } = setup([pending()])
+    const tokens = { sign: vi.fn().mockReturnValue('signed'), verify: vi.fn() }
+    const useCase = new DispatchPushNotificationsUseCase(outbox, subscriptions, sender, tokens)
+
+    await useCase.execute({ now: NOW })
+
+    expect(tokens.sign).toHaveBeenCalledWith({
+      offerId: 'offer-1',
+      userId: 'user-1',
+      organizationId: 'org-1',
+      expiresAt: new Date('2026-10-29T15:05:00.000Z'),
+    })
+    expect(sender.send).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        offerActions: {
+          token: 'signed',
+          actions: [
+            { action: 'accept', title: 'Aceitar' },
+            { action: 'decline', title: 'Recusar' },
+          ],
+        },
+      }),
+    )
+  })
+
+  it('drops an offer that expired before it could be pushed', async () => {
+    const { useCase, sender } = setup([
+      pending({ metadata: { offerId: 'o', expiresAt: '2026-10-29T14:59:00.000Z' } }),
+    ])
+
+    const result = await useCase.execute({ now: NOW })
+
+    expect(sender.send).not.toHaveBeenCalled()
+    expect(result.sent).toBe(0)
+  })
+})
+
 describe('buildPushMessage', () => {
   it('opens the offer screen in the right organization', () => {
     expect(buildPushMessage(pending(), NOW)).toEqual({
       title: 'Novo lead pra você na fila',
-      body: 'Maria Silva · Aceite até hoje às 12:05',
+      body: 'Maria Silva · Aceite até hoje às 12:05 (5 min)',
       url: '/m/oferta/offer-1?org=org-1',
       tag: 'n-1',
+      // Fica na tela e não chega depois do prazo.
+      requireInteraction: true,
+      ttlSeconds: 300,
     })
   })
 

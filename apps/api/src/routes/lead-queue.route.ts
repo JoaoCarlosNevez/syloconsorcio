@@ -9,6 +9,9 @@
 // POST /lead-offers/:id/accept     — aceita: o lead passa a ser do usuário.
 //                                    409 se o prazo acabou ou o lead já tem dono
 // POST /lead-offers/:id/decline    — recusa: o lead vai na hora pro próximo
+// POST /lead-offers/push-response  — Aceitar/Recusar direto da notificação do
+//                                    celular, sem login: vale o token assinado
+//                                    que veio no push (lib/push-action-tokens)
 //
 // As ofertas vencidas são passadas adiante pelo worker em
 // workers/lead-offer-expiry.ts, não por estas rotas.
@@ -20,6 +23,7 @@ import type {
   IMembershipRepository,
   INotificationRepository,
   IOrganizationRepository,
+  IPushActionTokens,
   IUserRepository,
 } from '@sylocrm/application'
 import {
@@ -45,7 +49,14 @@ interface LeadQueueRouteOptions {
   leadRepository: ILeadRepository
   leadQueueRepository: ILeadQueueRepository
   notificationRepository: INotificationRepository
+  /** null = push desligado; a resposta pela notificação sempre recusa. */
+  pushActionTokens: IPushActionTokens | null
 }
+
+const pushResponseSchema = z.object({
+  token: z.string().min(1).max(1024),
+  action: z.enum(['accept', 'decline']),
+})
 
 const updateSettingsSchema = z.object({
   enabled: z.boolean(),
@@ -168,6 +179,41 @@ export const leadQueueRoute: FastifyPluginAsync<LeadQueueRouteOptions> = async (
       return { offers }
     },
   )
+
+  // ── POST /lead-offers/push-response ───────────────────────────────────────
+  fastify.post('/lead-offers/push-response', async (request, reply) => {
+    const parsed = pushResponseSchema.safeParse(request.body)
+    const now = new Date()
+    const claims = parsed.success ? options.pushActionTokens?.verify(parsed.data.token, now) : null
+    if (!parsed.success || !claims) {
+      return reply.status(410).send({
+        error: 'O tempo pra responder este lead acabou.',
+        code: 'OFFER_RESPONSE_EXPIRED',
+        status: 410,
+      })
+    }
+    try {
+      const result = await respondLeadOffer.execute({
+        offerId: claims.offerId,
+        userId: claims.userId,
+        organizationId: claims.organizationId,
+        action: parsed.data.action,
+        now,
+      })
+      if (!result) return reply.status(404).send(OFFER_NOT_FOUND)
+      return result.action === 'accept'
+        ? {
+            organizationId: claims.organizationId,
+            lead: { id: result.lead.id, funnelId: result.lead.funnelId, name: result.lead.name },
+          }
+        : { ok: true }
+    } catch (error) {
+      if (error instanceof ConflictError) {
+        return reply.status(409).send({ error: error.message, code: error.code, status: 409 })
+      }
+      throw error
+    }
+  })
 
   // ── POST /lead-offers/:id/accept | /decline ───────────────────────────────
   for (const action of ['accept', 'decline'] as const) {

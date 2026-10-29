@@ -5,7 +5,7 @@
 // No iPhone só funciona com o app instalado na tela de início (iOS 16.4+);
 // no Android funciona no Chrome direto ou instalado.
 
-import { apiClient } from './api-client'
+import { API_URL, apiClient } from './api-client'
 
 export type PushSupport = 'supported' | 'needs-install' | 'unsupported'
 
@@ -30,9 +30,13 @@ export function getPushSupport(): PushSupport {
   return hasApis ? 'supported' : 'unsupported'
 }
 
+/** O endereço da API vai na URL do service worker: é por ela que os botões
+ * Aceitar/Recusar da notificação respondem o lead da fila (sw.js). */
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (!('serviceWorker' in navigator)) return null
-  return navigator.serviceWorker.register('/sw.js', { scope: '/' })
+  return navigator.serviceWorker.register(`/sw.js?api=${encodeURIComponent(API_URL)}`, {
+    scope: '/',
+  })
 }
 
 /** Chave VAPID (base64url) → bytes, como o PushManager espera. */

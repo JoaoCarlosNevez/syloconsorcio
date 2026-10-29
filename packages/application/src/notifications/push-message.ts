@@ -96,12 +96,27 @@ function target(push: PendingPush): string {
   return `/m/avisos${org}`
 }
 
+/** A oferta mais curta que ainda vale mandar (segundos). */
+const MIN_OFFER_TTL_SECONDS = 30
+
+function minutesLeft(iso: string, now: Date): number {
+  return Math.max(0, Math.ceil((new Date(iso).getTime() - now.getTime()) / 60_000))
+}
+
 export function buildPushMessage(push: PendingPush, now: Date = new Date()): PushMessage {
   const extra = detail(push, now)
-  return {
+  const message: PushMessage = {
     title: headline(push),
     body: extra ? `${push.title} · ${extra}` : push.title,
     url: target(push),
     tag: push.id,
   }
+  const expiresAt = text(push.metadata, 'expiresAt')
+  if (push.type === 'lead.offered' && expiresAt) {
+    const seconds = Math.floor((new Date(expiresAt).getTime() - now.getTime()) / 1000)
+    message.body = `${message.body} (${minutesLeft(expiresAt, now)} min)`
+    message.requireInteraction = true
+    message.ttlSeconds = Math.max(MIN_OFFER_TTL_SECONDS, seconds)
+  }
+  return message
 }

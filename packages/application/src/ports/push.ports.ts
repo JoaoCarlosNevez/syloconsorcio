@@ -59,6 +59,8 @@ export interface IPushOutboxRepository {
   claimPending(options: { since: Date; limit: number }): Promise<PendingPush[]>
 }
 
+export type PushOfferResponse = 'accept' | 'decline'
+
 export interface PushMessage {
   title: string
   body: string
@@ -66,6 +68,31 @@ export interface PushMessage {
   url: string
   /** Mesma tag substitui em vez de empilhar no aparelho. */
   tag: string
+  /** Fica na tela até o usuário mexer (oferta da fila). */
+  requireInteraction?: boolean
+  /** Quanto tempo o serviço de push segura a mensagem com o aparelho
+   * offline — depois disso ela não chega mais (oferta vencida). */
+  ttlSeconds?: number
+  /** Oferta da fila: botões Aceitar/Recusar na própria notificação, com o
+   * token que responde sem login (ver IPushActionTokens). */
+  offerActions?: { token: string; actions: { action: PushOfferResponse; title: string }[] }
+}
+
+/** O que o token de resposta pela notificação carrega. */
+export interface PushOfferClaims {
+  offerId: string
+  userId: string
+  organizationId: string
+  expiresAt: Date
+}
+
+/** Assina/confere o token que deixa responder a oferta direto da
+ * notificação (o service worker não tem a sessão do usuário). Vale só pra
+ * aquela oferta, aquele usuário e até o prazo dela. */
+export interface IPushActionTokens {
+  sign(claims: PushOfferClaims): string
+  /** null = token inválido, adulterado ou vencido. */
+  verify(token: string, now: Date): PushOfferClaims | null
 }
 
 export type PushSendResult = 'sent' | 'gone'

@@ -293,11 +293,14 @@ export {
 } from './notifications/notification-preferences'
 export type { NotificationPreferences } from './notifications/notification-preferences'
 export type {
+  IPushActionTokens,
   IPushOutboxRepository,
   IPushSender,
   IPushSubscriptionRepository,
   PendingPush,
   PushMessage,
+  PushOfferClaims,
+  PushOfferResponse,
   PushSendResult,
   PushSubscriptionKeys,
   PushSubscriptionRecord,

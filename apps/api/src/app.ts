@@ -26,6 +26,7 @@ import type {
   INotificationRepository,
   IOrganizationRepository,
   IPostSalePaymentRepository,
+  IPushActionTokens,
   IPushSubscriptionRepository,
   IStorageProvider,
   IStreakRepository,
@@ -81,6 +82,8 @@ export interface BuildAppDeps {
   pushSubscriptionRepository: IPushSubscriptionRepository
   /** Chave VAPID pública; null = Web Push desligado. */
   vapidPublicKey: string | null
+  /** Token dos botões Aceitar/Recusar do push; null = push desligado. */
+  pushActionTokens: IPushActionTokens | null
 }
 
 /** No-op auth provider used when Supabase env vars are not configured. */
@@ -329,6 +332,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
       listByUserIds: async () => [],
     },
     vapidPublicKey: deps?.vapidPublicKey ?? null,
+    pushActionTokens: deps?.pushActionTokens ?? null,
     achievementsRepository: deps?.achievementsRepository ?? {
       listWonSales: async () => [],
       firstPostSaleStageAt: async () => null,
@@ -455,6 +459,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     leadRepository: resolvedDeps.leadRepository,
     leadQueueRepository: resolvedDeps.leadQueueRepository,
     notificationRepository: resolvedDeps.notificationRepository,
+    pushActionTokens: resolvedDeps.pushActionTokens,
   })
 
   app.register(publicProposalsRoute, {

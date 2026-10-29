@@ -25,7 +25,9 @@ export function MobileOfferPage() {
 
   const offer = offers.data?.offers.find((o) => o.id === offerId)
 
-  if (offers.isLoading) {
+  // Aberto pelo push com o app já carregado, a lista em cache ainda não tem a
+  // oferta nova — espera a releitura antes de dizer que ela passou.
+  if (offers.isLoading || (!offer && offers.isFetching)) {
     return (
       <main className={styles.content}>
         <Skeleton variant="circle" width={150} height={150} />

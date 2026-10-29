@@ -13,6 +13,7 @@ import type {
 import { OrganizationType, Role } from '@sylocrm/domain'
 import { describe, expect, it, vi } from 'vitest'
 import { buildApp } from '../app'
+import { HmacPushActionTokens } from '../lib/push-action-tokens'
 
 const IDENTITY = { id: 'user-uuid', email: 'vendedor@empresa.com' }
 const ORG_ID = 'org-rep-01'
@@ -77,7 +78,11 @@ function buildLeadQueueRepository(
   }
 }
 
-function buildTestApp(role: Role, leadQueueRepository = buildLeadQueueRepository()) {
+function buildTestApp(
+  role: Role,
+  leadQueueRepository = buildLeadQueueRepository(),
+  pushActionTokens: HmacPushActionTokens | null = null,
+) {
   const authProvider: IAuthProvider = {
     verifyToken: vi.fn().mockResolvedValue(IDENTITY),
     signOut: vi.fn(),
@@ -107,7 +112,13 @@ function buildTestApp(role: Role, leadQueueRepository = buildLeadQueueRepository
     update: vi.fn().mockResolvedValue({ ...LEAD, assignedUserId: IDENTITY.id }),
     recordAssignmentChange: vi.fn(),
   } as unknown as ILeadRepository
-  const app = buildApp({ authProvider, membershipRepository, leadRepository, leadQueueRepository })
+  const app = buildApp({
+    authProvider,
+    membershipRepository,
+    leadRepository,
+    leadQueueRepository,
+    pushActionTokens,
+  })
   return { app, leadRepository, leadQueueRepository }
 }
 
@@ -158,6 +169,80 @@ describe('GET/PUT /lead-queue', () => {
     })
 
     expect(response.statusCode).toBe(400)
+  })
+})
+
+describe('POST /lead-offers/push-response', () => {
+  const tokens = new HmacPushActionTokens('test-secret')
+  const token = tokens.sign({
+    offerId: OFFER_ID,
+    userId: IDENTITY.id,
+    organizationId: ORG_ID,
+    expiresAt: OFFER.expiresAt,
+  })
+
+  it('accepts the queue lead from the notification, without login', async () => {
+    const { app, leadRepository } = buildTestApp(Role.SELLER, undefined, tokens)
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/lead-offers/push-response',
+      payload: { token, action: 'accept' },
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toEqual({
+      organizationId: ORG_ID,
+      lead: { id: 'lead-01', funnelId: 'funnel-01', name: 'Fulano' },
+    })
+    expect(leadRepository.update).toHaveBeenCalledWith(
+      'lead-01',
+      { organizationIds: [ORG_ID] },
+      { assignedUserId: IDENTITY.id },
+    )
+  })
+
+  it('declines from the notification', async () => {
+    const { app, leadQueueRepository } = buildTestApp(Role.SELLER, undefined, tokens)
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/lead-offers/push-response',
+      payload: { token, action: 'decline' },
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(leadQueueRepository.resolveOffer).toHaveBeenCalledWith(
+      OFFER_ID,
+      'declined',
+      expect.any(Date),
+    )
+  })
+
+  it('refuses a forged token or one from a server without push', async () => {
+    const forged = new HmacPushActionTokens('other').sign({
+      offerId: OFFER_ID,
+      userId: IDENTITY.id,
+      organizationId: ORG_ID,
+      expiresAt: OFFER.expiresAt,
+    })
+    const { app, leadRepository } = buildTestApp(Role.SELLER, undefined, tokens)
+    const { app: noPush } = buildTestApp(Role.SELLER)
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/lead-offers/push-response',
+      payload: { token: forged, action: 'accept' },
+    })
+    const off = await noPush.inject({
+      method: 'POST',
+      url: '/lead-offers/push-response',
+      payload: { token, action: 'accept' },
+    })
+
+    expect(response.statusCode).toBe(410)
+    expect(off.statusCode).toBe(410)
+    expect(leadRepository.update).not.toHaveBeenCalled()
   })
 })
 

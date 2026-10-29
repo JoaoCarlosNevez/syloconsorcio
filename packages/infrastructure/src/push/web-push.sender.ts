@@ -17,8 +17,9 @@ export interface WebPushConfig {
   subject: string
 }
 
-/** Quanto tempo o serviço de push segura a mensagem com o aparelho offline. */
-const TTL_SECONDS = 60 * 60
+/** Quanto tempo o serviço de push segura a mensagem com o aparelho offline
+ * (a oferta da fila manda o próprio prazo, menor). */
+const DEFAULT_TTL_SECONDS = 60 * 60
 
 export class WebPushSender implements IPushSender {
   constructor(private readonly config: WebPushConfig) {}
@@ -29,7 +30,7 @@ export class WebPushSender implements IPushSender {
         { endpoint: subscription.endpoint, keys: subscription.keys },
         JSON.stringify(message),
         {
-          TTL: TTL_SECONDS,
+          TTL: Math.min(message.ttlSeconds ?? DEFAULT_TTL_SECONDS, DEFAULT_TTL_SECONDS),
           urgency: 'high',
           vapidDetails: {
             subject: this.config.subject,
