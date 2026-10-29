@@ -24,10 +24,11 @@ export function startPushNotificationsWorker(
     if (running) return
     running = true
     try {
-      const { sent, removedSubscriptions } = await useCase.execute({ now: new Date() })
+      const { sent, removedSubscriptions, failures } = await useCase.execute({ now: new Date() })
       if (sent > 0 || removedSubscriptions > 0) {
         logger.info({ sent, removedSubscriptions }, 'push notifications dispatched')
       }
+      for (const failure of failures) logger.warn(failure, 'push notification failed')
     } catch (error) {
       logger.error({ err: error }, 'failed to dispatch push notifications')
     } finally {

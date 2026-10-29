@@ -57,7 +57,7 @@ describe('DispatchPushNotificationsUseCase', () => {
       limit: 200,
     })
     expect(sender.send).toHaveBeenCalledTimes(2)
-    expect(result).toEqual({ sent: 2, removedSubscriptions: 0 })
+    expect(result).toEqual({ sent: 2, removedSubscriptions: 0, failures: [] })
   })
 
   it('skips types the user turned off in the push preferences', async () => {
@@ -79,7 +79,31 @@ describe('DispatchPushNotificationsUseCase', () => {
 
     expect(subscriptions.removeByEndpoint).toHaveBeenCalledWith('https://push/a')
     expect(subscriptions.removeByEndpoint).toHaveBeenCalledWith('https://push/b')
-    expect(result).toEqual({ sent: 0, removedSubscriptions: 2 })
+    expect(result).toEqual({ sent: 0, removedSubscriptions: 2, failures: [] })
+  })
+
+  it('keeps sending to the other devices when one fails', async () => {
+    const { outbox, subscriptions } = setup([pending()])
+    const sender: IPushSender = {
+      send: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('Received unexpected response code 400'))
+        .mockResolvedValue('sent'),
+    }
+    const useCase = new DispatchPushNotificationsUseCase(outbox, subscriptions, sender)
+
+    const result = await useCase.execute({ now: NOW })
+
+    expect(result.sent).toBe(1)
+    expect(result.failures).toEqual([
+      {
+        notificationId: 'n-1',
+        type: 'lead.offered',
+        userId: 'user-1',
+        service: 'push',
+        error: 'Received unexpected response code 400',
+      },
+    ])
   })
 })
 

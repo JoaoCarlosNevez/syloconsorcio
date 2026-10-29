@@ -31,6 +31,14 @@ import { buildPushMessage } from './push-message'
 export const PUSH_MAX_AGE_MS = 10 * 60 * 1000
 const BATCH_LIMIT = 200
 
+function serviceHost(endpoint: string): string {
+  try {
+    return new URL(endpoint).host
+  } catch {
+    return 'desconhecido'
+  }
+}
+
 function isExpiredOffer(push: PendingPush, now: Date): boolean {
   const expiresAt = push.metadata.expiresAt
   return (
@@ -44,9 +52,20 @@ export interface DispatchPushInput {
   now: Date
 }
 
+/** Envio que falhou num aparelho — os outros seguem; vai pro log do worker. */
+export interface PushFailure {
+  notificationId: string
+  type: PendingPush['type']
+  userId: string
+  /** Só o host do serviço de push (FCM, Apple, Mozilla) — o endpoint é segredo. */
+  service: string
+  error: string
+}
+
 export interface DispatchPushResult {
   sent: number
   removedSubscriptions: number
+  failures: PushFailure[]
 }
 
 export class DispatchPushNotificationsUseCase
@@ -97,7 +116,7 @@ export class DispatchPushNotificationsUseCase
         resolveNotificationPreferences(push.preferences).push[push.type] &&
         !isExpiredOffer(push, input.now),
     )
-    if (wanted.length === 0) return { sent: 0, removedSubscriptions: 0 }
+    if (wanted.length === 0) return { sent: 0, removedSubscriptions: 0, failures: [] }
 
     const userIds = [...new Set(wanted.map((push) => push.userId))]
     const devicesByUser = new Map<string, PushSubscriptionRecord[]>()
@@ -107,17 +126,30 @@ export class DispatchPushNotificationsUseCase
 
     let sent = 0
     const gone = new Set<string>()
+    const failures: PushFailure[] = []
     for (const push of wanted) {
       const base = buildPushMessage(push, input.now)
       const message = push.type === 'lead.offered' ? this.withOfferActions(push, base) : base
       for (const device of devicesByUser.get(push.userId) ?? []) {
         if (gone.has(device.endpoint)) continue
-        const result = await this.sender.send(device, message)
-        if (result === 'gone') gone.add(device.endpoint)
-        else sent++
+        // Um aparelho com problema não derruba a rodada: as notificações já
+        // saíram da fila, então um erro aqui faria os outros nunca receberem.
+        try {
+          const result = await this.sender.send(device, message)
+          if (result === 'gone') gone.add(device.endpoint)
+          else sent++
+        } catch (error) {
+          failures.push({
+            notificationId: push.id,
+            type: push.type,
+            userId: push.userId,
+            service: serviceHost(device.endpoint),
+            error: error instanceof Error ? error.message : String(error),
+          })
+        }
       }
     }
     for (const endpoint of gone) await this.subscriptions.removeByEndpoint(endpoint)
-    return { sent, removedSubscriptions: gone.size }
+    return { sent, removedSubscriptions: gone.size, failures }
   }
 }

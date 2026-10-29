@@ -46,6 +46,11 @@ export class WebPushSender implements IPushSender {
       if (error instanceof WebPushError && (error.statusCode === 404 || error.statusCode === 410)) {
         return 'gone'
       }
+      // O motivo de verdade (ex: "BadJwtToken", payload grande demais) vem no
+      // corpo da resposta do serviço de push — sobe junto pro log.
+      if (error instanceof WebPushError) {
+        throw new Error(`push recusado (HTTP ${error.statusCode}): ${error.body || error.message}`)
+      }
       throw error
     }
   }

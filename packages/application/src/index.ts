@@ -312,6 +312,7 @@ export {
 export type {
   DispatchPushInput,
   DispatchPushResult,
+  PushFailure,
 } from './notifications/dispatch-push-notifications.use-case'
 export { buildPushMessage, formatPushDate } from './notifications/push-message'
 export type { ApiKeyRecord, IApiKeyRepository, NewApiKeyInput } from './ports/api-key.repository'
