@@ -395,6 +395,67 @@ describe('tenantMiddleware', () => {
     expect(ctx.currentMembership.organizationIconUrl).toBeNull()
   })
 
+  it.each([
+    { parentOrganizationId: 'org-master-01', expected: 200 },
+    { parentOrganizationId: 'org-master-other', expected: 403 },
+    { parentOrganizationId: null, expected: 403 },
+  ])(
+    'gives a Master member owner access only to representações linked to their Master (parent $parentOrganizationId → $expected)',
+    async ({ parentOrganizationId, expected }) => {
+      const mockRepo: IMembershipRepository = {
+        findActiveByUserId: vi.fn().mockResolvedValue([ACTIVE_MASTER]),
+        findActiveByUserAndOrganization: vi.fn().mockResolvedValue(null),
+        findActiveByOrganizationId: vi.fn(),
+        findAllActive: vi.fn(),
+        create: vi.fn(),
+        findByUserAndOrganization: vi.fn().mockResolvedValue(null),
+        findByOrganizationId: vi.fn().mockResolvedValue([]),
+        findAll: vi.fn().mockResolvedValue([]),
+        deactivate: vi.fn(),
+        reactivate: vi.fn(),
+        updateSalesGoal: vi.fn(),
+        updateTier: vi.fn(),
+        updateRole: vi.fn(),
+        findPersonalGoal: vi.fn().mockResolvedValue(null),
+        updatePersonalGoal: vi.fn(),
+        removeAllForUser: vi.fn(),
+        updateSupervisor: vi.fn(),
+        findTeamUserIds: vi.fn().mockResolvedValue([]),
+        clearSupervisorLinks: vi.fn(),
+      }
+      const organizationRepo = buildOrganizationRepository({
+        findById: vi.fn().mockResolvedValue({
+          id: 'org-rep-02',
+          name: 'Representação da Rede',
+          type: OrganizationType.REPRESENTACAO,
+          parentOrganizationId,
+          isWhiteLabel: false,
+          branding: null,
+          cnpj: null,
+          phone: null,
+          website: null,
+        }),
+      })
+      const app = buildTestApp(mockRepo, IDENTITY, buildUserRepository(false), organizationRepo)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/business',
+        headers: { 'x-organization-id': 'org-rep-02' },
+      })
+
+      expect(response.statusCode).toBe(expected)
+      if (expected === 200) {
+        const ctx = response.json<{
+          currentMembership: { role: string; dataScope: string; permissions: string[] }
+        }>()
+        expect(ctx.currentMembership.role).toBe(Role.ADMIN)
+        expect(ctx.currentMembership.dataScope).toBe(DataScope.REPRESENTATION)
+        expect(ctx.currentMembership.permissions).toContain(Permission.LEAD_UPDATE)
+      }
+    },
+  )
+
   it('uses the real membership role for a platform admin who is also a real member', async () => {
     const mockRepo: IMembershipRepository = {
       findActiveByUserId: vi.fn().mockResolvedValue([ACTIVE_REPRESENTACAO_SELLER]),

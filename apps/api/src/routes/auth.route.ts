@@ -23,14 +23,14 @@ import type {
   IOrganizationRepository,
   IStorageProvider,
   IUserRepository,
-  UserMembership,
   UserRecord,
 } from '@sylocrm/application'
 import { STORAGE_BUCKETS, resolveNotificationPreferences } from '@sylocrm/application'
-import { DEFAULT_MEMBER_TIER, Role } from '@sylocrm/domain'
+import { OrganizationType } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { buildMembershipContext } from '../auth/membership-context'
+import { isInMasterNetwork, synthesizeOwnerMembership } from '../auth/synthetic-membership'
 import { validateIconUpload } from '../lib/icon-validation'
 import { compressImage } from '../lib/image-processing'
 import { createAuthMiddleware } from '../middleware/auth.middleware'
@@ -193,35 +193,29 @@ export const authRoute: FastifyPluginAsync<AuthRouteOptions> = async (fastify, o
   // aqui, não só as que tem membership real — as demais entram com um ADMIN
   // sintético (nunca persistido; mesma lógica de tenantMiddleware), pra que o
   // seletor de organização sempre tenha algo pra mostrar e o Super Admin
-  // consiga navegar pra qualquer Representação a partir dele.
+  // consiga navegar pra qualquer Representação a partir dele. Membro de um
+  // Master recebe, do mesmo jeito, as Representações ligadas ao Master.
   fastify.get('/auth/memberships', { preHandler: [authMiddleware] }, async (request) => {
     // authMiddleware garante que authIdentity está presente
     const identity = request.authIdentity
     const memberships = await options.membershipRepository.findActiveByUserId(identity?.id ?? '')
 
     const user = await options.userRepository.findById(identity?.id ?? '')
-    if (!user?.isPlatformAdmin) {
+    const isMasterMember = memberships.some(
+      (membership) => membership.organizationType === OrganizationType.MASTER,
+    )
+    if (!user?.isPlatformAdmin && !isMasterMember) {
       return { memberships: memberships.map(buildMembershipContext) }
     }
 
     const allOrganizations = await options.organizationRepository.list()
     const membershipOrgIds = new Set(memberships.map((m) => m.organizationId))
-    const syntheticMemberships: UserMembership[] = allOrganizations
+    const syntheticMemberships = allOrganizations
       .filter((organization) => !membershipOrgIds.has(organization.id))
-      .map((organization) => ({
-        organizationId: organization.id,
-        organizationType: organization.type,
-        organizationName: organization.name,
-        organizationIconUrl: organization.isWhiteLabel
-          ? (organization.branding?.iconUrl ?? null)
-          : null,
-        organizationSecondaryColor: organization.isWhiteLabel
-          ? (organization.branding?.secondaryColor ?? null)
-          : null,
-        role: Role.ADMIN,
-        status: 'ACTIVE',
-        tier: DEFAULT_MEMBER_TIER,
-      }))
+      .filter(
+        (organization) => user?.isPlatformAdmin || isInMasterNetwork(organization, memberships),
+      )
+      .map(synthesizeOwnerMembership)
 
     return {
       memberships: [...memberships, ...syntheticMemberships].map(buildMembershipContext),

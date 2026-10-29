@@ -98,6 +98,14 @@ todo Dono cairia no início do Master). Ela libera:
 - `GET /dashboard/master/representations/:id` — o painel do Dono de uma delas,
   só leitura; Representação fora da rede → 403
 
+Pra **operar** uma Representação da rede, o membro do Master entra nela como
+**Dono** (2026-10-29): `GET /auth/memberships` devolve cada Representação ligada
+ao Master com uma membership `ADMIN` sintética (nunca persistida), e o
+`tenantMiddleware` aceita essa organização no `X-Organization-Id` com o mesmo
+ADMIN — mesma mecânica do Super Admin (`auth/synthetic-membership.ts`). Lá
+dentro valem as Permissions e o DataScope de Dono (`representation`); no próprio
+Master continua só a leitura acima. Membership real na Representação prevalece.
+
 Só o Super Admin cria um Master e liga/desliga Representações
 (`POST /organizations` com `type: MASTER`; `PATCH /organizations/:id` com
 `masterOrganizationId` → `SetRepresentationMasterUseCase`).

@@ -405,11 +405,7 @@
   cursor: pointer;
 }
 
-.oldestRow:disabled {
-  cursor: default;
-}
-
-.oldestRow:not(:disabled):hover {
+.oldestRow:hover {
   border-color: #fcd34d;
   background: #fffbeb;
 }
@@ -701,20 +697,4 @@
   outline: 2px solid var(--color-accent);
   outline-offset: 3px;
   border-radius: 4px;
-}
-
-.backButton {
-  margin-bottom: 6px;
-  padding: 0;
-  border: none;
-  background: none;
-  font-family: var(--font-family-base);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-}
-
-.backButton:hover {
-  color: var(--color-text-primary);
 }

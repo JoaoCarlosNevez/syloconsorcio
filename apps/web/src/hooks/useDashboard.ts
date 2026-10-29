@@ -8,7 +8,6 @@ import {
   getActivityRanking,
   getManagementDashboard,
   getMasterDashboard,
-  getMasterRepresentationDashboard,
   getMyAchievements,
   getMyEngagement,
   getMyMonthlyStats,
@@ -84,39 +83,6 @@ export function useMasterDashboardQuery(organizationId: string | null, period: M
     queryKey: ['dashboard', 'master', organizationId, period],
     queryFn: () => getMasterDashboard(organizationId as string, period),
     enabled: Boolean(organizationId),
-    refetchInterval: 2 * 60_000,
-    placeholderData: (previous) => previous,
-  })
-}
-
-/** Painel de uma Representação aberto pelo Master (null = nenhuma aberta). */
-export function useMasterRepresentationDashboardQuery(
-  organizationId: string | null,
-  representationId: string | null,
-  period: ManagementPeriod,
-  funnelId: string | null,
-  filters: ManagementFilters,
-) {
-  return useQuery({
-    queryKey: [
-      'dashboard',
-      'master',
-      organizationId,
-      'representation',
-      representationId,
-      period,
-      funnelId,
-      filters,
-    ],
-    queryFn: () =>
-      getMasterRepresentationDashboard(
-        organizationId as string,
-        representationId as string,
-        period,
-        funnelId,
-        filters,
-      ),
-    enabled: Boolean(organizationId) && Boolean(representationId),
     refetchInterval: 2 * 60_000,
     placeholderData: (previous) => previous,
   })

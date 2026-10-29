@@ -1,7 +1,7 @@
 // MasterHome — início do Master (network.read): os totais da rede, o
 // comparativo das Representações ligadas a ele e o ranking unificado dos
-// vendedores de todas. Clicar numa Representação abre o painel do Dono dela
-// (ManagementHome, só leitura). As contas ficam na API
+// vendedores de todas. Clicar numa Representação entra nela como Dono (troca a
+// organização ativa — o Master vê e opera tudo nela). As contas ficam na API
 // (GetMasterDashboardUseCase); aqui só apresentação.
 
 import { Skeleton } from '@sylocrm/ui'
@@ -18,7 +18,6 @@ import {
   AlertIcon,
   ClockIcon,
   GoalCell,
-  ManagementHome,
   PERIODS,
   PERIOD_NOUN,
   StatCard,
@@ -246,22 +245,12 @@ function MasterSkeleton() {
 }
 
 export function MasterHome() {
-  const { organizationId, membership } = useActiveOrganization()
+  const { organizationId, membership, setActiveOrganizationId } = useActiveOrganization()
   const [period, setPeriod] = useState<ManagementPeriod>('month')
-  const [opened, setOpened] = useState<{ id: string; name: string } | null>(null)
   const { data, isLoading, isError, error, refetch } = useMasterDashboardQuery(
     organizationId,
     period,
   )
-
-  if (opened) {
-    return (
-      <ManagementHome
-        representation={{ ...opened, onBack: () => setOpened(null) }}
-        key={opened.id}
-      />
-    )
-  }
 
   return (
     <AppLayout>
@@ -368,10 +357,7 @@ export function MasterHome() {
               />
             </div>
 
-            <RepresentationsTable
-              data={data}
-              onOpen={(row) => setOpened({ id: row.id, name: row.name })}
-            />
+            <RepresentationsTable data={data} onOpen={(row) => setActiveOrganizationId(row.id)} />
             <NetworkSellersTable data={data} />
           </>
         )}

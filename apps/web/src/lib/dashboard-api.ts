@@ -260,24 +260,6 @@ export function getMasterDashboard(
   return apiClient.get<MasterDashboard>(`/dashboard/master?period=${period}`, { organizationId })
 }
 
-/** Painel do Dono de uma Representação do Master — só leitura. */
-export function getMasterRepresentationDashboard(
-  organizationId: string,
-  representationId: string,
-  period: ManagementPeriod,
-  funnelId: string | null,
-  filters: ManagementFilters,
-): Promise<ManagementDashboard> {
-  const params = new URLSearchParams({ period })
-  if (funnelId) params.set('funnelId', funnelId)
-  if (filters.sellerUserId) params.set('sellerUserId', filters.sellerUserId)
-  if (filters.supervisorUserId) params.set('supervisorUserId', filters.supervisorUserId)
-  return apiClient.get<ManagementDashboard>(
-    `/dashboard/master/representations/${representationId}?${params}`,
-    { organizationId },
-  )
-}
-
 // ── Engajamento operacional (Perfil) ─────────────────────────────────────────
 
 export interface SellerEngagement {

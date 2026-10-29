@@ -12,8 +12,9 @@
 // Super Admin da plataforma (users.isPlatformAdmin) enxerga qualquer
 // organização mesmo sem membership real nela — nesse caso a organização é
 // buscada direto e uma membership ADMIN é sintetizada (nunca persistida).
-// Quando o Super Admin TEM uma membership real na organização, o Role real
-// prevalece — a sintética é só um fallback pra quando não há vínculo algum.
+// O mesmo vale pro membro de um Master nas Representações ligadas a ele.
+// Quando há membership real na organização, o Role real prevalece — a
+// sintética é só um fallback pra quando não há vínculo algum.
 //
 // Erros:
 //   400 — X-Organization-Id ausente (TENANT_HEADER_MISSING)
@@ -25,12 +26,12 @@ import type {
   IMembershipRepository,
   IOrganizationRepository,
   IUserRepository,
-  UserMembership,
 } from '@sylocrm/application'
-import { DEFAULT_MEMBER_TIER, Role } from '@sylocrm/domain'
+import { Role } from '@sylocrm/domain'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { AuthErrorCode } from '../auth/errors'
 import { buildMembershipContext } from '../auth/membership-context'
+import { isInMasterNetwork, synthesizeOwnerMembership } from '../auth/synthetic-membership'
 
 /**
  * Cria o preHandler de tenant com os repositórios necessários injetados.
@@ -83,27 +84,18 @@ export function createTenantMiddleware(
       organizationId,
     )
 
-    // Sem membership real: Super Admin ainda assim acessa, com ADMIN sintético
+    // Sem membership real: Super Admin (qualquer organização) e membro do Master
+    // (Representações da rede dele) ainda assim acessam, como Dono sintético
     if (!currentMembershipData) {
-      const user = await userRepository.findById(identity.id)
-      if (user?.isPlatformAdmin) {
-        const organization = await organizationRepository.findById(organizationId)
-        if (organization) {
-          currentMembershipData = {
-            organizationId: organization.id,
-            organizationType: organization.type,
-            organizationName: organization.name,
-            organizationIconUrl: organization.isWhiteLabel
-              ? (organization.branding?.iconUrl ?? null)
-              : null,
-            organizationSecondaryColor: organization.isWhiteLabel
-              ? (organization.branding?.secondaryColor ?? null)
-              : null,
-            role: Role.ADMIN,
-            status: 'ACTIVE',
-            tier: DEFAULT_MEMBER_TIER,
-          } satisfies UserMembership
-        }
+      const [user, organization] = await Promise.all([
+        userRepository.findById(identity.id),
+        organizationRepository.findById(organizationId),
+      ])
+      if (
+        organization &&
+        (user?.isPlatformAdmin || isInMasterNetwork(organization, await allMembershipsPromise))
+      ) {
+        currentMembershipData = synthesizeOwnerMembership(organization)
       }
     }
 

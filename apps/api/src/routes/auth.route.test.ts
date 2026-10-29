@@ -673,6 +673,111 @@ describe('GET /auth/memberships', () => {
     expect(org2?.role).toBe('ADMIN')
   })
 
+  it('adds the representações linked to a Master as owner memberships for its members', async () => {
+    const mockProvider: IAuthProvider = {
+      verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),
+      signOut: vi.fn(),
+      createUser: vi.fn(),
+      deleteUser: vi.fn(),
+    }
+    const mockRepo: IMembershipRepository = {
+      findActiveByUserId: vi.fn().mockResolvedValue([
+        {
+          organizationId: 'org-master-01',
+          organizationType: OrganizationType.MASTER,
+          organizationName: 'Master Um',
+          organizationIconUrl: null,
+          organizationSecondaryColor: null,
+          tier: 'bronze',
+          role: Role.MANAGER,
+          status: 'ACTIVE',
+        },
+      ]),
+      findActiveByUserAndOrganization: vi.fn(),
+      findActiveByOrganizationId: vi.fn(),
+      findAllActive: vi.fn(),
+      create: vi.fn(),
+      findByUserAndOrganization: vi.fn().mockResolvedValue(null),
+      findByOrganizationId: vi.fn().mockResolvedValue([]),
+      findAll: vi.fn().mockResolvedValue([]),
+      deactivate: vi.fn(),
+      reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
+      updateTier: vi.fn(),
+      updateRole: vi.fn(),
+      findPersonalGoal: vi.fn().mockResolvedValue(null),
+      updatePersonalGoal: vi.fn(),
+      removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
+    }
+    const organization = {
+      type: 'REPRESENTACAO',
+      isWhiteLabel: false,
+      branding: null,
+      cnpj: null,
+      phone: null,
+      website: null,
+    }
+    const app = buildApp({
+      authProvider: mockProvider,
+      membershipRepository: mockRepo,
+      userRepository: {
+        findById: vi.fn().mockResolvedValue({
+          id: MOCK_IDENTITY.id,
+          email: MOCK_IDENTITY.email,
+          name: null,
+          isPlatformAdmin: false,
+        }),
+        upsert: vi.fn(),
+        updateProfile: vi.fn(),
+        listPlatformAdmins: vi.fn().mockResolvedValue([]),
+      },
+      organizationRepository: {
+        findChildOrganizationIds: vi.fn().mockResolvedValue([]),
+        create: vi.fn(),
+        findById: vi.fn().mockResolvedValue(null),
+        update: vi.fn(),
+        list: vi.fn().mockResolvedValue([
+          {
+            ...organization,
+            id: 'org-master-01',
+            name: 'Master Um',
+            type: 'MASTER',
+            parentOrganizationId: null,
+          },
+          {
+            ...organization,
+            id: 'org-rep-01',
+            name: 'Da rede',
+            parentOrganizationId: 'org-master-01',
+          },
+          {
+            ...organization,
+            id: 'org-rep-02',
+            name: 'Outro Master',
+            parentOrganizationId: 'org-master-02',
+          },
+          { ...organization, id: 'org-rep-03', name: 'Independente', parentOrganizationId: null },
+        ]),
+      },
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/auth/memberships',
+      headers: { authorization: 'Bearer valid-token' },
+    })
+
+    expect(response.statusCode).toBe(200)
+    const body = response.json<{ memberships: { organizationId: string; role: string }[] }>()
+    expect(body.memberships.map((m) => [m.organizationId, m.role])).toEqual([
+      ['org-master-01', 'MANAGER'],
+      ['org-rep-01', 'ADMIN'],
+    ])
+  })
+
   it('hides organizationIconUrl for synthesized memberships when White Label is off', async () => {
     const mockProvider: IAuthProvider = {
       verifyToken: vi.fn().mockResolvedValue(MOCK_IDENTITY),

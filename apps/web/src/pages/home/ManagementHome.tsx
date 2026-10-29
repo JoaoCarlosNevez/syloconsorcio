@@ -2,19 +2,12 @@
 // resumo do período, saúde do pipeline, funil de conversão e o funil ADM do
 // pós-venda. As contas ficam na API (GetManagementDashboardUseCase); aqui só
 // apresentação. O Vendedor continua com o início dele (SellerHome).
-//
-// O Master abre o mesmo painel de uma das Representações dele (prop
-// `representation`), só leitura: os dados vêm de /dashboard/master/... e os
-// atalhos pro Kanban ficam desligados (o Master não opera leads).
 
 import { Skeleton } from '@sylocrm/ui'
 import { type ReactNode, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
-import {
-  useManagementDashboardQuery,
-  useMasterRepresentationDashboardQuery,
-} from '../../hooks/useDashboard'
+import { useManagementDashboardQuery } from '../../hooks/useDashboard'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import type {
   ManagementDashboard,
@@ -289,7 +282,7 @@ function SalesFunnelCard({
   )
 }
 
-function BackofficeCard({ data, readOnly }: { data: ManagementDashboard; readOnly: boolean }) {
+function BackofficeCard({ data }: { data: ManagementDashboard }) {
   const navigate = useNavigate()
   const adm = data.backoffice
   if (!adm) return null
@@ -336,7 +329,6 @@ function BackofficeCard({ data, readOnly }: { data: ManagementDashboard; readOnl
               <button
                 type="button"
                 className={styles.oldestRow}
-                disabled={readOnly}
                 onClick={() =>
                   navigate('/app/kanban', { state: { openLeadId: card.leadId, funnelId: adm.id } })
                 }
@@ -621,12 +613,7 @@ function parseFilter(value: string): ManagementFilters {
 
 // ── Página ───────────────────────────────────────────────────────────────────
 
-export interface ManagementHomeProps {
-  /** Master vendo uma das Representações dele. */
-  representation?: { id: string; name: string; onBack: () => void }
-}
-
-export function ManagementHome({ representation }: ManagementHomeProps = {}) {
+export function ManagementHome() {
   const { organizationId, membership } = useActiveOrganization()
   const [period, setPeriod] = useState<ManagementPeriod>('month')
   const [funnelId, setFunnelId] = useState<string | null>(null)
@@ -634,20 +621,12 @@ export function ManagementHome({ representation }: ManagementHomeProps = {}) {
     sellerUserId: null,
     supervisorUserId: null,
   })
-  const ownQuery = useManagementDashboardQuery(
-    representation ? null : organizationId,
-    period,
-    funnelId,
-    filters,
-  )
-  const networkQuery = useMasterRepresentationDashboardQuery(
+  const { data, isLoading, isError, error, refetch } = useManagementDashboardQuery(
     organizationId,
-    representation?.id ?? null,
     period,
     funnelId,
     filters,
   )
-  const { data, isLoading, isError, error, refetch } = representation ? networkQuery : ownQuery
   // Opções do seletor de visão — mantém as últimas enquanto recarrega.
   const options = data?.filters
   const baseLabel = data && data.scope.kind === 'team' ? 'Meu time' : 'Toda a representação'
@@ -658,16 +637,11 @@ export function ManagementHome({ representation }: ManagementHomeProps = {}) {
       <div className={styles.page}>
         <header className={styles.header}>
           <div>
-            {representation && (
-              <button type="button" className={styles.backButton} onClick={representation.onBack}>
-                ← Todas as representações
-              </button>
-            )}
             <h1 className={styles.title}>
               {isTeamView && !filters.sellerUserId ? 'Visão do time' : 'Visão da representação'}
             </h1>
             <p className={styles.subtitle}>
-              {data?.scope.label ?? representation?.name ?? membership?.organizationName}
+              {data?.scope.label ?? membership?.organizationName}
               {(filters.sellerUserId || filters.supervisorUserId) && (
                 <button
                   type="button"
@@ -804,7 +778,7 @@ export function ManagementHome({ representation }: ManagementHomeProps = {}) {
             />
 
             <SalesFunnelCard data={data} onSelectFunnel={setFunnelId} />
-            <BackofficeCard data={data} readOnly={Boolean(representation)} />
+            <BackofficeCard data={data} />
 
             <PostSaleCard data={data} />
           </>
