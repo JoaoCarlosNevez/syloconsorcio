@@ -181,7 +181,7 @@ function SalesCard({ data }: { data: ManagementDashboard }) {
       label="Vendas"
       value={formatMoneyShort(wonValueCents)}
       caption={`${plural(wonCount, 'venda', 'vendas')} ${PERIOD_NOUN[data.period]}${
-        avgTicketCents ? ` · tíquete ${formatMoneyShort(avgTicketCents)}` : ''
+        avgTicketCents ? ` · ticket ${formatMoneyShort(avgTicketCents)}` : ''
       }`}
       icon={<TrophyIcon />}
       tone="gold"
