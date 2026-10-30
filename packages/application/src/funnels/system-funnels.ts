@@ -1,5 +1,5 @@
 // Funis fixos do sistema — toda organização tem um de cada (migrations 0034,
-// 0036 e 0041, criação da representação e, se faltar, na hora do Ganho):
+// 0036, 0041 e 0043, criação da representação e, se faltar, na hora do Ganho):
 //
 //   Comercial (COMMERCIAL) → ADM (BACKOFFICE) → Pós-venda (POST_SALE)
 //
@@ -34,8 +34,8 @@ export const BACKOFFICE_FUNNEL_NAME = 'ADM'
 
 export const BACKOFFICE_FUNNEL_STAGES: readonly NewFunnelStageInput[] = [
   { name: 'Conferência de documentos', color: '#f59e0b' },
-  { name: 'Checado', color: '#8b5cf6' },
   { name: 'Enviado', color: '#0ea5e9' },
+  { name: 'Checado', color: '#8b5cf6' },
   { name: 'Pendência', color: '#ef4444' },
   { name: 'Efetivado', color: '#10b981' },
 ]

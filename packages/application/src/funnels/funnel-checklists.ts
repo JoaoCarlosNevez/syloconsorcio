@@ -18,7 +18,9 @@ export interface ChecklistItemDefinition {
 
 export const FUNNEL_CHECKLISTS: Partial<Record<FunnelKind, readonly ChecklistItemDefinition[]>> = {
   BACKOFFICE: [
-    { key: 'docs_checked', label: 'Documentos conferidos', moveTo: 'Checado' },
+    // Sem moveTo: "Checado" vem depois de "Enviado" — conferir os documentos
+    // não pode pular o card por cima do envio.
+    { key: 'docs_checked', label: 'Documentos conferidos' },
     {
       key: 'proposal_typed',
       label: 'Proposta digitada na administradora',
