@@ -1,7 +1,8 @@
 // ManagementHome — início do Dono e do Supervisor (quem tem reports.read):
-// resumo do período, saúde do pipeline, funil de conversão e o funil ADM do
-// pós-venda. As contas ficam na API (GetManagementDashboardUseCase); aqui só
-// apresentação. O Vendedor continua com o início dele (SellerHome).
+// resumo do período, saúde do pipeline, os funis (vendas, ADM e pós-venda) e,
+// embaixo, o desempenho de supervisores e vendedores. As contas ficam na API
+// (GetManagementDashboardUseCase); aqui só apresentação. O Vendedor continua
+// com o início dele (SellerHome).
 
 import { Skeleton } from '@sylocrm/ui'
 import { type ReactNode, useState } from 'react'
@@ -768,6 +769,11 @@ export function ManagementHome() {
               />
             </div>
 
+            <SalesFunnelCard data={data} onSelectFunnel={setFunnelId} />
+            <BackofficeCard data={data} />
+
+            <PostSaleCard data={data} />
+
             <SupervisorsTable
               data={data}
               onSelect={(supervisorUserId) => setFilters({ sellerUserId: null, supervisorUserId })}
@@ -776,11 +782,6 @@ export function ManagementHome() {
               data={data}
               onSelect={(sellerUserId) => setFilters({ sellerUserId, supervisorUserId: null })}
             />
-
-            <SalesFunnelCard data={data} onSelectFunnel={setFunnelId} />
-            <BackofficeCard data={data} />
-
-            <PostSaleCard data={data} />
           </>
         )}
       </div>
