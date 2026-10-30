@@ -59,7 +59,10 @@ async function signInWithPassword(credentials: SignInCredentials): Promise<SignI
 // ── Sign-out mutation ─────────────────────────────────────────────────────────
 
 async function signOutUser(): Promise<void> {
-  const { error } = await supabase.auth.signOut()
+  // Só esta sessão: o padrão do Supabase ('global') derruba o login em todos
+  // os aparelhos — sair no celular deslogava o CRM aberto no computador
+  // (que caía quando o token vencia, até 1h depois).
+  const { error } = await supabase.auth.signOut({ scope: 'local' })
   if (error) throw error
 }
 
