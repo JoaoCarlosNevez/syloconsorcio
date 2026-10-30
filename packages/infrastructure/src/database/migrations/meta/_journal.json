@@ -302,6 +302,13 @@
       "when": 1793296997145,
       "tag": "0042_push_subscriptions",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1793327141998,
+      "tag": "0043_adm_enviado_before_checado",
+      "breakpoints": true
     }
   ]
 }
