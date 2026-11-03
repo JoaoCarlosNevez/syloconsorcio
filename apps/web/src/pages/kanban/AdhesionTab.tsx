@@ -39,6 +39,7 @@ import {
 import { formatMoneyInput, formatPhoneBR, parseValueToCents } from '../../lib/lead-adapters'
 import type { LeadProposal } from '../../lib/leads-api'
 import type { TeamMember } from '../../lib/team-api'
+import { lookupZipCode } from '../../lib/zip-code'
 import { AdhesionDocuments } from './AdhesionDocuments'
 import styles from './AdhesionTab.module.css'
 
@@ -111,23 +112,6 @@ function CopyIcon() {
       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
     </svg>
   )
-}
-
-/** CEP → endereço pela ViaCEP (pública, sem chave). null se não achar. */
-async function lookupZipCode(zipCode: string): Promise<string | null> {
-  const digits = zipCode.replace(/\D/g, '')
-  const response = await fetch(`https://viacep.com.br/ws/${digits}/json/`)
-  if (!response.ok) return null
-  const data = (await response.json()) as {
-    erro?: boolean
-    logradouro?: string
-    bairro?: string
-    localidade?: string
-    uf?: string
-  }
-  if (data.erro) return null
-  const street = [data.logradouro, data.bairro].filter(Boolean).join(' — ')
-  return `${street ? `${street}, ` : ''}${data.localidade ?? ''}/${data.uf ?? ''}`
 }
 
 export function AdhesionTab({

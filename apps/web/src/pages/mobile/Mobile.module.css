@@ -1004,3 +1004,18 @@
 .checkItem + .checkItem {
   border-top: 1px solid var(--color-border);
 }
+
+/* ── Checklist de adesão ── */
+.checkOptional {
+  border-style: dashed;
+  cursor: default;
+}
+
+.rowMissing {
+  color: var(--color-error-text);
+}
+
+.textarea {
+  min-height: 96px;
+  resize: vertical;
+}

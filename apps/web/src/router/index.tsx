@@ -67,6 +67,9 @@ const MobileNewLeadPage = lazy(() =>
 const MobileLeadPage = lazy(() =>
   import('../pages/mobile/MobileLeadPage').then((m) => ({ default: m.MobileLeadPage })),
 )
+const MobileAdhesionPage = lazy(() =>
+  import('../pages/mobile/MobileAdhesionPage').then((m) => ({ default: m.MobileAdhesionPage })),
+)
 const MobileTasksPage = lazy(() =>
   import('../pages/mobile/MobileTasksPage').then((m) => ({ default: m.MobileTasksPage })),
 )
@@ -113,6 +116,7 @@ export function AppRouter() {
           <Route path="leads" element={<MobileLeadsPage />} />
           <Route path="leads/novo" element={<MobileNewLeadPage />} />
           <Route path="leads/:id" element={<MobileLeadPage />} />
+          <Route path="leads/:id/adesao" element={<MobileAdhesionPage />} />
           <Route path="tarefas" element={<MobileTasksPage />} />
           <Route path="avisos" element={<MobileNotificationsPage />} />
           <Route path="oferta/:offerId" element={<MobileOfferPage />} />

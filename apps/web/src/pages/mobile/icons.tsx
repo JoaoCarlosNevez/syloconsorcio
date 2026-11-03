@@ -134,3 +134,24 @@ export const ColumnsIcon = () => (
     <rect x="17" y="4" width="4" height="7" rx="1.5" />
   </Icon>
 )
+
+export const CameraIcon = () => (
+  <Icon size={18}>
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+    <circle cx="12" cy="13" r="4" />
+  </Icon>
+)
+
+export const FileIcon = () => (
+  <Icon size={18}>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+  </Icon>
+)
+
+export const ClipboardIcon = () => (
+  <Icon size={18}>
+    <rect x="9" y="9" width="13" height="13" rx="2" />
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+  </Icon>
+)

@@ -2,11 +2,12 @@
 // ligação e visita, reenviar a proposta, histórico com comentário e
 // ganho/perdido. Nos funis ADM e Pós-venda, o checklist (e a parcela
 // pagou/não pagou) no lugar de ganho/perdido; pra Dono, Supervisor e ADM, a
-// troca de responsável. A ficha de adesão completa e os documentos ficam no web.
+// troca de responsável. O checklist de adesão (documentos com foto e a
+// ficha) abre numa tela própria (MobileAdhesionPage).
 
 import { Skeleton } from '@sylocrm/ui'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { type CallResult, useMobileLead } from '../../hooks/useMobileLead'
 import type { LeadProposal } from '../../lib/leads-api'
 import { LOST_REASONS, formatMoney, telLink, whatsappLink } from '../../lib/mobile'
@@ -14,7 +15,7 @@ import { describeProposalViews } from '../../lib/proposal-share'
 import styles from './Mobile.module.css'
 import { BackBar, Sheet, useToast } from './MobileUi'
 import { TaskRow } from './TaskRow'
-import { PhoneIcon, ShareIcon, TickIcon, UsersIcon, WhatsappIcon } from './icons'
+import { CameraIcon, PhoneIcon, ShareIcon, TickIcon, UsersIcon, WhatsappIcon } from './icons'
 
 const ROLE_LABEL = {
   ADMIN: 'Dono',
@@ -257,6 +258,17 @@ export function MobileLeadPage() {
           </div>
         </section>
       )}
+
+      <section>
+        <h2 className={styles.sectionTitle}>Adesão</h2>
+        <Link to={`/m/leads/${lead.id}/adesao`} className={`${styles.card} ${styles.row}`}>
+          <span className={styles.grow}>
+            <span className={styles.rowTitle}>Checklist de adesão</span>
+            <span className={styles.rowSub}>Fotos dos documentos e dados da ficha</span>
+          </span>
+          <CameraIcon />
+        </Link>
+      </section>
 
       {m.isSystemFunnel && (
         <section>
