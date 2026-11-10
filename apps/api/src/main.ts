@@ -37,6 +37,7 @@ import {
   SupabaseStorageAdapter,
   WebPushSender,
   createDatabase,
+  pingDatabase,
 } from '@sylocrm/infrastructure'
 import { buildApp } from './app'
 import { env } from './config/env'
@@ -133,6 +134,8 @@ const app = buildApp({
   pushSubscriptionRepository,
   vapidPublicKey: pushSender ? (env.VAPID_PUBLIC_KEY ?? null) : null,
   pushActionTokens,
+  // 3s: o healthcheck do Swarm desiste em 5s.
+  checkDatabase: database ? () => pingDatabase(database, 3000) : undefined,
 })
 
 // Fila de Leads: passa adiante os leads que ninguém aceitou no prazo. O

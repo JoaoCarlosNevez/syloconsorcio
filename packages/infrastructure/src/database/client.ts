@@ -7,6 +7,7 @@
 // only when createDatabase() is called with a valid config.
 // This makes testing and dependency injection straightforward.
 
+import { sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 
@@ -36,7 +37,30 @@ export function createDatabase(config: DatabaseConfig): ReturnType<typeof drizzl
     // servidor) não suporta prepared statements. Desligado sempre: funciona
     // também no modo sessão.
     prepare: false,
+    // Conexão que não abre em 10s vira erro em vez de deixar a requisição presa.
+    connect_timeout: 10,
+    // Troca cada conexão a cada ~10 min: uma conexão morta em silêncio (o pooler
+    // derrubou, a rede caiu sem avisar) não fica no pool pra sempre. Em
+    // 09/11/2026 o pool da API de produção travou por 17h sem nenhum erro.
+    max_lifetime: 600,
   })
 
   return drizzle(client)
+}
+
+/**
+ * Confirma que o banco responde: roda `select 1` com prazo. Usado pelo
+ * /health, então um pool travado derruba o healthcheck e o Swarm reinicia o
+ * container sozinho.
+ */
+export async function pingDatabase(db: Database, timeoutMs: number): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`Banco não respondeu em ${timeoutMs}ms`)), timeoutMs)
+  })
+  try {
+    await Promise.race([db.execute(sql`select 1`), timeout])
+  } finally {
+    clearTimeout(timer)
+  }
 }

@@ -84,6 +84,8 @@ export interface BuildAppDeps {
   vapidPublicKey: string | null
   /** Token dos botões Aceitar/Recusar do push; null = push desligado. */
   pushActionTokens: IPushActionTokens | null
+  /** Rejeita quando o banco não responde; usado pelo /health. */
+  checkDatabase?: () => Promise<void>
 }
 
 /** No-op auth provider used when Supabase env vars are not configured. */
@@ -426,7 +428,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
   })
 
   // ── Routes ────────────────────────────────────────────────────────────────
-  app.register(healthRoute)
+  app.register(healthRoute, { checkDatabase: deps?.checkDatabase })
 
   app.register(authRoute, {
     authProvider: resolvedDeps.authProvider,
