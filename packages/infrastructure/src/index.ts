@@ -9,7 +9,7 @@
 //   storage/        — Supabase Storage adapter
 //   observability/  — OpenTelemetry and error tracking ports
 
-export { createDatabase } from './database/client'
+export { createDatabase, pingDatabase } from './database/client'
 export type { Database, DatabaseConfig } from './database/client'
 export type { ErrorTracker, Logger, ObservabilityConfig } from './observability/ports'
 

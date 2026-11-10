@@ -75,6 +75,8 @@ export interface BuildAppDeps {
   managementDashboardRepository: IManagementDashboardRepository
   engagementRepository: IEngagementRepository
   achievementsRepository: IAchievementsRepository
+  /** Rejeita quando o banco não responde; usado pelo /health. */
+  checkDatabase?: () => Promise<void>
 }
 
 /** No-op auth provider used when Supabase env vars are not configured. */
@@ -406,7 +408,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
   })
 
   // ── Routes ────────────────────────────────────────────────────────────────
-  app.register(healthRoute)
+  app.register(healthRoute, { checkDatabase: deps?.checkDatabase })
 
   app.register(authRoute, {
     authProvider: resolvedDeps.authProvider,
