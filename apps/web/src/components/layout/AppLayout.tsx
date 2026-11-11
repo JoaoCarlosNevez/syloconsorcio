@@ -6,6 +6,7 @@ import type { DropdownEntry, Tier } from '@sylocrm/ui'
 import { type ReactNode, useEffect, useLayoutEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { useChatUnread } from '../../hooks/useChat'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { applyBrandColor } from '../../lib/brand-theme'
@@ -68,6 +69,25 @@ function TarefasIcon() {
       <line x1="8" y1="2" x2="8" y2="6" />
       <line x1="3" y1="10" x2="21" y2="10" />
       <path d="m9 16 2 2 4-4" />
+    </svg>
+  )
+}
+function ChatIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" />
+      <path d="M8 9h8" />
+      <path d="M8 13h5" />
     </svg>
   )
 }
@@ -217,6 +237,7 @@ const NAV_ITEMS = [
   { label: 'Início', path: '/app/home', icon: InicioIcon },
   { label: 'Kanban', path: '/app/kanban', icon: KanbanIcon, permission: 'lead.read' },
   { label: 'Tarefas', path: '/app/tarefas', icon: TarefasIcon, permission: 'task.read' },
+  { label: 'Chat', path: '/app/chat', icon: ChatIcon, permission: 'task.read' },
   { label: 'Configurações', path: '/app/config', icon: ConfigIcon },
   { label: 'Administração', path: '/app/admin', icon: AdminIcon, requiresPlatformAdmin: true },
   { label: 'Ajuda', path: '/app/ajuda', icon: AjudaIcon },
@@ -235,6 +256,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { data: currentUser } = useCurrentUser()
   const { membership, memberships, setActiveOrganizationId } = useActiveOrganization()
   const brandColor = membership?.organizationSecondaryColor ?? null
+  const chatUnread = useChatUnread(membership?.organizationId ?? null).data?.count ?? 0
   const whiteLabelLogoUrl = membership?.organizationIconUrl ?? null
 
   // Nome e ícone da aba seguem a instância (White Label) — ver document-branding.ts.
@@ -365,22 +387,31 @@ export function AppLayout({ children }: AppLayoutProps) {
               (!('permission' in item) ||
                 !membership ||
                 membership.permissions.includes(item.permission)),
-          ).map(({ label, path, icon: Icon }) => (
-            <a
-              key={path}
-              href={path}
-              className={[styles.navItem, location.pathname === path ? styles.active : '']
-                .filter(Boolean)
-                .join(' ')}
-              onClick={navTo(path)}
-              aria-current={location.pathname === path ? 'page' : undefined}
-            >
-              <span style={{ width: 18, height: 18, flexShrink: 0 }}>
-                <Icon />
-              </span>
-              {label}
-            </a>
-          ))}
+          ).map(({ label, path, icon: Icon }) => {
+            const active = location.pathname === path || location.pathname.startsWith(`${path}/`)
+            return (
+              <a
+                key={path}
+                href={path}
+                className={[styles.navItem, active ? styles.active : ''].filter(Boolean).join(' ')}
+                onClick={navTo(path)}
+                aria-current={active ? 'page' : undefined}
+              >
+                <span style={{ width: 18, height: 18, flexShrink: 0 }}>
+                  <Icon />
+                </span>
+                {label}
+                {path === '/app/chat' && chatUnread > 0 && (
+                  <span
+                    className={styles.navBadge}
+                    aria-label={`${chatUnread} conversas não lidas`}
+                  >
+                    {chatUnread > 99 ? '99+' : chatUnread}
+                  </span>
+                )}
+              </a>
+            )
+          })}
         </nav>
 
         {/* Rodapé da sidebar */}

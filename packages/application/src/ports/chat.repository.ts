@@ -65,7 +65,7 @@ export interface ChatMessageRecord {
 export interface ChatConversationSummary {
   conversation: ChatConversationRecord
   /** Lead mais recente do cliente (título e link pra ficha); só em 'client'. */
-  clientLead: { id: string; name: string } | null
+  clientLead: { id: string; name: string; funnelId: string } | null
   /** A outra pessoa; só em 'direct'. */
   otherUser: ChatUser | null
   lastMessage: { body: string; kind: ChatMessageKind; authorName: string | null } | null

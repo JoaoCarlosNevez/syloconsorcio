@@ -64,6 +64,7 @@ type SummaryRow = {
   created_at: string
   client_lead_id: string | null
   client_lead_name: string | null
+  client_lead_funnel_id: string | null
   other_id: string | null
   other_name: string | null
   other_email: string | null
@@ -87,8 +88,12 @@ function toSummary(row: SummaryRow): ChatConversationSummary {
       createdAt: new Date(row.created_at),
     },
     clientLead:
-      row.client_lead_id && row.client_lead_name
-        ? { id: row.client_lead_id, name: row.client_lead_name }
+      row.client_lead_id && row.client_lead_name && row.client_lead_funnel_id
+        ? {
+            id: row.client_lead_id,
+            name: row.client_lead_name,
+            funnelId: row.client_lead_funnel_id,
+          }
         : null,
     otherUser:
       row.other_id && row.other_email
@@ -208,6 +213,7 @@ export class DrizzleChatRepository implements IChatRepository {
       SELECT c.id, c.organization_id, c.kind, c.client_id, c.direct_key,
         c.last_message_at, c.created_at,
         cl.id AS client_lead_id, cl.name AS client_lead_name,
+        cl.funnel_id AS client_lead_funnel_id,
         o.id AS other_id, o.name AS other_name, o.email AS other_email,
         o.avatar_url AS other_avatar_url,
         lm.body AS last_body, lm.kind AS last_kind,
@@ -223,7 +229,7 @@ export class DrizzleChatRepository implements IChatRepository {
         ) AS unread_count
       FROM ${chatConversations} c
       LEFT JOIN LATERAL (
-        SELECT l.id, l.name FROM ${leads} l
+        SELECT l.id, l.name, l.funnel_id FROM ${leads} l
         WHERE c.kind = 'client' AND l.organization_id = c.organization_id
           AND coalesce(l.client_id, l.id) = c.client_id
         ORDER BY l.created_at DESC LIMIT 1

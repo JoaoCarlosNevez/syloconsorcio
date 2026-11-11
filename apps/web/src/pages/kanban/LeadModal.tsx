@@ -58,6 +58,7 @@ import {
 import { AdhesionTab } from './AdhesionTab'
 import { FunnelChecklistTab } from './FunnelChecklistTab'
 import { LeadAttachments } from './LeadAttachments'
+import { LeadChatPanel } from './LeadChatPanel'
 import styles from './LeadModal.module.css'
 
 // ── Ícones (SVG inline — padrão do projeto) ────────────────────────────────────
@@ -1653,7 +1654,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
   }, [addingTag])
 
   const [activeTab, setActiveTab] = useState<
-    'qualificacao' | 'simulacoes' | 'adesao' | 'checklist' | 'anexos'
+    'qualificacao' | 'simulacoes' | 'adesao' | 'checklist' | 'anexos' | 'chat'
   >('qualificacao')
   const cota = parseCota(card.cota)
   // Índice real da etapa do lead — antes ficava travado em "Lead" (0)
@@ -2088,6 +2089,15 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                     >
                       Anexos
                     </button>
+                    <button
+                      type="button"
+                      className={
+                        activeTab === 'chat' ? `${styles.tab} ${styles.tabActive}` : styles.tab
+                      }
+                      onClick={() => setActiveTab('chat')}
+                    >
+                      Chat
+                    </button>
                   </div>
                   {activeTab === 'qualificacao' && !isFollowOnly && (
                     <div className={styles.editActions}>
@@ -2150,6 +2160,11 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                 {/* ── Aba: Anexos (só os documentos já anexados) ──────── */}
                 {activeTab === 'anexos' && (
                   <LeadAttachments organizationId={organizationId} leadId={card.id} />
+                )}
+
+                {/* ── Aba: Chat (conversa interna sobre o cliente) ───────── */}
+                {activeTab === 'chat' && organizationId && (
+                  <LeadChatPanel organizationId={organizationId} leadId={card.id} />
                 )}
 
                 {/* ── Aba: Simulações ─────────────────────────────────── */}

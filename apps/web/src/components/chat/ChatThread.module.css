@@ -1,0 +1,333 @@
+/* ── Conversa ────────────────────────────────────────────────────────────── */
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-bg-main);
+}
+
+.compact {
+  height: 520px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.empty {
+  margin: auto;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.empty strong {
+  color: var(--color-text-secondary);
+}
+
+.daySeparator {
+  align-self: center;
+  margin: var(--space-2) auto;
+  padding: 2px var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-subtle);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  width: fit-content;
+}
+
+.row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  max-width: 80%;
+}
+
+.rowMine {
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+.bubbleWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rowMine .bubbleWrap {
+  align-items: flex-end;
+}
+
+.author {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.bubble {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  border-bottom-left-radius: var(--radius-sm);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bubbleMine {
+  background: var(--color-accent-subtle);
+  border-color: var(--color-accent-border-badge);
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.time {
+  font-size: var(--font-size-nano);
+  color: var(--color-text-disabled);
+}
+
+/* ── Card de tarefa ──────────────────────────────────────────────────────── */
+
+.taskCard {
+  min-width: 240px;
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-warning-border);
+  background: var(--color-bg-card);
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.taskCardDone {
+  border-color: var(--color-success-border);
+}
+
+.taskHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  color: var(--color-warning-text);
+}
+
+.taskCardDone .taskHead {
+  color: var(--color-success-dark);
+}
+
+.taskLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.taskStatus {
+  margin-left: auto;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-warning-subtle);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.taskStatusDone {
+  background: var(--color-success-subtle);
+}
+
+.taskTitle {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.taskCardDone .taskTitle {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}
+
+.taskMeta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.taskActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-1);
+}
+
+.taskButton {
+  padding: 4px var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-accent-border-btn);
+  background: var(--color-accent-gradient);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.taskButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ── Caixa de escrever ───────────────────────────────────────────────────── */
+
+.composer {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+}
+
+.taskTrigger {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  height: 40px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-input);
+  background: var(--color-bg-card);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.taskTrigger:hover {
+  background: var(--color-bg-subtle);
+}
+
+.input {
+  flex: 1;
+  min-height: 40px;
+  max-height: 140px;
+  padding: var(--space-2-5) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-input);
+  background: var(--color-bg-card);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  resize: none;
+  field-sizing: content;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.sendButton {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-accent-border-btn);
+  background: var(--color-accent-gradient);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.sendButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── Modal "Pedir tarefa" ────────────────────────────────────────────────── */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.fieldInput {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-input);
+  background: var(--color-bg-card);
+  font: inherit;
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-primary);
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.formError {
+  font-size: var(--font-size-sm);
+  color: var(--color-error-text);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+@media (max-width: 640px) {
+  .messages {
+    padding: var(--space-3);
+  }
+
+  .row {
+    max-width: 92%;
+  }
+
+  .taskTrigger {
+    padding: 0 var(--space-2);
+  }
+}
