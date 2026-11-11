@@ -1019,3 +1019,19 @@
   min-height: 96px;
   resize: vertical;
 }
+
+/* "Pegar" uma tarefa da fila do setor, no lugar do horário */
+.chipButton {
+  flex: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-accent-border-btn);
+  background: var(--color-accent-gradient);
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chipButton:disabled {
+  opacity: 0.6;
+}

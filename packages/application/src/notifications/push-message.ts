@@ -2,6 +2,7 @@
 // format.ts no front), montada aqui porque o push sai do servidor. O toque
 // abre o app do celular (/m) na tela certa, já na organização da notificação.
 
+import { MEMBER_SECTOR_LABELS, isMemberSector } from '@sylocrm/domain'
 import type { NotificationMetadata } from '../ports/notification.repository'
 import type { PendingPush, PushMessage } from '../ports/push.ports'
 
@@ -35,11 +36,17 @@ function text(metadata: NotificationMetadata, key: string): string | null {
   return typeof value === 'string' ? value : null
 }
 
+function sectorName(value: string | number | boolean | null): string {
+  return typeof value === 'string' && isMemberSector(value) ? MEMBER_SECTOR_LABELS[value] : 'certo'
+}
+
 function headline(push: PendingPush): string {
   const actor = push.actorName ?? 'Alguém'
   switch (push.type) {
     case 'task.assigned':
-      return `${actor} atribuiu uma tarefa a você`
+      return push.metadata.sector
+        ? `${actor} mandou uma tarefa pro setor ${sectorName(push.metadata.sector)}`
+        : `${actor} atribuiu uma tarefa a você`
     case 'task.due_soon':
       return 'Tarefa vence em breve'
     case 'task.overdue':
@@ -62,7 +69,8 @@ function detail(push: PendingPush, now: Date): string | null {
   const dueAt = text(push.metadata, 'dueAt')
   switch (push.type) {
     case 'task.assigned':
-      return dueAt ? `Prazo: ${formatPushDate(dueAt, now)}` : null
+      if (dueAt) return `Prazo: ${formatPushDate(dueAt, now)}`
+      return push.metadata.sector ? 'Quem pegar primeiro fica com ela' : null
     case 'task.due_soon':
       return dueAt ? `Vence ${formatPushDate(dueAt, now)}` : null
     case 'task.overdue':

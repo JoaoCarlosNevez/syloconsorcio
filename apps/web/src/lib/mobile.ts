@@ -36,7 +36,7 @@ export function parseMoneyToCents(value: string): number {
   return Number.isFinite(reais) ? Math.round(reais * 100) : 0
 }
 
-export type TaskGroup = 'atrasadas' | 'hoje' | 'amanha' | 'depois'
+export type TaskGroup = 'atrasadas' | 'hoje' | 'amanha' | 'depois' | 'semPrazo'
 
 function startOfDay(date: Date): number {
   const copy = new Date(date)
@@ -47,6 +47,7 @@ function startOfDay(date: Date): number {
 const DAY_MS = 24 * 60 * 60 * 1000
 
 export function taskGroup(task: Pick<Task, 'dueAt'>, now: Date): TaskGroup {
+  if (task.dueAt === null) return 'semPrazo'
   const due = new Date(task.dueAt)
   if (due.getTime() < now.getTime()) return 'atrasadas'
   const today = startOfDay(now)
@@ -60,14 +61,24 @@ export function groupTasks<T extends Pick<Task, 'dueAt'>>(
   tasks: readonly T[],
   now: Date,
 ): Record<TaskGroup, T[]> {
-  const groups: Record<TaskGroup, T[]> = { atrasadas: [], hoje: [], amanha: [], depois: [] }
-  const sorted = [...tasks].sort((a, b) => a.dueAt.localeCompare(b.dueAt))
+  const groups: Record<TaskGroup, T[]> = {
+    atrasadas: [],
+    hoje: [],
+    amanha: [],
+    depois: [],
+    semPrazo: [],
+  }
+  // Sem prazo por último.
+  const sorted = [...tasks].sort((a, b) =>
+    a.dueAt === null ? 1 : b.dueAt === null ? -1 : a.dueAt.localeCompare(b.dueAt),
+  )
   for (const task of sorted) groups[taskGroup(task, now)].push(task)
   return groups
 }
 
-/** "14:30" pra hoje/amanhã; "05/11 14:30" pro resto. */
-export function taskTimeLabel(dueAt: string, now: Date): string {
+/** "14:30" pra hoje/amanhã; "05/11 14:30" pro resto; vazio sem prazo. */
+export function taskTimeLabel(dueAt: string | null, now: Date): string {
+  if (dueAt === null) return ''
   const date = new Date(dueAt)
   const time = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   const group = taskGroup({ dueAt }, now)

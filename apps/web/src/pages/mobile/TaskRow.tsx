@@ -1,10 +1,11 @@
 // Linha de tarefa do celular: concluir com um toque; tocar no texto abre o
-// lead da tarefa (quando tem).
+// lead da tarefa (quando tem). Tarefa na fila de um setor mostra "Pegar".
 
 import { Link } from 'react-router-dom'
 import { useActiveOrganization } from '../../hooks/useOrganization'
-import { useUpdateTask } from '../../hooks/useTasks'
+import { useClaimTask, useUpdateTask } from '../../hooks/useTasks'
 import { taskGroup, taskTimeLabel } from '../../lib/mobile'
+import { SECTOR_LABEL } from '../../lib/sectors'
 import type { Task } from '../../lib/tasks-api'
 import styles from './Mobile.module.css'
 import { TickIcon } from './icons'
@@ -12,14 +13,19 @@ import { TickIcon } from './icons'
 export function TaskRow({ task, now }: { task: Task; now: Date }) {
   const { organizationId } = useActiveOrganization()
   const updateTask = useUpdateTask(organizationId)
+  const claimTask = useClaimTask(organizationId)
   const done = task.status === 'concluida'
   const late = !done && taskGroup(task, now) === 'atrasadas'
+  const queued = task.assignedUserId === null && task.assignedSector !== null
 
   const body = (
     <>
       <span className={styles.rowTitle}>{task.title}</span>
       <div className={styles.rowSub}>
         <span className={styles.badge}>{task.type}</span>
+        {queued && task.assignedSector && (
+          <span className={styles.badge}>Fila {SECTOR_LABEL[task.assignedSector]}</span>
+        )}
       </div>
     </>
   )
@@ -47,9 +53,20 @@ export function TaskRow({ task, now }: { task: Task; now: Date }) {
       ) : (
         <div className={styles.grow}>{body}</div>
       )}
-      <span className={`${styles.time} ${late ? styles.late : ''}`}>
-        {taskTimeLabel(task.dueAt, now)}
-      </span>
+      {queued && !done ? (
+        <button
+          type="button"
+          className={styles.chipButton}
+          disabled={claimTask.isPending}
+          onClick={() => claimTask.mutate(task.id)}
+        >
+          {claimTask.isPending ? '…' : 'Pegar'}
+        </button>
+      ) : (
+        <span className={`${styles.time} ${late ? styles.late : ''}`}>
+          {taskTimeLabel(task.dueAt, now)}
+        </span>
+      )}
     </div>
   )
 }

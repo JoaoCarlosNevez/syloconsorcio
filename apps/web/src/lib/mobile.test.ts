@@ -59,6 +59,12 @@ describe('groupTasks', () => {
     expect(groups.amanha).toHaveLength(1)
     expect(groups.depois).toHaveLength(1)
   })
+
+  it('puts tasks without a deadline in their own group, never overdue', () => {
+    const groups = groupTasks([{ dueAt: null }, { dueAt: NOW.toISOString() }], NOW)
+    expect(groups.semPrazo).toEqual([{ dueAt: null }])
+    expect(groups.atrasadas).toHaveLength(0)
+  })
 })
 
 describe('hotLeads', () => {

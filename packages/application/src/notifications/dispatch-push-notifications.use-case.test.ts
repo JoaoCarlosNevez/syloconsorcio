@@ -160,6 +160,22 @@ describe('buildPushMessage', () => {
     })
   })
 
+  it('tells the sector a task is waiting in its queue', () => {
+    const message = buildPushMessage(
+      pending({
+        type: 'task.assigned',
+        actorName: 'Bianca',
+        title: 'Conferir RG',
+        metadata: { sector: 'adm', dueAt: null },
+        taskId: 'task-2',
+      }),
+      NOW,
+    )
+    expect(message.title).toBe('Bianca mandou uma tarefa pro setor ADM')
+    expect(message.body).toBe('Conferir RG · Quem pegar primeiro fica com ela')
+    expect(message.url).toBe('/m/tarefas?org=org-1')
+  })
+
   it('opens the lead when the client viewed the proposal', () => {
     const message = buildPushMessage(
       pending({ type: 'proposal.viewed', metadata: { leadId: 'lead-9' } }),
