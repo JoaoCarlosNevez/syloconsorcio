@@ -426,3 +426,24 @@ export type {
   GetMyMonthlyStatsInput,
   MyMonthlyStats,
 } from './dashboard/get-my-monthly-stats.use-case'
+
+// Chat interno
+export type {
+  ChatClientLead,
+  ChatConversationKind,
+  ChatConversationRecord,
+  ChatConversationSummary,
+  ChatMessageKind,
+  ChatMessageRecord,
+  ChatMessageTask,
+  ChatUser,
+  IChatRepository,
+  NewChatMessage,
+} from './ports/chat.repository'
+export {
+  CHAT_MESSAGE_MAX_LENGTH,
+  ChatUseCases,
+  directKeyFor,
+  isLeadInScope,
+} from './chat/chat.use-cases'
+export type { CreateChatTaskInput } from './chat/chat.use-cases'

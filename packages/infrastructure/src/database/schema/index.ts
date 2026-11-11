@@ -51,3 +51,5 @@ export type {
 } from './lead-adhesions'
 export { leadChecklistItems } from './lead-checklist'
 export type { DbLeadChecklistItem } from './lead-checklist'
+export { chatConversations, chatMessages, chatParticipants } from './chat'
+export type { DbChatConversation, DbChatMessage } from './chat'

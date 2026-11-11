@@ -43,3 +43,4 @@ export { DrizzleLeadChecklistRepository } from './database/repositories/drizzle-
 export { DrizzlePostSalePaymentRepository } from './database/repositories/drizzle-post-sale-payment.repository'
 export { DrizzleEngagementRepository } from './database/repositories/drizzle-engagement.repository'
 export { DrizzleManagementDashboardRepository } from './database/repositories/drizzle-management-dashboard.repository'
+export { DrizzleChatRepository } from './database/repositories/drizzle-chat.repository'

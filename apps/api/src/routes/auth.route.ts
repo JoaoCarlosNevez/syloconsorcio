@@ -57,6 +57,7 @@ const updateProfileSchema = z.object({
         'lead.received': z.boolean().default(true),
         'lead.offered': z.boolean().default(true),
         'proposal.viewed': z.boolean().default(true),
+        'chat.message': z.boolean().default(true),
       }),
       sound: z.boolean(),
     })

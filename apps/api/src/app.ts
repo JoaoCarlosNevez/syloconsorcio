@@ -14,6 +14,7 @@ import type {
   IActivityLogRepository,
   IApiKeyRepository,
   IAuthProvider,
+  IChatRepository,
   IEngagementRepository,
   IFunnelRepository,
   ILeadAdhesionRepository,
@@ -32,6 +33,8 @@ import type {
   IUserRepository,
 } from '@sylocrm/application'
 import {
+  ChatUseCases,
+  CreateTaskUseCase,
   DEFAULT_LEAD_QUEUE_TIMEOUT_MINUTES,
   NO_OP_ACTIVITY_LOG,
   NO_OP_NOTIFICATIONS,
@@ -41,6 +44,7 @@ import { env } from './config/env'
 import { activityRoute } from './routes/activity.route'
 import { apiKeysRoute } from './routes/api-keys.route'
 import { authRoute } from './routes/auth.route'
+import { chatRoute } from './routes/chat.route'
 import { dashboardRoute } from './routes/dashboard.route'
 import { funnelsRoute } from './routes/funnels.route'
 import { healthRoute } from './routes/health.route'
@@ -77,6 +81,31 @@ export interface BuildAppDeps {
   achievementsRepository: IAchievementsRepository
   /** Rejeita quando o banco não responde; usado pelo /health. */
   checkDatabase?: () => Promise<void>
+  /** Chat interno; sem banco, nenhuma conversa existe. */
+  chatRepository: IChatRepository
+}
+
+/** Sem banco: nenhuma conversa existe e nada é gravado. */
+const NO_OP_CHAT_REPOSITORY: IChatRepository = {
+  findOrCreateClientConversation: async () => {
+    throw new Error('Database not configured — cannot open conversations.')
+  },
+  findOrCreateDirectConversation: async () => {
+    throw new Error('Database not configured — cannot open conversations.')
+  },
+  findById: async () => null,
+  listClientLeads: async () => [],
+  listForUser: async () => [],
+  summarize: async () => null,
+  listMessages: async () => [],
+  addMessage: async () => {
+    throw new Error('Database not configured — cannot send messages.')
+  },
+  isParticipant: async () => false,
+  listParticipantIds: async () => [],
+  addParticipants: async () => {},
+  markRead: async () => {},
+  countUnreadConversations: async () => 0,
 }
 
 /** No-op auth provider used when Supabase env vars are not configured. */
@@ -318,6 +347,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     leadQueueRepository: deps?.leadQueueRepository ?? createNoOpLeadQueueRepository(),
     // Sem banco, ninguém tem ofensiva.
     streakRepository: deps?.streakRepository ?? { listActiveDays: async () => [] },
+    chatRepository: deps?.chatRepository ?? NO_OP_CHAT_REPOSITORY,
     achievementsRepository: deps?.achievementsRepository ?? {
       listWonSales: async () => [],
       firstPostSaleStageAt: async () => null,
@@ -472,6 +502,28 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     leadRepository: resolvedDeps.leadRepository,
     activityLogRepository: resolvedDeps.activityLogRepository,
     notificationRepository: resolvedDeps.notificationRepository,
+  })
+
+  app.register(chatRoute, {
+    authProvider: resolvedDeps.authProvider,
+    membershipRepository: resolvedDeps.membershipRepository,
+    organizationRepository: resolvedDeps.organizationRepository,
+    userRepository: resolvedDeps.userRepository,
+    chat: new ChatUseCases(
+      resolvedDeps.chatRepository,
+      resolvedDeps.leadRepository,
+      resolvedDeps.organizationRepository,
+      resolvedDeps.membershipRepository,
+      new CreateTaskUseCase(
+        resolvedDeps.taskRepository,
+        resolvedDeps.leadRepository,
+        resolvedDeps.organizationRepository,
+        resolvedDeps.activityLogRepository,
+        resolvedDeps.notificationRepository,
+        resolvedDeps.membershipRepository,
+      ),
+      resolvedDeps.notificationRepository,
+    ),
   })
 
   app.register(organizationsRoute, {

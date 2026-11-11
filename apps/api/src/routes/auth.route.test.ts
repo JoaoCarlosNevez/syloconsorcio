@@ -237,6 +237,7 @@ describe('PATCH /auth/me', () => {
         'lead.received': false,
         'lead.offered': false,
         'proposal.viewed': false,
+        'chat.message': false,
       },
       sound: false,
     }
