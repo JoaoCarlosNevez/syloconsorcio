@@ -22,6 +22,7 @@ function buildContext(permissions: Permission[]): AuthenticatedContext {
       organizationIconUrl: null,
       organizationSecondaryColor: null,
       tier: 'bronze',
+      sectors: [],
       role: Role.SELLER,
       dataScope: DataScope.OWN,
       permissions,

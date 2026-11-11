@@ -10,7 +10,12 @@
 //                      criou — ignora qualquer assignedUserId enviado.
 // PATCH  /tasks/:id  — atualiza campos e/ou status (task.update); reatribuir
 //                      (mudar assignedUserId) exige task.assign.
+// POST   /tasks/:id/claim — "Pegar" uma tarefa da fila de um setor (task.update):
+//                      quem pega vira o responsável. 409 se alguém pegou antes.
 // DELETE /tasks/:id  — remove uma tarefa dentro do escopo (task.delete).
+//
+// Tarefa pra um setor (assignedSector) vai pra fila do setor, sem pessoa; dueAt
+// null = sem prazo. Mandar pra um setor exige task.assign, como pra outra pessoa.
 //
 // Mesmo DataScope de leads (ver lead-scope.ts) — um Vendedor só vê/edita as
 // próprias tarefas, um Supervisor vê as da representação, etc.
@@ -26,12 +31,13 @@ import type {
   IUserRepository,
 } from '@sylocrm/application'
 import {
+  ClaimTaskUseCase,
   CreateTaskUseCase,
   DeleteTaskUseCase,
   ListTasksUseCase,
   UpdateTaskUseCase,
 } from '@sylocrm/application'
-import { Permission, ValidationError } from '@sylocrm/domain'
+import { MEMBER_SECTORS, type MemberSector, Permission, ValidationError } from '@sylocrm/domain'
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { AuthErrorCode } from '../auth/errors'
@@ -51,16 +57,20 @@ interface TasksRouteOptions {
 }
 
 // Espelhado no frontend (tarefas.types.ts) — mantenha em sincronia.
-const TASK_TYPES = ['Ligação', 'Reunião', 'Visita', 'Follow-up', 'Tarefa'] as const
+const TASK_TYPES = ['Ligação', 'Reunião', 'Visita', 'Follow-up', 'Tarefa', 'Pendência'] as const
 const TASK_STATUSES = ['pendente', 'em_andamento', 'concluida'] as const
+
+const sectorSchema = z.enum(MEMBER_SECTORS as [MemberSector, ...MemberSector[]])
 
 const createTaskSchema = z.object({
   leadId: z.string().uuid().nullable().optional(),
   assignedUserId: z.string().uuid().nullable().optional(),
+  assignedSector: sectorSchema.nullable().optional(),
   type: z.enum(TASK_TYPES),
   title: z.string().min(1),
   notes: z.string().nullable().optional(),
-  dueAt: z.string().datetime(),
+  // null = sem prazo.
+  dueAt: z.string().datetime().nullable(),
   // 'concluida' registra algo que já aconteceu ("Registrar agora" no lead).
   status: z.enum(TASK_STATUSES).optional(),
 })
@@ -72,7 +82,8 @@ const updateTaskSchema = z.object({
   title: z.string().min(1).optional(),
   notes: z.string().nullable().optional(),
   status: z.enum(TASK_STATUSES).optional(),
-  dueAt: z.string().datetime().optional(),
+  // null tira o prazo.
+  dueAt: z.string().datetime().nullable().optional(),
 })
 
 const listQuerySchema = z.object({
@@ -116,6 +127,12 @@ export const tasksRoute: FastifyPluginAsync<TasksRouteOptions> = async (fastify,
     options.organizationRepository,
     options.activityLogRepository,
     options.notificationRepository,
+    options.membershipRepository,
+  )
+  const claimTask = new ClaimTaskUseCase(
+    options.taskRepository,
+    options.organizationRepository,
+    options.activityLogRepository,
   )
   const updateTask = new UpdateTaskUseCase(
     options.taskRepository,
@@ -172,17 +189,19 @@ export const tasksRoute: FastifyPluginAsync<TasksRouteOptions> = async (fastify,
       // regra de POST /leads (ver leads.route.ts).
       const canAssign = context.currentMembership.permissions.includes(Permission.TASK_ASSIGN)
       const assignedUserId = canAssign ? parsed.data.assignedUserId : context.userId
+      const assignedSector = canAssign ? parsed.data.assignedSector : null
 
       try {
         const task = await createTask.execute({
           userId: context.userId,
           membership: context.currentMembership,
           leadId: parsed.data.leadId,
-          assignedUserId,
+          assignedUserId: assignedSector ? null : assignedUserId,
+          assignedSector,
           type: parsed.data.type,
           title: parsed.data.title,
           notes: parsed.data.notes,
-          dueAt: new Date(parsed.data.dueAt),
+          dueAt: parsed.data.dueAt ? new Date(parsed.data.dueAt) : null,
           status: parsed.data.status,
         })
         return reply.status(201).send(task)
@@ -226,13 +245,46 @@ export const tasksRoute: FastifyPluginAsync<TasksRouteOptions> = async (fastify,
         id: request.params.id,
         userId: context.userId,
         membership: context.currentMembership,
-        changes: { ...rest, ...(dueAt ? { dueAt: new Date(dueAt) } : {}) },
+        changes: {
+          ...rest,
+          ...(dueAt === undefined ? {} : { dueAt: dueAt === null ? null : new Date(dueAt) }),
+        },
       })
 
       if (!task) {
         return reply.status(404).send(taskNotFoundResponse())
       }
       return task
+    },
+  )
+
+  // ── POST /tasks/:id/claim ─────────────────────────────────────────────────
+  fastify.post<{ Params: { id: string } }>(
+    '/tasks/:id/claim',
+    { preHandler: [authMiddleware, tenantMiddleware, requirePermission(Permission.TASK_UPDATE)] },
+    async (request, reply) => {
+      const context = request.authContext as NonNullable<typeof request.authContext>
+
+      const result = await claimTask.execute({
+        id: request.params.id,
+        userId: context.userId,
+        membership: context.currentMembership,
+      })
+
+      if (result.ok) return result.task
+      if (result.reason === 'not_found') return reply.status(404).send(taskNotFoundResponse())
+      if (result.reason === 'already_claimed') {
+        return reply.status(409).send({
+          error: 'Outra pessoa já pegou esta tarefa.',
+          code: 'TASK_ALREADY_CLAIMED',
+          status: 409,
+        })
+      }
+      return reply.status(403).send({
+        error: 'Só quem é do setor pode pegar esta tarefa.',
+        code: AuthErrorCode.PERMISSION_DENIED,
+        status: 403,
+      })
     },
   )
 

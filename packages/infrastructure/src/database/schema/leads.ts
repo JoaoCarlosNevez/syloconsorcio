@@ -9,57 +9,68 @@
 // estágio: null enquanto o lead está ativo/aberto. Nenhum dos dois muda
 // `stageId` (reabrir um lead ganho/perdido não move ele de estágio).
 
-import { integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { funnelStages } from './funnel-stages'
 import { funnels } from './funnels'
 import { organizations } from './organizations'
 import { users } from './users'
 
-export const leads = pgTable('leads', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  organizationId: uuid('organization_id')
-    .notNull()
-    .references(() => organizations.id),
-  name: text('name').notNull(),
-  phone: text('phone').notNull(),
-  email: text('email'),
-  segment: text('segment').notNull(),
-  valueCents: integer('value_cents').notNull(),
-  quotaCount: integer('quota_count').notNull().default(1),
-  source: text('source').notNull(),
-  // Funil e estágio — dinâmicos, definidos por organização em Configurações
-  // (ver packages/application/src/ports/funnel.repository.ts). Todo lead
-  // pertence a exatamente um funil, num estágio desse funil.
-  funnelId: uuid('funnel_id')
-    .notNull()
-    .references(() => funnels.id),
-  stageId: uuid('stage_id')
-    .notNull()
-    .references(() => funnelStages.id),
-  assignedUserId: uuid('assigned_user_id').references(() => users.id),
-  stageChangedAt: timestamp('stage_changed_at', { withTimezone: true }).defaultNow().notNull(),
-  lostAt: timestamp('lost_at', { withTimezone: true }),
-  // Por que o lead foi perdido — texto livre, obrigatório ao marcar Perdido
-  // (UpdateLeadUseCase); limpo ao reabrir. Null nos perdidos antigos.
-  lostReason: text('lost_reason'),
-  // Marca "Ganho" — simétrico a lostAt, desacoplado do estágio (ver plano de
-  // funis). Null enquanto o lead não foi ganho.
-  wonAt: timestamp('won_at', { withTimezone: true }),
-  // Tags livres (ex: "Quente", "Frio") — um lead pode ter várias ao mesmo
-  // tempo, diferente de segment/source. Vêm de organizations.leadTags, mas
-  // não são validadas contra essa lista no banco (só sugeridas na UI).
-  tags: text('tags').array().notNull().default([]),
-  notes: text('notes'),
-  // Dados de qualificação do cliente (não do negócio) — compartilhados por
-  // todas as propostas/simulações desse lead, por isso ficam aqui e não em
-  // lead_proposals. Todos opcionais/nulos até o vendedor preencher a ficha.
-  profession: text('profession'),
-  incomeCents: integer('income_cents'),
-  maritalStatus: text('marital_status'),
-  cpf: text('cpf'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-})
+export const leads = pgTable(
+  'leads',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id),
+    name: text('name').notNull(),
+    phone: text('phone').notNull(),
+    email: text('email'),
+    segment: text('segment').notNull(),
+    valueCents: integer('value_cents').notNull(),
+    quotaCount: integer('quota_count').notNull().default(1),
+    source: text('source').notNull(),
+    // Funil e estágio — dinâmicos, definidos por organização em Configurações
+    // (ver packages/application/src/ports/funnel.repository.ts). Todo lead
+    // pertence a exatamente um funil, num estágio desse funil.
+    funnelId: uuid('funnel_id')
+      .notNull()
+      .references(() => funnels.id),
+    stageId: uuid('stage_id')
+      .notNull()
+      .references(() => funnelStages.id),
+    assignedUserId: uuid('assigned_user_id').references(() => users.id),
+    // Cliente: o lead original de uma venda. As cópias que o Ganho cria no ADM e
+    // no Pós-venda (e cada cota de uma venda com várias) apontam pro lead de
+    // origem, então tudo que é "do cliente" (ex: a conversa do chat interno)
+    // segue o cliente entre os funis. null = o próprio lead é a origem; a chave
+    // do cliente é coalesce(client_id, id). Sem FK de propósito: apagar o lead
+    // original não pode apagar nem bloquear as cópias.
+    clientId: uuid('client_id'),
+    stageChangedAt: timestamp('stage_changed_at', { withTimezone: true }).defaultNow().notNull(),
+    lostAt: timestamp('lost_at', { withTimezone: true }),
+    // Por que o lead foi perdido — texto livre, obrigatório ao marcar Perdido
+    // (UpdateLeadUseCase); limpo ao reabrir. Null nos perdidos antigos.
+    lostReason: text('lost_reason'),
+    // Marca "Ganho" — simétrico a lostAt, desacoplado do estágio (ver plano de
+    // funis). Null enquanto o lead não foi ganho.
+    wonAt: timestamp('won_at', { withTimezone: true }),
+    // Tags livres (ex: "Quente", "Frio") — um lead pode ter várias ao mesmo
+    // tempo, diferente de segment/source. Vêm de organizations.leadTags, mas
+    // não são validadas contra essa lista no banco (só sugeridas na UI).
+    tags: text('tags').array().notNull().default([]),
+    notes: text('notes'),
+    // Dados de qualificação do cliente (não do negócio) — compartilhados por
+    // todas as propostas/simulações desse lead, por isso ficam aqui e não em
+    // lead_proposals. Todos opcionais/nulos até o vendedor preencher a ficha.
+    profession: text('profession'),
+    incomeCents: integer('income_cents'),
+    maritalStatus: text('marital_status'),
+    cpf: text('cpf'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index('leads_client_id_idx').on(table.clientId)],
+)
 
 export type DbLead = typeof leads.$inferSelect
 export type NewDbLead = typeof leads.$inferInsert

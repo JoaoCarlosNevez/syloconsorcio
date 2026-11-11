@@ -45,6 +45,7 @@ import {
 } from '../../lib/proposal-installments'
 import { downloadProposalPdf } from '../../lib/proposal-pdf'
 import { describeProposalViews } from '../../lib/proposal-share'
+import { SECTOR_LABEL } from '../../lib/sectors'
 import type { CreateTaskPayload, Task, TaskType, UpdateTaskPayload } from '../../lib/tasks-api'
 import type { TeamMember } from '../../lib/team-api'
 import { TaskFormModal } from '../tarefas/TaskFormModal'
@@ -52,7 +53,7 @@ import { TaskModal } from '../tarefas/TaskModal'
 import {
   TYPE_BADGES as TASK_TYPE_BADGES,
   displayStatus,
-  formatTaskDateTime,
+  formatTaskDue,
 } from '../tarefas/tarefas.types'
 import { AdhesionTab } from './AdhesionTab'
 import { FunnelChecklistTab } from './FunnelChecklistTab'
@@ -1515,11 +1516,14 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
             <div className={styles.taskMeta}>
               <span className={urgent ? styles.taskTimeUrgent : styles.taskTime}>
                 <ClockIcon />
-                {formatTaskDateTime(task.dueAt)}
+                {formatTaskDue(task.dueAt)}
               </span>
               <span className={styles.taskMetaDot}>•</span>
               <span className={styles.taskMetaText}>
-                Resp: {resolveAgent(task.assignedUserId, members).name}
+                Resp:{' '}
+                {task.assignedUserId === null && task.assignedSector
+                  ? `Fila ${SECTOR_LABEL[task.assignedSector]}`
+                  : resolveAgent(task.assignedUserId, members).name}
               </span>
             </div>
           </div>

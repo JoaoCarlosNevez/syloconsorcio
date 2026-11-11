@@ -1,11 +1,11 @@
 // DeleteTaskUseCase — remove uma tarefa dentro do escopo do usuário.
 
 import type { MembershipContext } from '../auth/auth-context'
-import { resolveLeadScope } from '../leads/lead-scope'
 import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activity-log.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
 import type { ITaskRepository } from '../ports/task.repository'
 import type { UseCase } from '../ports/use-case'
+import { resolveTaskScope } from './task-scope'
 
 export interface DeleteTaskInput {
   id: string
@@ -21,7 +21,7 @@ export class DeleteTaskUseCase implements UseCase<DeleteTaskInput, boolean> {
   ) {}
 
   async execute(input: DeleteTaskInput): Promise<boolean> {
-    const scope = await resolveLeadScope(
+    const scope = await resolveTaskScope(
       input.membership,
       input.userId,
       this.organizationRepository,

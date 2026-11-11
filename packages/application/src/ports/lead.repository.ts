@@ -28,6 +28,9 @@ export interface LeadRecord {
   funnelId: string
   stageId: string
   assignedUserId: string | null
+  /** Lead de origem do cliente (cópias do Ganho no ADM/Pós-venda); null = o
+   * próprio lead é a origem. Chave do cliente: clientId ?? id. */
+  clientId: string | null
   stageChangedAt: Date
   /** Null enquanto o lead está ativo no funil; setado ao marcar como Perdido. */
   lostAt: Date | null
@@ -61,6 +64,8 @@ export interface NewLeadInput {
   funnelId: string
   stageId: string
   assignedUserId?: string | null
+  /** Só nas cópias (duplicateLeadRecord): o lead de origem do cliente. */
+  clientId?: string | null
   tags?: string[]
   notes?: string | null
   profession?: string | null

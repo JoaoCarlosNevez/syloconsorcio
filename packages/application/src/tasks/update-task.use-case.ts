@@ -5,12 +5,12 @@
 // quem criou a tarefa quando outra pessoa a conclui.
 
 import type { MembershipContext } from '../auth/auth-context'
-import { resolveLeadScope } from '../leads/lead-scope'
 import { type IActivityLogRepository, NO_OP_ACTIVITY_LOG } from '../ports/activity-log.repository'
 import { type INotificationRepository, NO_OP_NOTIFICATIONS } from '../ports/notification.repository'
 import type { IOrganizationRepository } from '../ports/organization.repository'
 import type { ITaskRepository, TaskRecord, UpdateTaskInput } from '../ports/task.repository'
 import type { UseCase } from '../ports/use-case'
+import { resolveTaskScope } from './task-scope'
 
 export interface UpdateTaskUseCaseInput {
   id: string
@@ -28,7 +28,7 @@ export class UpdateTaskUseCase implements UseCase<UpdateTaskUseCaseInput, TaskRe
   ) {}
 
   async execute(input: UpdateTaskUseCaseInput): Promise<TaskRecord | null> {
-    const scope = await resolveLeadScope(
+    const scope = await resolveTaskScope(
       input.membership,
       input.userId,
       this.organizationRepository,
@@ -79,6 +79,7 @@ export class UpdateTaskUseCase implements UseCase<UpdateTaskUseCaseInput, TaskRe
       title: updated.title,
     }
     if (
+      updated.assignedUserId &&
       before.assignedUserId !== updated.assignedUserId &&
       updated.assignedUserId !== input.userId
     ) {
@@ -86,7 +87,7 @@ export class UpdateTaskUseCase implements UseCase<UpdateTaskUseCaseInput, TaskRe
         ...notificationBase,
         userId: updated.assignedUserId,
         type: 'task.assigned',
-        metadata: { taskType: updated.type, dueAt: updated.dueAt.toISOString() },
+        metadata: { taskType: updated.type, dueAt: updated.dueAt?.toISOString() ?? null },
       })
     }
     if (

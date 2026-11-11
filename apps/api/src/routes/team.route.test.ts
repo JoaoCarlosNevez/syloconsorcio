@@ -26,6 +26,7 @@ const ADMIN_MEMBERSHIP: UserMembership = {
   organizationIconUrl: null,
   organizationSecondaryColor: null,
   tier: 'bronze',
+  sectors: [],
   role: Role.ADMIN,
   status: 'ACTIVE',
 }
@@ -37,6 +38,7 @@ const MANAGER_MEMBERSHIP: UserMembership = {
   organizationIconUrl: null,
   organizationSecondaryColor: null,
   tier: 'bronze',
+  sectors: [],
   role: Role.MANAGER,
   status: 'ACTIVE',
 }
@@ -48,6 +50,7 @@ const SELLER_MEMBERSHIP: UserMembership = {
   organizationIconUrl: null,
   organizationSecondaryColor: null,
   tier: 'bronze',
+  sectors: [],
   role: Role.SELLER,
   status: 'ACTIVE',
 }
@@ -117,6 +120,8 @@ function buildMembershipRepository(membership: UserMembership): IMembershipRepos
     updateSupervisor: vi.fn(),
     findTeamUserIds: vi.fn().mockResolvedValue([]),
     clearSupervisorLinks: vi.fn(),
+    updateSectors: vi.fn(),
+    findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
   }
 }
 
@@ -261,6 +266,8 @@ describe('DELETE /team/members/:userId', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
   }
 
@@ -460,6 +467,8 @@ describe('POST /team/members/:userId/reactivate', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
   }
 
@@ -613,6 +622,8 @@ describe('PATCH /team/members/:userId', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
   }
 
@@ -743,6 +754,8 @@ describe('PUT /team/members/:userId/tier', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
   }
 
@@ -878,6 +891,7 @@ describe('GET /team/goals/summary', () => {
         status: 'ACTIVE',
         salesGoalCents: 200_000_00,
         tier: 'bronze',
+        sectors: [],
         supervisorUserId: null,
       },
       {
@@ -889,6 +903,7 @@ describe('GET /team/goals/summary', () => {
         status: 'ACTIVE',
         salesGoalCents: 300_000_00,
         tier: 'bronze',
+        sectors: [],
         supervisorUserId: null,
       },
     ])
@@ -996,6 +1011,8 @@ describe('PUT /team/members/:userId/role', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
   }
 
@@ -1070,6 +1087,7 @@ describe('PUT /team/members/:userId/supervisor', () => {
         status: 'ACTIVE',
         salesGoalCents: null,
         tier: 'bronze',
+        sectors: [],
         supervisorUserId: null,
       },
       {
@@ -1081,6 +1099,7 @@ describe('PUT /team/members/:userId/supervisor', () => {
         status: 'ACTIVE',
         salesGoalCents: null,
         tier: 'bronze',
+        sectors: [],
         supervisorUserId: null,
       },
     ])

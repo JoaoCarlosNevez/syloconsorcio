@@ -8,6 +8,13 @@ export type { Task, TaskStatus, TaskType, TaskStatusFilter } from '../../lib/tas
 
 export type ViewMode = 'lista' | 'calendario'
 
+/** Tarefa com prazo — a única que entra no calendário. */
+export type DatedTask = Task & { dueAt: string }
+
+export function hasDueDate(task: Task): task is DatedTask {
+  return task.dueAt !== null
+}
+
 /** 'atrasada' é sempre calculado a partir de status+dueAt — nunca vem do
  * backend como status persistido (ver lib/tasks-api.ts). */
 export type DisplayStatus = TaskStatus | 'atrasada'
@@ -25,9 +32,17 @@ export const TYPE_BADGES: Record<TaskType, TypeBadge> = {
   Visita: { label: 'Visita', bg: '#ecfdf5', border: '#a7f3d0', color: '#047857' },
   'Follow-up': { label: 'Follow-up', bg: '#faf5ff', border: '#e9d5ff', color: '#7e22ce' },
   Tarefa: { label: 'Tarefa', bg: '#f3f4f6', border: '#e5e7eb', color: '#4b5563' },
+  Pendência: { label: 'Pendência', bg: '#fff7ed', border: '#fed7aa', color: '#c2410c' },
 }
 
-export const TASK_TYPES: TaskType[] = ['Ligação', 'Reunião', 'Visita', 'Follow-up', 'Tarefa']
+export const TASK_TYPES: TaskType[] = [
+  'Ligação',
+  'Reunião',
+  'Visita',
+  'Follow-up',
+  'Tarefa',
+  'Pendência',
+]
 
 export const STATUS_CFG: Record<
   DisplayStatus,
@@ -67,7 +82,13 @@ export const STATUS_CFG: Record<
  * partir do prazo, nunca lido de um campo persistido. */
 export function displayStatus(task: Pick<Task, 'status' | 'dueAt'>): DisplayStatus {
   if (task.status === 'concluida') return 'concluida'
+  if (task.dueAt === null) return task.status
   return new Date(task.dueAt).getTime() < Date.now() ? 'atrasada' : task.status
+}
+
+/** "05/11 · 14:30", ou "Sem prazo". */
+export function formatTaskDue(iso: string | null): string {
+  return iso === null ? 'Sem prazo' : formatTaskDateTime(iso)
 }
 
 export function formatTaskDateTime(iso: string): string {

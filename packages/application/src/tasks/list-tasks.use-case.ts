@@ -5,10 +5,10 @@
 // resolução de escopo de dados e da paginação server-side (regra P0).
 
 import type { MembershipContext } from '../auth/auth-context'
-import { resolveLeadScope } from '../leads/lead-scope'
 import type { IOrganizationRepository } from '../ports/organization.repository'
 import type { ITaskRepository, TaskListPage, TaskStatusFilter } from '../ports/task.repository'
 import type { UseCase } from '../ports/use-case'
+import { resolveTaskScope } from './task-scope'
 
 const MAX_PAGE_SIZE = 100
 const DEFAULT_PAGE_SIZE = 25
@@ -37,7 +37,7 @@ export class ListTasksUseCase implements UseCase<ListTasksInput, TaskListPage> {
     const page = Math.max(1, input.page ?? 1)
     const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, input.pageSize ?? DEFAULT_PAGE_SIZE))
 
-    const scope = await resolveLeadScope(
+    const scope = await resolveTaskScope(
       input.membership,
       input.userId,
       this.organizationRepository,

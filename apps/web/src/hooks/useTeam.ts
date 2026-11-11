@@ -2,6 +2,7 @@
 
 import type { Tier } from '@sylocrm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { Sector } from '../lib/sectors'
 import {
   type InviteTeamMemberPayload,
   type TeamMember,
@@ -13,6 +14,7 @@ import {
   updateMyPersonalGoal,
   updateTeamMemberRole,
   updateTeamMemberSalesGoal,
+  updateTeamMemberSectors,
   updateTeamMemberSupervisor,
   updateTeamMemberTier,
 } from '../lib/team-api'
@@ -99,6 +101,20 @@ export function useUpdateTeamMemberSupervisor(organizationId: string | null) {
       queryClient.invalidateQueries({ queryKey: ['team', 'members', organizationId] })
       // O time do Supervisor muda o que ele enxerga e os números do painel.
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'management', organizationId] })
+    },
+  })
+}
+
+export function useUpdateTeamMemberSectors(organizationId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ userId, sectors }: { userId: string; sectors: Sector[] }) =>
+      updateTeamMemberSectors(organizationId as string, userId, sectors),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team', 'members', organizationId] })
+      // Os setores do próprio usuário vêm de /auth/memberships.
+      queryClient.invalidateQueries({ queryKey: ['auth', 'memberships'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks', organizationId] })
     },
   })
 }

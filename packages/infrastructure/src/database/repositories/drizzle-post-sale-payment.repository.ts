@@ -92,7 +92,10 @@ export class DrizzlePostSalePaymentRepository implements IPostSalePaymentReposit
           ne(tasks.status, 'concluida'),
         ),
       )
-    return rows.flatMap((row) => (row.autoKey ? [{ ...row, autoKey: row.autoKey }] : []))
+    // Tarefas automáticas sempre têm chave e prazo; o filtro só estreita o tipo.
+    return rows.flatMap((row) =>
+      row.autoKey && row.dueAt ? [{ ...row, autoKey: row.autoKey, dueAt: row.dueAt }] : [],
+    )
   }
 
   async completeTasks(taskIds: string[], completedAt: Date): Promise<void> {

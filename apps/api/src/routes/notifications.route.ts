@@ -82,7 +82,7 @@ export const notificationsRoute: FastifyPluginAsync<NotificationsRouteOptions> =
           task: item.task
             ? {
                 ...item.task,
-                dueAt: item.task.dueAt.toISOString(),
+                dueAt: item.task.dueAt?.toISOString() ?? null,
                 createdAt: item.task.createdAt.toISOString(),
                 updatedAt: item.task.updatedAt.toISOString(),
               }

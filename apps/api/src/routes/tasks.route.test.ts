@@ -35,6 +35,7 @@ const SELLER_MEMBERSHIP: UserMembership = {
   organizationIconUrl: null,
   organizationSecondaryColor: null,
   tier: 'bronze',
+  sectors: [],
   role: Role.SELLER,
   status: 'ACTIVE',
 }
@@ -46,6 +47,7 @@ const MANAGER_MEMBERSHIP: UserMembership = {
   organizationIconUrl: null,
   organizationSecondaryColor: null,
   tier: 'bronze',
+  sectors: [],
   role: Role.MANAGER,
   status: 'ACTIVE',
 }
@@ -65,6 +67,7 @@ const SAMPLE_LEAD: LeadRecord = {
   funnelId: 'funnel-01',
   stageId: 'stage-01',
   assignedUserId: IDENTITY.id,
+  clientId: null,
   stageChangedAt: new Date('2026-01-01T00:00:00Z'),
   lostAt: null,
   lostReason: null,
@@ -85,6 +88,7 @@ const SAMPLE_TASK: TaskRecord = {
   leadId: null,
   assignedUserId: IDENTITY.id,
   createdByUserId: IDENTITY.id,
+  assignedSector: null,
   type: 'Tarefa',
   title: 'Ligar pro cliente',
   notes: null,
@@ -127,6 +131,8 @@ function buildMembershipRepository(
     updateSupervisor: vi.fn(),
     findTeamUserIds: vi.fn().mockResolvedValue([]),
     clearSupervisorLinks: vi.fn(),
+    updateSectors: vi.fn(),
+    findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
   }
 }
 
@@ -164,6 +170,7 @@ function buildTaskRepository(overrides: Partial<ITaskRepository> = {}): ITaskRep
     findById: vi.fn().mockResolvedValue(SAMPLE_TASK),
     create: vi.fn().mockResolvedValue(SAMPLE_TASK),
     update: vi.fn().mockResolvedValue(SAMPLE_TASK),
+    claim: vi.fn().mockResolvedValue(null),
     delete: vi.fn().mockResolvedValue(true),
     count: vi.fn().mockResolvedValue(0),
     ...overrides,

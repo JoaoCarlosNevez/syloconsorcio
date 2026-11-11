@@ -7,7 +7,7 @@
 // Constraint UNIQUE (user_id, organization_id): um usuário não pode ter
 // dois memberships na mesma organização.
 
-import { bigint, pgEnum, pgTable, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import { bigint, pgEnum, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 import { organizations } from './organizations'
 import { users } from './users'
 
@@ -56,6 +56,12 @@ export const organizationMemberships = pgTable(
     supervisorUserId: uuid('supervisor_user_id').references(() => users.id, {
       onDelete: 'set null',
     }),
+    // Setores do membro nesta organização (MemberSector em @sylocrm/domain:
+    // 'vendas', 'adm', 'pos_venda'), definidos em Configurações → Equipe.
+    // Recebem as tarefas mandadas pro setor e acompanham a conversa dos
+    // clientes que estão no ADM/Pós-venda. Nasce pelo papel
+    // (defaultSectorsForRole).
+    sectors: text('sectors').array().notNull().default([]),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },

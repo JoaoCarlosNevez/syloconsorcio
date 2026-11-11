@@ -52,6 +52,7 @@ const SELLER_MEMBERSHIP: UserMembership = {
   organizationIconUrl: null,
   organizationSecondaryColor: null,
   tier: 'bronze',
+  sectors: [],
   role: Role.SELLER,
   status: 'ACTIVE',
 }
@@ -63,6 +64,7 @@ const MANAGER_MEMBERSHIP: UserMembership = {
   organizationIconUrl: null,
   organizationSecondaryColor: null,
   tier: 'bronze',
+  sectors: [],
   role: Role.MANAGER,
   status: 'ACTIVE',
 }
@@ -74,6 +76,7 @@ const ADMIN_MEMBERSHIP: UserMembership = {
   organizationIconUrl: null,
   organizationSecondaryColor: null,
   tier: 'bronze',
+  sectors: [],
   role: Role.ADMIN,
   status: 'ACTIVE',
 }
@@ -91,6 +94,7 @@ const SAMPLE_LEAD: LeadRecord = {
   funnelId: FUNNEL_ID,
   stageId: LEAD_STAGE_ID,
   assignedUserId: null,
+  clientId: null,
   stageChangedAt: new Date('2026-01-01T00:00:00Z'),
   lostAt: null,
   lostReason: null,
@@ -197,6 +201,8 @@ function buildMembershipRepository(
     updateSupervisor: vi.fn(),
     findTeamUserIds: vi.fn().mockResolvedValue([]),
     clearSupervisorLinks: vi.fn(),
+    updateSectors: vi.fn(),
+    findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
   }
 }
 

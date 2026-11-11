@@ -9,8 +9,15 @@ import { AppLayout } from '../../components/layout/AppLayout'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { useLeadsQuery } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
-import { useCreateTask, useDeleteTask, useTasksQuery, useUpdateTask } from '../../hooks/useTasks'
+import {
+  useClaimTask,
+  useCreateTask,
+  useDeleteTask,
+  useTasksQuery,
+  useUpdateTask,
+} from '../../hooks/useTasks'
 import { useTeamMembersQuery } from '../../hooks/useTeam'
+import { SECTOR_LABEL } from '../../lib/sectors'
 import type {
   CreateTaskPayload,
   Task,
@@ -21,11 +28,14 @@ import styles from './TarefasPage.module.css'
 import { TaskFormModal } from './TaskFormModal'
 import { TaskModal } from './TaskModal'
 import {
+  type DatedTask,
   STATUS_CFG,
   TYPE_BADGES,
   type ViewMode,
   displayStatus,
   formatTaskDateTime,
+  formatTaskDue,
+  hasDueDate,
 } from './tarefas.types'
 
 // ── SVG Icons ─────────────────────────────────────────────────────────────────
@@ -202,11 +212,16 @@ function ListView({
   leadNameById,
   onTaskClick,
   onToggleComplete,
+  onClaim,
+  claimingId,
 }: {
   tasks: Task[]
   leadNameById: Map<string, string>
   onTaskClick: (task: Task) => void
   onToggleComplete: (task: Task) => void
+  /** Pegar uma tarefa da fila do setor. */
+  onClaim: (task: Task) => void
+  claimingId: string | null
 }) {
   return (
     <div className={styles.viewContent}>
@@ -265,6 +280,11 @@ function ListView({
                 >
                   {badge.label}
                 </span>
+                {task.assignedUserId === null && task.assignedSector && (
+                  <span className={styles.queueBadge}>
+                    Fila {SECTOR_LABEL[task.assignedSector]}
+                  </span>
+                )}
                 <span className={done ? styles.taskTitleDone : styles.taskTitle}>{task.title}</span>
               </div>
               <div className={`${styles.listCell} ${styles.lColLead}`}>
@@ -275,13 +295,26 @@ function ListView({
               </div>
               <div className={`${styles.listCell} ${styles.lColDate}`}>
                 <span className={done ? styles.dateDone : styles.date}>
-                  {formatTaskDateTime(task.dueAt)}
+                  {formatTaskDue(task.dueAt)}
                 </span>
               </div>
               <div className={`${styles.listCell} ${styles.lColStatus}`}>
                 <StatusBadge task={task} />
               </div>
-              <div className={`${styles.listCell} ${styles.lColActions}`} />
+              <div className={`${styles.listCell} ${styles.lColActions}`}>
+                {task.assignedUserId === null && !done && (
+                  // biome-ignore lint/a11y/useKeyWithClickEvents: atalho dentro da linha clicável; pegar também está no TaskModal
+                  <span
+                    className={styles.claimButton}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (claimingId !== task.id) onClaim(task)
+                    }}
+                  >
+                    {claimingId === task.id ? 'Pegando…' : 'Pegar'}
+                  </span>
+                )}
+              </div>
             </button>
           )
         })}
@@ -312,15 +345,20 @@ interface CalCell {
   date: number
   isCurrentMonth: boolean
   isToday: boolean
-  events: Task[]
+  events: DatedTask[]
   extraCount: number
   /** Dia completo (só nos dias do mês exibido) — abre o painel do dia. */
   day: Date | null
   /** Todas as tarefas do dia, em ordem de horário. */
-  allEvents: Task[]
+  allEvents: DatedTask[]
 }
 
-function buildCalendarGrid(year: number, month: number, today: Date, tasks: Task[]): CalCell[] {
+function buildCalendarGrid(
+  year: number,
+  month: number,
+  today: Date,
+  tasks: DatedTask[],
+): CalCell[] {
   const firstDay = new Date(year, month, 1)
   const firstDow = firstDay.getDay() // 0=Sun
   const startOffset = firstDow === 0 ? 6 : firstDow - 1
@@ -328,7 +366,7 @@ function buildCalendarGrid(year: number, month: number, today: Date, tasks: Task
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const prevMonthLastDay = new Date(year, month, 0).getDate()
 
-  const eventMap = new Map<string, Task[]>()
+  const eventMap = new Map<string, DatedTask[]>()
   for (const task of tasks) {
     const d = new Date(task.dueAt)
     const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
@@ -393,7 +431,7 @@ function DayPanel({
   onClose,
 }: {
   day: Date
-  tasks: Task[]
+  tasks: DatedTask[]
   leadNameById: Map<string, string>
   onTaskClick: (task: Task) => void
   onClose: () => void
@@ -483,7 +521,7 @@ function DayPanel({
 }
 
 function CalendarView({
-  tasks,
+  tasks: allTasks,
   leadNameById,
   onTaskClick,
 }: {
@@ -491,6 +529,8 @@ function CalendarView({
   leadNameById: Map<string, string>
   onTaskClick: (task: Task) => void
 }) {
+  // Sem prazo não tem dia no calendário — fica só na lista.
+  const tasks = useMemo(() => allTasks.filter(hasDueDate), [allTasks])
   const today = useMemo(() => new Date(), [])
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
@@ -741,6 +781,23 @@ export function TarefasPage() {
   const createTask = useCreateTask(organizationId)
   const updateTask = useUpdateTask(organizationId)
   const deleteTask = useDeleteTask(organizationId)
+  const claimTask = useClaimTask(organizationId)
+
+  function handleClaim(task: Task) {
+    claimTask.mutate(task.id, {
+      onSuccess: (claimed) => {
+        toast({ type: 'success', title: 'Tarefa é sua agora' })
+        if (selectedTask?.id === claimed.id) setSelectedTask(claimed)
+      },
+      onError: (error) => {
+        toast({
+          type: 'error',
+          title: 'Não foi possível pegar a tarefa',
+          description: error instanceof Error ? error.message : undefined,
+        })
+      },
+    })
+  }
 
   function handleToggleComplete(task: Task) {
     updateTask.mutate(
@@ -809,6 +866,7 @@ export function TarefasPage() {
           leadName={selectedTask.leadId ? leadNameById.get(selectedTask.leadId) : undefined}
           members={members}
           onClose={() => setSelectedTask(null)}
+          onClaim={() => handleClaim(selectedTask)}
           onConcluir={() => handleConcluir(selectedTask)}
           onExcluir={() => handleExcluir(selectedTask)}
           onEdit={() => {
@@ -922,6 +980,8 @@ export function TarefasPage() {
             leadNameById={leadNameById}
             onTaskClick={setSelectedTask}
             onToggleComplete={handleToggleComplete}
+            onClaim={handleClaim}
+            claimingId={claimTask.isPending ? (claimTask.variables ?? null) : null}
           />
         )}
         {!isLoading && view === 'calendario' && (

@@ -113,6 +113,8 @@ function buildMembershipRepository(): IMembershipRepository {
     updateSupervisor: vi.fn(),
     findTeamUserIds: vi.fn().mockResolvedValue([]),
     clearSupervisorLinks: vi.fn(),
+    updateSectors: vi.fn(),
+    findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
   }
 }
 

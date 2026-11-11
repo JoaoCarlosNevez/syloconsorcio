@@ -35,7 +35,7 @@ function buildTaskRepository(overrides: Partial<ITaskRepository> = {}): ITaskRep
 }
 
 describe('ListTasksUseCase', () => {
-  it('restricts by assignedUserId for DataScope.OWN (Vendedor)', async () => {
+  it('restricts to the own tasks and sector queue for DataScope.OWN (Vendedor)', async () => {
     const membership: MembershipContext = {
       organizationId: ORG_ID,
       organizationType: OrganizationType.REPRESENTACAO,
@@ -43,6 +43,7 @@ describe('ListTasksUseCase', () => {
       organizationIconUrl: null,
       organizationSecondaryColor: null,
       tier: 'bronze',
+      sectors: ['vendas'],
       role: Role.SELLER,
       dataScope: DataScope.OWN,
       permissions: [],
@@ -53,7 +54,11 @@ describe('ListTasksUseCase', () => {
     await useCase.execute({ userId: USER_ID, membership })
 
     expect(taskRepository.list).toHaveBeenCalledWith(
-      expect.objectContaining({ organizationIds: [ORG_ID], assignedUserId: USER_ID }),
+      expect.objectContaining({
+        organizationIds: [ORG_ID],
+        ownUserId: USER_ID,
+        ownSectors: ['vendas'],
+      }),
       1,
       25,
     )

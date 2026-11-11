@@ -13,8 +13,15 @@ import type {
   TeamMember,
   UserMembership,
 } from '@sylocrm/application'
-import type { MemberTier, OrganizationType, Role } from '@sylocrm/domain'
-import { and, eq, or } from 'drizzle-orm'
+import {
+  type MemberSector,
+  type MemberTier,
+  type OrganizationType,
+  type Role,
+  defaultSectorsForRole,
+  isMemberSector,
+} from '@sylocrm/domain'
+import { and, arrayContains, eq, or } from 'drizzle-orm'
 import type { Database } from '../client'
 import { organizationMemberships, organizations, users } from '../schema'
 
@@ -27,7 +34,13 @@ const MEMBERSHIP_COLUMNS = {
   role: organizationMemberships.role,
   status: organizationMemberships.status,
   tier: organizationMemberships.tier,
+  sectors: organizationMemberships.sectors,
 } as const
+
+/** Ignora valores fora de MemberSector que estejam no banco. */
+function toSectors(values: string[]): MemberSector[] {
+  return values.filter(isMemberSector)
+}
 
 function toUserMembership(row: {
   organizationId: string
@@ -38,6 +51,7 @@ function toUserMembership(row: {
   role: string
   status: string
   tier: MemberTier
+  sectors: string[]
 }): UserMembership {
   const branding = row.organizationBranding as OrganizationBranding | null
   return {
@@ -54,6 +68,7 @@ function toUserMembership(row: {
     role: row.role as Role,
     status: row.status as UserMembership['status'],
     tier: row.tier,
+    sectors: toSectors(row.sectors),
   }
 }
 
@@ -128,6 +143,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         salesGoalCents: organizationMemberships.salesGoalCents,
         tier: organizationMemberships.tier,
         supervisorUserId: organizationMemberships.supervisorUserId,
+        sectors: organizationMemberships.sectors,
       })
       .from(organizationMemberships)
       .innerJoin(users, eq(organizationMemberships.userId, users.id))
@@ -138,7 +154,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         ),
       )
 
-    return rows.map((row) => ({ ...row, role: row.role as Role }))
+    return rows.map((row) => ({ ...row, role: row.role as Role, sectors: toSectors(row.sectors) }))
   }
 
   async findByOrganizationId(organizationId: string): Promise<TeamMember[]> {
@@ -153,12 +169,13 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         salesGoalCents: organizationMemberships.salesGoalCents,
         tier: organizationMemberships.tier,
         supervisorUserId: organizationMemberships.supervisorUserId,
+        sectors: organizationMemberships.sectors,
       })
       .from(organizationMemberships)
       .innerJoin(users, eq(organizationMemberships.userId, users.id))
       .where(eq(organizationMemberships.organizationId, organizationId))
 
-    return rows.map((row) => ({ ...row, role: row.role as Role }))
+    return rows.map((row) => ({ ...row, role: row.role as Role, sectors: toSectors(row.sectors) }))
   }
 
   async findAllActive(): Promise<PlatformTeamMember[]> {
@@ -173,6 +190,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         salesGoalCents: organizationMemberships.salesGoalCents,
         tier: organizationMemberships.tier,
         supervisorUserId: organizationMemberships.supervisorUserId,
+        sectors: organizationMemberships.sectors,
         organizationId: organizationMemberships.organizationId,
         organizationName: organizations.name,
       })
@@ -181,7 +199,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
       .innerJoin(organizations, eq(organizationMemberships.organizationId, organizations.id))
       .where(eq(organizationMemberships.status, 'ACTIVE'))
 
-    return rows.map((row) => ({ ...row, role: row.role as Role }))
+    return rows.map((row) => ({ ...row, role: row.role as Role, sectors: toSectors(row.sectors) }))
   }
 
   async findAll(): Promise<PlatformTeamMember[]> {
@@ -196,6 +214,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         salesGoalCents: organizationMemberships.salesGoalCents,
         tier: organizationMemberships.tier,
         supervisorUserId: organizationMemberships.supervisorUserId,
+        sectors: organizationMemberships.sectors,
         organizationId: organizationMemberships.organizationId,
         organizationName: organizations.name,
       })
@@ -203,7 +222,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
       .innerJoin(users, eq(organizationMemberships.userId, users.id))
       .innerJoin(organizations, eq(organizationMemberships.organizationId, organizations.id))
 
-    return rows.map((row) => ({ ...row, role: row.role as Role }))
+    return rows.map((row) => ({ ...row, role: row.role as Role, sectors: toSectors(row.sectors) }))
   }
 
   async create(input: NewMembershipInput): Promise<void> {
@@ -211,6 +230,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
       userId: input.userId,
       organizationId: input.organizationId,
       role: input.role,
+      sectors: defaultSectorsForRole(input.role),
     })
   }
 
@@ -297,6 +317,36 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
           ),
         ),
       )
+  }
+
+  async updateSectors(
+    userId: string,
+    organizationId: string,
+    sectors: MemberSector[],
+  ): Promise<void> {
+    await this.db
+      .update(organizationMemberships)
+      .set({ sectors, updatedAt: new Date() })
+      .where(
+        and(
+          eq(organizationMemberships.userId, userId),
+          eq(organizationMemberships.organizationId, organizationId),
+        ),
+      )
+  }
+
+  async findActiveUserIdsBySector(organizationId: string, sector: MemberSector): Promise<string[]> {
+    const rows = await this.db
+      .select({ userId: organizationMemberships.userId })
+      .from(organizationMemberships)
+      .where(
+        and(
+          eq(organizationMemberships.organizationId, organizationId),
+          eq(organizationMemberships.status, 'ACTIVE'),
+          arrayContains(organizationMemberships.sectors, [sector]),
+        ),
+      )
+    return rows.map((row) => row.userId)
   }
 
   async updateTier(userId: string, organizationId: string, tier: MemberTier): Promise<void> {

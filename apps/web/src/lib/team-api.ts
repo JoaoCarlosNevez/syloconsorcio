@@ -3,6 +3,7 @@
 
 import type { Tier } from '@sylocrm/ui'
 import { apiClient } from './api-client'
+import type { Sector } from './sectors'
 
 export type InvitableRole = 'MANAGER' | 'BACKOFFICE' | 'SELLER'
 
@@ -19,6 +20,8 @@ export interface TeamMember {
   tier: Tier
   /** Supervisor do Vendedor (só o Dono define); null = sem supervisor. */
   supervisorUserId: string | null
+  /** Setores do membro (recebe as tarefas mandadas pro setor). */
+  sectors: Sector[]
 }
 
 export interface InviteTeamMemberPayload {
@@ -64,6 +67,19 @@ export function updateTeamMemberTier(
   tier: Tier,
 ): Promise<void> {
   return apiClient.put<void>(`/team/members/${userId}/tier`, { tier }, { organizationId })
+}
+
+/** Define os setores do membro (só Dono — team.role_update). */
+export function updateTeamMemberSectors(
+  organizationId: string,
+  userId: string,
+  sectors: Sector[],
+): Promise<{ sectors: Sector[] }> {
+  return apiClient.put<{ sectors: Sector[] }>(
+    `/team/members/${userId}/sectors`,
+    { sectors },
+    { organizationId },
+  )
 }
 
 /** Muda o papel do membro (só Dono/Super Admin — ver team.route.ts). */

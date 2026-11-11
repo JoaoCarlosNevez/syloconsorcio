@@ -54,6 +54,7 @@ const LEAD: LeadRecord = {
   funnelId: 'funnel-01',
   stageId: 'stage-01',
   assignedUserId: null,
+  clientId: null,
   stageChangedAt: new Date('2026-09-29T12:00:00Z'),
   lostAt: null,
   lostReason: null,

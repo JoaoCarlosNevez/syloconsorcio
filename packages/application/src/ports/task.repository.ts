@@ -8,6 +8,8 @@
 // opcional pra DataScope.OWN) é idêntica: um Vendedor só vê as próprias
 // tarefas, um Supervisor vê as da representação, etc.
 
+import type { MemberSector } from '@sylocrm/domain'
+
 export type TaskStatus = 'pendente' | 'em_andamento' | 'concluida'
 
 /** 'atrasada' é um filtro derivado (status != 'concluida' AND dueAt no
@@ -20,13 +22,18 @@ export interface TaskRecord {
   id: string
   organizationId: string
   leadId: string | null
-  assignedUserId: string
+  /** null = tarefa na fila de um setor, ainda sem ninguém (ver assignedSector). */
+  assignedUserId: string | null
+  /** Setor pra onde a tarefa foi mandada; continua registrado depois que
+   * alguém pega. null nas tarefas mandadas direto pra uma pessoa. */
+  assignedSector: MemberSector | null
   createdByUserId: string
   type: string
   title: string
   notes: string | null
   status: TaskStatus
-  dueAt: Date
+  /** null = sem prazo (pedidos do chat): nunca fica atrasada. */
+  dueAt: Date | null
   /** Quando foi concluída; null enquanto não concluída. */
   completedAt: Date | null
   createdAt: Date
@@ -36,12 +43,14 @@ export interface TaskRecord {
 export interface NewTaskInput {
   organizationId: string
   leadId?: string | null
-  assignedUserId: string
+  /** Pessoa responsável; null quando vai pra fila de um setor. */
+  assignedUserId: string | null
+  assignedSector?: MemberSector | null
   createdByUserId: string
   type: string
   title: string
   notes?: string | null
-  dueAt: Date
+  dueAt: Date | null
   /** Padrão 'pendente'. 'concluida' registra algo que já aconteceu (ex: a
    * visita que o cliente acabou de fazer). */
   status?: TaskStatus
@@ -54,14 +63,19 @@ export interface UpdateTaskInput {
   title?: string
   notes?: string | null
   status?: TaskStatus
-  dueAt?: Date
+  /** null tira o prazo. */
+  dueAt?: Date | null
 }
 
 export interface TaskScopeFilter {
   /** Organizações visíveis nesta requisição — resolvidas a partir do DataScope. */
   organizationIds: string[]
-  /** Presente apenas quando DataScope.OWN — restringe às tarefas do próprio usuário. */
+  /** Só as tarefas atribuídas a este usuário ("minhas tarefas"). */
   assignedUserId?: string
+  /** DataScope.OWN (ver task-scope.ts): as tarefas do usuário, as que ele
+   * pediu pra outra pessoa e as da fila dos setores dele (ownSectors). */
+  ownUserId?: string
+  ownSectors?: readonly MemberSector[]
   /** Supervisor com time — atribuídas a um destes usuários ou sem responsável. */
   teamUserIds?: string[]
 }
@@ -109,6 +123,10 @@ export interface ITaskRepository {
 
   /** Retorna null se a tarefa não existir ou estiver fora do escopo. */
   update(id: string, scope: TaskScopeFilter, input: UpdateTaskInput): Promise<TaskRecord | null>
+
+  /** Fila de setor: atribui a tarefa ao usuário só se ela ainda estiver sem
+   * ninguém (dois pegando ao mesmo tempo: o segundo recebe null). */
+  claim(id: string, scope: TaskScopeFilter, userId: string): Promise<TaskRecord | null>
 
   /** Retorna false se a tarefa não existir ou estiver fora do escopo. */
   delete(id: string, scope: TaskScopeFilter): Promise<boolean>

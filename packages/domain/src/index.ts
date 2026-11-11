@@ -12,3 +12,4 @@ export { AuthorizationError } from './errors/authorization-error'
 
 export * from './auth'
 export * from './team/member-tier'
+export * from './team/member-sector'

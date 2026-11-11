@@ -295,6 +295,27 @@
       "when": 1793293866179,
       "tag": "0041_adm_checado_enviado",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1793296997145,
+      "tag": "0042_push_subscriptions",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1793327141998,
+      "tag": "0043_adm_enviado_before_checado",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1794364713757,
+      "tag": "0044_tasks_sectors_client",
+      "breakpoints": true
     }
   ]
 }

@@ -27,6 +27,7 @@ function membership(role: Role): UserMembership {
     organizationIconUrl: null,
     organizationSecondaryColor: null,
     tier: 'bronze',
+    sectors: [],
     role,
     status: 'ACTIVE',
   }
@@ -98,6 +99,7 @@ function buildTestApp(role: Role, leadQueueRepository = buildLeadQueueRepository
         status: 'ACTIVE',
         salesGoalCents: null,
         tier: 'bronze',
+        sectors: [],
         supervisorUserId: null,
       },
     ]),

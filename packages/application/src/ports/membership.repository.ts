@@ -7,7 +7,7 @@
 // a partir do userId autenticado e do X-Organization-Id header, e pelos
 // fluxos de criação de Representação / convite de equipe.
 
-import type { MemberTier, OrganizationType, Role } from '@sylocrm/domain'
+import type { MemberSector, MemberTier, OrganizationType, Role } from '@sylocrm/domain'
 
 /**
  * Dados de membership retornados pelo repositório.
@@ -26,6 +26,8 @@ export interface UserMembership {
   status: 'ACTIVE' | 'INVITED' | 'SUSPENDED'
   /** Patente do usuário nesta organização. */
   tier: MemberTier
+  /** Setores do usuário nesta organização (Configurações → Equipe). */
+  sectors: MemberSector[]
 }
 
 /** Membership com os dados do usuário — usado na listagem de equipe. */
@@ -42,6 +44,8 @@ export interface TeamMember {
   tier: MemberTier
   /** Supervisor do Vendedor (Configurações → Equipe); null = sem supervisor. */
   supervisorUserId: string | null
+  /** Setores do membro na organização (Configurações → Equipe). */
+  sectors: MemberSector[]
 }
 
 /** TeamMember com os dados da organização — usado na listagem cross-org do Super Admin. */
@@ -118,6 +122,12 @@ export interface IMembershipRepository {
 
   /** Define a patente do membro na organização — Configurações → Equipe. */
   updateTier(userId: string, organizationId: string, tier: MemberTier): Promise<void>
+
+  /** Define os setores do membro na organização — Configurações → Equipe. */
+  updateSectors(userId: string, organizationId: string, sectors: MemberSector[]): Promise<void>
+
+  /** Membros ativos da organização que estão no setor. */
+  findActiveUserIdsBySector(organizationId: string, sector: MemberSector): Promise<string[]>
 
   /** Muda o papel do membro na organização. */
   updateRole(userId: string, organizationId: string, role: Role): Promise<void>

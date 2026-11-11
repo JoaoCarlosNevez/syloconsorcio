@@ -28,6 +28,8 @@ function setup(members: TeamMember[] = [member('dono', Role.ADMIN)]) {
     findActiveByOrganizationId: vi.fn().mockResolvedValue(members),
     updateRole: vi.fn().mockResolvedValue(undefined),
     clearSupervisorLinks: vi.fn().mockResolvedValue(undefined),
+    updateSectors: vi.fn(),
+    findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
   } as unknown as IMembershipRepository
   const activityLog: IActivityLogRepository = { record: vi.fn(), list: vi.fn() }
   return {

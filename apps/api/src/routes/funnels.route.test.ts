@@ -32,6 +32,7 @@ const SELLER_MEMBERSHIP: UserMembership = {
   organizationIconUrl: null,
   organizationSecondaryColor: null,
   tier: 'bronze',
+  sectors: [],
   role: Role.SELLER,
   status: 'ACTIVE',
 }
@@ -43,6 +44,7 @@ const ADMIN_MEMBERSHIP: UserMembership = {
   organizationIconUrl: null,
   organizationSecondaryColor: null,
   tier: 'bronze',
+  sectors: [],
   role: Role.ADMIN,
   status: 'ACTIVE',
 }
@@ -108,6 +110,8 @@ function buildMembershipRepository(
     updateSupervisor: vi.fn(),
     findTeamUserIds: vi.fn().mockResolvedValue([]),
     clearSupervisorLinks: vi.fn(),
+    updateSectors: vi.fn(),
+    findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
   }
 }
 

@@ -63,13 +63,16 @@ export interface NotificationTask {
   id: string
   organizationId: string
   leadId: string | null
-  assignedUserId: string
+  /** null = na fila de um setor, ainda sem ninguém. */
+  assignedUserId: string | null
+  assignedSector: string | null
   createdByUserId: string
   type: string
   title: string
   notes: string | null
   status: 'pendente' | 'em_andamento' | 'concluida'
-  dueAt: Date
+  /** null = sem prazo. */
+  dueAt: Date | null
   createdAt: Date
   updatedAt: Date
 }
