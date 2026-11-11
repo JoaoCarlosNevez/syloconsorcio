@@ -277,6 +277,24 @@ describe('ChatUseCases — access', () => {
   })
 })
 
+describe('ChatUseCases.list', () => {
+  it('drops client conversations a seller no longer sees', async () => {
+    const summary = {
+      conversation: CLIENT_CONVERSATION,
+      clientLead: null,
+      otherUser: null,
+      lastMessage: null,
+      unreadCount: 2,
+    }
+    const chat = buildChatRepository({ listForUser: vi.fn().mockResolvedValue([summary]) })
+    const { useCases } = setup(chat)
+
+    expect(await useCases.list({ userId: OTHER_SELLER, membership: SELLER_CTX })).toEqual([])
+    expect(await useCases.unreadCount({ userId: OTHER_SELLER, membership: SELLER_CTX })).toBe(0)
+    expect(await useCases.list({ userId: SELLER, membership: SELLER_CTX })).toEqual([summary])
+  })
+})
+
 describe('ChatUseCases.send', () => {
   it('notifies participants, the lead owner and the ADM staff, never the author', async () => {
     const chat = buildChatRepository({ listParticipantIds: vi.fn().mockResolvedValue([OWNER]) })
@@ -340,10 +358,11 @@ describe('ChatUseCases.createTaskFromChat', () => {
     // O setor é avisado pela notificação de tarefa, não por push de chat.
     const types = vi.mocked(notifications.notify).mock.calls.map(([n]) => n.type)
     expect(types).toEqual(['task.assigned'])
-    expect(chat.addParticipants).toHaveBeenCalledWith(
-      'conv-1',
-      expect.arrayContaining([SELLER, OTHER_SELLER, ADM]),
-    )
+    // O Vendedor do setor ADM que não é dono do cliente recebe a tarefa, mas
+    // não entra na conversa (não enxerga o cliente).
+    const added = vi.mocked(chat.addParticipants).mock.calls[0]?.[1]
+    expect(added).toEqual(expect.arrayContaining([SELLER, ADM]))
+    expect(added).not.toContain(OTHER_SELLER)
   })
 
   it('needs a person or a sector', async () => {
