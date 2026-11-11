@@ -24,6 +24,7 @@ describe('resolveNotificationPreferences', () => {
         'lead.received': true,
         'lead.offered': true,
         'proposal.viewed': true,
+        'chat.message': true,
       },
       sound: false,
     })

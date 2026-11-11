@@ -62,6 +62,10 @@ function headline(push: PendingPush): string {
       return 'Novo lead pra você na fila'
     case 'proposal.viewed':
       return 'Cliente abriu a proposta'
+    case 'chat.message': {
+      const client = text(push.metadata, 'clientName')
+      return client ? `${actor} · ${client}` : actor
+    }
   }
 }
 
@@ -87,6 +91,8 @@ function detail(push: PendingPush, now: Date): string | null {
     }
     case 'proposal.viewed':
       return 'É a melhor hora pra ligar'
+    case 'chat.message':
+      return null
   }
 }
 
@@ -100,6 +106,10 @@ function target(push: PendingPush): string {
   if ((push.type === 'lead.received' || push.type === 'proposal.viewed') && leadId) {
     return `/m/leads/${encodeURIComponent(leadId)}${org}`
   }
+  if (push.type === 'chat.message') {
+    const conversationId = text(push.metadata, 'conversationId')
+    return conversationId ? `/m/chat/${encodeURIComponent(conversationId)}${org}` : `/m/chat${org}`
+  }
   if (push.type.startsWith('task.')) return `/m/tarefas${org}`
   return `/m/avisos${org}`
 }
@@ -112,6 +122,16 @@ function minutesLeft(iso: string, now: Date): number {
 }
 
 export function buildPushMessage(push: PendingPush, now: Date = new Date()): PushMessage {
+  if (push.type === 'chat.message') {
+    // Uma notificação por conversa: a mensagem nova substitui a anterior.
+    const conversationId = text(push.metadata, 'conversationId')
+    return {
+      title: headline(push),
+      body: text(push.metadata, 'preview') ?? push.title,
+      url: target(push),
+      tag: conversationId ? `chat:${conversationId}` : push.id,
+    }
+  }
   const extra = detail(push, now)
   const message: PushMessage = {
     title: headline(push),

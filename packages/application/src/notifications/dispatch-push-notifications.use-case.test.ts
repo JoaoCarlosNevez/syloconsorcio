@@ -160,6 +160,24 @@ describe('buildPushMessage', () => {
     })
   })
 
+  it('groups chat messages per conversation and opens it', () => {
+    const message = buildPushMessage(
+      pending({
+        type: 'chat.message',
+        actorName: 'Ana',
+        title: 'Maria Silva',
+        metadata: { conversationId: 'conv-7', clientName: 'Maria Silva', preview: 'Falta o RG' },
+      }),
+      NOW,
+    )
+    expect(message).toEqual({
+      title: 'Ana · Maria Silva',
+      body: 'Falta o RG',
+      url: '/m/chat/conv-7?org=org-1',
+      tag: 'chat:conv-7',
+    })
+  })
+
   it('tells the sector a task is waiting in its queue', () => {
     const message = buildPushMessage(
       pending({

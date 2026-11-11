@@ -17,6 +17,7 @@ export const NOTIFICATION_TYPES: readonly NotificationType[] = [
   'lead.received',
   'lead.offered',
   'proposal.viewed',
+  'chat.message',
 ]
 
 export interface NotificationPreferences {
@@ -33,6 +34,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
     'lead.received': true,
     'lead.offered': true,
     'proposal.viewed': true,
+    'chat.message': true,
   },
   sound: true,
 }

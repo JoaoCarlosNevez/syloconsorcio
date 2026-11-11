@@ -22,6 +22,11 @@
 // precisa aceitar até expiresAt. 'lead.received' com metadata.queueExhausted
 // avisa Dono/Supervisores que ninguém da fila aceitou.
 //
+// 'chat.message' (mensagem nova no chat interno) só existe pro push: não
+// aparece no sininho (o chat tem o próprio contador). metadata.conversationId/
+// clientName/preview; title é o nome do cliente (ou de quem escreveu, na
+// conversa direta).
+//
 // 'proposal.viewed' (cliente abriu o link público da proposta) segue o mesmo
 // formato: metadata.leadId/funnelId/proposalId/viewedAt, title é o nome do
 // lead.
@@ -34,6 +39,7 @@ export type NotificationType =
   | 'lead.received'
   | 'lead.offered'
   | 'proposal.viewed'
+  | 'chat.message'
 
 export type NotificationMetadata = Record<string, string | number | boolean | null>
 
