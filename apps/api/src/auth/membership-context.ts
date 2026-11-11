@@ -17,6 +17,7 @@ export function buildMembershipContext(membership: UserMembership): MembershipCo
     organizationSecondaryColor: membership.organizationSecondaryColor,
     role: membership.role,
     tier: membership.tier,
+    sectors: membership.sectors,
     dataScope: calculateDataScope(membership.organizationType, membership.role),
     permissions: getPermissionsForMembership(membership.organizationType, membership.role),
   }

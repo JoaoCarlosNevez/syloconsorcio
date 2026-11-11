@@ -5,6 +5,7 @@
 import { TIER_LABELS } from '@sylocrm/ui'
 import type { ActivityEntityType, ActivityEntry, ActivityMetadata } from './activity-api'
 import { formatBRL } from './lead-adapters'
+import { SECTOR_LABEL as SECTOR_LABELS } from './sectors'
 
 const ROLE_LABEL: Record<string, string> = {
   ADMIN: 'Dono',
@@ -14,6 +15,7 @@ const ROLE_LABEL: Record<string, string> = {
 
 // Indexado por string: a metadata vem crua do backend.
 const TIER_LABEL: Record<string, string> = TIER_LABELS
+const SECTOR_LABEL: Record<string, string> = SECTOR_LABELS
 
 const LEAD_FIELD_LABEL: Record<string, string> = {
   name: 'nome',
@@ -171,6 +173,8 @@ export function describeActivity(
       return `concluiu a tarefa ${label}`
     case 'task.reopened':
       return `reabriu a tarefa ${label}`
+    case 'task.claimed':
+      return `pegou a tarefa ${label} da fila do setor`
     case 'task.deleted':
       return `apagou a tarefa ${label}`
     case 'funnel.created':
@@ -195,6 +199,15 @@ export function describeActivity(
       return `mudou o papel de ${member} de ${ROLE_LABEL[str(m, 'from') ?? ''] ?? str(m, 'from')} para ${ROLE_LABEL[str(m, 'to') ?? ''] ?? str(m, 'to')}`
     case 'team.tier_updated':
       return `definiu a patente de ${member} como ${TIER_LABEL[str(m, 'tier') ?? ''] ?? str(m, 'tier')}`
+    case 'team.sectors_updated': {
+      const sectors = (str(m, 'sectors') ?? '')
+        .split(',')
+        .filter(Boolean)
+        .map((sector) => SECTOR_LABEL[sector] ?? sector)
+      return sectors.length > 0
+        ? `definiu os setores de ${member}: ${sectors.join(', ')}`
+        : `tirou ${member} de todos os setores`
+    }
     case 'organization.updated':
       return `atualizou os dados da organização${fieldList(m, ORGANIZATION_FIELD_LABEL)}`
     case 'organization.goal_updated':

@@ -19,8 +19,9 @@ const MEMBERSHIP: MembershipContext = {
   organizationIconUrl: null,
   organizationSecondaryColor: null,
   tier: 'bronze',
+  sectors: [],
   role: Role.MANAGER,
-  dataScope: DataScope.ORGANIZATION,
+  dataScope: DataScope.REPRESENTATION,
   permissions: [],
 }
 
@@ -29,6 +30,7 @@ const TASK: TaskRecord = {
   organizationId: ORG_ID,
   leadId: null,
   assignedUserId: MANAGER_ID,
+  assignedSector: null,
   createdByUserId: MANAGER_ID,
   type: 'Ligação',
   title: 'Ligar pro cliente',
@@ -55,7 +57,9 @@ function buildTaskRepository(before: TaskRecord, after: TaskRecord): ITaskReposi
     findById: vi.fn().mockResolvedValue(before),
     create: vi.fn(),
     update: vi.fn().mockResolvedValue(after),
+    claim: vi.fn(),
     delete: vi.fn(),
+    count: vi.fn(),
   }
 }
 

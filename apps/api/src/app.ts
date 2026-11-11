@@ -142,6 +142,8 @@ function createNoOpMembershipRepository(): IMembershipRepository {
     },
     findTeamUserIds: async () => [],
     clearSupervisorLinks: async () => {},
+    updateSectors: async () => {},
+    findActiveUserIdsBySector: async () => [],
   }
 }
 
@@ -255,6 +257,7 @@ function createNoOpTaskRepository(): ITaskRepository {
     },
     update: async () => null,
     delete: async () => false,
+    claim: async () => null,
     count: async () => 0,
   }
 }

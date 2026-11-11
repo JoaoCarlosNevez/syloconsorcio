@@ -26,6 +26,7 @@ export function synthesizeOwnerMembership(organization: OrganizationRecord): Use
     role: Role.ADMIN,
     status: 'ACTIVE',
     tier: DEFAULT_MEMBER_TIER,
+    sectors: [],
   }
 }
 

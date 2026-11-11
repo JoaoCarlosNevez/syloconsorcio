@@ -3,6 +3,7 @@
 // "Maria atribuiu uma tarefa a você".
 
 import type { AppNotification } from './notifications-api'
+import { sectorLabel } from './sectors'
 
 function actorName(notification: AppNotification): string {
   if (!notification.actor) return 'Alguém'
@@ -36,11 +37,21 @@ export function describeNotification(
   const dueLabel = dueAt ? formatDueAt(dueAt, now) : null
 
   switch (notification.type) {
-    case 'task.assigned':
+    case 'task.assigned': {
+      const sector = sectorLabel(
+        typeof notification.metadata.sector === 'string' ? notification.metadata.sector : null,
+      )
+      if (sector) {
+        return {
+          headline: `${actorName(notification)} mandou uma tarefa pro setor ${sector}`,
+          detail: dueLabel ? `Prazo: ${dueLabel}` : 'Quem pegar primeiro fica com ela',
+        }
+      }
       return {
         headline: `${actorName(notification)} atribuiu uma tarefa a você`,
         detail: dueLabel ? `Prazo: ${dueLabel}` : null,
       }
+    }
     case 'task.due_soon':
       return {
         headline: 'Tarefa vence em breve',

@@ -182,6 +182,9 @@ export { UpdateTaskUseCase } from './tasks/update-task.use-case'
 export type { UpdateTaskUseCaseInput } from './tasks/update-task.use-case'
 export { DeleteTaskUseCase } from './tasks/delete-task.use-case'
 export type { DeleteTaskInput } from './tasks/delete-task.use-case'
+export { ClaimTaskUseCase } from './tasks/claim-task.use-case'
+export type { ClaimTaskInput, ClaimTaskResult } from './tasks/claim-task.use-case'
+export { resolveTaskScope } from './tasks/task-scope'
 
 export { ListFunnelsUseCase } from './funnels/list-funnels.use-case'
 export type { ListFunnelsInput } from './funnels/list-funnels.use-case'
@@ -249,6 +252,7 @@ export { UpdateTeamMemberSalesGoalUseCase } from './team/update-team-member-sale
 export type { UpdateTeamMemberSalesGoalInput } from './team/update-team-member-sales-goal.use-case'
 
 export { UpdateTeamMemberTierUseCase } from './team/update-team-member-tier.use-case'
+export { UpdateTeamMemberSectorsUseCase } from './team/update-team-member-sectors.use-case'
 export { UpdateTeamMemberSupervisorUseCase } from './team/update-team-member-supervisor.use-case'
 export type { UpdateTeamMemberSupervisorInput } from './team/update-team-member-supervisor.use-case'
 export { UpdateTeamMemberRoleUseCase } from './team/update-team-member-role.use-case'

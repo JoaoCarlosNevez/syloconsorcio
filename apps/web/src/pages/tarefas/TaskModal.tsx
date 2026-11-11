@@ -3,10 +3,17 @@
 
 import { useEffect, useState } from 'react'
 import { resolveAgent } from '../../lib/lead-adapters'
+import { SECTOR_LABEL } from '../../lib/sectors'
 import type { Task } from '../../lib/tasks-api'
 import type { TeamMember } from '../../lib/team-api'
 import styles from './TaskModal.module.css'
-import { STATUS_CFG, TYPE_BADGES, displayStatus, formatTaskDateTime } from './tarefas.types'
+import {
+  STATUS_CFG,
+  TYPE_BADGES,
+  displayStatus,
+  formatTaskDateTime,
+  formatTaskDue,
+} from './tarefas.types'
 
 // ── Ícones ─────────────────────────────────────────────────────────────────────
 
@@ -194,6 +201,8 @@ interface TaskModalProps {
   onExcluir?: () => void
   onEdit?: () => void
   onSaveNotes?: (notes: string | null) => void
+  /** Pegar a tarefa da fila do setor (só aparece enquanto está sem ninguém). */
+  onClaim?: () => void
 }
 
 // ── Component ───────────────────────────────────────────────────────────────────
@@ -207,9 +216,14 @@ export function TaskModal({
   onExcluir,
   onEdit,
   onSaveNotes,
+  onClaim,
 }: TaskModalProps) {
   const statusCfg = STATUS_CFG[displayStatus(task)]
   const badge = TYPE_BADGES[task.type]
+  const queueLabel =
+    task.assignedUserId === null && task.assignedSector
+      ? `Fila ${SECTOR_LABEL[task.assignedSector]} (ninguém pegou ainda)`
+      : null
   const responsible = resolveAgent(task.assignedUserId, members)
 
   const [editingNotes, setEditingNotes] = useState(false)
@@ -268,12 +282,17 @@ export function TaskModal({
                   <span className={styles.metaIcon}>
                     <ClockIcon />
                   </span>
-                  {formatTaskDateTime(task.dueAt)}
+                  {formatTaskDue(task.dueAt)}
                 </span>
               </div>
             </div>
 
             <div className={styles.headerActions}>
+              {queueLabel && onClaim && task.status !== 'concluida' && (
+                <button type="button" className={styles.btnConcluir} onClick={onClaim}>
+                  Pegar
+                </button>
+              )}
               {task.status !== 'concluida' && (
                 <button type="button" className={styles.btnConcluir} onClick={onConcluir}>
                   <CheckIcon />
@@ -333,7 +352,7 @@ export function TaskModal({
                   <span className={styles.attrLabel}>
                     <CalIcon /> Data &amp; Horário
                   </span>
-                  <span className={styles.attrValue}>{formatTaskDateTime(task.dueAt)}</span>
+                  <span className={styles.attrValue}>{formatTaskDue(task.dueAt)}</span>
                 </div>
 
                 <div className={styles.attrCell}>
@@ -353,7 +372,7 @@ export function TaskModal({
                   <span className={styles.attrLabel}>
                     <PersonIcon /> Responsável
                   </span>
-                  <span className={styles.attrValue}>{responsible.name}</span>
+                  <span className={styles.attrValue}>{queueLabel ?? responsible.name}</span>
                 </div>
               </div>
             </div>

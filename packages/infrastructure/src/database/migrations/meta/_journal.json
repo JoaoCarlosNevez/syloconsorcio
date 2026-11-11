@@ -309,6 +309,13 @@
       "when": 1793327141998,
       "tag": "0043_adm_enviado_before_checado",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1794364713757,
+      "tag": "0044_tasks_sectors_client",
+      "breakpoints": true
     }
   ]
 }

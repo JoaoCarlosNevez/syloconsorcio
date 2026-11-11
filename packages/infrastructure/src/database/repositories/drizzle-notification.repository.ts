@@ -111,6 +111,7 @@ export class DrizzleNotificationRepository implements INotificationRepository {
             organizationId: tasks.organizationId,
             leadId: tasks.leadId,
             assignedUserId: tasks.assignedUserId,
+            assignedSector: tasks.assignedSector,
             createdByUserId: tasks.createdByUserId,
             type: tasks.type,
             title: tasks.title,
@@ -139,9 +140,13 @@ export class DrizzleNotificationRepository implements INotificationRepository {
     return {
       items: rows.map((row) => {
         const task = row.task
+        // Tarefa na fila de um setor (sem ninguém) continua visível pra quem
+        // foi avisado; depois que alguém pega, só pro responsável e quem criou.
         const visibleTask =
           task &&
-          (task.assignedUserId === recipient.userId || task.createdByUserId === recipient.userId)
+          (task.assignedUserId === null ||
+            task.assignedUserId === recipient.userId ||
+            task.createdByUserId === recipient.userId)
             ? ({ ...task, status: task.status as NotificationTask['status'] } as NotificationTask)
             : null
         return {

@@ -278,3 +278,62 @@ describe('CreateTaskUseCase', () => {
     expect(notifications.notify).not.toHaveBeenCalled()
   })
 })
+
+describe('CreateTaskUseCase — fila de setor e sem prazo', () => {
+  const sectorMembers = {
+    findActiveUserIdsBySector: vi.fn().mockResolvedValue([USER_ID, 'adm-1', 'adm-2']),
+  }
+
+  it('sends the task to the sector queue and notifies every member but the creator', async () => {
+    const taskRepository = buildTaskRepository()
+    const notifications = buildNotificationRepository()
+    const useCase = new CreateTaskUseCase(
+      taskRepository,
+      buildLeadRepository(),
+      buildOrganizationRepository(),
+      undefined,
+      notifications,
+      sectorMembers,
+    )
+
+    const task = await useCase.execute({
+      userId: USER_ID,
+      membership: MEMBERSHIP,
+      assignedSector: 'adm',
+      type: 'Pendência',
+      title: 'Conferir RG',
+      dueAt: null,
+    })
+
+    expect(task.assignedUserId).toBeNull()
+    expect(task.assignedSector).toBe('adm')
+    expect(task.dueAt).toBeNull()
+    expect(sectorMembers.findActiveUserIdsBySector).toHaveBeenCalledWith(ORG_ID, 'adm')
+    const recipients = vi.mocked(notifications.notify).mock.calls.map(([n]) => n.userId)
+    expect(recipients).toEqual(['adm-1', 'adm-2'])
+    expect(vi.mocked(notifications.notify).mock.calls[0]?.[0].metadata).toMatchObject({
+      sector: 'adm',
+      dueAt: null,
+    })
+  })
+
+  it('rejects a task sent to a person and a sector at the same time', async () => {
+    const useCase = new CreateTaskUseCase(
+      buildTaskRepository(),
+      buildLeadRepository(),
+      buildOrganizationRepository(),
+    )
+
+    await expect(
+      useCase.execute({
+        userId: USER_ID,
+        membership: MEMBERSHIP,
+        assignedUserId: 'adm-1',
+        assignedSector: 'adm',
+        type: 'Pendência',
+        title: 'Conferir RG',
+        dueAt: null,
+      }),
+    ).rejects.toThrow(ValidationError)
+  })
+})

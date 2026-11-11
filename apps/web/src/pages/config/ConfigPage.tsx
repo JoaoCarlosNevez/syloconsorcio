@@ -36,6 +36,7 @@ import {
   useTeamMembersQuery,
   useUpdateTeamMemberRole,
   useUpdateTeamMemberSalesGoal,
+  useUpdateTeamMemberSectors,
   useUpdateTeamMemberSupervisor,
   useUpdateTeamMemberTier,
 } from '../../hooks/useTeam'
@@ -53,6 +54,7 @@ import { formatBRL } from '../../lib/lead-adapters'
 import { playNotificationSound } from '../../lib/notification-sound'
 import type { NotificationType } from '../../lib/notifications-api'
 import { formatGoalInput, goalInputToCents } from '../../lib/sales-goals'
+import { SECTORS, SECTOR_LABEL, type Sector } from '../../lib/sectors'
 import type { InvitableRole, TeamMember } from '../../lib/team-api'
 import { visibleTier } from '../../lib/tier-art'
 import { buildWelcomeMessage, copyLabel } from '../../lib/welcome-message'
@@ -902,6 +904,7 @@ function EquipeView() {
             (membership?.permissions.includes('team.role_update') ?? false) &&
             (isPlatformAdmin || detailMember.role !== 'ADMIN')
           }
+          canSetSectors={membership?.permissions.includes('team.role_update') ?? false}
           // Supervisor do Vendedor: só o Dono define (mesma permissão do papel).
           supervisors={
             membership?.permissions.includes('team.role_update')
@@ -2827,6 +2830,7 @@ function MemberDetailModal({
   member,
   canEdit,
   canChangeRole,
+  canSetSectors,
   supervisors,
   onSaved,
   onClose,
@@ -2835,6 +2839,8 @@ function MemberDetailModal({
   member: TeamMember
   canEdit: boolean
   canChangeRole: boolean
+  /** Setores (Vendas/ADM/Pós-venda): só o Dono define, inclusive os próprios. */
+  canSetSectors: boolean
   /** Supervisores ativos — presente só pra quem pode ligar Vendedor a Supervisor. */
   supervisors: TeamMember[] | null
   onSaved: (msg: string) => void
@@ -2855,7 +2861,11 @@ function MemberDetailModal({
   const [formError, setFormError] = useState('')
   const updateGoal = useUpdateTeamMemberSalesGoal(organizationId)
   const updateTier = useUpdateTeamMemberTier(organizationId)
+  const updateSectors = useUpdateTeamMemberSectors(organizationId)
+  const [sectors, setSectors] = useState<Sector[]>(member.sectors)
+  const showSectors = canSetSectors && member.status === 'ACTIVE'
   const isSaving =
+    updateSectors.isPending ||
     updateGoal.isPending ||
     updateTier.isPending ||
     updateRole.isPending ||
@@ -2885,12 +2895,26 @@ function MemberDetailModal({
     const supervisorChanged =
       showSupervisor &&
       (supervisorUserId || null) !== (roleChanged ? null : member.supervisorUserId)
-    if (!goalChanged && !tierChanged && !roleChanged && !supervisorChanged) {
+    const sectorsChanged =
+      showSectors &&
+      (sectors.length !== member.sectors.length ||
+        sectors.some((sector) => !member.sectors.includes(sector)))
+    if (!goalChanged && !tierChanged && !roleChanged && !supervisorChanged && !sectorsChanged) {
       onClose()
       return
     }
     try {
       if (roleChanged) await updateRole.mutateAsync({ userId: member.userId, role })
+      if (sectorsChanged) await updateSectors.mutateAsync({ userId: member.userId, sectors })
+      if (sectorsChanged && !roleChanged && !supervisorChanged && !tierChanged && !goalChanged) {
+        onSaved(
+          sectors.length > 0
+            ? `${displayName} agora é de ${sectors.map((sector) => SECTOR_LABEL[sector]).join(', ')}.`
+            : `${displayName} ficou sem setor.`,
+        )
+        onClose()
+        return
+      }
       if (supervisorChanged) {
         await updateSupervisor.mutateAsync({
           userId: member.userId,
@@ -2978,6 +3002,37 @@ function MemberDetailModal({
                   {role === 'ADMIN' && member.role !== 'ADMIN'
                     ? 'Dono tem acesso total à organização: equipe, integrações e configurações.'
                     : 'Define o que o membro pode ver e fazer na organização.'}
+                </span>
+              </fieldset>
+            )}
+            {showSectors && (
+              <fieldset className={`${styles.formRow} ${styles.tierFieldset}`}>
+                <legend className={`${styles.formLabel} ${styles.tierLegend}`}>Setores</legend>
+                <div className={styles.tierPicker}>
+                  {SECTORS.map((option) => {
+                    const selected = sectors.includes(option)
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        aria-pressed={selected}
+                        className={`${styles.tierOption} ${selected ? styles.roleOptionSelected : ''}`}
+                        onClick={() =>
+                          setSectors((current) =>
+                            selected
+                              ? current.filter((sector) => sector !== option)
+                              : [...current, option],
+                          )
+                        }
+                      >
+                        {SECTOR_LABEL[option]}
+                      </button>
+                    )
+                  })}
+                </div>
+                <span className={styles.formHint}>
+                  Recebe as tarefas mandadas pro setor e acompanha a conversa dos clientes que estão
+                  no ADM ou no Pós-venda.
                 </span>
               </fieldset>
             )}
@@ -3088,9 +3143,9 @@ function MemberDetailModal({
               </button>
             )}
             <button type="button" className={styles.secondaryBtn} onClick={onClose}>
-              {canEdit ? 'Cancelar' : 'Fechar'}
+              {canEdit || showSectors ? 'Cancelar' : 'Fechar'}
             </button>
-            {canEdit && (
+            {(canEdit || showSectors) && (
               <button type="submit" className={styles.primaryBtn} disabled={isSaving}>
                 {isSaving ? 'Salvando…' : 'Salvar'}
               </button>

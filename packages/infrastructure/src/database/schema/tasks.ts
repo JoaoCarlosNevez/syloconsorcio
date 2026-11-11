@@ -13,11 +13,20 @@
 // os 5 valores hoje (Ligação, Reunião, Visita, Follow-up, Tarefa)
 // são só sugeridos pela UI.
 //
+// Responsável: uma pessoa (assignedUserId) ou um setor (assignedSector, fila —
+// quem pegar primeiro vira o responsável e o setor fica registrado). Pelo
+// menos um dos dois sempre existe (check tasks_assignee_check).
+//
+// dueAt é opcional: pedidos feitos pelo chat ("confere o RG", "resolve a
+// pendência") não têm horário. Sem prazo a tarefa nunca fica atrasada e vem
+// depois das que têm prazo.
+//
 // autoKey: chave de tarefa criada pelo sistema (ex: "post_sale_payment:<lead>:
 // <AAAA-MM>" — confirmação mensal do boleto no Pós-venda). Única: o processo
 // que cria pode rodar várias vezes sem duplicar. null nas tarefas manuais.
 
-import { pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
+import { check, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { leads } from './leads'
 import { organizations } from './organizations'
 import { users } from './users'
@@ -30,9 +39,9 @@ export const tasks = pgTable(
       .notNull()
       .references(() => organizations.id),
     leadId: uuid('lead_id').references(() => leads.id, { onDelete: 'cascade' }),
-    assignedUserId: uuid('assigned_user_id')
-      .notNull()
-      .references(() => users.id),
+    assignedUserId: uuid('assigned_user_id').references(() => users.id),
+    // MemberSector; só nas tarefas mandadas pra um setor.
+    assignedSector: text('assigned_sector'),
     createdByUserId: uuid('created_by_user_id')
       .notNull()
       .references(() => users.id),
@@ -40,7 +49,7 @@ export const tasks = pgTable(
     title: text('title').notNull(),
     notes: text('notes'),
     status: text('status').notNull().default('pendente'),
-    dueAt: timestamp('due_at', { withTimezone: true }).notNull(),
+    dueAt: timestamp('due_at', { withTimezone: true }),
     // Quando foi concluída — é o "Ligação feita em 02/10 às 14:55" do histórico
     // do lead. Preenchido ao concluir, limpo ao reabrir (ver
     // DrizzleTaskRepository); null enquanto não concluída.
@@ -49,7 +58,13 @@ export const tasks = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
     autoKey: text('auto_key'),
   },
-  (table) => [uniqueIndex('tasks_auto_key_idx').on(table.autoKey)],
+  (table) => [
+    uniqueIndex('tasks_auto_key_idx').on(table.autoKey),
+    check(
+      'tasks_assignee_check',
+      sql`${table.assignedUserId} IS NOT NULL OR ${table.assignedSector} IS NOT NULL`,
+    ),
+  ],
 )
 
 export type DbTask = typeof tasks.$inferSelect

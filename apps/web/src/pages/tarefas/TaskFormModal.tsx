@@ -3,7 +3,8 @@
 // card de Tarefas do LeadModal (sempre ligada ao lead aberto, sem seletor).
 
 import { useState } from 'react'
-import type { CreateTaskPayload, Task, UpdateTaskPayload } from '../../lib/tasks-api'
+import { SECTORS, SECTOR_LABEL, isSector } from '../../lib/sectors'
+import type { CreateTaskPayload, Task, TaskType, UpdateTaskPayload } from '../../lib/tasks-api'
 import type { TeamMember } from '../../lib/team-api'
 import styles from './TarefasPage.module.css'
 import { TASK_TYPES } from './tarefas.types'
@@ -75,11 +76,19 @@ export function TaskFormModal({
   isSubmitting = false,
 }: TaskFormModalProps) {
   const [title, setTitle] = useState(initialTask?.title ?? '')
-  const [type, setType] = useState(initialTask?.type ?? TASK_TYPES[0])
+  const [type, setType] = useState<TaskType>(initialTask?.type ?? 'Ligação')
   const [leadId, setLeadId] = useState(fixedLeadId ?? initialTask?.leadId ?? '')
-  const [assignedUserId, setAssignedUserId] = useState(initialTask?.assignedUserId ?? currentUserId)
+  // Responsável: id de uma pessoa ou "sector:<setor>" (fila do setor).
+  const [assignee, setAssignee] = useState(
+    initialTask
+      ? (initialTask.assignedUserId ??
+          (initialTask.assignedSector ? `sector:${initialTask.assignedSector}` : currentUserId))
+      : currentUserId,
+  )
+  const initialAssignee = initialTask?.assignedUserId ?? null
+  const [noDueAt, setNoDueAt] = useState(initialTask ? initialTask.dueAt === null : false)
   const [dueAt, setDueAt] = useState(
-    initialTask ? toDatetimeLocalValue(initialTask.dueAt) : defaultDueAt(),
+    initialTask?.dueAt ? toDatetimeLocalValue(initialTask.dueAt) : defaultDueAt(),
   )
   const [notes, setNotes] = useState(initialTask?.notes ?? '')
   const [error, setError] = useState('')
@@ -90,22 +99,36 @@ export function TaskFormModal({
       setError('Título é obrigatório.')
       return
     }
-    if (!dueAt) {
-      setError('Data e horário são obrigatórios.')
-      return
+    let dueAtIso: string | null = null
+    if (!noDueAt) {
+      if (!dueAt) {
+        setError('Informe data e horário ou marque "Sem prazo".')
+        return
+      }
+      dueAtIso = new Date(dueAt).toISOString()
+      if (Number.isNaN(new Date(dueAtIso).getTime())) {
+        setError('Data e horário inválidos.')
+        return
+      }
     }
-    const dueAtIso = new Date(dueAt).toISOString()
-    if (Number.isNaN(new Date(dueAtIso).getTime())) {
-      setError('Data e horário inválidos.')
-      return
-    }
+    const sector = assignee.startsWith('sector:') ? assignee.slice('sector:'.length) : null
+    // Sem task.assign, nem manda o campo — o backend também ignoraria e
+    // forçaria pra quem criou, mas evita a UI sugerir algo que não vale. Ao
+    // editar, só manda se mudou pra uma pessoa (a fila não se escolhe de novo).
+    const assignment = !canAssign
+      ? {}
+      : mode === 'create'
+        ? isSector(sector)
+          ? { assignedSector: sector, assignedUserId: null }
+          : { assignedUserId: assignee }
+        : !sector && assignee !== initialAssignee
+          ? { assignedUserId: assignee }
+          : {}
     onSubmit({
       title: title.trim(),
       type,
       leadId: fixedLeadId !== undefined ? fixedLeadId : leadId || null,
-      // Sem task.assign, nem manda o campo — o backend também ignoraria e
-      // forçaria pra quem criou, mas evita a UI sugerir algo que não vale.
-      ...(canAssign ? { assignedUserId } : {}),
+      ...assignment,
       dueAt: dueAtIso,
       notes: notes.trim() || null,
     })
@@ -184,27 +207,52 @@ export function TaskFormModal({
               Responsável
               <select
                 className={styles.ntSelect}
-                value={assignedUserId}
-                onChange={(e) => setAssignedUserId(e.target.value)}
+                value={assignee}
+                onChange={(e) => setAssignee(e.target.value)}
               >
-                {members.map((member) => (
-                  <option key={member.userId} value={member.userId}>
-                    {member.userId === currentUserId ? 'Você' : (member.name ?? member.email)}
-                  </option>
-                ))}
+                <optgroup label="Pessoa">
+                  {members.map((member) => (
+                    <option key={member.userId} value={member.userId}>
+                      {member.userId === currentUserId ? 'Você' : (member.name ?? member.email)}
+                    </option>
+                  ))}
+                </optgroup>
+                {(mode === 'create' || assignee.startsWith('sector:')) && (
+                  <optgroup label="Setor (quem pegar primeiro)">
+                    {SECTORS.map((sector) => (
+                      <option
+                        key={sector}
+                        value={`sector:${sector}`}
+                        disabled={mode === 'edit' && assignee !== `sector:${sector}`}
+                      >
+                        Fila {SECTOR_LABEL[sector]}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
             </label>
           )}
 
-          <label className={styles.ntLabel}>
-            Data &amp; Horário
+          <div className={styles.ntLabel}>
+            <label htmlFor="task-form-due">Data &amp; Horário</label>
             <input
+              id="task-form-due"
               className={styles.ntInput}
               type="datetime-local"
               value={dueAt}
+              disabled={noDueAt}
               onChange={(e) => setDueAt(e.target.value)}
             />
-          </label>
+            <label className={styles.ntCheck}>
+              <input
+                type="checkbox"
+                checked={noDueAt}
+                onChange={(e) => setNoDueAt(e.target.checked)}
+              />
+              Sem prazo
+            </label>
+          </div>
 
           <label className={styles.ntLabel}>
             Observações

@@ -55,6 +55,8 @@ export async function duplicateLeadRecord(
     funnelId: targetFunnelId,
     stageId: firstStage.id,
     assignedUserId: source.assignedUserId,
+    // A cópia continua sendo o mesmo cliente (conversa do chat, etc.).
+    clientId: source.clientId ?? source.id,
     tags: source.tags,
     notes: buildDuplicateNote(source, sourceFunnelName),
     profession: source.profession,

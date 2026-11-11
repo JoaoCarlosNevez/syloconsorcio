@@ -206,7 +206,31 @@ describe('DuplicateLeadUseCase', () => {
         assignedUserId: SOURCE_LEAD.assignedUserId,
         tags: SOURCE_LEAD.tags,
         notes: expect.stringContaining(SOURCE_LEAD.name),
+        // A cópia é o mesmo cliente: aponta pro lead de origem.
+        clientId: SOURCE_LEAD.id,
       }),
+    )
+  })
+
+  it('keeps the original client when copying a copy', async () => {
+    const leadRepository = buildLeadRepository({
+      findById: vi.fn().mockResolvedValue({ ...SOURCE_LEAD, clientId: 'lead-original' }),
+    })
+    const useCase = new DuplicateLeadUseCase(
+      leadRepository,
+      buildOrganizationRepository(),
+      buildFunnelRepository(),
+    )
+
+    await useCase.execute({
+      id: 'lead-01',
+      userId: 'user-01',
+      membership: MEMBERSHIP,
+      targetFunnelId: TARGET_FUNNEL_ID,
+    })
+
+    expect(leadRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ clientId: 'lead-original' }),
     )
   })
 

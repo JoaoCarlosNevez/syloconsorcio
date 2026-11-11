@@ -15,6 +15,7 @@ import type {
   TaskStatus,
   UpdateTaskInput,
 } from '@sylocrm/application'
+import { isMemberSector } from '@sylocrm/domain'
 import { and, asc, count, eq, gte, ilike, inArray, isNull, lt, ne, or, sql } from 'drizzle-orm'
 import type { Database } from '../client'
 import { type DbTask, tasks } from '../schema'
@@ -24,6 +25,7 @@ const TASK_COLUMNS = {
   organizationId: tasks.organizationId,
   leadId: tasks.leadId,
   assignedUserId: tasks.assignedUserId,
+  assignedSector: tasks.assignedSector,
   createdByUserId: tasks.createdByUserId,
   type: tasks.type,
   title: tasks.title,
@@ -36,13 +38,31 @@ const TASK_COLUMNS = {
 } as const
 
 function toTaskRecord(row: Omit<DbTask, 'autoKey'>): TaskRecord {
-  return { ...row, status: row.status as TaskStatus }
+  return {
+    ...row,
+    status: row.status as TaskStatus,
+    assignedSector: isMemberSector(row.assignedSector) ? row.assignedSector : null,
+  }
 }
+
+/** Sem prazo vai pro fim; entre as sem prazo, as mais antigas primeiro. */
+const TASK_ORDER = [sql`${tasks.dueAt} ASC NULLS LAST`, asc(tasks.createdAt)]
 
 function buildScopeConditions(scope: TaskScopeFilter) {
   const conditions = [inArray(tasks.organizationId, scope.organizationIds)]
   if (scope.assignedUserId) {
     conditions.push(eq(tasks.assignedUserId, scope.assignedUserId))
+  }
+  if (scope.ownUserId) {
+    const sectors = scope.ownSectors ?? []
+    const own = or(
+      eq(tasks.assignedUserId, scope.ownUserId),
+      eq(tasks.createdByUserId, scope.ownUserId),
+      sectors.length > 0
+        ? and(isNull(tasks.assignedUserId), inArray(tasks.assignedSector, [...sectors]))
+        : undefined,
+    )
+    if (own) conditions.push(own)
   }
   if (scope.teamUserIds) {
     const team = or(inArray(tasks.assignedUserId, scope.teamUserIds), isNull(tasks.assignedUserId))
@@ -85,7 +105,7 @@ export class DrizzleTaskRepository implements ITaskRepository {
         .select(TASK_COLUMNS)
         .from(tasks)
         .where(where)
-        .orderBy(asc(tasks.dueAt))
+        .orderBy(...TASK_ORDER)
         .limit(pageSize)
         .offset((page - 1) * pageSize),
       this.db.select({ count: sql<number>`count(*)::int` }).from(tasks).where(where),
@@ -106,6 +126,7 @@ export class DrizzleTaskRepository implements ITaskRepository {
         organizationId: input.organizationId,
         leadId: input.leadId ?? null,
         assignedUserId: input.assignedUserId,
+        assignedSector: input.assignedSector ?? null,
         createdByUserId: input.createdByUserId,
         type: input.type,
         title: input.title,
@@ -154,6 +175,19 @@ export class DrizzleTaskRepository implements ITaskRepository {
       .update(tasks)
       .set({ ...input, ...completedAt, updatedAt: new Date() })
       .where(and(eq(tasks.id, id), ...buildScopeConditions(scope)))
+      .returning(TASK_COLUMNS)
+
+    const row = rows[0]
+    return row ? toTaskRecord(row) : null
+  }
+
+  async claim(id: string, scope: TaskScopeFilter, userId: string): Promise<TaskRecord | null> {
+    if (scope.organizationIds.length === 0) return null
+
+    const rows = await this.db
+      .update(tasks)
+      .set({ assignedUserId: userId, updatedAt: new Date() })
+      .where(and(eq(tasks.id, id), isNull(tasks.assignedUserId), ...buildScopeConditions(scope)))
       .returning(TASK_COLUMNS)
 
     const row = rows[0]

@@ -28,7 +28,7 @@ import {
   TASK_TYPES,
   TYPE_BADGES,
   displayStatus,
-  formatTaskDateTime,
+  formatTaskDue,
 } from '../tarefas/tarefas.types'
 import styles from './HomePage.module.css'
 import { ManagementHome } from './ManagementHome'
@@ -344,7 +344,7 @@ function SellerHome() {
         valor: lead
           ? `R$ ${(lead.valueCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
           : null,
-        prazo: formatTaskDateTime(task.dueAt),
+        prazo: formatTaskDue(task.dueAt),
         status: displayStatus(task),
       }
     })

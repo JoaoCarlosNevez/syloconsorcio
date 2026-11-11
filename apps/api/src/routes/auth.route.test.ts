@@ -555,6 +555,8 @@ describe('GET /auth/memberships', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
     const app = buildTestApp(mockProvider, mockRepo)
 
@@ -609,6 +611,8 @@ describe('GET /auth/memberships', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
     const app = buildApp({
       authProvider: mockProvider,
@@ -711,6 +715,8 @@ describe('GET /auth/memberships', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
     const organization = {
       type: 'REPRESENTACAO',
@@ -805,6 +811,8 @@ describe('GET /auth/memberships', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
     const app = buildApp({
       authProvider: mockProvider,
@@ -933,6 +941,8 @@ describe('GET /auth/context', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
     const app = buildTestApp(mockProvider, mockRepo)
 

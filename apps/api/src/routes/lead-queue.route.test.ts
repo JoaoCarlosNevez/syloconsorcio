@@ -28,6 +28,7 @@ function membership(role: Role): UserMembership {
     organizationIconUrl: null,
     organizationSecondaryColor: null,
     tier: 'bronze',
+    sectors: [],
     role,
     status: 'ACTIVE',
   }
@@ -103,6 +104,7 @@ function buildTestApp(
         status: 'ACTIVE',
         salesGoalCents: null,
         tier: 'bronze',
+        sectors: [],
         supervisorUserId: null,
       },
     ]),

@@ -32,6 +32,9 @@
 //                                            team.tier_update; hierarquia
 //                                            fina em
 //                                            UpdateTeamMemberTierUseCase.
+// PUT    /team/members/:userId/sectors    — define os setores do membro
+//                                            (vendas/adm/pos_venda). Exige
+//                                            team.role_update (só Dono).
 // PUT    /team/members/:userId/role       — muda o papel (Dono/Supervisor/
 //                                            Vendedor). Exige team.role_update
 //                                            (só Dono); regras finas em
@@ -69,13 +72,16 @@ import {
   UpdateMyPersonalGoalUseCase,
   UpdateTeamMemberRoleUseCase,
   UpdateTeamMemberSalesGoalUseCase,
+  UpdateTeamMemberSectorsUseCase,
   UpdateTeamMemberSupervisorUseCase,
   UpdateTeamMemberTierUseCase,
 } from '@sylocrm/application'
 import {
   AuthorizationError,
   ConflictError,
+  MEMBER_SECTORS,
   MEMBER_TIERS,
+  type MemberSector,
   type MemberTier,
   Permission,
   Role,
@@ -116,6 +122,10 @@ const updateMemberRoleSchema = z.object({
   role: z.enum([Role.ADMIN, Role.MANAGER, Role.BACKOFFICE, Role.SELLER]),
 })
 
+const updateMemberSectorsSchema = z.object({
+  sectors: z.array(z.enum(MEMBER_SECTORS as [MemberSector, ...MemberSector[]])).max(3),
+})
+
 const updateMemberTierSchema = z.object({
   tier: z.enum(MEMBER_TIERS as [MemberTier, ...MemberTier[]]),
 })
@@ -148,6 +158,10 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
     options.activityLogRepository,
   )
   const updateSalesGoal = new UpdateTeamMemberSalesGoalUseCase(
+    options.membershipRepository,
+    options.activityLogRepository,
+  )
+  const updateSectors = new UpdateTeamMemberSectorsUseCase(
     options.membershipRepository,
     options.activityLogRepository,
   )
@@ -473,6 +487,50 @@ export const teamRoute: FastifyPluginAsync<TeamRouteOptions> = async (fastify, o
         }
         throw error
       }
+    },
+  )
+
+  // ── PUT /team/members/:userId/sectors ─────────────────────────────────────
+  fastify.put<{ Params: { userId: string } }>(
+    '/team/members/:userId/sectors',
+    {
+      preHandler: [
+        authMiddleware,
+        tenantMiddleware,
+        requirePermission(Permission.TEAM_ROLE_UPDATE),
+      ],
+    },
+    async (request, reply) => {
+      const parsed = updateMemberSectorsSchema.safeParse(request.body)
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: 'Dados inválidos.',
+          code: 'VALIDATION_ERROR',
+          status: 400,
+          details: parsed.error.flatten().fieldErrors,
+        })
+      }
+
+      const context = request.authContext as NonNullable<typeof request.authContext>
+      const targetUserId = request.params.userId
+
+      const target = await options.membershipRepository.findByUserAndOrganization(
+        targetUserId,
+        context.currentMembership.organizationId,
+      )
+      if (!target) {
+        return reply
+          .status(404)
+          .send({ error: 'Membro não encontrado.', code: 'MEMBER_NOT_FOUND', status: 404 })
+      }
+
+      const sectors = await updateSectors.execute({
+        actorUserId: context.userId,
+        targetUserId,
+        organizationId: context.currentMembership.organizationId,
+        sectors: parsed.data.sectors,
+      })
+      return { sectors }
     },
   )
 

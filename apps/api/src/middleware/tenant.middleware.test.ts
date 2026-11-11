@@ -36,6 +36,7 @@ const ACTIVE_REPRESENTACAO_SELLER: UserMembership = {
   organizationIconUrl: null,
   organizationSecondaryColor: null,
   tier: 'bronze',
+  sectors: [],
   role: Role.SELLER,
   status: 'ACTIVE',
 }
@@ -47,6 +48,7 @@ const ACTIVE_REPRESENTACAO_ADMIN: UserMembership = {
   organizationIconUrl: null,
   organizationSecondaryColor: null,
   tier: 'bronze',
+  sectors: [],
   role: Role.ADMIN,
   status: 'ACTIVE',
 }
@@ -58,6 +60,7 @@ const ACTIVE_MASTER: UserMembership = {
   organizationIconUrl: null,
   organizationSecondaryColor: null,
   tier: 'bronze',
+  sectors: [],
   role: Role.MANAGER,
   status: 'ACTIVE',
 }
@@ -69,6 +72,7 @@ const SUSPENDED_MEMBERSHIP: UserMembership = {
   organizationIconUrl: null,
   organizationSecondaryColor: null,
   tier: 'bronze',
+  sectors: [],
   role: Role.SELLER,
   status: 'SUSPENDED',
 }
@@ -174,6 +178,8 @@ describe('tenantMiddleware', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
     const app = buildTestAppWithoutAuth(mockRepo)
 
@@ -210,6 +216,8 @@ describe('tenantMiddleware', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
     const app = buildTestApp(mockRepo)
 
@@ -242,6 +250,8 @@ describe('tenantMiddleware', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
     const app = buildTestApp(mockRepo)
 
@@ -277,6 +287,8 @@ describe('tenantMiddleware', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
     const app = buildTestApp(
       mockRepo,
@@ -317,6 +329,8 @@ describe('tenantMiddleware', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
     const organizationRepo = buildOrganizationRepository({
       findById: vi.fn().mockResolvedValue({
@@ -366,6 +380,8 @@ describe('tenantMiddleware', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
     const organizationRepo = buildOrganizationRepository({
       findById: vi.fn().mockResolvedValue({
@@ -422,6 +438,8 @@ describe('tenantMiddleware', () => {
         updateSupervisor: vi.fn(),
         findTeamUserIds: vi.fn().mockResolvedValue([]),
         clearSupervisorLinks: vi.fn(),
+        updateSectors: vi.fn(),
+        findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
       }
       const organizationRepo = buildOrganizationRepository({
         findById: vi.fn().mockResolvedValue({
@@ -477,6 +495,8 @@ describe('tenantMiddleware', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
     const app = buildTestApp(mockRepo, IDENTITY, buildUserRepository(true))
 
@@ -512,6 +532,8 @@ describe('tenantMiddleware', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
     const app = buildTestApp(mockRepo)
 
@@ -547,6 +569,8 @@ describe('tenantMiddleware', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
     const app = buildTestApp(mockRepo)
 
@@ -587,6 +611,8 @@ describe('tenantMiddleware', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
     const app = buildTestApp(mockRepo)
 
@@ -622,6 +648,8 @@ describe('tenantMiddleware', () => {
         updateSupervisor: vi.fn(),
         findTeamUserIds: vi.fn().mockResolvedValue([]),
         clearSupervisorLinks: vi.fn(),
+        updateSectors: vi.fn(),
+        findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
       }
       const app = buildTestApp(mockRepo)
 
@@ -656,6 +684,8 @@ describe('tenantMiddleware', () => {
         updateSupervisor: vi.fn(),
         findTeamUserIds: vi.fn().mockResolvedValue([]),
         clearSupervisorLinks: vi.fn(),
+        updateSectors: vi.fn(),
+        findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
       }
       const app = buildTestApp(mockRepo)
 
@@ -690,6 +720,8 @@ describe('tenantMiddleware', () => {
         updateSupervisor: vi.fn(),
         findTeamUserIds: vi.fn().mockResolvedValue([]),
         clearSupervisorLinks: vi.fn(),
+        updateSectors: vi.fn(),
+        findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
       }
       const app = buildTestApp(mockRepo)
 
@@ -726,6 +758,8 @@ describe('tenantMiddleware', () => {
         updateSupervisor: vi.fn(),
         findTeamUserIds: vi.fn().mockResolvedValue([]),
         clearSupervisorLinks: vi.fn(),
+        updateSectors: vi.fn(),
+        findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
       }
       const app = buildTestApp(mockRepo)
 
@@ -764,6 +798,8 @@ describe('tenantMiddleware', () => {
         updateSupervisor: vi.fn(),
         findTeamUserIds: vi.fn().mockResolvedValue([]),
         clearSupervisorLinks: vi.fn(),
+        updateSectors: vi.fn(),
+        findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
       }
       const app = buildTestApp(mockRepo)
 
@@ -800,6 +836,8 @@ describe('tenantMiddleware', () => {
       updateSupervisor: vi.fn(),
       findTeamUserIds: vi.fn().mockResolvedValue([]),
       clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
     }
     const app = buildTestApp(mockRepo)
 

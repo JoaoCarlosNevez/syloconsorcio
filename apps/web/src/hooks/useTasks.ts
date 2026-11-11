@@ -6,6 +6,7 @@ import {
   type ListTasksParams,
   type TaskListPage,
   type UpdateTaskPayload,
+  claimTask,
   createTask,
   deleteTask,
   listTasks,
@@ -59,6 +60,18 @@ export function useDeleteTask(organizationId: string | null) {
       queryClient.invalidateQueries({ queryKey: ['tasks', organizationId] })
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'me', 'monthly', organizationId] })
       // Concluir/remarcar/reatribuir muda quais lembretes o sininho mostra.
+      queryClient.invalidateQueries({ queryKey: ['notifications', organizationId] })
+    },
+  })
+}
+
+/** Pega uma tarefa da fila do setor. */
+export function useClaimTask(organizationId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => claimTask(organizationId as string, id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', organizationId] })
       queryClient.invalidateQueries({ queryKey: ['notifications', organizationId] })
     },
   })
