@@ -1,0 +1,318 @@
+/* ChatPage — lista de conversas à esquerda, conversa aberta à direita */
+
+.page {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-bg-main);
+}
+
+/* ── Lista ───────────────────────────────────────────────────────────────── */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+}
+
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-4) var(--space-3);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.newWrap {
+  position: relative;
+}
+
+.newButton {
+  padding: var(--space-1-5) var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-accent-border-btn);
+  background: var(--color-accent-gradient);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.newMenu {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: 0;
+  z-index: 10;
+  width: 260px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: var(--space-1);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+  box-shadow: var(--shadow-md);
+}
+
+.newItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.newItem:hover {
+  background: var(--color-bg-subtle);
+}
+
+.newEmpty {
+  display: block;
+  padding: var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.filters {
+  display: flex;
+  gap: var(--space-1);
+  padding: 0 var(--space-4) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.filter {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: transparent;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.filterActive {
+  border-color: var(--color-accent-border-badge);
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-badge-text);
+}
+
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.listEmpty {
+  margin: 0;
+  padding: var(--space-5) var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-bottom: 1px solid var(--color-bg-subtle);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.item:hover {
+  background: var(--color-bg-main);
+}
+
+.itemActive,
+.itemActive:hover {
+  background: var(--color-accent-subtle);
+}
+
+.clientAvatar {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--color-info-subtle);
+  border: 1px solid var(--color-info-border);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-info-text);
+}
+
+.itemBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.itemTop,
+.itemBottom {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.itemTitle {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.itemTime {
+  flex: none;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-disabled);
+}
+
+.itemPreview {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.itemPreviewUnread {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.unread {
+  flex: none;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+/* ── Conversa aberta ─────────────────────────────────────────────────────── */
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.mainHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+}
+
+.back {
+  display: none;
+  border: 0;
+  background: transparent;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.mainTitles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mainTitle {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.mainSubtitle {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.mainSubtitle a {
+  color: var(--color-accent-link);
+  text-decoration: none;
+}
+
+.mainSubtitle a:hover {
+  text-decoration: underline;
+}
+
+.placeholder {
+  margin: auto;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.placeholder strong {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+}
+
+/* Tela estreita: ou a lista, ou a conversa. */
+@media (max-width: 900px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .hasOpen .sidebar {
+    display: none;
+  }
+
+  .page:not(.hasOpen) .main {
+    display: none;
+  }
+
+  .back {
+    display: inline-flex;
+  }
+}

@@ -43,6 +43,7 @@ const AdminOrganizationDetailPage = lazy(() =>
 const TarefasPage = lazy(() =>
   import('../pages/tarefas/TarefasPage').then((m) => ({ default: m.TarefasPage })),
 )
+const ChatPage = lazy(() => import('../pages/chat/ChatPage').then((m) => ({ default: m.ChatPage })))
 const RankingPage = lazy(() =>
   import('../pages/ranking/RankingPage').then((m) => ({ default: m.RankingPage })),
 )
@@ -100,6 +101,8 @@ export function AppRouter() {
           <Route path="metas" element={<MetasPage />} />
           <Route path="kanban" element={<KanbanPage />} />
           <Route path="tarefas" element={<TarefasPage />} />
+          <Route path="chat" element={<ChatPage />} />
+          <Route path="chat/:conversationId" element={<ChatPage />} />
           {/* Equipe (era uma página própria) virou uma aba dentro de Configurações */}
           <Route path="usuarios" element={<Navigate to="/app/config" replace />} />
           <Route path="config" element={<ConfigPage />} />

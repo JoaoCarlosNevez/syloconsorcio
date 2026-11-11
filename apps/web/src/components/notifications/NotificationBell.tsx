@@ -107,6 +107,12 @@ function TypeIcon({ type }: { type: NotificationType }) {
           <circle cx="12" cy="12" r="3" />
         </svg>
       )
+    case 'chat.message':
+      return (
+        <svg {...common} aria-hidden="true">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+      )
   }
 }
 
@@ -118,6 +124,7 @@ const TYPE_CLASS: Record<NotificationType, string | undefined> = {
   'lead.received': styles.typeLead,
   'lead.offered': styles.typeLead,
   'proposal.viewed': styles.typeProposal,
+  'chat.message': styles.typeLead,
 }
 
 export interface NotificationBellProps {

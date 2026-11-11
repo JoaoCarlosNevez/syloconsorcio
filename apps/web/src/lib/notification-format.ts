@@ -96,6 +96,15 @@ export function describeNotification(
         detail: viewedAt ? `Aberta ${formatDueAt(viewedAt, now)}` : null,
       }
     }
+    case 'chat.message': {
+      // Não aparece no sininho (a API filtra); fica aqui pra lista ser completa.
+      const preview =
+        typeof notification.metadata.preview === 'string' ? notification.metadata.preview : null
+      return {
+        headline: `${actorName(notification)} mandou uma mensagem`,
+        detail: preview,
+      }
+    }
   }
 }
 

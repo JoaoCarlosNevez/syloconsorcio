@@ -1691,6 +1691,11 @@ const PUSH_EVENTS: { type: NotificationType; label: string; desc: string }[] = [
     label: 'Cliente abriu a proposta',
     desc: 'Quando o cliente abre o link de uma proposta que você mandou',
   },
+  {
+    type: 'chat.message',
+    label: 'Mensagem no chat',
+    desc: 'Mensagem nova numa conversa que você acompanha (clientes e diretas)',
+  },
 ]
 
 function BrowserPermissionStatus({

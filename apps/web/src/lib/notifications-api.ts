@@ -18,6 +18,9 @@ export type NotificationType =
   /** Cliente abriu o link público da proposta — metadata traz leadId,
    * funnelId, proposalId e viewedAt; title é o nome do lead. */
   | 'proposal.viewed'
+  /** Mensagem do chat interno — só vira push, não aparece no sininho.
+   * metadata: conversationId, clientName, preview. */
+  | 'chat.message'
 
 export interface AppNotification {
   id: string
