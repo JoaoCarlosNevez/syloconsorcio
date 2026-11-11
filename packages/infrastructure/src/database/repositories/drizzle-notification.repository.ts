@@ -20,11 +20,14 @@ import type {
   NotificationType,
   TaskReminderOptions,
 } from '@sylocrm/application'
-import { and, desc, eq, isNull, sql } from 'drizzle-orm'
+import { and, desc, eq, isNull, ne, sql } from 'drizzle-orm'
 import type { Database } from '../client'
 import { notifications, tasks, users } from '../schema'
 
 const REMINDER_TYPES: NotificationType[] = ['task.due_soon', 'task.overdue']
+
+/** Ver INotificationRepository: fica fora do sininho. */
+const CHAT_MESSAGE_TYPE = 'chat.message'
 
 function recipientConditions(recipient: NotificationRecipient) {
   return [
@@ -90,7 +93,12 @@ export class DrizzleNotificationRepository implements INotificationRepository {
   }
 
   async list(recipient: NotificationRecipient, limit: number): Promise<NotificationList> {
-    const where = and(...recipientConditions(recipient), stillRelevant(recipient))
+    const where = and(
+      ...recipientConditions(recipient),
+      stillRelevant(recipient),
+      // Mensagem do chat interno só vira push — o chat tem o próprio contador.
+      ne(notifications.type, CHAT_MESSAGE_TYPE),
+    )
 
     const [rows, countRows] = await Promise.all([
       this.db
