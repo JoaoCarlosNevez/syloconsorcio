@@ -328,6 +328,12 @@
   }
 
   .taskTrigger {
-    padding: 0 var(--space-2);
+    width: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .taskTriggerLabel {
+    display: none;
   }
 }

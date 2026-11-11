@@ -273,9 +273,14 @@ export function ChatThread({ organizationId, conversationId, compact = false }: 
       </div>
 
       <form className={styles.composer} onSubmit={submit}>
-        <button type="button" className={styles.taskTrigger} onClick={() => setTaskOpen(true)}>
+        <button
+          type="button"
+          className={styles.taskTrigger}
+          onClick={() => setTaskOpen(true)}
+          aria-label="Pedir tarefa"
+        >
           <TaskIcon />
-          Pedir tarefa
+          <span className={styles.taskTriggerLabel}>Pedir tarefa</span>
         </button>
         <textarea
           className={styles.input}

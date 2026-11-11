@@ -23,6 +23,7 @@ describe('mobileProfile', () => {
       'Hoje',
       'Funis',
       'Tarefas',
+      'Chat',
       'Avisos',
     ])
   })

@@ -71,6 +71,14 @@ const MobileLeadPage = lazy(() =>
 const MobileAdhesionPage = lazy(() =>
   import('../pages/mobile/MobileAdhesionPage').then((m) => ({ default: m.MobileAdhesionPage })),
 )
+const MobileChatPage = lazy(() =>
+  import('../pages/mobile/MobileChatPage').then((m) => ({ default: m.MobileChatPage })),
+)
+const MobileConversationPage = lazy(() =>
+  import('../pages/mobile/MobileConversationPage').then((m) => ({
+    default: m.MobileConversationPage,
+  })),
+)
 const MobileTasksPage = lazy(() =>
   import('../pages/mobile/MobileTasksPage').then((m) => ({ default: m.MobileTasksPage })),
 )
@@ -121,6 +129,8 @@ export function AppRouter() {
           <Route path="leads/:id" element={<MobileLeadPage />} />
           <Route path="leads/:id/adesao" element={<MobileAdhesionPage />} />
           <Route path="tarefas" element={<MobileTasksPage />} />
+          <Route path="chat" element={<MobileChatPage />} />
+          <Route path="chat/:conversationId" element={<MobileConversationPage />} />
           <Route path="avisos" element={<MobileNotificationsPage />} />
           <Route path="oferta/:offerId" element={<MobileOfferPage />} />
         </Route>

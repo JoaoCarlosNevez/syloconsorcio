@@ -9,6 +9,7 @@
 import { type ReactNode, useEffect, useLayoutEffect } from 'react'
 import { NavLink, Outlet, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { useChatUnread } from '../../hooks/useChat'
 import { useMobileProfile } from '../../hooks/useMobileProfile'
 import { useNotificationsQuery } from '../../hooks/useNotifications'
 import { useActiveOrganization } from '../../hooks/useOrganization'
@@ -22,6 +23,7 @@ import { MobileLoginPage } from './MobileLoginPage'
 import {
   BellIcon,
   ChartIcon,
+  ChatIcon,
   CheckSquareIcon,
   ColumnsIcon,
   HomeIcon,
@@ -32,6 +34,7 @@ import {
 function tabIcon(key: MobileTabKey, profile: MobileProfile): ReactNode {
   if (key === 'leads') return profile === 'adm' ? <ColumnsIcon /> : <UsersIcon />
   if (key === 'tarefas') return <CheckSquareIcon />
+  if (key === 'chat') return <ChatIcon />
   if (key === 'avisos') return <BellIcon />
   if (profile === 'master') return <NetworkIcon />
   if (profile === 'gestao') return <ChartIcon />
@@ -43,6 +46,7 @@ function TabBar() {
   const { profile } = useMobileProfile()
   const { data } = useNotificationsQuery(organizationId)
   const unread = data?.unreadCount ?? 0
+  const chatUnread = useChatUnread(organizationId).data?.count ?? 0
   const tabs = mobileTabs(profile)
   return (
     <nav
@@ -63,6 +67,9 @@ function TabBar() {
           {tab.label}
           {tab.key === 'avisos' && unread > 0 && (
             <span className={styles.tabDot}>{unread > 99 ? '99+' : unread}</span>
+          )}
+          {tab.key === 'chat' && chatUnread > 0 && (
+            <span className={styles.tabDot}>{chatUnread > 99 ? '99+' : chatUnread}</span>
           )}
         </NavLink>
       ))}

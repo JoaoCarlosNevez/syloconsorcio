@@ -7,15 +7,25 @@
 
 import { Skeleton } from '@sylocrm/ui'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useOpenClientConversation } from '../../hooks/useChat'
 import { type CallResult, useMobileLead } from '../../hooks/useMobileLead'
+import { useActiveOrganization } from '../../hooks/useOrganization'
 import type { LeadProposal } from '../../lib/leads-api'
 import { LOST_REASONS, formatMoney, telLink, whatsappLink } from '../../lib/mobile'
 import { describeProposalViews } from '../../lib/proposal-share'
 import styles from './Mobile.module.css'
 import { BackBar, Sheet, useToast } from './MobileUi'
 import { TaskRow } from './TaskRow'
-import { CameraIcon, PhoneIcon, ShareIcon, TickIcon, UsersIcon, WhatsappIcon } from './icons'
+import {
+  CameraIcon,
+  ChatIcon,
+  PhoneIcon,
+  ShareIcon,
+  TickIcon,
+  UsersIcon,
+  WhatsappIcon,
+} from './icons'
 
 const ROLE_LABEL = {
   ADMIN: 'Dono',
@@ -68,6 +78,9 @@ export function MobileLeadPage() {
   const [scheduleReturn, setScheduleReturn] = useState(false)
   const [comment, setComment] = useState('')
   const armCall = useReturnFromCall(() => setSheet({ kind: 'call' }))
+  const navigate = useNavigate()
+  const { organizationId } = useActiveOrganization()
+  const openClientChat = useOpenClientConversation(organizationId)
 
   const lead = m.lead.data
   if (m.lead.isLoading) {
@@ -258,6 +271,26 @@ export function MobileLeadPage() {
           </div>
         </section>
       )}
+
+      <section>
+        <h2 className={styles.sectionTitle}>Equipe</h2>
+        <button
+          type="button"
+          className={`${styles.card} ${styles.row}`}
+          disabled={openClientChat.isPending}
+          onClick={() =>
+            openClientChat.mutate(lead.id, {
+              onSuccess: (conversation) => navigate(`/m/chat/${conversation.id}`),
+            })
+          }
+        >
+          <span className={styles.grow}>
+            <span className={styles.rowTitle}>Chat do cliente</span>
+            <span className={styles.rowSub}>Fale com ADM e pós-venda, peça uma checagem</span>
+          </span>
+          <ChatIcon />
+        </button>
+      </section>
 
       <section>
         <h2 className={styles.sectionTitle}>Adesão</h2>

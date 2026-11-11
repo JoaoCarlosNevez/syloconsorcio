@@ -68,6 +68,20 @@ export function useClientConversation(organizationId: string | null, leadId: str
   })
 }
 
+/** Abre a conversa do cliente de um lead pela ação do usuário (botão). */
+export function useOpenClientConversation(organizationId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (leadId: string) => openClientConversation(organizationId as string, leadId),
+    onSuccess: (conversation: ChatConversation) => {
+      queryClient.setQueryData(
+        ['chat', organizationId, 'conversation', conversation.id],
+        conversation,
+      )
+    },
+  })
+}
+
 export function useOpenDirectConversation(organizationId: string | null) {
   const queryClient = useQueryClient()
   return useMutation({

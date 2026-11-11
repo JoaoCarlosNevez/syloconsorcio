@@ -3,9 +3,9 @@
 // role, igual ao backend):
 //
 //   master   organização MASTER (network.read): Rede + Avisos
-//   gestao   Dono/Supervisor (reports.read): Painel, Leads, Tarefas, Avisos
-//   adm      Administrativo (backoffice): ADM/Pós-venda, Funis, Tarefas, Avisos
-//   vendedor o resto: Hoje, Leads, Tarefas, Avisos
+//   gestao   Dono/Supervisor (reports.read): Painel, Leads, Tarefas, Chat, Avisos
+//   adm      Administrativo (backoffice): ADM/Pós-venda, Funis, Tarefas, Chat, Avisos
+//   vendedor o resto: Hoje, Leads, Tarefas, Chat, Avisos
 
 import type { MembershipSummary } from '../hooks/useOrganization'
 
@@ -28,7 +28,7 @@ export function canAssignLeads(membership: Pick<MembershipSummary, 'permissions'
   return membership?.permissions.includes('lead.assign') ?? false
 }
 
-export type MobileTabKey = 'inicio' | 'leads' | 'tarefas' | 'avisos'
+export type MobileTabKey = 'inicio' | 'leads' | 'tarefas' | 'chat' | 'avisos'
 
 export interface MobileTab {
   key: MobileTabKey
@@ -41,18 +41,21 @@ const TABS: Record<MobileProfile, MobileTab[]> = {
     { key: 'inicio', to: '/m', label: 'Hoje' },
     { key: 'leads', to: '/m/leads', label: 'Leads' },
     { key: 'tarefas', to: '/m/tarefas', label: 'Tarefas' },
+    { key: 'chat', to: '/m/chat', label: 'Chat' },
     { key: 'avisos', to: '/m/avisos', label: 'Avisos' },
   ],
   gestao: [
     { key: 'inicio', to: '/m', label: 'Painel' },
     { key: 'leads', to: '/m/leads', label: 'Leads' },
     { key: 'tarefas', to: '/m/tarefas', label: 'Tarefas' },
+    { key: 'chat', to: '/m/chat', label: 'Chat' },
     { key: 'avisos', to: '/m/avisos', label: 'Avisos' },
   ],
   adm: [
     { key: 'inicio', to: '/m', label: 'Hoje' },
     { key: 'leads', to: '/m/leads', label: 'Funis' },
     { key: 'tarefas', to: '/m/tarefas', label: 'Tarefas' },
+    { key: 'chat', to: '/m/chat', label: 'Chat' },
     { key: 'avisos', to: '/m/avisos', label: 'Avisos' },
   ],
   master: [
