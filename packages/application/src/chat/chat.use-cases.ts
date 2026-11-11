@@ -20,7 +20,7 @@
 // recebe é avisado pela notificação normal de tarefa — a mensagem da tarefa
 // não gera push de chat (seria aviso em dobro).
 
-import { type MemberSector, Role, ValidationError } from '@sylocrm/domain'
+import { DataScope, type MemberSector, Role, ValidationError } from '@sylocrm/domain'
 import type { MembershipContext } from '../auth/auth-context'
 import { type LeadScope, resolveLeadScope } from '../leads/lead-scope'
 import type {
@@ -149,12 +149,24 @@ export class ChatUseCases {
 
   // ── Listas ────────────────────────────────────────────────────────────────
 
-  list(input: Actor): Promise<ChatConversationSummary[]> {
-    return this.chat.listForUser(input.userId, input.membership.organizationId)
+  async list(input: Actor): Promise<ChatConversationSummary[]> {
+    const all = await this.chat.listForUser(input.userId, input.membership.organizationId)
+    if (!hasRestrictedScope(input.membership)) return all
+    // Vendedor/Supervisor com time: o lead pode ter mudado de dono depois que
+    // a pessoa entrou na conversa — só lista a que ela ainda enxerga.
+    const visible: ChatConversationSummary[] = []
+    for (const summary of all) {
+      if (await this.access(summary.conversation.id, input)) visible.push(summary)
+    }
+    return visible
   }
 
-  unreadCount(input: Actor): Promise<number> {
-    return this.chat.countUnreadConversations(input.userId, input.membership.organizationId)
+  async unreadCount(input: Actor): Promise<number> {
+    if (!hasRestrictedScope(input.membership)) {
+      return this.chat.countUnreadConversations(input.userId, input.membership.organizationId)
+    }
+    const visible = await this.list(input)
+    return visible.filter((summary) => summary.unreadCount > 0).length
   }
 
   /** null = conversa não existe ou o usuário não pode ver. */
@@ -268,12 +280,17 @@ export class ChatUseCases {
       body: title,
       taskId: task.id,
     })
-    // Quem recebe a tarefa passa a acompanhar a conversa.
-    const assignees = assignedUserId
-      ? [assignedUserId]
-      : members
-          .filter((member) => assignedSector && member.sectors.includes(assignedSector))
-          .map((member) => member.userId)
+    // Quem recebe a tarefa passa a acompanhar a conversa — se enxerga o
+    // cliente (um Vendedor do setor que não é dono do cliente recebe a tarefa,
+    // mas não a conversa).
+    const assignees = members
+      .filter((member) =>
+        assignedUserId
+          ? member.userId === assignedUserId
+          : assignedSector !== null && member.sectors.includes(assignedSector),
+      )
+      .filter((member) => canFollow(member, access))
+      .map((member) => member.userId)
     await this.chat.addParticipants(input.conversationId, [input.userId, ...assignees])
     await this.chat.markRead(input.conversationId, input.userId, message.createdAt)
     return message
@@ -306,34 +323,47 @@ export class ChatUseCases {
   }
 
   private async recipients(access: Access, authorId: string): Promise<string[]> {
-    const ids = new Set(await this.chat.listParticipantIds(access.conversation.id))
-
-    if (access.conversation.kind === 'client') {
-      for (const lead of access.clientLeads) {
-        if (lead.assignedUserId) ids.add(lead.assignedUserId)
-      }
-      const sectors = new Set(
-        access.clientLeads.flatMap((lead) => {
-          const sector = SECTOR_BY_FUNNEL_KIND[lead.funnelKind]
-          return sector ? [sector] : []
-        }),
-      )
-      if (sectors.size > 0) {
-        const members = await this.membershipRepository.findActiveByOrganizationId(
-          access.conversation.organizationId,
-        )
-        for (const member of members) {
-          if (followsSectors(member, sectors)) ids.add(member.userId)
-        }
-      }
+    const participantIds = await this.chat.listParticipantIds(access.conversation.id)
+    if (access.conversation.kind === 'direct') {
+      return participantIds.filter((id) => id !== authorId)
     }
 
-    ids.delete(authorId)
-    return [...ids]
+    const members = await this.membershipRepository.findActiveByOrganizationId(
+      access.conversation.organizationId,
+    )
+    const sectors = new Set(
+      access.clientLeads.flatMap((lead) => {
+        const sector = SECTOR_BY_FUNNEL_KIND[lead.funnelKind]
+        return sector ? [sector] : []
+      }),
+    )
+    const owners = new Set(access.clientLeads.map((lead) => lead.assignedUserId))
+    const ids = members
+      .filter(
+        (member) =>
+          participantIds.includes(member.userId) ||
+          owners.has(member.userId) ||
+          member.sectors.some((sector) => sectors.has(sector)),
+      )
+      // Só quem enxerga o cliente: Vendedor só se é dono de um lead dele.
+      .filter((member) => canFollow(member, access))
+      .map((member) => member.userId)
+    return ids.filter((id) => id !== authorId)
   }
 }
 
-/** Vendedor não entra pelo setor: ele só enxerga os clientes dele. */
-function followsSectors(member: TeamMember, sectors: Set<MemberSector>): boolean {
-  return member.role !== Role.SELLER && member.sectors.some((sector) => sectors.has(sector))
+/** Vendedor ou Supervisor com time: enxerga só parte dos leads. */
+function hasRestrictedScope(membership: MembershipContext): boolean {
+  return (
+    membership.dataScope === DataScope.OWN ||
+    (membership.teamUserIds !== undefined && membership.teamUserIds.length > 0)
+  )
+}
+
+/** Pode acompanhar a conversa do cliente: quem não é Vendedor enxerga os
+ * leads da organização; o Vendedor, só se é dono de um lead do cliente. */
+function canFollow(member: TeamMember, access: Access): boolean {
+  if (access.conversation.kind === 'direct') return true
+  if (member.role !== Role.SELLER) return true
+  return access.clientLeads.some((lead) => lead.assignedUserId === member.userId)
 }
