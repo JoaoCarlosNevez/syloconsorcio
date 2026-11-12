@@ -9,6 +9,9 @@
 // POST /chat/conversations/:id/messages    — manda uma mensagem
 // POST /chat/conversations/:id/read        — marca como lida
 // POST /chat/conversations/:id/tasks       — cria uma tarefa pela conversa
+// POST /chat/direct-messages               — mensagem direta pra alguém sobre um
+//                                            cliente (vai pra conversa direta,
+//                                            com o cliente anexado)
 //
 // Sem permissão nova: quem vê a conversa de um cliente é quem vê o lead
 // (ChatUseCases). 404 tanto pra conversa inexistente quanto sem acesso.
@@ -41,6 +44,11 @@ const openClientSchema = z.object({ leadId: z.string().uuid() })
 const openDirectSchema = z.object({ userId: z.string().uuid() })
 const messagesQuery = z.object({ before: z.string().datetime().optional() })
 const sendSchema = z.object({ body: z.string().min(1) })
+const directAboutLeadSchema = z.object({
+  userId: z.string().uuid(),
+  leadId: z.string().uuid(),
+  body: z.string().min(1),
+})
 const createTaskSchema = z.object({
   title: z.string().min(1),
   notes: z.string().nullable().optional(),
@@ -93,6 +101,7 @@ function serializeMessage(message: ChatMessageRecord) {
           completedAt: message.task.completedAt?.toISOString() ?? null,
         }
       : null,
+    lead: message.lead,
   }
 }
 
@@ -209,6 +218,33 @@ export const chatRoute: FastifyPluginAsync<ChatRouteOptions> = async (fastify, o
         dueAt: parsed.data.dueAt ? new Date(parsed.data.dueAt) : null,
       })
       return message ? reply.status(201).send(serializeMessage(message)) : notFound(reply)
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        return reply.status(400).send({ error: error.message, code: error.code, status: 400 })
+      }
+      throw error
+    }
+  })
+
+  fastify.post('/chat/direct-messages', { preHandler }, async (request, reply) => {
+    const parsed = directAboutLeadSchema.safeParse(request.body)
+    if (!parsed.success) return invalid(reply, parsed.error.flatten().fieldErrors)
+    try {
+      const result = await chat.sendDirectAboutLead({
+        ...actor(request),
+        otherUserId: parsed.data.userId,
+        leadId: parsed.data.leadId,
+        body: parsed.data.body,
+      })
+      if (!result) {
+        return reply
+          .status(404)
+          .send({ error: 'Lead não encontrado.', code: 'LEAD_NOT_FOUND', status: 404 })
+      }
+      return reply.status(201).send({
+        conversationId: result.conversationId,
+        message: serializeMessage(result.message),
+      })
     } catch (error) {
       if (error instanceof ValidationError) {
         return reply.status(400).send({ error: error.message, code: error.code, status: 400 })

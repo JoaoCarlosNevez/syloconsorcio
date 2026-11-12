@@ -90,6 +90,17 @@ export function directKeyFor(a: string, b: string): string {
   return [a, b].sort().join(':')
 }
 
+function validBody(raw: string): string {
+  const body = raw.trim()
+  if (!body) throw new ValidationError([{ field: 'body', message: 'Mensagem vazia.' }])
+  if (body.length > CHAT_MESSAGE_MAX_LENGTH) {
+    throw new ValidationError([
+      { field: 'body', message: `Mensagem passa de ${CHAT_MESSAGE_MAX_LENGTH} caracteres.` },
+    ])
+  }
+  return body
+}
+
 function preview(body: string): string {
   const flat = body.replace(/\s+/g, ' ').trim()
   return flat.length > PREVIEW_LENGTH ? `${flat.slice(0, PREVIEW_LENGTH - 1)}…` : flat
@@ -198,40 +209,67 @@ export class ChatUseCases {
   async send(
     input: Actor & { conversationId: string; body: string },
   ): Promise<ChatMessageRecord | null> {
-    const body = input.body.trim()
-    if (!body) throw new ValidationError([{ field: 'body', message: 'Mensagem vazia.' }])
-    if (body.length > CHAT_MESSAGE_MAX_LENGTH) {
-      throw new ValidationError([
-        { field: 'body', message: `Mensagem passa de ${CHAT_MESSAGE_MAX_LENGTH} caracteres.` },
-      ])
-    }
+    const body = validBody(input.body)
     const access = await this.access(input.conversationId, input)
     if (!access) return null
+    return this.post(access, input.userId, body, null)
+  }
 
+  /** Mensagem direta pra alguém, de dentro da ficha de um cliente: cai na
+   * conversa direta entre os dois, com o cliente anexado (card "abrir
+   * ficha"). null = lead fora do alcance de quem manda. */
+  async sendDirectAboutLead(
+    input: Actor & { otherUserId: string; leadId: string; body: string },
+  ): Promise<{ conversationId: string; message: ChatMessageRecord } | null> {
+    const body = validBody(input.body)
+    const scope = await resolveLeadScope(
+      input.membership,
+      input.userId,
+      this.organizationRepository,
+    )
+    const lead = await this.leadRepository.findById(input.leadId, scope)
+    if (!lead) return null
+
+    const summary = await this.openDirect({ ...input, otherUserId: input.otherUserId })
+    const access = await this.access(summary.conversation.id, input)
+    if (!access) return null
+    const message = await this.post(access, input.userId, body, { id: lead.id, name: lead.name })
+    return { conversationId: summary.conversation.id, message }
+  }
+
+  /** Grava a mensagem, atualiza quem acompanha e avisa por push. */
+  private async post(
+    access: Access,
+    authorId: string,
+    body: string,
+    lead: { id: string; name: string } | null,
+  ): Promise<ChatMessageRecord> {
+    const conversationId = access.conversation.id
     const message = await this.chat.addMessage({
-      conversationId: input.conversationId,
-      authorUserId: input.userId,
+      conversationId,
+      authorUserId: authorId,
       kind: 'text',
       body,
+      leadId: lead?.id ?? null,
     })
 
-    const recipients = await this.recipients(access, input.userId)
-    await this.chat.addParticipants(input.conversationId, [input.userId, ...recipients])
-    await this.chat.markRead(input.conversationId, input.userId, message.createdAt)
+    const recipients = await this.recipients(access, authorId)
+    await this.chat.addParticipants(conversationId, [authorId, ...recipients])
+    await this.chat.markRead(conversationId, authorId, message.createdAt)
 
-    const clientName = access.clientLeads[0]?.name ?? null
+    const clientName = lead?.name ?? access.clientLeads[0]?.name ?? null
     for (const userId of recipients) {
       await this.notifications.notify({
         organizationId: access.conversation.organizationId,
         userId,
-        actorUserId: input.userId,
+        actorUserId: authorId,
         type: 'chat.message',
         taskId: null,
         title: clientName ?? message.author?.name ?? message.author?.email ?? 'Mensagem',
         metadata: {
-          conversationId: input.conversationId,
+          conversationId,
           clientName,
-          preview: preview(body),
+          preview: lead ? preview(`Sobre ${lead.name}: ${body}`) : preview(body),
         },
       })
     }

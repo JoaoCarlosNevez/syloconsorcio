@@ -14,9 +14,11 @@
 //
 // chat_messages.kind: 'text' (mensagem) ou 'task' (tarefa criada pela
 // conversa; task_id aponta pra ela e o card mostra o estado atual da tarefa).
+// lead_id: o cliente anexado, em qualquer tipo de mensagem.
 
 import { sql } from 'drizzle-orm'
 import { index, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { leads } from './leads'
 import { organizations } from './organizations'
 import { tasks } from './tasks'
 import { users } from './users'
@@ -73,6 +75,9 @@ export const chatMessages = pgTable(
     kind: text('kind').notNull().default('text'),
     body: text('body').notNull(),
     taskId: uuid('task_id').references(() => tasks.id, { onDelete: 'set null' }),
+    // Cliente anexado à mensagem (mensagem direta mandada de dentro da ficha
+    // do lead): o card "Cliente: <nome> · abrir ficha".
+    leadId: uuid('lead_id').references(() => leads.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [index('chat_messages_conversation_idx').on(table.conversationId, table.createdAt)],

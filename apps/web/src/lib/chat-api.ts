@@ -43,6 +43,8 @@ export interface ChatMessage {
   author: ChatUser | null
   /** Estado atual da tarefa (só em 'task'; null se foi apagada). */
   task: ChatMessageTask | null
+  /** Cliente anexado (mensagem mandada de dentro da ficha). */
+  lead: { id: string; name: string; funnelId: string } | null
   createdAt: string
 }
 
@@ -112,6 +114,14 @@ export function createChatTask(
   payload: CreateChatTaskPayload,
 ): Promise<ChatMessage> {
   return apiClient.post(`/chat/conversations/${conversationId}/tasks`, payload, { organizationId })
+}
+
+/** Mensagem direta pra alguém sobre um cliente (vai pra conversa direta). */
+export function sendDirectAboutLead(
+  organizationId: string,
+  payload: { userId: string; leadId: string; body: string },
+): Promise<{ conversationId: string; message: ChatMessage }> {
+  return apiClient.post('/chat/direct-messages', payload, { organizationId })
 }
 
 /** Nome que aparece na lista e no cabeçalho. */

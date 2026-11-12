@@ -94,6 +94,7 @@ function message(overrides: Partial<ChatMessageRecord> = {}): ChatMessageRecord 
     body: 'oi',
     author: { id: SELLER, name: 'Bianca', email: 'b@x.com', avatarUrl: null },
     task: null,
+    lead: null,
     createdAt: new Date('2026-11-10T12:00:00Z'),
     ...overrides,
   }
@@ -328,6 +329,62 @@ describe('ChatUseCases.send', () => {
     await expect(
       useCases.send({ userId: ADM, membership: ADM_CTX, conversationId: 'conv-1', body: '   ' }),
     ).rejects.toThrow()
+  })
+})
+
+describe('ChatUseCases.sendDirectAboutLead', () => {
+  const DIRECT: ChatConversationRecord = {
+    ...CLIENT_CONVERSATION,
+    id: 'conv-direct',
+    kind: 'direct',
+    clientId: null,
+    directKey: directKeyFor(SELLER, ADM),
+  }
+
+  it('sends to the direct conversation with the client attached', async () => {
+    const chat = buildChatRepository({
+      findOrCreateDirectConversation: vi.fn().mockResolvedValue(DIRECT),
+      findById: vi.fn().mockResolvedValue(DIRECT),
+      summarize: vi.fn().mockResolvedValue({ conversation: DIRECT }),
+      isParticipant: vi.fn().mockResolvedValue(true),
+      listParticipantIds: vi.fn().mockResolvedValue([SELLER, ADM]),
+    })
+    const { useCases, notifications } = setup(chat, {
+      findById: vi.fn().mockResolvedValue({ id: 'lead-adm', name: 'Maria' } as LeadRecord),
+    })
+
+    const result = await useCases.sendDirectAboutLead({
+      userId: SELLER,
+      membership: SELLER_CTX,
+      otherUserId: ADM,
+      leadId: 'lead-adm',
+      body: 'Consegue ver o RG?',
+    })
+
+    expect(result?.conversationId).toBe('conv-direct')
+    expect(chat.findOrCreateDirectConversation).toHaveBeenCalledWith(ORG, directKeyFor(SELLER, ADM))
+    expect(chat.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ conversationId: 'conv-direct', leadId: 'lead-adm' }),
+    )
+    const notified = vi.mocked(notifications.notify).mock.calls.map(([n]) => n)
+    expect(notified.map((n) => n.userId)).toEqual([ADM])
+    expect(notified[0]?.metadata).toMatchObject({
+      clientName: 'Maria',
+      preview: 'Sobre Maria: Consegue ver o RG?',
+    })
+  })
+
+  it('refuses a lead the sender cannot see', async () => {
+    const { useCases, chat } = setup()
+    const result = await useCases.sendDirectAboutLead({
+      userId: SELLER,
+      membership: SELLER_CTX,
+      otherUserId: ADM,
+      leadId: 'lead-x',
+      body: 'oi',
+    })
+    expect(result).toBeNull()
+    expect(chat.addMessage).not.toHaveBeenCalled()
   })
 })
 

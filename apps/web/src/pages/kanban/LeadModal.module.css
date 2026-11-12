@@ -2067,3 +2067,23 @@
 .chatHint a {
   color: var(--color-accent-link);
 }
+
+.chatTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.chatSendTo {
+  flex: none;
+  padding: var(--space-1-5) var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-accent-border-btn);
+  background: var(--color-accent-gradient);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}

@@ -15,6 +15,7 @@ import {
   markConversationRead,
   openClientConversation,
   openDirectConversation,
+  sendDirectAboutLead,
   sendMessage,
 } from '../lib/chat-api'
 
@@ -138,6 +139,21 @@ export function useCreateChatTask(organizationId: string | null, conversationId:
     onSuccess: () => {
       if (conversationId) invalidate(conversationId)
       queryClient.invalidateQueries({ queryKey: ['tasks', organizationId] })
+    },
+  })
+}
+
+/** Mensagem direta pra alguém sobre um cliente (botão da ficha do lead). */
+export function useSendDirectAboutLead(organizationId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: { userId: string; leadId: string; body: string }) =>
+      sendDirectAboutLead(organizationId as string, payload),
+    onSuccess: ({ conversationId }) => {
+      queryClient.invalidateQueries({
+        queryKey: ['chat', organizationId, 'messages', conversationId],
+      })
+      queryClient.invalidateQueries({ queryKey: ['chat', organizationId, 'conversations'] })
     },
   })
 }

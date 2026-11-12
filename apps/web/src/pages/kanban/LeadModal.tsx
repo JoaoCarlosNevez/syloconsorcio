@@ -3,6 +3,7 @@
 
 import { Dropdown, Modal, Skeleton, useToast } from '@sylocrm/ui'
 import { useEffect, useRef, useState } from 'react'
+import { SendAboutClientModal } from '../../components/chat/SendAboutClientModal'
 import type { CardData } from '../../data/kanban-mock'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
 import {
@@ -189,6 +190,24 @@ function MailIcon() {
     >
       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
       <path d="M22 6l-10 7L2 6" />
+    </svg>
+  )
+}
+
+function ChatBubbleIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
   )
 }
@@ -1653,6 +1672,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
     return () => document.removeEventListener('mousedown', handler)
   }, [addingTag])
 
+  const [sendingAboutClient, setSendingAboutClient] = useState(false)
   const [activeTab, setActiveTab] = useState<
     'qualificacao' | 'simulacoes' | 'adesao' | 'checklist' | 'anexos' | 'chat'
   >('qualificacao')
@@ -1738,6 +1758,17 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
 
             {/* Ações */}
             <div className={styles.headerActions}>
+              {organizationId && (
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  onClick={() => setSendingAboutClient(true)}
+                  title="Mensagem direta pra alguém da equipe, com este cliente anexado"
+                >
+                  <ChatBubbleIcon />
+                  Mandar pra alguém
+                </button>
+              )}
               {isFollowOnly && (
                 <span className={styles.followOnlyBadge}>
                   Acompanhamento · o Administrativo dá andamento
@@ -2164,7 +2195,19 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
 
                 {/* ── Aba: Chat (conversa interna sobre o cliente) ───────── */}
                 {activeTab === 'chat' && organizationId && (
-                  <LeadChatPanel organizationId={organizationId} leadId={card.id} />
+                  <LeadChatPanel
+                    organizationId={organizationId}
+                    leadId={card.id}
+                    leadName={card.name}
+                  />
+                )}
+                {sendingAboutClient && organizationId && (
+                  <SendAboutClientModal
+                    organizationId={organizationId}
+                    leadId={card.id}
+                    leadName={card.name}
+                    onClose={() => setSendingAboutClient(false)}
+                  />
                 )}
 
                 {/* ── Aba: Simulações ─────────────────────────────────── */}

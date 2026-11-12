@@ -457,6 +457,7 @@ export type {
   ChatConversationRecord,
   ChatConversationSummary,
   ChatMessageKind,
+  ChatMessageLead,
   ChatMessageRecord,
   ChatMessageTask,
   ChatUser,

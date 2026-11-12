@@ -6,6 +6,7 @@
 
 import { Avatar, Skeleton, useToast } from '@sylocrm/ui'
 import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useChatMessages, useMarkConversationRead, useSendMessage } from '../../hooks/useChat'
 import { useChatTaskActions } from '../../hooks/useChatTaskActions'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
@@ -157,9 +158,28 @@ export interface ChatThreadProps {
   conversationId: string
   /** Mais baixo, sem bordas — dentro da ficha do lead. */
   compact?: boolean
+  /** Pra onde o card do cliente leva. Padrão: a ficha no Kanban do computador. */
+  leadLink?: (lead: NonNullable<ChatMessage['lead']>) => { to: string; state?: unknown }
 }
 
-export function ChatThread({ organizationId, conversationId, compact = false }: ChatThreadProps) {
+function kanbanLeadLink(lead: NonNullable<ChatMessage['lead']>) {
+  return { to: '/app/kanban', state: { openLeadId: lead.id, funnelId: lead.funnelId } }
+}
+
+function LeadChip({ link }: { link: { to: string; state?: unknown } }) {
+  return (
+    <Link to={link.to} state={link.state} className={styles.leadChipLink}>
+      abrir ficha
+    </Link>
+  )
+}
+
+export function ChatThread({
+  organizationId,
+  conversationId,
+  compact = false,
+  leadLink = kanbanLeadLink,
+}: ChatThreadProps) {
   const { toast } = useToast()
   const { data: currentUser } = useCurrentUser()
   const { data: teamData } = useTeamMembersQuery(organizationId)
@@ -261,6 +281,13 @@ export function ChatThread({ organizationId, conversationId, compact = false }: 
                     ) : (
                       <div className={`${styles.bubble} ${mine ? styles.bubbleMine : ''}`}>
                         {message.body}
+                      </div>
+                    )}
+                    {message.lead && (
+                      <div className={styles.leadChip}>
+                        <span className={styles.leadChipLabel}>Cliente</span>
+                        <span className={styles.leadChipName}>{message.lead.name}</span>
+                        <LeadChip link={leadLink(message.lead)} />
                       </div>
                     )}
                     <span className={styles.time}>{timeLabel(message.createdAt)}</span>

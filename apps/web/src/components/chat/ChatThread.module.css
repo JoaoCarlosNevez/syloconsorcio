@@ -111,6 +111,45 @@
   color: var(--color-text-disabled);
 }
 
+/* ── Cliente anexado à mensagem ─────────────────────────────────────────── */
+
+.leadChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  max-width: 100%;
+  padding: var(--space-1) var(--space-2-5);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-info-border);
+  background: var(--color-info-subtle);
+  font-size: var(--font-size-xs);
+}
+
+.leadChipLabel {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-info-text);
+}
+
+.leadChipName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.leadChipLink {
+  flex: none;
+  color: var(--color-accent-link);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+}
+
+.leadChipLink:hover {
+  text-decoration: underline;
+}
+
 /* ── Card de tarefa ──────────────────────────────────────────────────────── */
 
 .taskCard {
@@ -336,4 +375,9 @@
   .taskTriggerLabel {
     display: none;
   }
+}
+
+.hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
