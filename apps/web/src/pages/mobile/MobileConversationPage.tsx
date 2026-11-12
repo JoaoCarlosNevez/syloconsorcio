@@ -38,7 +38,11 @@ export function MobileConversationPage() {
       </div>
       {organizationId && !conversation.isError && (
         <div className={styles.chatBody}>
-          <ChatThread organizationId={organizationId} conversationId={conversationId} />
+          <ChatThread
+            organizationId={organizationId}
+            conversationId={conversationId}
+            leadLink={(lead) => ({ to: `/m/leads/${lead.id}` })}
+          />
         </div>
       )}
     </main>

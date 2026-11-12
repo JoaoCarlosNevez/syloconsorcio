@@ -8,6 +8,7 @@
 import { Skeleton } from '@sylocrm/ui'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { SendAboutClientModal } from '../../components/chat/SendAboutClientModal'
 import { useOpenClientConversation } from '../../hooks/useChat'
 import { type CallResult, useMobileLead } from '../../hooks/useMobileLead'
 import { useActiveOrganization } from '../../hooks/useOrganization'
@@ -81,6 +82,7 @@ export function MobileLeadPage() {
   const navigate = useNavigate()
   const { organizationId } = useActiveOrganization()
   const openClientChat = useOpenClientConversation(organizationId)
+  const [sendingAboutClient, setSendingAboutClient] = useState(false)
 
   const lead = m.lead.data
   if (m.lead.isLoading) {
@@ -290,6 +292,27 @@ export function MobileLeadPage() {
           </span>
           <ChatIcon />
         </button>
+        {organizationId && (
+          <button
+            type="button"
+            className={`${styles.card} ${styles.row}`}
+            onClick={() => setSendingAboutClient(true)}
+          >
+            <span className={styles.grow}>
+              <span className={styles.rowTitle}>Mandar pra alguém</span>
+              <span className={styles.rowSub}>Mensagem direta com este cliente anexado</span>
+            </span>
+            <ChatIcon />
+          </button>
+        )}
+        {sendingAboutClient && organizationId && (
+          <SendAboutClientModal
+            organizationId={organizationId}
+            leadId={lead.id}
+            leadName={lead.name}
+            onClose={() => setSendingAboutClient(false)}
+          />
+        )}
       </section>
 
       <section>
