@@ -59,7 +59,16 @@ export interface ChatMessageRecord {
   author: ChatUser | null
   /** Só em 'task'; null se a tarefa foi apagada. */
   task: ChatMessageTask | null
+  /** Cliente anexado (mensagem mandada de dentro da ficha); null se nenhum
+   * ou se o lead foi apagado. */
+  lead: ChatMessageLead | null
   createdAt: Date
+}
+
+export interface ChatMessageLead {
+  id: string
+  name: string
+  funnelId: string
 }
 
 export interface ChatConversationSummary {
@@ -78,6 +87,7 @@ export interface NewChatMessage {
   kind: ChatMessageKind
   body: string
   taskId?: string | null
+  leadId?: string | null
 }
 
 export interface IChatRepository {

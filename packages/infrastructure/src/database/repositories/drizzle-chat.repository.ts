@@ -283,10 +283,14 @@ export class DrizzleChatRepository implements IChatRepository {
         taskAssignedSector: tasks.assignedSector,
         taskDueAt: tasks.dueAt,
         taskCompletedAt: tasks.completedAt,
+        leadId: leads.id,
+        leadName: leads.name,
+        leadFunnelId: leads.funnelId,
       })
       .from(chatMessages)
       .leftJoin(users, eq(chatMessages.authorUserId, users.id))
       .leftJoin(tasks, eq(chatMessages.taskId, tasks.id))
+      .leftJoin(leads, eq(chatMessages.leadId, leads.id))
       .where(where)
       .orderBy(desc(chatMessages.createdAt))
       .limit(limit)
@@ -318,6 +322,10 @@ export class DrizzleChatRepository implements IChatRepository {
               completedAt: row.taskCompletedAt,
             }
           : null,
+      lead:
+        row.leadId && row.leadName && row.leadFunnelId
+          ? { id: row.leadId, name: row.leadName, funnelId: row.leadFunnelId }
+          : null,
     }))
   }
 
@@ -341,6 +349,7 @@ export class DrizzleChatRepository implements IChatRepository {
         kind: message.kind,
         body: message.body,
         taskId: message.taskId ?? null,
+        leadId: message.leadId ?? null,
       })
       .returning({ id: chatMessages.id, createdAt: chatMessages.createdAt })
     const row = inserted[0]
