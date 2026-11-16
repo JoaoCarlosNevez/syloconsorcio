@@ -68,7 +68,10 @@ export function AppRouter() {
           <Route index element={<Navigate to="home" replace />} />
           <Route path="home" element={<HomePage />} />
           <Route path="metas" element={<MetasPage />} />
-          <Route path="kanban" element={<KanbanPage key="kanban" />} />
+          {/* Aba Comercial (os funis de vendas). /app/kanban é o endereço antigo —
+              continua valendo pros links de notificações e do chat. */}
+          <Route path="comercial" element={<KanbanPage key="comercial" />} />
+          <Route path="kanban" element={<KanbanPage key="comercial" />} />
           {/* Abas do administrativo: o mesmo Kanban, preso ao funil do sistema.
               A key remonta a página ao trocar de aba (o funil ativo é estado). */}
           <Route path="adm" element={<KanbanPage key="adm" systemFunnel="BACKOFFICE" />} />

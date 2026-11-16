@@ -1028,7 +1028,7 @@ export function PerfilPage() {
                     <button
                       type="button"
                       className={styles.streakActionBtn}
-                      onClick={() => navigate('/app/kanban')}
+                      onClick={() => navigate('/app/comercial')}
                     >
                       Ir pro Kanban
                     </button>

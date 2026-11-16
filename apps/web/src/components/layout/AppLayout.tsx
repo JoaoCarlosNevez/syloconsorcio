@@ -271,7 +271,7 @@ function tierPaletteVars(tier: Tier | null): Record<string, string> {
 // (ex: o Master não opera leads nem tarefas — só acompanha a rede pelo início).
 const NAV_ITEMS = [
   { label: 'Início', path: '/app/home', icon: InicioIcon },
-  { label: 'Kanban', path: '/app/kanban', icon: KanbanIcon, permission: 'lead.read' },
+  { label: 'Comercial', path: '/app/comercial', icon: KanbanIcon, permission: 'lead.read' },
   { label: 'ADM', path: '/app/adm', icon: AdmIcon, permission: 'lead.read' },
   { label: 'Pós-venda', path: '/app/pos-venda', icon: PosVendaIcon, permission: 'lead.read' },
   { label: 'Tarefas', path: '/app/tarefas', icon: TarefasIcon, permission: 'task.read' },
@@ -426,7 +426,11 @@ export function AppLayout({ children }: AppLayoutProps) {
                 !membership ||
                 membership.permissions.includes(item.permission)),
           ).map(({ label, path, icon: Icon }) => {
-            const active = location.pathname === path || location.pathname.startsWith(`${path}/`)
+            const active =
+              location.pathname === path ||
+              location.pathname.startsWith(`${path}/`) ||
+              // Endereço antigo da aba Comercial.
+              (path === '/app/comercial' && location.pathname === '/app/kanban')
             return (
               <a
                 key={path}

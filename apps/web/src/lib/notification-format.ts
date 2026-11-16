@@ -118,15 +118,15 @@ export interface NotificationTarget {
 export function notificationTarget(notification: AppNotification): NotificationTarget {
   // O lead só fica visível pro vendedor depois de aceito — o aceite é no card
   // do LeadOfferPrompt, que aparece em qualquer página.
-  if (notification.type === 'lead.offered') return { path: '/app/kanban' }
+  if (notification.type === 'lead.offered') return { path: '/app/comercial' }
   if (notification.type === 'lead.received' || notification.type === 'proposal.viewed') {
     const { leadId, funnelId } = notification.metadata
     return typeof leadId === 'string'
       ? {
-          path: '/app/kanban',
+          path: '/app/comercial',
           state: { openLeadId: leadId, funnelId: typeof funnelId === 'string' ? funnelId : null },
         }
-      : { path: '/app/kanban' }
+      : { path: '/app/comercial' }
   }
   return notification.task
     ? { path: '/app/tarefas', state: { openTask: notification.task } }

@@ -226,7 +226,7 @@ export function ChatPage() {
                       {current.kind === 'client' ? (
                         current.clientLead ? (
                           <Link
-                            to="/app/kanban"
+                            to="/app/comercial"
                             state={{
                               openLeadId: current.clientLead.id,
                               funnelId: current.clientLead.funnelId,

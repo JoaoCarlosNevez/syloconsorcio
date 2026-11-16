@@ -592,7 +592,8 @@ const OUTCOME_LABEL: Record<OutcomeFilter, string> = {
 }
 
 /** Abas próprias do menu (ADM, Pós-venda): o Kanban fica preso ao funil do
- * sistema daquele tipo, sem o seletor de funil. */
+ * sistema daquele tipo, sem o seletor de funil. Sem `systemFunnel`, a página
+ * é a aba Comercial: só os funis de vendas (o Comercial e os extras). */
 export type SystemFunnelTab = 'BACKOFFICE' | 'POST_SALE'
 
 const SYSTEM_TAB_TITLE: Record<SystemFunnelTab, string> = {
@@ -617,6 +618,10 @@ export function KanbanPage({ systemFunnel }: { systemFunnel?: SystemFunnelTab } 
   // ── Funil ativo ────────────────────────────────────────────────────────────
   const { data: funnelsData } = useFunnelsQuery(organizationId)
   const funnels = funnelsData?.funnels ?? []
+  // Funis que esta aba mostra: o do sistema, ou os de vendas na Comercial.
+  const tabFunnels = funnels.filter((f) =>
+    systemFunnel ? f.kind === systemFunnel : f.kind === 'COMMERCIAL' || f.kind === 'SALES',
+  )
   const [activeFunnelId, setActiveFunnelId] = useState<string | null>(null)
 
   // Restaura o último funil escolhido (por organização) ou cai no padrão —
@@ -630,12 +635,13 @@ export function KanbanPage({ systemFunnel }: { systemFunnel?: SystemFunnelTab } 
     }
     const storageKey = `sylocrm:kanban:activeFunnel:${organizationId}`
     const stored = localStorage.getItem(storageKey)
-    const isStoredValid = funnels.some((f) => f.id === stored)
+    const sales = funnels.filter((f) => f.kind === 'COMMERCIAL' || f.kind === 'SALES')
+    const isStoredValid = sales.some((f) => f.id === stored)
     if (isStoredValid) {
       setActiveFunnelId(stored)
       return
     }
-    const fallback = funnels.find((f) => f.isDefault) ?? funnels[0]
+    const fallback = sales.find((f) => f.isDefault) ?? sales[0]
     if (fallback) setActiveFunnelId(fallback.id)
   }, [organizationId, funnels, systemFunnel])
 
@@ -660,12 +666,25 @@ export function KanbanPage({ systemFunnel }: { systemFunnel?: SystemFunnelTab } 
 
   useEffect(() => {
     if (!pendingLead?.funnelId) return
-    // Na aba de um funil do sistema, o funil não troca.
-    if (systemFunnel) return
-    if (funnels.some((f) => f.id === pendingLead.funnelId)) {
-      setActiveFunnelId(pendingLead.funnelId)
+    const target = funnels.find((f) => f.id === pendingLead.funnelId)
+    if (!target) return
+    // Lead de outra aba (ex: link do chat pra um cliente do ADM): leva pra ela.
+    const tabPath =
+      target.kind === 'BACKOFFICE'
+        ? '/app/adm'
+        : target.kind === 'POST_SALE'
+          ? '/app/pos-venda'
+          : '/app/comercial'
+    const belongsHere = systemFunnel
+      ? target.kind === systemFunnel
+      : target.kind === 'COMMERCIAL' || target.kind === 'SALES'
+    if (!belongsHere) {
+      setPendingLead(null)
+      navigate(tabPath, { state: pendingLead })
+      return
     }
-  }, [pendingLead, funnels, systemFunnel])
+    if (!systemFunnel) setActiveFunnelId(pendingLead.funnelId)
+  }, [pendingLead, funnels, systemFunnel, navigate])
 
   function handleSelectFunnel(id: string) {
     setActiveFunnelId(id)
@@ -932,7 +951,7 @@ export function KanbanPage({ systemFunnel }: { systemFunnel?: SystemFunnelTab } 
         {/* ── Header ──────────────────────────────────────────────────── */}
         <header className={styles.header}>
           <h1 className={styles.title}>
-            {systemFunnel ? SYSTEM_TAB_TITLE[systemFunnel] : 'Kanban'}
+            {systemFunnel ? SYSTEM_TAB_TITLE[systemFunnel] : 'Comercial'}
           </h1>
           <button
             type="button"
@@ -994,7 +1013,7 @@ export function KanbanPage({ systemFunnel }: { systemFunnel?: SystemFunnelTab } 
               </button>
             </div>
             <span className={styles.headerDivider} />
-            {!systemFunnel && funnels.length > 1 && (
+            {!systemFunnel && tabFunnels.length > 1 && (
               <Dropdown
                 trigger={
                   <span className={`${styles.filterBtn} ${styles.filterBtnActive}`}>
@@ -1002,7 +1021,7 @@ export function KanbanPage({ systemFunnel }: { systemFunnel?: SystemFunnelTab } 
                   </span>
                 }
                 items={[
-                  ...sortFunnels(funnels).map((funnel) => ({
+                  ...sortFunnels(tabFunnels).map((funnel) => ({
                     key: funnel.id,
                     label: funnel.name,
                     onSelect: () => handleSelectFunnel(funnel.id),
