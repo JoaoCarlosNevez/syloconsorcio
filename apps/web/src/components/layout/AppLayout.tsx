@@ -72,6 +72,42 @@ function TarefasIcon() {
     </svg>
   )
 }
+function AdmIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z" />
+      <path d="M14 3v6h6" />
+      <path d="m9 15 2 2 4-4" />
+    </svg>
+  )
+}
+function PosVendaIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z" />
+    </svg>
+  )
+}
 function ChatIcon() {
   return (
     <svg
@@ -236,6 +272,8 @@ function tierPaletteVars(tier: Tier | null): Record<string, string> {
 const NAV_ITEMS = [
   { label: 'Início', path: '/app/home', icon: InicioIcon },
   { label: 'Kanban', path: '/app/kanban', icon: KanbanIcon, permission: 'lead.read' },
+  { label: 'ADM', path: '/app/adm', icon: AdmIcon, permission: 'lead.read' },
+  { label: 'Pós-venda', path: '/app/pos-venda', icon: PosVendaIcon, permission: 'lead.read' },
   { label: 'Tarefas', path: '/app/tarefas', icon: TarefasIcon, permission: 'task.read' },
   { label: 'Chat', path: '/app/chat', icon: ChatIcon, permission: 'task.read' },
   { label: 'Configurações', path: '/app/config', icon: ConfigIcon },

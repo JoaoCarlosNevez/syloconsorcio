@@ -591,7 +591,16 @@ const OUTCOME_LABEL: Record<OutcomeFilter, string> = {
   todos: 'Todos',
 }
 
-export function KanbanPage() {
+/** Abas próprias do menu (ADM, Pós-venda): o Kanban fica preso ao funil do
+ * sistema daquele tipo, sem o seletor de funil. */
+export type SystemFunnelTab = 'BACKOFFICE' | 'POST_SALE'
+
+const SYSTEM_TAB_TITLE: Record<SystemFunnelTab, string> = {
+  BACKOFFICE: 'ADM',
+  POST_SALE: 'Pós-venda',
+}
+
+export function KanbanPage({ systemFunnel }: { systemFunnel?: SystemFunnelTab } = {}) {
   const navigate = useNavigate()
   const { organizationId, membership } = useActiveOrganization()
   const canViewLost = membership?.permissions.includes('lead.manage_lost') ?? false
@@ -614,6 +623,11 @@ export function KanbanPage() {
   // roda de novo sempre que a lista de funis muda (ex: primeiro carregamento).
   useEffect(() => {
     if (!organizationId || funnels.length === 0) return
+    if (systemFunnel) {
+      const locked = funnels.find((f) => f.kind === systemFunnel)
+      setActiveFunnelId(locked?.id ?? null)
+      return
+    }
     const storageKey = `sylocrm:kanban:activeFunnel:${organizationId}`
     const stored = localStorage.getItem(storageKey)
     const isStoredValid = funnels.some((f) => f.id === stored)
@@ -623,7 +637,7 @@ export function KanbanPage() {
     }
     const fallback = funnels.find((f) => f.isDefault) ?? funnels[0]
     if (fallback) setActiveFunnelId(fallback.id)
-  }, [organizationId, funnels])
+  }, [organizationId, funnels, systemFunnel])
 
   // ── Abrir um lead vindo de fora (notificação de lead novo) ──────────────────
   // A notificação navega pra cá com `{ openLeadId, funnelId }` no state. Troca
@@ -646,10 +660,12 @@ export function KanbanPage() {
 
   useEffect(() => {
     if (!pendingLead?.funnelId) return
+    // Na aba de um funil do sistema, o funil não troca.
+    if (systemFunnel) return
     if (funnels.some((f) => f.id === pendingLead.funnelId)) {
       setActiveFunnelId(pendingLead.funnelId)
     }
-  }, [pendingLead, funnels])
+  }, [pendingLead, funnels, systemFunnel])
 
   function handleSelectFunnel(id: string) {
     setActiveFunnelId(id)
@@ -725,7 +741,13 @@ export function KanbanPage() {
   // estágio realmente mudou quando o drag termina (handleDragEnd).
   const dragOriginColumnRef = useRef<string | null>(null)
 
-  const isLoading = isLoadingLeads || !organizationId || !activeFunnelId
+  // Aba ADM/Pós-venda numa organização que ainda não teve venda ganha: o funil
+  // do sistema ainda não existe (nasce no primeiro Ganho).
+  const missingSystemFunnel =
+    Boolean(systemFunnel) &&
+    funnelsData !== undefined &&
+    !funnels.some((f) => f.kind === systemFunnel)
+  const isLoading = !missingSystemFunnel && (isLoadingLeads || !organizationId || !activeFunnelId)
 
   // Segunda metade do "abrir lead vindo de fora" (ver pendingLead acima):
   // espera o funil certo carregar e o card entrar no board, então abre.
@@ -909,7 +931,9 @@ export function KanbanPage() {
       <div className={styles.page}>
         {/* ── Header ──────────────────────────────────────────────────── */}
         <header className={styles.header}>
-          <h1 className={styles.title}>Kanban</h1>
+          <h1 className={styles.title}>
+            {systemFunnel ? SYSTEM_TAB_TITLE[systemFunnel] : 'Kanban'}
+          </h1>
           <button
             type="button"
             className={styles.newLeadBtn}
@@ -970,7 +994,7 @@ export function KanbanPage() {
               </button>
             </div>
             <span className={styles.headerDivider} />
-            {funnels.length > 1 && (
+            {!systemFunnel && funnels.length > 1 && (
               <Dropdown
                 trigger={
                   <span className={`${styles.filterBtn} ${styles.filterBtnActive}`}>
@@ -1173,7 +1197,23 @@ export function KanbanPage() {
         )}
 
         {/* ── Estado vazio ─────────────────────────────────────────────── */}
-        {!isLoading && totalLeads === 0 && (
+        {missingSystemFunnel && systemFunnel && (
+          <EmptyState
+            title={`Ainda não há funil ${SYSTEM_TAB_TITLE[systemFunnel]}`}
+            description="Ele aparece sozinho quando a primeira venda é marcada como Ganho no Kanban."
+          />
+        )}
+        {!isLoading && !missingSystemFunnel && totalLeads === 0 && systemFunnel && (
+          <EmptyState
+            title={`Nenhum cliente no ${SYSTEM_TAB_TITLE[systemFunnel]} agora`}
+            description={
+              systemFunnel === 'BACKOFFICE'
+                ? 'Quando uma venda é marcada como Ganho, o cliente cai aqui pra conferência.'
+                : 'Quando uma cota é efetivada no ADM, o cliente cai aqui pro acompanhamento.'
+            }
+          />
+        )}
+        {!isLoading && !missingSystemFunnel && totalLeads === 0 && !systemFunnel && (
           <EmptyState
             title="Nenhum lead no funil ainda"
             description="Cadastre o primeiro lead para começar a acompanhar o funil de vendas."
