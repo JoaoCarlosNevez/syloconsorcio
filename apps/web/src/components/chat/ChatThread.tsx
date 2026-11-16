@@ -163,7 +163,7 @@ export interface ChatThreadProps {
 }
 
 function kanbanLeadLink(lead: NonNullable<ChatMessage['lead']>) {
-  return { to: '/app/kanban', state: { openLeadId: lead.id, funnelId: lead.funnelId } }
+  return { to: '/app/comercial', state: { openLeadId: lead.id, funnelId: lead.funnelId } }
 }
 
 function LeadChip({ link }: { link: { to: string; state?: unknown } }) {

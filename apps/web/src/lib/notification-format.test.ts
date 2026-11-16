@@ -109,7 +109,7 @@ describe('lead notifications', () => {
 
   it('opens the lead in the Kanban, in its funnel', () => {
     expect(notificationTarget(lead)).toEqual({
-      path: '/app/kanban',
+      path: '/app/comercial',
       state: { openLeadId: 'lead-01', funnelId: 'funnel-01' },
     })
   })
@@ -158,7 +158,7 @@ describe('proposal notifications', () => {
 
   it('opens the lead in the Kanban', () => {
     expect(notificationTarget(viewed)).toEqual({
-      path: '/app/kanban',
+      path: '/app/comercial',
       state: { openLeadId: 'lead-01', funnelId: 'funnel-01' },
     })
   })
@@ -181,7 +181,7 @@ describe('lead queue notifications', () => {
       headline: 'Novo lead pra você na fila',
       detail: 'Aceite até hoje às 10:05',
     })
-    expect(notificationTarget(offered)).toEqual({ path: '/app/kanban' })
+    expect(notificationTarget(offered)).toEqual({ path: '/app/comercial' })
   })
 
   it('warns managers when no one in the queue accepted', () => {

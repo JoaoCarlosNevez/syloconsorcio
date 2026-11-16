@@ -331,7 +331,9 @@ function BackofficeCard({ data }: { data: ManagementDashboard }) {
                 type="button"
                 className={styles.oldestRow}
                 onClick={() =>
-                  navigate('/app/kanban', { state: { openLeadId: card.leadId, funnelId: adm.id } })
+                  navigate('/app/comercial', {
+                    state: { openLeadId: card.leadId, funnelId: adm.id },
+                  })
                 }
               >
                 <span className={styles.oldestName}>{card.name}</span>

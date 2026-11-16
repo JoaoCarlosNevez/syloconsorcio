@@ -61,7 +61,7 @@ export function LeadOfferPrompt() {
     accept.mutate(offer.id, {
       onSuccess: ({ lead }) => {
         toast({ type: 'success', title: `Lead ${offer.lead.name} é seu` })
-        navigate('/app/kanban', { state: { openLeadId: lead.id, funnelId: lead.funnelId } })
+        navigate('/app/comercial', { state: { openLeadId: lead.id, funnelId: lead.funnelId } })
       },
       onError: (error) => {
         toast({
