@@ -107,7 +107,14 @@ export function AppRouter() {
           <Route index element={<Navigate to="home" replace />} />
           <Route path="home" element={<HomePage />} />
           <Route path="metas" element={<MetasPage />} />
-          <Route path="kanban" element={<KanbanPage />} />
+          <Route path="kanban" element={<KanbanPage key="kanban" />} />
+          {/* Abas do administrativo: o mesmo Kanban, preso ao funil do sistema.
+              A key remonta a página ao trocar de aba (o funil ativo é estado). */}
+          <Route path="adm" element={<KanbanPage key="adm" systemFunnel="BACKOFFICE" />} />
+          <Route
+            path="pos-venda"
+            element={<KanbanPage key="pos-venda" systemFunnel="POST_SALE" />}
+          />
           <Route path="tarefas" element={<TarefasPage />} />
           <Route path="chat" element={<ChatPage />} />
           <Route path="chat/:conversationId" element={<ChatPage />} />
