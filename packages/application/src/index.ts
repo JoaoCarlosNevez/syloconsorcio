@@ -460,3 +460,21 @@ export {
   MAX_ADMINISTRATOR_EMAILS,
   normalizeAdministrator,
 } from './administrators/administrator.use-cases'
+
+// Envio pelo Gmail do usuário (login com Google)
+export {
+  GmailNotConnectedError,
+  type GoogleAccountRecord,
+  type IGmailGateway,
+  type IGoogleAccountRepository,
+  type IOAuthStateSigner,
+  type MailAttachment,
+  type OAuthStateClaims,
+  type OutgoingMail,
+} from './ports/gmail.ports'
+export {
+  GMAIL_MAX_ATTACHMENTS_BYTES,
+  GmailUseCases,
+  type SendAdhesionEmailInput,
+  type SendAdhesionEmailResult,
+} from './google/gmail.use-cases'

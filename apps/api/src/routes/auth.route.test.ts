@@ -28,6 +28,7 @@ function buildStorageProvider(): IStorageProvider {
     deleteFolderFiles: vi.fn(),
     uploadPrivateFile: vi.fn(),
     copyFile: vi.fn().mockResolvedValue(undefined),
+    downloadPrivateFile: vi.fn(),
     createSignedUrl: vi.fn(),
     deleteFiles: vi.fn(),
     uploadPublicFile: vi.fn().mockResolvedValue({

@@ -6,10 +6,11 @@
 // os dados do plano ficam numa aba por cota; ao marcar Ganho, cada cota vira
 // um card no ADM. Lógica do checklist em lib/adhesion-checklist.ts.
 
-import { Skeleton, useToast } from '@sylocrm/ui'
+import { Modal, Skeleton, useToast } from '@sylocrm/ui'
 import { useEffect, useState } from 'react'
 import type { CardData } from '../../data/kanban-mock'
 import { useAdministratorsQuery } from '../../hooks/useAdministrators'
+import { useGoogleMailStatus, useSendAdhesionEmail } from '../../hooks/useGoogleMail'
 import {
   useAdhesionDocumentsQuery,
   useLeadAdhesionQuery,
@@ -37,8 +38,9 @@ import {
   isQuotaFilled,
   leadChanges,
 } from '../../lib/adhesion-checklist'
-import { buildAdhesionEmail } from '../../lib/adhesion-email'
-import { findAdministrator } from '../../lib/administrators-api'
+import { adhesionEmailContent, buildAdhesionEmail } from '../../lib/adhesion-email'
+import { type Administrator, findAdministrator } from '../../lib/administrators-api'
+import { ApiError } from '../../lib/api-client'
 import { formatMoneyInput, formatPhoneBR, parseValueToCents } from '../../lib/lead-adapters'
 import type { LeadProposal } from '../../lib/leads-api'
 import type { TeamMember } from '../../lib/team-api'
@@ -180,6 +182,9 @@ export function AdhesionTab({
   const [activeQuota, setActiveQuota] = useState(0)
   const administratorsQuery = useAdministratorsQuery(organizationId)
   const administrators = administratorsQuery.data?.items ?? []
+  const gmailStatus = useGoogleMailStatus()
+  const sendEmail = useSendAdhesionEmail(organizationId, card.id)
+  const [confirmingSend, setConfirmingSend] = useState<Administrator | null>(null)
 
   // Monta o formulário quando a ficha chega (e de novo se trocar de lead).
   // De propósito NÃO depende de card/latestProposal: eles mudam a cada
@@ -318,27 +323,43 @@ export function AdhesionTab({
     }
   }
 
-  /** Abre o e-mail do usuário pra administradora da cota, com a ficha. */
-  async function handleSendEmail() {
-    if (!form) return
+  /** A administradora cadastrada da cota (a primeira que bater); avisa se
+   * não tem nenhuma. */
+  function resolveAdministrator(): Administrator | null {
+    if (!form) return null
     const named = form.quotas.map((q) => q.administrator.trim()).filter(Boolean)
     const target = named
       .map((name) => findAdministrator(administrators, name))
       .find((item) => item !== null)
-    if (!target) {
-      toast({
-        type: 'error',
-        title:
-          named.length === 0
-            ? 'Preencha a administradora da cota'
-            : `"${named[0]}" não está cadastrada`,
-        description:
-          named.length === 0
-            ? 'O e-mail vai pra administradora escolhida na cota.'
-            : 'O Dono cadastra a administradora e o e-mail dela em Configurações → Administradoras.',
-      })
+    if (target) return target
+    toast({
+      type: 'error',
+      title:
+        named.length === 0
+          ? 'Preencha a administradora da cota'
+          : `"${named[0]}" não está cadastrada`,
+      description:
+        named.length === 0
+          ? 'O e-mail vai pra administradora escolhida na cota.'
+          : 'O Dono cadastra a administradora e o e-mail dela em Configurações → Administradoras.',
+    })
+    return null
+  }
+
+  function handleSendEmail() {
+    const target = resolveAdministrator()
+    if (!target) return
+    // Gmail conectado: confirma e envia pelo servidor, com os documentos.
+    if (gmailStatus.data?.connected) {
+      setConfirmingSend(target)
       return
     }
+    void openMailto(target)
+  }
+
+  /** Sem Gmail conectado: abre o programa de e-mail do usuário. */
+  async function openMailto(target: Administrator) {
+    if (!form) return
     const text = adhesionText(form, { organizationName, sellerName })
     let copied = false
     try {
@@ -365,6 +386,47 @@ export function AdhesionTab({
           : 'A ficha é longa demais pro link: use "Copiar ficha" e cole no e-mail.'
         : 'Anexe os documentos antes de enviar.',
     })
+  }
+
+  /** Gmail conectado: o servidor manda pela conta do usuário, com os anexos. */
+  function sendThroughGmail(target: Administrator) {
+    if (!form) return
+    const content = adhesionEmailContent({
+      clientName: card.name,
+      organizationName,
+      fichaText: adhesionText(form, { organizationName, sellerName }),
+    })
+    sendEmail.mutate(
+      { administratorId: target.id, ...content },
+      {
+        onSuccess: (result) => {
+          setConfirmingSend(null)
+          toast({
+            type: 'success',
+            title: `Ficha enviada pra ${result.administratorName}`,
+            description: `Pelo seu Gmail (${result.from}), com ${result.attachments} documento(s). Está na sua pasta Enviados.`,
+          })
+        },
+        onError: (error) => {
+          setConfirmingSend(null)
+          if (error instanceof ApiError && error.code === 'GMAIL_NOT_CONNECTED') {
+            toast({
+              type: 'warning',
+              title: 'Sua conexão com o Gmail expirou',
+              description:
+                'Conecte de novo em Configurações → E-mail (Gmail). Abrindo seu e-mail pra enviar agora.',
+            })
+            void openMailto(target)
+            return
+          }
+          toast({
+            type: 'error',
+            title: 'A ficha não foi enviada',
+            description: error instanceof Error ? error.message : undefined,
+          })
+        },
+      },
+    )
   }
 
   async function handleCopy() {
@@ -686,9 +748,19 @@ export function AdhesionTab({
           <CopyIcon />
           Copiar ficha
         </button>
-        <button type="button" className={styles.copyBtn} onClick={handleSendEmail}>
+        <button
+          type="button"
+          className={styles.copyBtn}
+          onClick={handleSendEmail}
+          disabled={sendEmail.isPending}
+          title={
+            gmailStatus.data?.available && !gmailStatus.data.connected
+              ? 'Conecte seu Gmail em Configurações → E-mail (Gmail) pra enviar com os documentos anexados'
+              : undefined
+          }
+        >
           <MailIcon />
-          Enviar pra administradora
+          {gmailStatus.data?.connected ? 'Enviar pelo Gmail' : 'Enviar pra administradora'}
         </button>
         <button
           type="button"
@@ -699,6 +771,41 @@ export function AdhesionTab({
           {isSaving ? 'Salvando…' : dirty ? 'Salvar ficha' : 'Ficha salva'}
         </button>
       </div>
+
+      {confirmingSend && (
+        <Modal
+          open
+          onClose={() => setConfirmingSend(null)}
+          title="Enviar a ficha pelo Gmail?"
+          size="sm"
+          footer={
+            <div className={styles.confirmActions}>
+              <button
+                type="button"
+                className={styles.copyBtn}
+                onClick={() => setConfirmingSend(null)}
+                disabled={sendEmail.isPending}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className={styles.saveBtn}
+                onClick={() => sendThroughGmail(confirmingSend)}
+                disabled={sendEmail.isPending}
+              >
+                {sendEmail.isPending ? 'Enviando…' : 'Enviar'}
+              </button>
+            </div>
+          }
+        >
+          <p className={styles.confirmText}>
+            Vai pelo seu Gmail (<b>{gmailStatus.data?.email}</b>) pra <b>{confirmingSend.name}</b> (
+            {confirmingSend.emails.join(', ')}), com a ficha de {card.name} e{' '}
+            {documentsQuery.data?.documents.length ?? 0} documento(s) anexado(s).
+          </p>
+        </Modal>
+      )}
     </div>
   )
 }

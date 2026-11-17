@@ -18,6 +18,8 @@ import type {
   IChatRepository,
   IEngagementRepository,
   IFunnelRepository,
+  IGmailGateway,
+  IGoogleAccountRepository,
   ILeadAdhesionRepository,
   ILeadChecklistRepository,
   ILeadProposalRepository,
@@ -26,6 +28,7 @@ import type {
   IManagementDashboardRepository,
   IMembershipRepository,
   INotificationRepository,
+  IOAuthStateSigner,
   IOrganizationRepository,
   IPostSalePaymentRepository,
   IStorageProvider,
@@ -38,6 +41,7 @@ import {
   ChatUseCases,
   CreateTaskUseCase,
   DEFAULT_LEAD_QUEUE_TIMEOUT_MINUTES,
+  GmailUseCases,
   NO_OP_ACTIVITY_LOG,
   NO_OP_NOTIFICATIONS,
 } from '@sylocrm/application'
@@ -50,6 +54,7 @@ import { authRoute } from './routes/auth.route'
 import { chatRoute } from './routes/chat.route'
 import { dashboardRoute } from './routes/dashboard.route'
 import { funnelsRoute } from './routes/funnels.route'
+import { googleMailRoute } from './routes/google-mail.route'
 import { healthRoute } from './routes/health.route'
 import { leadQueueRoute } from './routes/lead-queue.route'
 import { leadsRoute } from './routes/leads.route'
@@ -88,6 +93,12 @@ export interface BuildAppDeps {
   chatRepository: IChatRepository
   /** Administradoras de consórcio da organização. */
   administratorRepository: IAdministratorRepository
+  /** Envio pelo Gmail do usuário; null = Google não configurado. */
+  gmail: {
+    accounts: IGoogleAccountRepository
+    gateway: IGmailGateway
+    stateSigner: IOAuthStateSigner
+  } | null
 }
 
 /** Sem banco: nenhuma conversa existe e nada é gravado. */
@@ -231,6 +242,9 @@ function createNoOpStorageProvider(): IStorageProvider {
     uploadPrivateFile: async () => {
       throw new Error('Storage provider not configured — cannot upload files.')
     },
+    downloadPrivateFile: async () => {
+      throw new Error('Storage provider not configured — cannot read files.')
+    },
     createSignedUrl: async () => {
       throw new Error('Storage provider not configured — cannot read files.')
     },
@@ -353,6 +367,7 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     // Sem banco, ninguém tem ofensiva.
     streakRepository: deps?.streakRepository ?? { listActiveDays: async () => [] },
     chatRepository: deps?.chatRepository ?? NO_OP_CHAT_REPOSITORY,
+    gmail: deps?.gmail ?? null,
     administratorRepository: deps?.administratorRepository ?? {
       list: async () => [],
       create: async () => {
@@ -515,6 +530,27 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     leadRepository: resolvedDeps.leadRepository,
     activityLogRepository: resolvedDeps.activityLogRepository,
     notificationRepository: resolvedDeps.notificationRepository,
+  })
+
+  app.register(googleMailRoute, {
+    authProvider: resolvedDeps.authProvider,
+    membershipRepository: resolvedDeps.membershipRepository,
+    organizationRepository: resolvedDeps.organizationRepository,
+    userRepository: resolvedDeps.userRepository,
+    allowedReturnOrigins: env.CORS_ORIGIN.split(','),
+    gmail: resolvedDeps.gmail
+      ? new GmailUseCases(
+          resolvedDeps.gmail.accounts,
+          resolvedDeps.gmail.gateway,
+          resolvedDeps.gmail.stateSigner,
+          resolvedDeps.leadRepository,
+          resolvedDeps.organizationRepository,
+          resolvedDeps.administratorRepository,
+          resolvedDeps.leadAdhesionRepository,
+          resolvedDeps.storageProvider,
+          resolvedDeps.activityLogRepository,
+        )
+      : null,
   })
 
   app.register(administratorsRoute, {

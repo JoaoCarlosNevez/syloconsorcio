@@ -15,6 +15,18 @@ export interface AdhesionEmail {
   bodyTruncated: boolean
 }
 
+/** Assunto e corpo do e-mail da ficha (Gmail pela API ou mailto:). */
+export function adhesionEmailContent(input: {
+  clientName: string
+  organizationName: string
+  fichaText: string
+}): { subject: string; body: string } {
+  return {
+    subject: `Ficha de adesão — ${input.clientName} (${input.organizationName})`,
+    body: `Olá,\n\nSegue a ficha de adesão de ${input.clientName}. Os documentos vão em anexo.\n\n${input.fichaText}`,
+  }
+}
+
 export function buildAdhesionEmail(input: {
   emails: readonly string[]
   clientName: string
@@ -22,8 +34,7 @@ export function buildAdhesionEmail(input: {
   fichaText: string
 }): AdhesionEmail {
   const to = input.emails.map(encodeURIComponent).join(',')
-  const subject = `Ficha de adesão — ${input.clientName} (${input.organizationName})`
-  const fullBody = `Olá,\n\nSegue a ficha de adesão de ${input.clientName}. Os documentos vão em anexo.\n\n${input.fichaText}`
+  const { subject, body: fullBody } = adhesionEmailContent(input)
   const shortBody = `Olá,\n\nSegue a ficha de adesão de ${input.clientName}. Os documentos vão em anexo.\n\n[cole a ficha aqui]`
   const build = (body: string) =>
     `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`

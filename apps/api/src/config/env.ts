@@ -8,6 +8,12 @@
 
 import { z } from 'zod'
 
+/** Variável que o docker stack repassa vazia quando não está no api.env
+ * conta como ausente (senão um "" quebraria a validação da URL). */
+function unsetIfEmpty<T extends z.ZodTypeAny>(schema: T) {
+  return z.preprocess((value) => (value === '' ? undefined : value), schema)
+}
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3001),
@@ -35,6 +41,16 @@ const envSchema = z.object({
 
   // Frontend URL for CORS (set in production to the Vercel URL)
   FRONTEND_URL: z.string().optional(),
+
+  // Envio pelo Gmail do usuário (login com Google, escopo gmail.send). Sem as
+  // quatro, o recurso fica desligado e o front abre o e-mail do usuário.
+  // GOOGLE_REDIRECT_URI = https://<esta API>/integrations/google/callback,
+  // igual ao cadastrado no Google Cloud. TOKEN_ENCRYPTION_KEY: 32 bytes em
+  // base64 (`openssl rand -base64 32`) — criptografa o token do Google no banco.
+  GOOGLE_CLIENT_ID: unsetIfEmpty(z.string().optional()),
+  GOOGLE_CLIENT_SECRET: unsetIfEmpty(z.string().optional()),
+  GOOGLE_REDIRECT_URI: unsetIfEmpty(z.string().url().optional()),
+  TOKEN_ENCRYPTION_KEY: unsetIfEmpty(z.string().optional()),
 
   // Observability — optional, activates Sentry when present
   SENTRY_DSN: z.string().url().optional(),

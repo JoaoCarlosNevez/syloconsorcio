@@ -6,6 +6,7 @@
 // It creates the concrete adapters and injects them into the app factory.
 
 import 'dotenv/config'
+import { createHmac } from 'node:crypto'
 import {
   GeneratePostSalePaymentTasksUseCase,
   OfferLeadToQueueUseCase,
@@ -19,6 +20,7 @@ import {
   DrizzleChatRepository,
   DrizzleEngagementRepository,
   DrizzleFunnelRepository,
+  DrizzleGoogleAccountRepository,
   DrizzleLeadAdhesionRepository,
   DrizzleLeadChecklistRepository,
   DrizzleLeadProposalRepository,
@@ -32,8 +34,11 @@ import {
   DrizzleStreakRepository,
   DrizzleTaskRepository,
   DrizzleUserRepository,
+  GoogleGmailGateway,
+  HmacOAuthStateSigner,
   SupabaseAuthAdapter,
   SupabaseStorageAdapter,
+  TokenCipher,
   createDatabase,
   pingDatabase,
 } from '@sylocrm/infrastructure'
@@ -82,6 +87,31 @@ const managementDashboardRepository = database
   ? new DrizzleManagementDashboardRepository(database)
   : undefined
 
+// Envio pelo Gmail do usuário — só com as credenciais do Google e a chave que
+// criptografa o token no banco.
+const gmail =
+  database &&
+  env.GOOGLE_CLIENT_ID &&
+  env.GOOGLE_CLIENT_SECRET &&
+  env.GOOGLE_REDIRECT_URI &&
+  env.TOKEN_ENCRYPTION_KEY
+    ? {
+        accounts: new DrizzleGoogleAccountRepository(
+          database,
+          new TokenCipher(env.TOKEN_ENCRYPTION_KEY),
+        ),
+        gateway: new GoogleGmailGateway({
+          clientId: env.GOOGLE_CLIENT_ID,
+          clientSecret: env.GOOGLE_CLIENT_SECRET,
+          redirectUri: env.GOOGLE_REDIRECT_URI,
+        }),
+        // Segredo do state derivado da chave (não reaproveita a chave crua).
+        stateSigner: new HmacOAuthStateSigner(
+          createHmac('sha256', env.TOKEN_ENCRYPTION_KEY).update('oauth-state').digest('base64'),
+        ),
+      }
+    : null
+
 const storageProvider =
   env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY
     ? new SupabaseStorageAdapter({
@@ -115,6 +145,7 @@ const app = buildApp({
   achievementsRepository,
   // 3s: o healthcheck do Swarm desiste em 5s.
   checkDatabase: database ? () => pingDatabase(database, 3000) : undefined,
+  gmail,
 })
 
 // Fila de Leads: passa adiante os leads que ninguém aceitou no prazo. O

@@ -45,3 +45,8 @@ export { DrizzleEngagementRepository } from './database/repositories/drizzle-eng
 export { DrizzleManagementDashboardRepository } from './database/repositories/drizzle-management-dashboard.repository'
 export { DrizzleChatRepository } from './database/repositories/drizzle-chat.repository'
 export { DrizzleAdministratorRepository } from './database/repositories/drizzle-administrator.repository'
+export { DrizzleGoogleAccountRepository } from './database/repositories/drizzle-google-account.repository'
+export { TokenCipher } from './google/token-cipher'
+export { HmacOAuthStateSigner } from './google/oauth-state.signer'
+export { GoogleGmailGateway, buildMimeMessage } from './google/google-gmail.gateway'
+export type { GoogleOAuthConfig } from './google/google-gmail.gateway'

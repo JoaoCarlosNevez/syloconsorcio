@@ -337,6 +337,13 @@
       "when": 1794939769671,
       "tag": "0047_administrators",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1794941911922,
+      "tag": "0048_user_google_accounts",
+      "breakpoints": true
     }
   ]
 }

@@ -47,6 +47,14 @@ export class SupabaseStorageAdapter implements IStorageProvider {
     }
   }
 
+  async downloadPrivateFile(input: { bucket: string; path: string }): Promise<Buffer> {
+    const { data, error } = await this.client.storage.from(input.bucket).download(input.path)
+    if (error || !data) {
+      throw new Error(`Falha ao baixar arquivo: ${error?.message ?? 'sem retorno'}`)
+    }
+    return Buffer.from(await data.arrayBuffer())
+  }
+
   async createSignedUrl(input: {
     bucket: string
     path: string
