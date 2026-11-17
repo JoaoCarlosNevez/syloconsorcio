@@ -471,3 +471,15 @@ export {
   isLeadInScope,
 } from './chat/chat.use-cases'
 export type { CreateChatTaskInput } from './chat/chat.use-cases'
+
+// Administradoras de consórcio
+export type {
+  AdministratorInput,
+  AdministratorRecord,
+  IAdministratorRepository,
+} from './ports/administrator.repository'
+export {
+  AdministratorUseCases,
+  MAX_ADMINISTRATOR_EMAILS,
+  normalizeAdministrator,
+} from './administrators/administrator.use-cases'

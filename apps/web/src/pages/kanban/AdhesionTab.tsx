@@ -9,6 +9,7 @@
 import { Skeleton, useToast } from '@sylocrm/ui'
 import { useEffect, useState } from 'react'
 import type { CardData } from '../../data/kanban-mock'
+import { useAdministratorsQuery } from '../../hooks/useAdministrators'
 import {
   useAdhesionDocumentsQuery,
   useLeadAdhesionQuery,
@@ -36,6 +37,8 @@ import {
   isQuotaFilled,
   leadChanges,
 } from '../../lib/adhesion-checklist'
+import { buildAdhesionEmail } from '../../lib/adhesion-email'
+import { findAdministrator } from '../../lib/administrators-api'
 import { formatMoneyInput, formatPhoneBR, parseValueToCents } from '../../lib/lead-adapters'
 import type { LeadProposal } from '../../lib/leads-api'
 import type { TeamMember } from '../../lib/team-api'
@@ -95,6 +98,28 @@ function CheckIcon() {
   )
 }
 
+/** Sugestões do campo "Administradora" (Configurações → Administradoras). */
+const ADMINISTRATORS_LIST_ID = 'adhesion-administrators'
+
+function MailIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="m22 7-10 6L2 7" />
+    </svg>
+  )
+}
+
 function CopyIcon() {
   return (
     <svg
@@ -137,6 +162,8 @@ export function AdhesionTab({
   const [form, setForm] = useState<AdhesionForm | null>(null)
   const [dirty, setDirty] = useState(false)
   const [activeQuota, setActiveQuota] = useState(0)
+  const administratorsQuery = useAdministratorsQuery(organizationId)
+  const administrators = administratorsQuery.data?.items ?? []
 
   // Monta o formulário quando a ficha chega (e de novo se trocar de lead).
   // De propósito NÃO depende de card/latestProposal: eles mudam a cada
@@ -275,6 +302,55 @@ export function AdhesionTab({
     }
   }
 
+  /** Abre o e-mail do usuário pra administradora da cota, com a ficha. */
+  async function handleSendEmail() {
+    if (!form) return
+    const named = form.quotas.map((q) => q.administrator.trim()).filter(Boolean)
+    const target = named
+      .map((name) => findAdministrator(administrators, name))
+      .find((item) => item !== null)
+    if (!target) {
+      toast({
+        type: 'error',
+        title:
+          named.length === 0
+            ? 'Preencha a administradora da cota'
+            : `"${named[0]}" não está cadastrada`,
+        description:
+          named.length === 0
+            ? 'O e-mail vai pra administradora escolhida na cota.'
+            : 'O Dono cadastra a administradora e o e-mail dela em Configurações → Administradoras.',
+      })
+      return
+    }
+    const text = adhesionText(form, { organizationName, sellerName })
+    let copied = false
+    try {
+      await navigator.clipboard.writeText(text)
+      copied = true
+    } catch (error) {
+      // Sem permissão de área de transferência o e-mail ainda abre com a ficha
+      // no corpo; só avisa se a ficha não couber no link.
+      console.warn('Não foi possível copiar a ficha', error)
+    }
+    const email = buildAdhesionEmail({
+      emails: target.emails,
+      clientName: card.name,
+      organizationName,
+      fichaText: text,
+    })
+    window.location.href = email.href
+    toast({
+      type: email.bodyTruncated && !copied ? 'warning' : 'success',
+      title: `E-mail pra ${target.name} aberto`,
+      description: email.bodyTruncated
+        ? copied
+          ? 'A ficha é longa: cole no corpo do e-mail (já está copiada). Anexe os documentos.'
+          : 'A ficha é longa demais pro link: use "Copiar ficha" e cole no e-mail.'
+        : 'Anexe os documentos antes de enviar.',
+    })
+  }
+
   async function handleCopy() {
     if (!form) return
     const text = adhesionText(form, { organizationName, sellerName })
@@ -403,6 +479,7 @@ export function AdhesionTab({
               : undefined
           }
           placeholder={QUOTA_PLACEHOLDER[item.key]}
+          list={item.key === 'administrator' ? ADMINISTRATORS_LIST_ID : undefined}
           value={value}
           onChange={(e) => updateQuota(item.key, e.target.value)}
         />
@@ -582,10 +659,20 @@ export function AdhesionTab({
         <AdhesionDocuments organizationId={organizationId} leadId={card.id} />
       </section>
 
+      <datalist id={ADMINISTRATORS_LIST_ID}>
+        {administrators.map((item) => (
+          <option key={item.id} value={item.name} />
+        ))}
+      </datalist>
+
       <div className={styles.actions}>
         <button type="button" className={styles.copyBtn} onClick={handleCopy}>
           <CopyIcon />
           Copiar ficha
+        </button>
+        <button type="button" className={styles.copyBtn} onClick={handleSendEmail}>
+          <MailIcon />
+          Enviar pra administradora
         </button>
         <button
           type="button"

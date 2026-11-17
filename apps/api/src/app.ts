@@ -12,6 +12,7 @@ import multipart from '@fastify/multipart'
 import type {
   IAchievementsRepository,
   IActivityLogRepository,
+  IAdministratorRepository,
   IApiKeyRepository,
   IAuthProvider,
   IChatRepository,
@@ -35,6 +36,7 @@ import type {
   IUserRepository,
 } from '@sylocrm/application'
 import {
+  AdministratorUseCases,
   ChatUseCases,
   CreateTaskUseCase,
   DEFAULT_LEAD_QUEUE_TIMEOUT_MINUTES,
@@ -44,6 +46,7 @@ import {
 import Fastify from 'fastify'
 import { env } from './config/env'
 import { activityRoute } from './routes/activity.route'
+import { administratorsRoute } from './routes/administrators.route'
 import { apiKeysRoute } from './routes/api-keys.route'
 import { authRoute } from './routes/auth.route'
 import { chatRoute } from './routes/chat.route'
@@ -92,6 +95,8 @@ export interface BuildAppDeps {
   checkDatabase?: () => Promise<void>
   /** Chat interno; sem banco, nenhuma conversa existe. */
   chatRepository: IChatRepository
+  /** Administradoras de consórcio da organização. */
+  administratorRepository: IAdministratorRepository
 }
 
 /** Sem banco: nenhuma conversa existe e nada é gravado. */
@@ -368,6 +373,14 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     vapidPublicKey: deps?.vapidPublicKey ?? null,
     pushActionTokens: deps?.pushActionTokens ?? null,
     chatRepository: deps?.chatRepository ?? NO_OP_CHAT_REPOSITORY,
+    administratorRepository: deps?.administratorRepository ?? {
+      list: async () => [],
+      create: async () => {
+        throw new Error('Database not configured — cannot save administrators.')
+      },
+      update: async () => null,
+      delete: async () => false,
+    },
     achievementsRepository: deps?.achievementsRepository ?? {
       listWonSales: async () => [],
       firstPostSaleStageAt: async () => null,
@@ -523,6 +536,14 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     leadRepository: resolvedDeps.leadRepository,
     activityLogRepository: resolvedDeps.activityLogRepository,
     notificationRepository: resolvedDeps.notificationRepository,
+  })
+
+  app.register(administratorsRoute, {
+    authProvider: resolvedDeps.authProvider,
+    membershipRepository: resolvedDeps.membershipRepository,
+    organizationRepository: resolvedDeps.organizationRepository,
+    userRepository: resolvedDeps.userRepository,
+    administrators: new AdministratorUseCases(resolvedDeps.administratorRepository),
   })
 
   app.register(chatRoute, {

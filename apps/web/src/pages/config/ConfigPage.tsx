@@ -58,6 +58,7 @@ import { SECTORS, SECTOR_LABEL, type Sector } from '../../lib/sectors'
 import type { InvitableRole, TeamMember } from '../../lib/team-api'
 import { visibleTier } from '../../lib/tier-art'
 import { buildWelcomeMessage, copyLabel } from '../../lib/welcome-message'
+import { AdministradorasSection } from './AdministradorasSection'
 import styles from './ConfigPage.module.css'
 import { FilaSection } from './FilaSection'
 import { FunnelsSection } from './FunnelsSection'
@@ -346,6 +347,7 @@ type View =
   | 'atividade'
   | 'integracoes'
   | 'fila'
+  | 'administradoras'
 
 const ROLE_LABEL: Record<TeamMember['role'], string> = {
   ADMIN: 'Dono',
@@ -524,6 +526,12 @@ const ORG_ITEMS: HubNavItem[] = [
     description: 'Log de ações e auditoria',
     icon: <ActivityIcon />,
     view: 'atividade',
+  },
+  {
+    label: 'Administradoras',
+    description: 'Administradoras de consórcio e seus e-mails',
+    icon: <OrgIcon />,
+    view: 'administradoras',
   },
   {
     label: 'Integrações',
@@ -3175,6 +3183,7 @@ const VIEW_LABELS: Record<View, string> = {
   atividade: 'Atividade',
   integracoes: 'Integrações',
   fila: 'Fila de Leads',
+  administradoras: 'Administradoras',
 }
 
 // ── Component ────────────────────────────────────────────────────────────────────
@@ -3250,6 +3259,7 @@ export function ConfigPage() {
         {view === 'atividade' && <AtividadeView />}
         {view === 'integracoes' && <IntegracoesSection />}
         {view === 'fila' && <FilaSection />}
+        {view === 'administradoras' && <AdministradorasSection />}
       </div>
     </AppLayout>
   )
