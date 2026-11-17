@@ -5,7 +5,9 @@
 import { Skeleton } from '@sylocrm/ui'
 import { type FormEvent, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { useAdministratorsQuery } from '../../hooks/useAdministrators'
 import { useMobileAdhesion } from '../../hooks/useMobileAdhesion'
+import { useActiveOrganization } from '../../hooks/useOrganization'
 import {
   ADHESION_DOCUMENTS,
   ADHESION_ITEMS,
@@ -118,6 +120,8 @@ export function MobileAdhesionPage() {
   const [confirmRemove, setConfirmRemove] = useState(false)
   const cameraInput = useRef<HTMLInputElement | null>(null)
   const fileInput = useRef<HTMLInputElement | null>(null)
+  const { organizationId } = useActiveOrganization()
+  const administrators = useAdministratorsQuery(organizationId).data?.items ?? []
 
   if (a.isLoading) {
     return (
@@ -437,11 +441,20 @@ export function MobileAdhesionPage() {
                   value={draft}
                   inputMode={inputModeFor(target.key)}
                   placeholder={PLACEHOLDER[target.key]}
+                  list={target.key === 'administrator' ? 'mobile-administrators' : undefined}
                   onChange={(event) => setDraft(formatValue(target.key, event.target.value))}
                   aria-label={target.label}
                   // biome-ignore lint/a11y/noAutofocus: a folha abre pra digitar esse campo
                   autoFocus
                 />
+              )}
+              {target.key === 'administrator' && (
+                // Sugestões: Configurações → Administradoras.
+                <datalist id="mobile-administrators">
+                  {administrators.map((item) => (
+                    <option key={item.id} value={item.name} />
+                  ))}
+                </datalist>
               )}
               {target.kind === 'field' && target.key === 'zipCode' && !form.address.trim() && (
                 <p className={styles.note}>O endereço é preenchido pelo CEP.</p>
