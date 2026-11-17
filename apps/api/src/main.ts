@@ -14,6 +14,7 @@ import {
 import {
   DrizzleAchievementsRepository,
   DrizzleActivityLogRepository,
+  DrizzleAdministratorRepository,
   DrizzleApiKeyRepository,
   DrizzleChatRepository,
   DrizzleEngagementRepository,
@@ -64,6 +65,7 @@ const funnelRepository = database ? new DrizzleFunnelRepository(database) : unde
 const leadProposalRepository = database ? new DrizzleLeadProposalRepository(database) : undefined
 const taskRepository = database ? new DrizzleTaskRepository(database) : undefined
 const chatRepository = database ? new DrizzleChatRepository(database) : undefined
+const administratorRepository = database ? new DrizzleAdministratorRepository(database) : undefined
 const activityLogRepository = database ? new DrizzleActivityLogRepository(database) : undefined
 const notificationRepository = database ? new DrizzleNotificationRepository(database) : undefined
 const apiKeyRepository = database ? new DrizzleApiKeyRepository(database) : undefined
@@ -99,6 +101,7 @@ const app = buildApp({
   leadProposalRepository,
   taskRepository,
   chatRepository,
+  administratorRepository,
   activityLogRepository,
   notificationRepository,
   apiKeyRepository,
