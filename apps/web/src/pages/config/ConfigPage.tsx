@@ -22,6 +22,7 @@ import {
   useCurrentUser,
   useUpdateMyProfile,
 } from '../../hooks/useCurrentUser'
+import { useGoogleReturnToast } from '../../hooks/useGoogleMail'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import {
   useOrganizationSettingsQuery,
@@ -62,6 +63,7 @@ import { AdministradorasSection } from './AdministradorasSection'
 import styles from './ConfigPage.module.css'
 import { FilaSection } from './FilaSection'
 import { FunnelsSection } from './FunnelsSection'
+import { GmailSection } from './GmailSection'
 import { IntegracoesSection } from './IntegracoesSection'
 
 // ── Ícones ──────────────────────────────────────────────────────────────────────
@@ -348,6 +350,7 @@ type View =
   | 'integracoes'
   | 'fila'
   | 'administradoras'
+  | 'gmail'
 
 const ROLE_LABEL: Record<TeamMember['role'], string> = {
   ADMIN: 'Dono',
@@ -459,6 +462,12 @@ const MINHA_CONTA_ITEMS: HubNavItem[] = [
     view: 'notificacoes',
   },
   {
+    label: 'E-mail (Gmail)',
+    description: 'Enviar a ficha de adesão pelo seu Gmail',
+    icon: <BellIcon />,
+    view: 'gmail',
+  },
+  {
     label: 'Segurança',
     description: 'Senha, 2FA e sessões ativas',
     icon: <ShieldIcon />,
@@ -559,6 +568,7 @@ const ACCOUNT_VIEWS: ReadonlySet<View> = new Set<View>([
   'preferencias',
   'notificacoes',
   'seguranca',
+  'gmail',
 ])
 
 function HubView({
@@ -3184,12 +3194,16 @@ const VIEW_LABELS: Record<View, string> = {
   integracoes: 'Integrações',
   fila: 'Fila de Leads',
   administradoras: 'Administradoras',
+  gmail: 'E-mail (Gmail)',
 }
 
 // ── Component ────────────────────────────────────────────────────────────────────
 
 export function ConfigPage() {
-  const [requestedView, setView] = useState<View>('hub')
+  const [requestedView, setView] = useState<View>(() =>
+    new URLSearchParams(window.location.search).has('google') ? 'gmail' : 'hub',
+  )
+  useGoogleReturnToast()
   const { membership } = useActiveOrganization()
   // Vendedor só vê "Minha Conta". Enquanto a organização carrega, também só
   // "Minha Conta" — melhor as seções da organização aparecerem um instante
@@ -3260,6 +3274,7 @@ export function ConfigPage() {
         {view === 'integracoes' && <IntegracoesSection />}
         {view === 'fila' && <FilaSection />}
         {view === 'administradoras' && <AdministradorasSection />}
+        {view === 'gmail' && <GmailSection />}
       </div>
     </AppLayout>
   )

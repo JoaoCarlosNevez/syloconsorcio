@@ -45,6 +45,8 @@ export interface IStorageProvider {
   /** Envia um arquivo para um bucket privado (sobrescrevendo o caminho). */
   uploadPrivateFile(input: UploadFileInput): Promise<void>
 
+  /** Baixa um arquivo de bucket privado (ex: anexar documento num e-mail). */
+  downloadPrivateFile(input: { bucket: string; path: string }): Promise<Buffer>
   /** Link temporário pra ler um arquivo de bucket privado. */
   createSignedUrl(input: {
     bucket: string

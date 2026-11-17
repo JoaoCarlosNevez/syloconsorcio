@@ -1525,6 +1525,7 @@ describe('/leads/:id/adhesion/documents', () => {
       deleteFolderFiles: vi.fn(),
       uploadPrivateFile: vi.fn().mockResolvedValue(undefined),
       copyFile: vi.fn().mockResolvedValue(undefined),
+      downloadPrivateFile: vi.fn(),
       createSignedUrl: vi.fn().mockResolvedValue('https://signed.example/doc'),
       deleteFiles: vi.fn().mockResolvedValue(undefined),
     }

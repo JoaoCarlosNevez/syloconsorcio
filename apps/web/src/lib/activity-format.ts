@@ -150,6 +150,8 @@ export function describeActivity(
       return `comentou no lead ${label}${str(m, 'preview') ? `: ${quoted(str(m, 'preview'))}` : ''}`
     case 'lead.adhesion_updated':
       return `atualizou a ficha de adesão do lead ${label}`
+    case 'lead.adhesion_emailed':
+      return `enviou a ficha de adesão do lead ${label} pra ${str(m, 'administrator') ?? 'a administradora'} pelo Gmail${str(m, 'from') ? ` (${str(m, 'from')})` : ''}`
     case 'lead.installment_paid':
       return `confirmou o pagamento da parcela de ${str(entry.metadata, 'month') ?? 'mês'} do lead ${label}`
     case 'lead.installment_late':

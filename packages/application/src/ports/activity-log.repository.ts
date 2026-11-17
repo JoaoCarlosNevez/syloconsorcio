@@ -25,6 +25,7 @@ export type ActivityAction =
   | 'lead.comment_added'
   | 'lead.proposal_created'
   | 'lead.adhesion_updated'
+  | 'lead.adhesion_emailed'
   | 'lead.document_uploaded'
   | 'lead.document_deleted'
   | 'lead.checklist_checked'
