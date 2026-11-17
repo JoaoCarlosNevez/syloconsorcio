@@ -31,8 +31,6 @@ const ADMIN_MEMBERSHIP: UserMembership = {
   status: 'ACTIVE',
 }
 
-const MANAGER_MEMBERSHIP: UserMembership = { ...ADMIN_MEMBERSHIP, role: Role.MANAGER }
-
 function buildAuthProvider(): IAuthProvider {
   return {
     verifyToken: vi.fn().mockResolvedValue(IDENTITY),
