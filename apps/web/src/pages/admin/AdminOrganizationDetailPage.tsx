@@ -3,6 +3,9 @@
 // escolher o Master dela (ou deixá-la independente); num Master, ver as
 // Representações ligadas a ele.
 //
+// Arquivar tira a organização do ar sem apagar nada (ninguém entra, webhook
+// recusa, rotinas automáticas ignoram); Restaurar desfaz.
+//
 // Restrita a isPlatformAdmin=true, igual à AdminPage (lista).
 
 import {
@@ -10,6 +13,7 @@ import {
   Button,
   DataTable,
   Input,
+  Modal,
   OrganizationAvatar,
   Skeleton,
   Switch,
@@ -23,6 +27,7 @@ import { useCurrentUser } from '../../hooks/useCurrentUser'
 import {
   useOrganizationMembersQuery,
   useOrganizationsQuery,
+  useSetOrganizationArchived,
   useUpdateOrganization,
   useUploadOrganizationIcon,
 } from '../../hooks/useOrganizations'
@@ -51,6 +56,8 @@ export function AdminOrganizationDetailPage() {
   const { data: membersData, isLoading: isLoadingMembers } = useOrganizationMembersQuery(id ?? null)
   const updateOrganization = useUpdateOrganization(id ?? '')
   const uploadIcon = useUploadOrganizationIcon(id ?? '')
+  const setArchived = useSetOrganizationArchived(id ?? '')
+  const [confirmArchive, setConfirmArchive] = useState(false)
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -75,6 +82,26 @@ export function AdminOrganizationDetailPage() {
       toast({
         type: 'error',
         title: 'Não foi possível alterar o Master',
+        description: error instanceof Error ? error.message : undefined,
+      })
+    }
+  }
+
+  async function changeArchived(archived: boolean) {
+    try {
+      await setArchived.mutateAsync(archived)
+      setConfirmArchive(false)
+      toast({
+        type: 'success',
+        title: archived ? 'Organização arquivada' : 'Organização restaurada',
+        description: archived
+          ? 'Ninguém mais entra nela. Os dados continuam guardados.'
+          : 'A equipe volta a ter acesso normalmente.',
+      })
+    } catch (error) {
+      toast({
+        type: 'error',
+        title: archived ? 'Não foi possível arquivar' : 'Não foi possível restaurar',
         description: error instanceof Error ? error.message : undefined,
       })
     }
@@ -189,6 +216,24 @@ export function AdminOrganizationDetailPage() {
           <p>Organização não encontrada.</p>
         ) : (
           <>
+            {organization.archivedAt && (
+              <div className={styles.archivedBanner}>
+                <span>
+                  <strong>Arquivada</strong> em{' '}
+                  {new Date(organization.archivedAt).toLocaleDateString('pt-BR')}. Ninguém da equipe
+                  consegue entrar; os dados continuam guardados.
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => changeArchived(false)}
+                  loading={setArchived.isPending}
+                >
+                  Restaurar
+                </Button>
+              </div>
+            )}
+
             <div className={styles.detailHeader}>
               <button
                 type="button"
@@ -317,6 +362,49 @@ export function AdminOrganizationDetailPage() {
                 emptyTitle="Nenhum membro ainda"
               />
             </div>
+
+            {!organization.archivedAt && (
+              <div className={styles.archiveZone}>
+                <div>
+                  <h2 className={styles.sectionTitle}>Arquivar organização</h2>
+                  <p className={styles.muted}>
+                    Tira do ar sem apagar nada: ninguém da equipe entra, o webhook de leads para de
+                    aceitar e as tarefas automáticas param. Dá pra restaurar depois.
+                  </p>
+                </div>
+                <Button type="button" variant="danger" onClick={() => setConfirmArchive(true)}>
+                  Arquivar
+                </Button>
+              </div>
+            )}
+
+            <Modal
+              open={confirmArchive}
+              onClose={() => setConfirmArchive(false)}
+              title={`Arquivar ${organization.name}?`}
+              size="sm"
+            >
+              <p>
+                {organization.type === 'MASTER'
+                  ? 'Ninguém do Master consegue mais entrar. As Representações ligadas continuam funcionando normalmente.'
+                  : 'Ninguém da equipe consegue mais entrar, e o Master (se houver) deixa de ver os números dela.'}{' '}
+                Leads, tarefas, propostas e documentos continuam guardados, e você pode restaurar a
+                qualquer momento.
+              </p>
+              <div className={styles.modalActions}>
+                <Button type="button" variant="secondary" onClick={() => setConfirmArchive(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  variant="danger"
+                  loading={setArchived.isPending}
+                  onClick={() => changeArchived(true)}
+                >
+                  Arquivar
+                </Button>
+              </div>
+            </Modal>
           </>
         )}
       </div>

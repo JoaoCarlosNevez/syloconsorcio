@@ -30,6 +30,8 @@ export interface Organization {
   leadTags: string[]
   /** Meta de vendas mensal da organização, em centavos de crédito. null = sem meta. */
   salesGoalCents: number | null
+  /** ISO — arquivada pelo Super Admin (ninguém entra; nada foi apagado). null = ativa. */
+  archivedAt?: string | null
 }
 
 /** Dono opcional: nome e e-mail juntos, ou nenhum dos dois (só a organização). */
@@ -141,4 +143,15 @@ export function createPlatformUser(
  */
 export function deletePlatformUser(userId: string): Promise<void> {
   return apiClient.delete<void>(`/organizations/members/${userId}`)
+}
+
+/** Arquiva (archived=true) ou restaura a organização — só Super Admin. */
+export function setOrganizationArchived(
+  id: string,
+  archived: boolean,
+): Promise<{ organization: Organization }> {
+  return apiClient.post<{ organization: Organization }>(
+    `/organizations/${id}/${archived ? 'archive' : 'restore'}`,
+    {},
+  )
 }

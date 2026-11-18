@@ -41,6 +41,10 @@ function RepresentacoesTab() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const navigate = useNavigate()
   const organizations = data?.organizations ?? []
+  // Arquivadas no fim da lista.
+  const rows = [...organizations].sort(
+    (a, b) => Number(Boolean(a.archivedAt)) - Number(Boolean(b.archivedAt)),
+  )
 
   const columns: ColumnDef<Organization>[] = [
     {
@@ -57,7 +61,18 @@ function RepresentacoesTab() {
         />
       ),
     },
-    { key: 'name', header: 'Nome', render: (row) => row.name },
+    {
+      key: 'name',
+      header: 'Nome',
+      render: (row) =>
+        row.archivedAt ? (
+          <span className={styles.archivedName}>
+            {row.name} <Badge variant="slate">Arquivada</Badge>
+          </span>
+        ) : (
+          row.name
+        ),
+    },
     { key: 'type', header: 'Tipo', render: (row) => TYPE_LABEL[row.type] },
     {
       key: 'master',
@@ -85,7 +100,7 @@ function RepresentacoesTab() {
       <div className={styles.tableWrapper}>
         <DataTable
           columns={columns}
-          data={organizations}
+          data={rows}
           rowKey={(row) => row.id}
           isLoading={isLoading}
           emptyTitle="Nenhuma representação ainda"

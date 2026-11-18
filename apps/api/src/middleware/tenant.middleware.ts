@@ -116,7 +116,10 @@ export function createTenantMiddleware(
       ])
       if (
         organization &&
-        (user?.isPlatformAdmin || isInMasterNetwork(organization, await allMembershipsPromise))
+        (user?.isPlatformAdmin ||
+          // Arquivada: só o Super Admin ainda abre (pra conferir/restaurar).
+          (!organization.archivedAt &&
+            isInMasterNetwork(organization, await allMembershipsPromise)))
       ) {
         currentMembershipData = synthesizeOwnerMembership(organization)
       }

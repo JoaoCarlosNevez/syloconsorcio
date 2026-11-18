@@ -21,7 +21,7 @@ import {
   defaultSectorsForRole,
   isMemberSector,
 } from '@sylocrm/domain'
-import { and, arrayContains, eq, or } from 'drizzle-orm'
+import { and, arrayContains, eq, isNull, or } from 'drizzle-orm'
 import type { Database } from '../client'
 import { organizationMemberships, organizations, users } from '../schema'
 
@@ -84,6 +84,8 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
         and(
           eq(organizationMemberships.userId, userId),
           eq(organizationMemberships.status, 'ACTIVE'),
+          // Organização arquivada some da troca de empresa e ninguém entra.
+          isNull(organizations.archivedAt),
         ),
       )
 
@@ -103,6 +105,7 @@ export class DrizzleMembershipRepository implements IMembershipRepository {
           eq(organizationMemberships.userId, userId),
           eq(organizationMemberships.organizationId, organizationId),
           eq(organizationMemberships.status, 'ACTIVE'),
+          isNull(organizations.archivedAt),
         ),
       )
       .limit(1)

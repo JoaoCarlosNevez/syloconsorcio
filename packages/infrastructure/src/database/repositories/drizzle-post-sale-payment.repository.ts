@@ -9,7 +9,7 @@ import type {
 } from '@sylocrm/application'
 import { and, eq, inArray, isNotNull, isNull, like, ne, sql } from 'drizzle-orm'
 import type { Database } from '../client'
-import { funnels, leadAdhesionQuotas, leads, tasks } from '../schema'
+import { funnels, leadAdhesionQuotas, leads, organizations, tasks } from '../schema'
 
 export class DrizzlePostSalePaymentRepository implements IPostSalePaymentRepository {
   constructor(private readonly db: Database) {}
@@ -26,6 +26,7 @@ export class DrizzlePostSalePaymentRepository implements IPostSalePaymentReposit
       })
       .from(leads)
       .innerJoin(funnels, eq(funnels.id, leads.funnelId))
+      .innerJoin(organizations, eq(organizations.id, leads.organizationId))
       // Card do Pós-venda = uma cota (a venda com várias vira um card por cota).
       .innerJoin(
         leadAdhesionQuotas,
@@ -37,6 +38,8 @@ export class DrizzlePostSalePaymentRepository implements IPostSalePaymentReposit
           isNull(leads.wonAt),
           isNull(leads.lostAt),
           isNotNull(leadAdhesionQuotas.installmentDueDay),
+          // Organização arquivada não ganha tarefas automáticas novas.
+          isNull(organizations.archivedAt),
         ),
       )
     return rows.flatMap((row) => (row.dueDay ? [{ ...row, dueDay: row.dueDay }] : []))

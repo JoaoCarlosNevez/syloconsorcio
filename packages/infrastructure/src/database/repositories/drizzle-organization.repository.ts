@@ -10,7 +10,7 @@ import type {
   UpdateOrganizationInput,
 } from '@sylocrm/application'
 import type { OrganizationType } from '@sylocrm/domain'
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq, isNull } from 'drizzle-orm'
 import type { Database } from '../client'
 import { organizations } from '../schema'
 
@@ -28,6 +28,7 @@ const ORGANIZATION_COLUMNS = {
   leadSources: organizations.leadSources,
   leadTags: organizations.leadTags,
   salesGoalCents: organizations.salesGoalCents,
+  archivedAt: organizations.archivedAt,
 } as const
 
 function toOrganizationRecord(row: {
@@ -44,6 +45,7 @@ function toOrganizationRecord(row: {
   leadSources: string[]
   leadTags: string[]
   salesGoalCents: number | null
+  archivedAt: Date | null
 }): OrganizationRecord {
   return {
     id: row.id,
@@ -59,6 +61,7 @@ function toOrganizationRecord(row: {
     leadSources: row.leadSources,
     leadTags: row.leadTags,
     salesGoalCents: row.salesGoalCents,
+    archivedAt: row.archivedAt,
   }
 }
 
@@ -69,7 +72,12 @@ export class DrizzleOrganizationRepository implements IOrganizationRepository {
     const rows = await this.db
       .select({ id: organizations.id })
       .from(organizations)
-      .where(eq(organizations.parentOrganizationId, parentOrganizationId))
+      .where(
+        and(
+          eq(organizations.parentOrganizationId, parentOrganizationId),
+          isNull(organizations.archivedAt),
+        ),
+      )
 
     return rows.map((row) => row.id)
   }
@@ -126,6 +134,7 @@ export class DrizzleOrganizationRepository implements IOrganizationRepository {
         ...(input.leadSources !== undefined ? { leadSources: input.leadSources } : {}),
         ...(input.leadTags !== undefined ? { leadTags: input.leadTags } : {}),
         ...(input.salesGoalCents !== undefined ? { salesGoalCents: input.salesGoalCents } : {}),
+        ...(input.archivedAt !== undefined ? { archivedAt: input.archivedAt } : {}),
         updatedAt: new Date(),
       })
       .where(eq(organizations.id, id))

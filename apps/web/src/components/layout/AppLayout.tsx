@@ -292,7 +292,12 @@ export function AppLayout({ children }: AppLayoutProps) {
   const navigate = useNavigate()
   const { user, signOut } = useAuth()
   const { data: currentUser } = useCurrentUser()
-  const { membership, memberships, setActiveOrganizationId } = useActiveOrganization()
+  const {
+    membership,
+    memberships,
+    isLoading: membershipsLoading,
+    setActiveOrganizationId,
+  } = useActiveOrganization()
   const brandColor = membership?.organizationSecondaryColor ?? null
   const chatUnread = useChatUnread(membership?.organizationId ?? null).data?.count ?? 0
   const whiteLabelLogoUrl = membership?.organizationIconUrl ?? null
@@ -344,6 +349,30 @@ export function AppLayout({ children }: AppLayoutProps) {
       e.preventDefault()
       navigate(path)
     }
+  }
+
+  // Sem nenhuma organização ativa (a única foi arquivada ou a pessoa foi
+  // removida): explica em vez de abrir o CRM vazio. Super Admin segue normal.
+  if (
+    !membershipsLoading &&
+    memberships.length === 0 &&
+    currentUser &&
+    !currentUser.isPlatformAdmin
+  ) {
+    return (
+      <div className={styles.noOrganization}>
+        <div className={styles.noOrganizationCard}>
+          <h1 className={styles.noOrganizationTitle}>Sem acesso no momento</h1>
+          <p className={styles.noOrganizationText}>
+            Sua conta não está ligada a nenhuma empresa ativa no SyloCRM. Se isso não era esperado,
+            fale com o responsável pela sua empresa ou com o suporte.
+          </p>
+          <button type="button" className={styles.noOrganizationButton} onClick={handleSignOut}>
+            Sair
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
