@@ -17,6 +17,7 @@ import type {
   NewLeadCommentInput,
   NewLeadInput,
   UpdateLeadInput,
+  WonTotals,
   WonValueFilter,
 } from '@sylocrm/application'
 import {
@@ -285,6 +286,27 @@ export class DrizzleLeadRepository implements ILeadRepository {
       .where(and(...wonInDefaultFunnelConditions(filter)))
 
     return rows[0]?.total ?? 0
+  }
+
+  async wonTotalsByAssigneeInDefaultFunnel(
+    filter: Omit<WonValueFilter, 'assignedUserId'>,
+  ): Promise<Map<string, WonTotals>> {
+    const rows = await this.db
+      .select({
+        userId: leads.assignedUserId,
+        total: sql<string>`coalesce(sum(${leads.valueCents}), 0)`,
+        won: count(),
+      })
+      .from(leads)
+      .innerJoin(funnels, eq(leads.funnelId, funnels.id))
+      .where(and(...wonInDefaultFunnelConditions(filter), isNotNull(leads.assignedUserId)))
+      .groupBy(leads.assignedUserId)
+
+    const totals = new Map<string, WonTotals>()
+    for (const row of rows) {
+      if (row.userId) totals.set(row.userId, { cents: Number(row.total), count: row.won })
+    }
+    return totals
   }
 
   async delete(id: string, scope: LeadScopeFilter): Promise<boolean> {

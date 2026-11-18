@@ -39,6 +39,7 @@ function setup(members: TeamMember[], orgGoal: number | null = null) {
     countWonInDefaultFunnel: vi.fn(async (f: WonValueFilter) =>
       f.assignedUserId ? (WON[f.assignedUserId]?.count ?? 0) : 6,
     ),
+    wonTotalsByAssigneeInDefaultFunnel: vi.fn(async () => new Map(Object.entries(WON))),
   } as unknown as ILeadRepository
   const membershipRepository = {
     findActiveByOrganizationId: vi.fn().mockResolvedValue(members),
@@ -47,8 +48,12 @@ function setup(members: TeamMember[], orgGoal: number | null = null) {
     findById: vi.fn().mockResolvedValue({ name: 'Sylo', salesGoalCents: orgGoal }),
   } as unknown as IOrganizationRepository
   const streakRepository: IStreakRepository = {
-    listActiveDays: vi.fn(async (userId: string) =>
-      userId === 'caio' ? ['2026-10-01', '2026-10-02'] : ['2026-10-02'],
+    listActiveDays: vi.fn(),
+    listActiveDaysByUser: vi.fn(
+      async (userIds: string[]) =>
+        new Map(
+          userIds.map((id) => [id, id === 'caio' ? ['2026-10-01', '2026-10-02'] : ['2026-10-02']]),
+        ),
     ),
   }
   return new GetSalesRankingUseCase(
@@ -58,6 +63,32 @@ function setup(members: TeamMember[], orgGoal: number | null = null) {
     streakRepository,
   )
 }
+
+describe('GetSalesRankingUseCase — consultas', () => {
+  it('reads the whole team in one query per metric, not one per seller', async () => {
+    const leadRepository = {
+      sumWonValueCentsInDefaultFunnel: vi.fn().mockResolvedValue(0),
+      wonTotalsByAssigneeInDefaultFunnel: vi.fn().mockResolvedValue(new Map()),
+    } as unknown as ILeadRepository
+    const streakRepository: IStreakRepository = {
+      listActiveDays: vi.fn(),
+      listActiveDaysByUser: vi.fn().mockResolvedValue(new Map()),
+    }
+    const sellers = ['a', 'b', 'c', 'd'].map((id) => member(id, Role.SELLER))
+    const ranking = await new GetSalesRankingUseCase(
+      { findActiveByOrganizationId: vi.fn().mockResolvedValue(sellers) } as never,
+      leadRepository,
+      { findById: vi.fn().mockResolvedValue(null) } as never,
+      streakRepository,
+    ).execute({ organizationId: 'org-01', now: NOW })
+
+    expect(ranking.sellers).toHaveLength(4)
+    expect(ranking.sellers[0]).toMatchObject({ wonCents: 0, wonCount: 0, streakDays: 0 })
+    expect(leadRepository.wonTotalsByAssigneeInDefaultFunnel).toHaveBeenCalledTimes(1)
+    expect(streakRepository.listActiveDaysByUser).toHaveBeenCalledWith(['a', 'b', 'c', 'd'])
+    expect(streakRepository.listActiveDays).not.toHaveBeenCalled()
+  })
+})
 
 describe('GetSalesRankingUseCase', () => {
   it('ranks active sellers by value won, then clients won', async () => {

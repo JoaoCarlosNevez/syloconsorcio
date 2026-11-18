@@ -12,4 +12,8 @@ export interface IStreakRepository {
   /** Dias (YYYY-MM-DD, horário de Brasília) com alguma ação que conta pra
    * ofensiva, em ordem crescente, sem repetição. */
   listActiveDays(userId: string): Promise<string[]>
+
+  /** listActiveDays de vários usuários numa consulta só (rankings). Quem não
+   * tem dia ativo fica fora do mapa. */
+  listActiveDaysByUser(userIds: string[]): Promise<Map<string, string[]>>
 }
