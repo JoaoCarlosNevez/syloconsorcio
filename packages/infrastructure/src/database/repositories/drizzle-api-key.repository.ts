@@ -6,7 +6,7 @@
 import type { ApiKeyRecord, IApiKeyRepository, NewApiKeyInput } from '@sylocrm/application'
 import { and, desc, eq, isNull } from 'drizzle-orm'
 import type { Database } from '../client'
-import { organizationApiKeys, users } from '../schema'
+import { organizationApiKeys, organizations, users } from '../schema'
 
 const API_KEY_COLUMNS = {
   id: organizationApiKeys.id,
@@ -106,7 +106,15 @@ export class DrizzleApiKeyRepository implements IApiKeyRepository {
 
   async findActiveByHash(keyHash: string): Promise<ApiKeyRecord | null> {
     const rows = await this.selectWithCreator()
-      .where(and(eq(organizationApiKeys.keyHash, keyHash), isNull(organizationApiKeys.revokedAt)))
+      .innerJoin(organizations, eq(organizationApiKeys.organizationId, organizations.id))
+      .where(
+        and(
+          eq(organizationApiKeys.keyHash, keyHash),
+          isNull(organizationApiKeys.revokedAt),
+          // Organização arquivada não recebe mais leads por webhook.
+          isNull(organizations.archivedAt),
+        ),
+      )
       .limit(1)
     const row = rows[0]
     return row ? toApiKeyRecord(row) : null

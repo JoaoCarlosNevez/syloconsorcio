@@ -11,6 +11,7 @@ import {
   getOrganizationMembers,
   listOrganizations,
   listPlatformMembers,
+  setOrganizationArchived,
   updateOrganization,
   uploadOrganizationIcon,
 } from '../lib/organizations-api'
@@ -83,6 +84,18 @@ export function useDeletePlatformUser() {
     mutationFn: deletePlatformUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'platform-members'] })
+    },
+  })
+}
+
+export function useSetOrganizationArchived(organizationId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (archived: boolean) => setOrganizationArchived(organizationId, archived),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'organizations'] })
+      // A troca de empresa do próprio Super Admin pode ganhar/perder a organização.
+      queryClient.invalidateQueries({ queryKey: ['auth', 'memberships'] })
     },
   })
 }

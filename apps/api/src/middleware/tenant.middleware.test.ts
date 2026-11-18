@@ -412,12 +412,14 @@ describe('tenantMiddleware', () => {
   })
 
   it.each([
-    { parentOrganizationId: 'org-master-01', expected: 200 },
-    { parentOrganizationId: 'org-master-other', expected: 403 },
-    { parentOrganizationId: null, expected: 403 },
+    { parentOrganizationId: 'org-master-01', archivedAt: null, expected: 200 },
+    { parentOrganizationId: 'org-master-other', archivedAt: null, expected: 403 },
+    { parentOrganizationId: null, archivedAt: null, expected: 403 },
+    // Arquivada: nem o Master entra mais.
+    { parentOrganizationId: 'org-master-01', archivedAt: new Date(), expected: 403 },
   ])(
-    'gives a Master member owner access only to representações linked to their Master (parent $parentOrganizationId → $expected)',
-    async ({ parentOrganizationId, expected }) => {
+    'gives a Master member owner access only to representações linked to their Master (parent $parentOrganizationId, archived $archivedAt → $expected)',
+    async ({ parentOrganizationId, archivedAt, expected }) => {
       const mockRepo: IMembershipRepository = {
         findActiveByUserId: vi.fn().mockResolvedValue([ACTIVE_MASTER]),
         findActiveByUserAndOrganization: vi.fn().mockResolvedValue(null),
@@ -452,6 +454,7 @@ describe('tenantMiddleware', () => {
           cnpj: null,
           phone: null,
           website: null,
+          archivedAt,
         }),
       })
       const app = buildTestApp(mockRepo, IDENTITY, buildUserRepository(false), organizationRepo)

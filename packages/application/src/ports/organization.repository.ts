@@ -37,6 +37,8 @@ export interface OrganizationRecord {
   leadTags: string[]
   /** Meta de vendas mensal da organização, em centavos de crédito. null = sem meta. */
   salesGoalCents: number | null
+  /** Arquivada pelo Super Admin (null = ativa): ninguém entra, nada é apagado. */
+  archivedAt: Date | null
 }
 
 export interface NewOrganizationInput {
@@ -58,10 +60,13 @@ export interface UpdateOrganizationInput {
   leadSources?: string[]
   leadTags?: string[]
   salesGoalCents?: number | null
+  /** Arquivar (data) ou restaurar (null) — só o Super Admin. */
+  archivedAt?: Date | null
 }
 
 export interface IOrganizationRepository {
-  /** IDs das organizações cujo parentOrganizationId é `parentOrganizationId`. */
+  /** IDs das organizações cujo parentOrganizationId é `parentOrganizationId`
+   * (só as não arquivadas — a rede do Master deixa de enxergar a arquivada). */
   findChildOrganizationIds(parentOrganizationId: string): Promise<string[]>
 
   create(input: NewOrganizationInput): Promise<OrganizationRecord>

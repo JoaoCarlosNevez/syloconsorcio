@@ -6,6 +6,8 @@
 // GET    /organizations             — lista todas as organizações
 // PATCH  /organizations/:id         — edita nome, White Label e o Master da
 //                                      Representação (masterOrganizationId)
+// POST   /organizations/:id/archive — arquiva (ninguém entra; nada é apagado)
+// POST   /organizations/:id/restore — desfaz o arquivamento
 // POST   /organizations/:id/icon    — envia o ícone (upload para Supabase Storage)
 // GET    /organizations/:id/members — lista a equipe ativa de uma organização qualquer
 // GET    /organizations/members     — lista TODOS os membros da plataforma (qualquer status, cross-org)
@@ -293,6 +295,37 @@ export const organizationsRoute: FastifyPluginAsync<OrganizationsRouteOptions> =
       return { organization }
     },
   )
+
+  // ── POST /organizations/:id/archive | /restore ────────────────────────────
+  // Arquivar não apaga nada: tira a organização do ar (ninguém entra, webhook
+  // recusa, rotinas automáticas ignoram) até alguém restaurar.
+  for (const [action, archived] of [
+    ['archive', true],
+    ['restore', false],
+  ] as const) {
+    fastify.post<{ Params: { id: string } }>(
+      `/organizations/:id/${action}`,
+      { preHandler: [authMiddleware, platformAdminMiddleware] },
+      async (request, reply) => {
+        if (!z.string().uuid().safeParse(request.params.id).success) {
+          return reply.status(404).send(organizationNotFoundResponse())
+        }
+        const current = await options.organizationRepository.findById(request.params.id)
+        if (!current) return reply.status(404).send(organizationNotFoundResponse())
+        // Arquivar de novo mantém a data original.
+        if (Boolean(current.archivedAt) === archived) return { organization: current }
+        const organization = await options.organizationRepository.update(request.params.id, {
+          archivedAt: archived ? new Date() : null,
+        })
+        if (!organization) return reply.status(404).send(organizationNotFoundResponse())
+        request.log.info(
+          { organizationId: organization.id, archived, by: request.authIdentity?.id },
+          archived ? 'organization archived' : 'organization restored',
+        )
+        return { organization }
+      },
+    )
+  }
 
   // ── POST /organizations/:id/icon ──────────────────────────────────────────
   fastify.post<{ Params: { id: string } }>(

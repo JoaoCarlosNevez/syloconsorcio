@@ -52,6 +52,10 @@ export const organizations = pgTable('organizations', {
   // Representação" do início. null = sem meta (o card cai na soma das metas
   // dos membros definidas em Configurações > Equipe).
   salesGoalCents: bigint('sales_goal_cents', { mode: 'number' }),
+  // Arquivada pelo Super Admin: ninguém entra mais (some da troca de empresa,
+  // webhook recusa, rotinas automáticas ignoram), mas nada é apagado —
+  // restaurar é só voltar pra null.
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })

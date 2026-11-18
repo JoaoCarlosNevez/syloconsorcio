@@ -1141,3 +1141,81 @@ describe('DELETE /organizations/members/:userId', () => {
     })
   })
 })
+
+describe('POST /organizations/:id/archive | /restore', () => {
+  const ORG_ID = '7f1c2b8e-1d2a-4c3b-9e8f-0a1b2c3d4e5f'
+  const ACTIVE = { id: ORG_ID, name: 'Rep', type: 'REPRESENTACAO', archivedAt: null }
+
+  function setup(isPlatformAdmin = true, current: object | null = ACTIVE) {
+    const organizationRepository = buildOrganizationRepository()
+    organizationRepository.findById = vi.fn().mockResolvedValue(current)
+    organizationRepository.update = vi.fn(
+      async (_id: string, input: { archivedAt?: Date | null }) => ({
+        ...ACTIVE,
+        archivedAt: input.archivedAt ?? null,
+      }),
+    ) as never
+    const app = buildApp({
+      authProvider: buildAuthProvider(),
+      userRepository: buildUserRepository(isPlatformAdmin),
+      organizationRepository,
+      membershipRepository: buildMembershipRepository(),
+    })
+    return { app, organizationRepository }
+  }
+
+  it('archives without deleting anything', async () => {
+    const { app, organizationRepository } = setup()
+    const response = await app.inject({
+      method: 'POST',
+      url: `/organizations/${ORG_ID}/archive`,
+      headers: AUTH_HEADERS,
+    })
+    expect(response.statusCode).toBe(200)
+    expect(organizationRepository.update).toHaveBeenCalledWith(ORG_ID, {
+      archivedAt: expect.any(Date),
+    })
+    expect(response.json().organization.archivedAt).not.toBeNull()
+  })
+
+  it('restores an archived organization', async () => {
+    const { app, organizationRepository } = setup(true, { ...ACTIVE, archivedAt: new Date() })
+    const response = await app.inject({
+      method: 'POST',
+      url: `/organizations/${ORG_ID}/restore`,
+      headers: AUTH_HEADERS,
+    })
+    expect(response.statusCode).toBe(200)
+    expect(organizationRepository.update).toHaveBeenCalledWith(ORG_ID, { archivedAt: null })
+  })
+
+  it('keeps the original date when archiving twice', async () => {
+    const { app, organizationRepository } = setup(true, { ...ACTIVE, archivedAt: new Date() })
+    const response = await app.inject({
+      method: 'POST',
+      url: `/organizations/${ORG_ID}/archive`,
+      headers: AUTH_HEADERS,
+    })
+    expect(response.statusCode).toBe(200)
+    expect(organizationRepository.update).not.toHaveBeenCalled()
+  })
+
+  it('is only for the platform admin and 404s on unknown ids', async () => {
+    const denied = setup(false)
+    expect(
+      (
+        await denied.app.inject({
+          method: 'POST',
+          url: `/organizations/${ORG_ID}/archive`,
+          headers: AUTH_HEADERS,
+        })
+      ).statusCode,
+    ).toBe(403)
+    const missing = setup(true, null)
+    for (const url of [`/organizations/${ORG_ID}/archive`, '/organizations/not-a-uuid/restore']) {
+      expect(
+        (await missing.app.inject({ method: 'POST', url, headers: AUTH_HEADERS })).statusCode,
+      ).toBe(404)
+    }
+  })
+})
