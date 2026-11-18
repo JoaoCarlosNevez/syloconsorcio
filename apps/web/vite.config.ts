@@ -9,6 +9,23 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Bibliotecas que quase nunca mudam em arquivos próprios: a cada deploy
+        // o navegador só baixa de novo o código do app, o resto vem do cache.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined
+          if (/[\\/](react|react-dom|scheduler|react-router|react-router-dom)[\\/]/.test(id)) {
+            return 'vendor-react'
+          }
+          if (id.includes('@supabase')) return 'vendor-supabase'
+          if (id.includes('@tanstack')) return 'vendor-query'
+          return undefined
+        },
+      },
+    },
+  },
   preview: {
     port: 4173,
     strictPort: true,
