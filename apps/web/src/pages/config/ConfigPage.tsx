@@ -729,7 +729,7 @@ function EquipeView() {
       setToast(`${removeTarget.name ?? removeTarget.email} desativado da equipe.`)
       setRemoveTarget(null)
     } catch (error) {
-      setToast(error instanceof Error ? error.message : 'Não foi possível remover o usuário.')
+      setToast(error instanceof Error ? error.message : 'Não foi possível desativar o usuário.')
       setRemoveTarget(null)
     }
   }
@@ -884,7 +884,7 @@ function EquipeView() {
                           className={styles.removeMemberBtn}
                           onClick={() => setRemoveTarget(member)}
                         >
-                          Remover
+                          Desativar
                         </button>
                       )}
                     </td>
@@ -2822,10 +2822,11 @@ function RemoveMemberModal({
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: modal stops propagation */}
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <div className={styles.modalTitle}>Remover usuário</div>
+          <div className={styles.modalTitle}>Desativar usuário</div>
           <div className={styles.modalDesc}>
-            Tem certeza que deseja remover <strong>{member.name ?? member.email}</strong> da equipe?
-            Essa ação não pode ser desfeita.
+            <strong>{member.name ?? member.email}</strong> perde o acesso a esta empresa na hora.
+            Nada é apagado: leads, tarefas e histórico continuam guardados, e dá pra voltar atrás
+            pelo botão “Reativar”.
           </div>
         </div>
         <div className={styles.modalFooter}>
@@ -2838,7 +2839,7 @@ function RemoveMemberModal({
             onClick={onConfirm}
             disabled={isPending}
           >
-            {isPending ? 'Removendo…' : 'Remover'}
+            {isPending ? 'Desativando…' : 'Desativar'}
           </button>
         </div>
       </div>
