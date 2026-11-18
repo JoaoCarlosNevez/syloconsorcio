@@ -34,6 +34,22 @@ import { buildMembershipContext } from '../auth/membership-context'
 import { isInMasterNetwork, synthesizeOwnerMembership } from '../auth/synthetic-membership'
 
 /**
+ * Quanto tempo o contexto resolvido (membership, permissões, time) vale em
+ * memória. Cada resolução custa 2–3 idas ao banco, que fica longe da API; uma
+ * tela abre várias rotas de uma vez e o chat consulta a cada poucos segundos.
+ * Mudança de papel/suspensão leva no máximo isto pra valer.
+ */
+export const TENANT_CONTEXT_TTL_MS = 15_000
+const TENANT_CONTEXT_MAX_ENTRIES = 2_000
+
+type TenantResolution =
+  | { ok: true; context: AuthenticatedContext }
+  | { ok: false; status: 403; error: string; code: string }
+
+type ContextCache = Map<string, { expiresAt: number; resolution: Promise<TenantResolution> }>
+const contextCaches = new WeakMap<IMembershipRepository, ContextCache>()
+
+/**
  * Cria o preHandler de tenant com os repositórios necessários injetados.
  *
  * Deve ser registrado APÓS createAuthMiddleware na chain de preHandlers.
@@ -46,29 +62,36 @@ export function createTenantMiddleware(
   userRepository: IUserRepository,
   organizationRepository: IOrganizationRepository,
 ) {
-  return async function tenantMiddleware(
-    request: FastifyRequest,
-    reply: FastifyReply,
-  ): Promise<void> {
-    // authMiddleware deve ter rodado antes
-    const identity = request.authIdentity
-    if (!identity) {
-      return reply.status(401).send({
-        error: 'Identidade não resolvida. authMiddleware deve preceder tenantMiddleware.',
-        code: AuthErrorCode.TOKEN_MISSING,
-        status: 401,
-      })
-    }
+  // userId:organizationId → resolução em andamento ou pronta. Guarda a
+  // promise: requisições simultâneas da mesma tela dividem a mesma consulta.
+  // Cada arquivo de rotas cria seu middleware; o cache é um só por repositório.
+  let cache = contextCaches.get(membershipRepository)
+  if (!cache) {
+    cache = new Map()
+    contextCaches.set(membershipRepository, cache)
+  }
+  const store = cache
 
-    const organizationId = request.headers['x-organization-id']
-    if (!organizationId || typeof organizationId !== 'string') {
-      return reply.status(400).send({
-        error: 'Header X-Organization-Id é obrigatório para rotas de negócio.',
-        code: AuthErrorCode.TENANT_HEADER_MISSING,
-        status: 400,
-      })
+  function cached(userId: string, organizationId: string): Promise<TenantResolution> {
+    const key = `${userId}:${organizationId}`
+    const now = Date.now()
+    const hit = store.get(key)
+    if (hit && hit.expiresAt > now) return hit.resolution
+    if (store.size >= TENANT_CONTEXT_MAX_ENTRIES) {
+      for (const [k, entry] of store) if (entry.expiresAt <= now) store.delete(k)
+      if (store.size >= TENANT_CONTEXT_MAX_ENTRIES) store.clear()
     }
+    const resolution = resolve(userId, organizationId)
+    store.set(key, { expiresAt: now + TENANT_CONTEXT_TTL_MS, resolution })
+    // Falha de banco não fica guardada — a próxima requisição tenta de novo.
+    resolution.catch(() => {
+      if (store.get(key)?.resolution === resolution) store.delete(key)
+    })
+    return resolution
+  }
 
+  async function resolve(userId: string, organizationId: string): Promise<TenantResolution> {
+    const identity = { id: userId }
     // Disparada em paralelo com a busca abaixo — não depende do resultado dela,
     // e cada query paga uma rodada de rede inteira até o banco (ADR-02: Supabase
     // fica longe do ambiente de dev), então evitar serializar as duas economiza
@@ -100,19 +123,21 @@ export function createTenantMiddleware(
     }
 
     if (!currentMembershipData) {
-      return reply.status(403).send({
+      return {
+        ok: false,
+        status: 403,
         error: 'Acesso negado. Você não possui membership ativa nesta organização.',
         code: AuthErrorCode.MEMBERSHIP_NOT_FOUND,
-        status: 403,
-      })
+      }
     }
 
     if (currentMembershipData.status !== 'ACTIVE') {
-      return reply.status(403).send({
+      return {
+        ok: false,
+        status: 403,
         error: 'Membership suspensa ou inativa.',
         code: AuthErrorCode.MEMBERSHIP_INACTIVE,
-        status: 403,
-      })
+      }
     }
 
     // Busca todas as memberships para disponibilizar troca de contexto no frontend
@@ -137,6 +162,39 @@ export function createTenantMiddleware(
       availableMemberships: allMemberships.map(buildMembershipContext),
     }
 
-    request.authContext = authContext
+    return { ok: true, context: authContext }
+  }
+
+  return async function tenantMiddleware(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    // authMiddleware deve ter rodado antes
+    const identity = request.authIdentity
+    if (!identity) {
+      return reply.status(401).send({
+        error: 'Identidade não resolvida. authMiddleware deve preceder tenantMiddleware.',
+        code: AuthErrorCode.TOKEN_MISSING,
+        status: 401,
+      })
+    }
+
+    const organizationId = request.headers['x-organization-id']
+    if (!organizationId || typeof organizationId !== 'string') {
+      return reply.status(400).send({
+        error: 'Header X-Organization-Id é obrigatório para rotas de negócio.',
+        code: AuthErrorCode.TENANT_HEADER_MISSING,
+        status: 400,
+      })
+    }
+
+    const resolution = await cached(identity.id, organizationId)
+    if (!resolution.ok) {
+      return reply
+        .status(resolution.status)
+        .send({ error: resolution.error, code: resolution.code, status: resolution.status })
+    }
+    // Cópia: quem usa o contexto não altera o que está guardado.
+    request.authContext = structuredClone(resolution.context)
   }
 }

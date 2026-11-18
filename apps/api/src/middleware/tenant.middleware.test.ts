@@ -854,3 +854,83 @@ describe('tenantMiddleware', () => {
     expect(orgIds).toContain('org-master-01')
   })
 })
+
+describe('tenantMiddleware — cache do contexto', () => {
+  function repo(overrides: Partial<IMembershipRepository> = {}): IMembershipRepository {
+    return {
+      findActiveByUserId: vi.fn().mockResolvedValue([ACTIVE_REPRESENTACAO_SELLER]),
+      findActiveByUserAndOrganization: vi.fn().mockResolvedValue(ACTIVE_REPRESENTACAO_SELLER),
+      findActiveByOrganizationId: vi.fn(),
+      findAllActive: vi.fn(),
+      create: vi.fn(),
+      findByUserAndOrganization: vi.fn().mockResolvedValue(null),
+      findByOrganizationId: vi.fn().mockResolvedValue([]),
+      findAll: vi.fn().mockResolvedValue([]),
+      deactivate: vi.fn(),
+      reactivate: vi.fn(),
+      updateSalesGoal: vi.fn(),
+      updateTier: vi.fn(),
+      updateRole: vi.fn(),
+      findPersonalGoal: vi.fn().mockResolvedValue(null),
+      updatePersonalGoal: vi.fn(),
+      removeAllForUser: vi.fn(),
+      updateSupervisor: vi.fn(),
+      findTeamUserIds: vi.fn().mockResolvedValue([]),
+      clearSupervisorLinks: vi.fn(),
+      updateSectors: vi.fn(),
+      findActiveUserIdsBySector: vi.fn().mockResolvedValue([]),
+      ...overrides,
+    }
+  }
+  const request = {
+    method: 'GET',
+    url: '/business',
+    headers: { 'x-organization-id': 'org-rep-01' },
+  } as const
+
+  it('resolves the membership once for simultaneous and repeated requests', async () => {
+    const mockRepo = repo()
+    const app = buildTestApp(mockRepo)
+    const responses = await Promise.all([app.inject(request), app.inject(request)])
+    await app.inject(request)
+    expect(responses.map((r) => r.statusCode)).toEqual([200, 200])
+    expect(mockRepo.findActiveByUserAndOrganization).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not keep a database failure', async () => {
+    const mockRepo = repo({
+      findActiveByUserAndOrganization: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('db down'))
+        .mockResolvedValue(ACTIVE_REPRESENTACAO_SELLER),
+    })
+    const app = buildTestApp(mockRepo)
+    expect((await app.inject(request)).statusCode).toBe(500)
+    expect((await app.inject(request)).statusCode).toBe(200)
+  })
+
+  it('hands each request its own copy of the context', async () => {
+    const mockRepo = repo()
+    const app = Fastify({ logger: false })
+    app.decorateRequest('authIdentity', undefined)
+    app.decorateRequest('authContext', undefined)
+    const tenantMiddleware = createTenantMiddleware(
+      mockRepo,
+      buildUserRepository(),
+      buildOrganizationRepository(),
+    )
+    app.addHook('preHandler', async (req) => {
+      req.authIdentity = IDENTITY
+    })
+    app.get('/business', { preHandler: [tenantMiddleware] }, async (req) => {
+      const ctx = req.authContext as NonNullable<typeof req.authContext>
+      const before = ctx.currentMembership.organizationName
+      ctx.currentMembership.organizationName = 'alterado'
+      return { before }
+    })
+    const first = (await app.inject(request)).json<{ before: string }>()
+    const second = (await app.inject(request)).json<{ before: string }>()
+    expect(first.before).toBe('Representação Teste')
+    expect(second.before).toBe('Representação Teste')
+  })
+})

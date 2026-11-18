@@ -4,11 +4,14 @@
 // O restante da aplicação não importa @supabase/supabase-js.
 //
 // ADR-06: Supabase Auth isolado via port IAuthProvider.
-// ADR-06: Validação de Bearer token via Admin SDK.
+// ADR-06: Validação de Bearer token (assinatura local via JWKS).
 
 import { createClient } from '@supabase/supabase-js'
 import type { AuthIdentity, CreateAuthUserInput, IAuthProvider } from '@sylocrm/application'
 import { ConflictError } from '@sylocrm/domain'
+
+/** Validade máxima do access token do Supabase (padrão do projeto: 1h). */
+const JWT_MAX_LIFETIME_MS = 60 * 60 * 1000
 
 export interface SupabaseAuthConfig {
   supabaseUrl: string
@@ -38,41 +41,60 @@ export class SupabaseAuthAdapter implements IAuthProvider {
    * Verifica um Bearer token JWT emitido pelo Supabase Auth.
    * Retorna AuthIdentity se válido, null se inválido/expirado.
    *
-   * Internamente usa getUser() que valida a assinatura do JWT
-   * e verifica a revogação de sessão no Supabase Auth.
+   * Usa getClaims(): com as chaves assimétricas do projeto (ES256) a
+   * assinatura é conferida aqui mesmo, com a chave pública (JWKS em cache),
+   * sem ir ao Supabase a cada requisição — a API fica longe do Auth e essa
+   * ida e volta pesava em todo clique. Token com algoritmo simétrico cai no
+   * getUser() dentro do próprio SDK.
+   *
+   * Sessão encerrada pelo logout continua com assinatura válida até vencer;
+   * por isso o signOut anota a sessão como revogada (ver revokedSessions).
    */
   async verifyToken(token: string): Promise<AuthIdentity | null> {
-    const { data, error } = await this.client.auth.getUser(token)
+    const { data, error } = await this.client.auth.getClaims(token)
+    if (error || !data) return null
 
-    if (error ?? !data.user) {
-      return null
-    }
-
-    const email = data.user.email
-    if (!email) {
-      // Email is required for system identity — user without email is not supported
-      return null
-    }
-
-    return {
-      id: data.user.id,
-      email,
-    }
+    const { sub, email, session_id: sessionId } = data.claims
+    // Email is required for system identity — user without email is not supported
+    if (!sub || !email) return null
+    if (typeof sessionId === 'string' && this.isRevoked(sessionId)) return null
+    return { id: sub, email }
   }
 
   /**
    * Invalida a sessão do usuário no Supabase Auth.
    * Chamado no fluxo de logout via POST /auth/logout.
    *
-   * Recebe o token para identificar o usuário, depois invalida
-   * todas as sessões globalmente via admin.signOut().
+   * Invalida todas as sessões do usuário no Supabase (admin.signOut com o
+   * próprio token) e marca a sessão como revogada aqui —
+   * a verificação local do JWT não enxerga o logout sozinha.
    */
   async signOut(token: string): Promise<void> {
-    // Resolve userId from token first, then invalidate all sessions
-    const identity = await this.verifyToken(token)
-    if (identity) {
-      await this.client.auth.admin.signOut(identity.id)
+    // admin.signOut recebe o próprio JWT (não o id do usuário).
+    const { error } = await this.client.auth.admin.signOut(token, 'global')
+    if (error && error.status !== 401 && error.status !== 404) {
+      throw new Error(`Falha ao encerrar a sessão no Supabase Auth: ${error.message}`)
     }
+    const claims = await this.client.auth.getClaims(token)
+    const sessionId = claims.data?.claims.session_id
+    if (typeof sessionId === 'string') {
+      // admin.signOut já impede novos tokens dessa sessão; os emitidos antes
+      // vencem em no máximo JWT_MAX_LIFETIME_MS.
+      this.revokedSessions.set(sessionId, Date.now() + JWT_MAX_LIFETIME_MS)
+    }
+  }
+
+  /** session_id → até quando recusar (ms) as sessões encerradas por logout. */
+  private readonly revokedSessions = new Map<string, number>()
+
+  private isRevoked(sessionId: string): boolean {
+    const until = this.revokedSessions.get(sessionId)
+    if (until === undefined) return false
+    if (until < Date.now()) {
+      this.revokedSessions.delete(sessionId)
+      return false
+    }
+    return true
   }
 
   /**
