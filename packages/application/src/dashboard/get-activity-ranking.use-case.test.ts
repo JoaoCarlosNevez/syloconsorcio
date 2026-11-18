@@ -5,7 +5,7 @@ import { Role } from '@sylocrm/domain'
 import { describe, expect, it, vi } from 'vitest'
 import type { IMembershipRepository, TeamMember } from '../ports/membership.repository'
 import type { IStreakRepository } from '../ports/streak.repository'
-import type { ITaskRepository, TaskCountFilter } from '../ports/task.repository'
+import type { ITaskRepository, TaskCountByAssigneeFilter } from '../ports/task.repository'
 import { GetActivityRankingUseCase } from './get-activity-ranking.use-case'
 
 const NOW = new Date('2026-10-02T18:00:00Z')
@@ -32,9 +32,14 @@ const DONE: Record<string, { Ligação: number; Visita: number }> = {
 
 function setup() {
   const count = vi.fn(
-    async (f: TaskCountFilter) => DONE[f.assignedUserId]?.[f.type as 'Ligação' | 'Visita'] ?? 0,
+    async (f: TaskCountByAssigneeFilter) =>
+      new Map(
+        f.assignedUserIds
+          .filter((id) => DONE[id])
+          .map((id) => [id, new Map(Object.entries(DONE[id] ?? {}))]),
+      ),
   )
-  const taskRepository = { count } as unknown as ITaskRepository
+  const taskRepository = { countByAssigneeAndType: count } as unknown as ITaskRepository
   const membershipRepository = {
     findActiveByOrganizationId: vi
       .fn()
@@ -45,7 +50,10 @@ function setup() {
         member('dono', Role.ADMIN),
       ]),
   } as unknown as IMembershipRepository
-  const streakRepository: IStreakRepository = { listActiveDays: vi.fn().mockResolvedValue([]) }
+  const streakRepository: IStreakRepository = {
+    listActiveDays: vi.fn(),
+    listActiveDaysByUser: vi.fn().mockResolvedValue(new Map()),
+  }
   return {
     useCase: new GetActivityRankingUseCase(membershipRepository, taskRepository, streakRepository),
     count,
@@ -71,10 +79,11 @@ describe('GetActivityRankingUseCase', () => {
     const ranking = await useCase.execute({ organizationId: 'org-01', now: NOW })
 
     expect(ranking.period).toBe('week')
+    expect(count).toHaveBeenCalledTimes(1)
     expect(count).toHaveBeenCalledWith({
       organizationId: 'org-01',
-      assignedUserId: 'ana',
-      type: 'Visita',
+      assignedUserIds: ['ana', 'bia', 'caio'],
+      types: ['Ligação', 'Visita'],
       status: 'concluida',
       completedFrom: new Date('2026-09-28T03:00:00Z'),
       completedTo: new Date('2026-10-05T03:00:00Z'),

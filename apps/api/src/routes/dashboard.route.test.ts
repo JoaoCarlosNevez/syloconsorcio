@@ -101,13 +101,16 @@ function buildMembershipRepository(membership: UserMembership): IMembershipRepos
 function buildTestApp(membership: UserMembership) {
   const taskRepository = {
     count: vi.fn().mockResolvedValueOnce(6).mockResolvedValueOnce(4),
+    countByAssigneeAndType: vi.fn().mockResolvedValue(new Map()),
   } as unknown as ITaskRepository
   const leadRepository = {
     sumWonValueCentsInDefaultFunnel: vi.fn().mockResolvedValue(300_000_00),
     countWonInDefaultFunnel: vi.fn().mockResolvedValue(2),
+    wonTotalsByAssigneeInDefaultFunnel: vi.fn().mockResolvedValue(new Map()),
   } as unknown as ILeadRepository
   const streakRepository = {
     listActiveDays: vi.fn().mockResolvedValue(['2026-01-01', '2026-01-02']),
+    listActiveDaysByUser: vi.fn().mockResolvedValue(new Map()),
   }
   const app = buildApp({
     authProvider: buildAuthProvider(),
@@ -332,6 +335,7 @@ describe('GET /dashboard/me/engagement', () => {
       leadRepository: {
         sumWonValueCentsInDefaultFunnel: vi.fn().mockResolvedValue(150_000_00),
         countWonInDefaultFunnel: vi.fn().mockResolvedValue(1),
+        wonTotalsByAssigneeInDefaultFunnel: vi.fn().mockResolvedValue(new Map()),
       } as unknown as ILeadRepository,
       engagementRepository,
     })
@@ -397,6 +401,7 @@ describe('GET /dashboard/me/xp', () => {
       membershipRepository: buildMembershipRepository(SELLER_MEMBERSHIP),
       leadRepository: {
         countWonInDefaultFunnel: vi.fn().mockResolvedValue(0),
+        wonTotalsByAssigneeInDefaultFunnel: vi.fn().mockResolvedValue(new Map()),
       } as unknown as ILeadRepository,
       engagementRepository: {
         countLeadsWorked: vi.fn().mockResolvedValue(3),

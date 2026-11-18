@@ -211,4 +211,16 @@ export interface ILeadRepository {
    * wonTo) — mesmo recorte de sumWonValueCentsInDefaultFunnel (base do tíquete
    * médio do início). */
   countWonInDefaultFunnel(filter: WonValueFilter): Promise<number>
+
+  /** Valor e quantidade de Ganhos no funil padrão em [wonFrom, wonTo), por
+   * responsável, numa consulta só (rankings: evita uma ida ao banco por
+   * vendedor). Quem não ganhou nada não aparece no mapa. */
+  wonTotalsByAssigneeInDefaultFunnel(
+    filter: Omit<WonValueFilter, 'assignedUserId'>,
+  ): Promise<Map<string, WonTotals>>
+}
+
+export interface WonTotals {
+  cents: number
+  count: number
 }

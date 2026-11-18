@@ -62,32 +62,35 @@ export class GetActivityRankingUseCase
     const members = await this.membershipRepository.findActiveByOrganizationId(input.organizationId)
     const sellers = members.filter((m) => m.status === 'ACTIVE' && m.role === Role.SELLER)
 
-    const entries = await Promise.all(
-      sellers.map(async (member): Promise<ActivityRankingEntry> => {
-        const done = {
-          organizationId: input.organizationId,
-          assignedUserId: member.userId,
-          status: 'concluida' as const,
-          completedFrom: start,
-          completedTo: end,
-        }
-        const [calls, visits, activeDays] = await Promise.all([
-          this.taskRepository.count({ ...done, type: 'Ligação' }),
-          this.taskRepository.count({ ...done, type: 'Visita' }),
-          this.streakRepository.listActiveDays(member.userId),
-        ])
-        return {
-          userId: member.userId,
-          name: member.name?.trim() || member.email,
-          avatarUrl: member.avatarUrl,
-          tier: member.tier,
-          calls,
-          visits,
-          total: calls + visits,
-          streakDays: computeStreak(activeDays, now).current,
-        }
+    // Uma consulta por métrica pra equipe toda (não uma por vendedor).
+    const sellerIds = sellers.map((m) => m.userId)
+    const [done, activeDays] = await Promise.all([
+      this.taskRepository.countByAssigneeAndType({
+        organizationId: input.organizationId,
+        assignedUserIds: sellerIds,
+        types: ['Ligação', 'Visita'],
+        status: 'concluida',
+        completedFrom: start,
+        completedTo: end,
       }),
-    )
+      this.streakRepository.listActiveDaysByUser(sellerIds),
+    ])
+
+    const entries = sellers.map((member): ActivityRankingEntry => {
+      const byType = done.get(member.userId)
+      const calls = byType?.get('Ligação') ?? 0
+      const visits = byType?.get('Visita') ?? 0
+      return {
+        userId: member.userId,
+        name: member.name?.trim() || member.email,
+        avatarUrl: member.avatarUrl,
+        tier: member.tier,
+        calls,
+        visits,
+        total: calls + visits,
+        streakDays: computeStreak(activeDays.get(member.userId) ?? [], now).current,
+      }
+    })
 
     entries.sort(
       (a, b) =>

@@ -89,33 +89,29 @@ export class GetSalesRankingUseCase implements UseCase<GetSalesRankingInput, Sal
     const active = members.filter((m) => m.status === 'ACTIVE')
     const sellers = active.filter((m) => m.role === Role.SELLER)
 
-    const entries = await Promise.all(
-      sellers.map(async (member): Promise<SalesRankingEntry> => {
-        const mine = { ...range, assignedUserId: member.userId }
-        const [wonCents, wonCount, monthWonCents, activeDays] = await Promise.all([
-          this.leadRepository.sumWonValueCentsInDefaultFunnel(mine),
-          this.leadRepository.countWonInDefaultFunnel(mine),
-          period === 'month'
-            ? null
-            : this.leadRepository.sumWonValueCentsInDefaultFunnel({
-                ...month,
-                assignedUserId: member.userId,
-              }),
-          this.streakRepository.listActiveDays(member.userId),
-        ])
-        return {
-          userId: member.userId,
-          name: member.name?.trim() || member.email,
-          avatarUrl: member.avatarUrl,
-          tier: member.tier,
-          wonCount,
-          wonCents,
-          goalCents: member.salesGoalCents,
-          monthWonCents: monthWonCents ?? wonCents,
-          streakDays: computeStreak(activeDays, now).current,
-        }
-      }),
-    )
+    // Uma consulta por métrica pra equipe toda (não uma por vendedor).
+    const sellerIds = sellers.map((m) => m.userId)
+    const [periodWon, monthWon, activeDays] = await Promise.all([
+      this.leadRepository.wonTotalsByAssigneeInDefaultFunnel(range),
+      period === 'month' ? null : this.leadRepository.wonTotalsByAssigneeInDefaultFunnel(month),
+      this.streakRepository.listActiveDaysByUser(sellerIds),
+    ])
+
+    const entries = sellers.map((member): SalesRankingEntry => {
+      const won = periodWon.get(member.userId)
+      const wonCents = won?.cents ?? 0
+      return {
+        userId: member.userId,
+        name: member.name?.trim() || member.email,
+        avatarUrl: member.avatarUrl,
+        tier: member.tier,
+        wonCount: won?.count ?? 0,
+        wonCents,
+        goalCents: member.salesGoalCents,
+        monthWonCents: monthWon ? (monthWon.get(member.userId)?.cents ?? 0) : wonCents,
+        streakDays: computeStreak(activeDays.get(member.userId) ?? [], now).current,
+      }
+    })
 
     entries.sort(
       (a, b) =>

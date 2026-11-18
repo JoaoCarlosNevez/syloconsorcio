@@ -7,6 +7,7 @@
 import type {
   ITaskRepository,
   NewTaskInput,
+  TaskCountByAssigneeFilter,
   TaskCountFilter,
   TaskListFilter,
   TaskListPage,
@@ -223,5 +224,37 @@ export class DrizzleTaskRepository implements ITaskRepository {
       .where(and(...conditions))
 
     return rows[0]?.total ?? 0
+  }
+
+  async countByAssigneeAndType(
+    filter: TaskCountByAssigneeFilter,
+  ): Promise<Map<string, Map<string, number>>> {
+    const totals = new Map<string, Map<string, number>>()
+    if (filter.assignedUserIds.length === 0 || filter.types.length === 0) return totals
+
+    const conditions = [
+      eq(tasks.organizationId, filter.organizationId),
+      inArray(tasks.assignedUserId, filter.assignedUserIds),
+      inArray(tasks.type, filter.types),
+    ]
+    if (filter.dueFrom) conditions.push(gte(tasks.dueAt, filter.dueFrom))
+    if (filter.dueTo) conditions.push(lt(tasks.dueAt, filter.dueTo))
+    if (filter.completedFrom) conditions.push(gte(tasks.completedAt, filter.completedFrom))
+    if (filter.completedTo) conditions.push(lt(tasks.completedAt, filter.completedTo))
+    if (filter.status) conditions.push(eq(tasks.status, filter.status))
+
+    const rows = await this.db
+      .select({ userId: tasks.assignedUserId, type: tasks.type, total: count() })
+      .from(tasks)
+      .where(and(...conditions))
+      .groupBy(tasks.assignedUserId, tasks.type)
+
+    for (const row of rows) {
+      if (!row.userId) continue
+      const byType = totals.get(row.userId) ?? new Map<string, number>()
+      byType.set(row.type, row.total)
+      totals.set(row.userId, byType)
+    }
+    return totals
   }
 }

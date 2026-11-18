@@ -105,6 +105,12 @@ export interface TaskCountFilter {
   status?: TaskStatus
 }
 
+export interface TaskCountByAssigneeFilter
+  extends Omit<TaskCountFilter, 'assignedUserId' | 'type'> {
+  assignedUserIds: string[]
+  types: string[]
+}
+
 export interface TaskListPage {
   items: TaskRecord[]
   total: number
@@ -132,4 +138,10 @@ export interface ITaskRepository {
   delete(id: string, scope: TaskScopeFilter): Promise<boolean>
 
   count(filter: TaskCountFilter): Promise<number>
+
+  /** Mesmo recorte de count(), para vários responsáveis e tipos numa consulta
+   * só: assignedUserId → tipo → quantidade. Sem tarefas = fora do mapa. */
+  countByAssigneeAndType(
+    filter: TaskCountByAssigneeFilter,
+  ): Promise<Map<string, Map<string, number>>>
 }

@@ -211,6 +211,7 @@ function createNoOpLeadRepository(): ILeadRepository {
     findByPhone: async () => null,
     sumWonValueCentsInDefaultFunnel: async () => 0,
     countWonInDefaultFunnel: async () => 0,
+    wonTotalsByAssigneeInDefaultFunnel: async () => new Map(),
   }
 }
 
@@ -307,6 +308,7 @@ function createNoOpTaskRepository(): ITaskRepository {
     delete: async () => false,
     claim: async () => null,
     count: async () => 0,
+    countByAssigneeAndType: async () => new Map(),
   }
 }
 
@@ -374,7 +376,10 @@ export function buildApp(deps?: Partial<BuildAppDeps>) {
     apiKeyRepository: deps?.apiKeyRepository ?? createNoOpApiKeyRepository(),
     leadQueueRepository: deps?.leadQueueRepository ?? createNoOpLeadQueueRepository(),
     // Sem banco, ninguém tem ofensiva.
-    streakRepository: deps?.streakRepository ?? { listActiveDays: async () => [] },
+    streakRepository: deps?.streakRepository ?? {
+      listActiveDays: async () => [],
+      listActiveDaysByUser: async () => new Map(),
+    },
     // Sem banco, nenhum aparelho fica inscrito.
     pushSubscriptionRepository: deps?.pushSubscriptionRepository ?? {
       save: async () => {
