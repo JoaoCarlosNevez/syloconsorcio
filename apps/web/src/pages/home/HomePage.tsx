@@ -18,6 +18,7 @@ import { useActiveOrganization } from '../../hooks/useOrganization'
 import { useTasksQuery } from '../../hooks/useTasks'
 import { useSalesGoalsSummaryQuery } from '../../hooks/useTeam'
 import { formatCota } from '../../lib/lead-adapters'
+import { hasPhone, whatsappLink } from '../../lib/mobile'
 import { businessDaysRemaining, formatGoalBRL, toGoalProgressView } from '../../lib/sales-goals'
 import type { Task, TaskType } from '../../lib/tasks-api'
 import { teamLine } from '../../lib/team-line'
@@ -712,20 +713,16 @@ function SellerHome() {
                         </td>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            {t.phone && (
-                              <button
-                                type="button"
+                            {t.phone && hasPhone(t.phone) && (
+                              <a
+                                href={whatsappLink(t.phone)}
+                                target="_blank"
+                                rel="noreferrer"
                                 className={styles.whatsappBtn}
                                 aria-label={`WhatsApp — ${t.cliente}`}
-                                onClick={() =>
-                                  window.open(
-                                    `https://wa.me/55${(t.phone ?? '').replace(/\D/g, '')}`,
-                                    '_blank',
-                                  )
-                                }
                               >
                                 <WhatsAppIcon />
-                              </button>
+                              </a>
                             )}
                             <button
                               type="button"

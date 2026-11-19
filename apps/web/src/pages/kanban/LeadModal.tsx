@@ -37,6 +37,7 @@ import {
   type LeadProposal,
   proposalShareUrl,
 } from '../../lib/leads-api'
+import { hasPhone, whatsappLink } from '../../lib/mobile'
 import {
   EMPTY_INSTALLMENT_ROW,
   type InstallmentRow,
@@ -2451,10 +2452,17 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
                         ) : (
                           <div className={styles.attrValue}>
                             <span className={styles.attrValueText}>{card.phone}</span>
-                            <span className={styles.callBadge}>
-                              <WhatsAppIcon />
-                              Chamar
-                            </span>
+                            {hasPhone(card.phone) && (
+                              <a
+                                href={whatsappLink(card.phone)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={styles.callBadge}
+                              >
+                                <WhatsAppIcon />
+                                Chamar
+                              </a>
+                            )}
                           </div>
                         )}
                       </div>

@@ -48,6 +48,7 @@ import {
   toCardData,
 } from '../../lib/lead-adapters'
 import type { OutcomeFilter } from '../../lib/leads-api'
+import { hasPhone, whatsappLink } from '../../lib/mobile'
 import { deriveStageColors } from '../../lib/stage-colors'
 import type { TeamMember } from '../../lib/team-api'
 import { CreateLeadModal } from './CreateLeadModal'
@@ -330,9 +331,19 @@ function CardView({ card, members, isDragging }: CardViewProps) {
     <div className={`${styles.card} ${outcomeClass} ${isDragging ? styles.cardDragging : ''}`}>
       <div className={styles.cardTop}>
         <span className={styles.cardName}>{card.name}</span>
-        <button type="button" className={styles.whatsappBtn} aria-label={`WhatsApp ${card.name}`}>
-          <WhatsAppIcon />
-        </button>
+        {hasPhone(card.phone) && (
+          <a
+            href={whatsappLink(card.phone)}
+            target="_blank"
+            rel="noreferrer"
+            className={styles.whatsappBtn}
+            aria-label={`WhatsApp ${card.name}`}
+            // O card inteiro abre a ficha; o clique aqui só abre o WhatsApp.
+            onClick={(e) => e.stopPropagation()}
+          >
+            <WhatsAppIcon />
+          </a>
+        )}
       </div>
       <div className={styles.cardPhone}>
         <span className={styles.cardMetaIcon}>
@@ -565,13 +576,17 @@ function ListView({ board, columns, members, onCardClick }: ListViewProps) {
                   onClick={(e) => e.stopPropagation()}
                   onKeyDown={(e) => e.stopPropagation()}
                 >
-                  <button
-                    type="button"
-                    className={styles.listWhatsappBtn}
-                    aria-label={`WhatsApp ${card.name}`}
-                  >
-                    <WhatsAppIcon />
-                  </button>
+                  {hasPhone(card.phone) && (
+                    <a
+                      href={whatsappLink(card.phone)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={styles.listWhatsappBtn}
+                      aria-label={`WhatsApp ${card.name}`}
+                    >
+                      <WhatsAppIcon />
+                    </a>
+                  )}
                 </td>
               </tr>
             )

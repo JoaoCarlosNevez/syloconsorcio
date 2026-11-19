@@ -12,6 +12,11 @@ export function phoneDigits(phone: string): string {
   return digits
 }
 
+/** Tem número suficiente pra abrir ligação/WhatsApp (DDD + número). */
+export function hasPhone(phone: string): boolean {
+  return phone.replace(/\D/g, '').length >= 10
+}
+
 export function telLink(phone: string): string {
   return `tel:+${phoneDigits(phone)}`
 }
