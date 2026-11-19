@@ -37,7 +37,7 @@ import {
   type LeadProposal,
   proposalShareUrl,
 } from '../../lib/leads-api'
-import { hasPhone, whatsappLink } from '../../lib/mobile'
+import { hasPhone, whatsappLink } from '../../lib/phone-links'
 import {
   EMPTY_INSTALLMENT_ROW,
   type InstallmentRow,

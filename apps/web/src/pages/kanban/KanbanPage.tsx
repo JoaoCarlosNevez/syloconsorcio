@@ -48,7 +48,7 @@ import {
   toCardData,
 } from '../../lib/lead-adapters'
 import type { OutcomeFilter } from '../../lib/leads-api'
-import { hasPhone, whatsappLink } from '../../lib/mobile'
+import { hasPhone, whatsappLink } from '../../lib/phone-links'
 import { deriveStageColors } from '../../lib/stage-colors'
 import type { TeamMember } from '../../lib/team-api'
 import { CreateLeadModal } from './CreateLeadModal'
