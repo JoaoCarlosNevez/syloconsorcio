@@ -851,3 +851,60 @@
   color: #047857;
   font-size: 13px;
 }
+
+/* Busca: o que achou fora do funil aberto */
+.otherFunnels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px 0;
+}
+
+.otherFunnelsLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.otherFunnelChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  background: #fff;
+  font-size: 12px;
+  color: #64748b;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.otherFunnelChip strong {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.otherFunnelChip:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.otherFunnelWon,
+.otherFunnelLost {
+  padding: 1px 6px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.otherFunnelWon {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.otherFunnelLost {
+  background: #fef2f2;
+  color: #b91c1c;
+}
