@@ -48,7 +48,7 @@ import {
   resolveCardOutcome,
   toCardData,
 } from '../../lib/lead-adapters'
-import type { OutcomeFilter } from '../../lib/leads-api'
+import type { Lead, OutcomeFilter } from '../../lib/leads-api'
 import { hasPhone, whatsappLink } from '../../lib/phone-links'
 import { deriveStageColors } from '../../lib/stage-colors'
 import type { TeamMember } from '../../lib/team-api'
@@ -670,11 +670,19 @@ export function KanbanPage({ systemFunnel }: { systemFunnel?: SystemFunnelTab } 
   const [pendingLead, setPendingLead] = useState<{
     openLeadId: string
     funnelId: string | null
+    /** Busca que achou o lead — mantida ao trocar de aba, senão um lead
+     * ganho/perdido some atrás do filtro "Aberto". */
+    search?: string
   } | null>(null)
 
   useEffect(() => {
-    const state = location.state as { openLeadId?: string; funnelId?: string | null } | null
+    const state = location.state as {
+      openLeadId?: string
+      funnelId?: string | null
+      search?: string
+    } | null
     if (!state?.openLeadId) return
+    if (state.search) setSearchQuery(state.search)
     setPendingLead({ openLeadId: state.openLeadId, funnelId: state.funnelId ?? null })
     // Limpa o state pra não reabrir num refresh/voltar.
     navigate(location.pathname, { replace: true, state: null })
@@ -742,7 +750,11 @@ export function KanbanPage({ systemFunnel }: { systemFunnel?: SystemFunnelTab } 
   // cliente no funil mesmo se já foi ganho ou perdido.
   const search = useDebouncedValue(searchQuery.trim())
   const isSearching = search.length > 0
-  const { data, isLoading: isLoadingLeads } = useLeadsQuery(
+  const {
+    data,
+    isLoading: isLoadingLeads,
+    isPlaceholderData,
+  } = useLeadsQuery(
     organizationId,
     isSearching
       ? { pageSize: 100, funnelId: activeFunnelId ?? undefined, outcome: 'todos', search }
@@ -755,6 +767,20 @@ export function KanbanPage({ systemFunnel }: { systemFunnel?: SystemFunnelTab } 
         },
     { keepPrevious: true },
   )
+  // A mesma busca em todos os funis — o que estiver fora deste aparece numa
+  // faixa acima do board, com atalho pro funil certo.
+  const { data: everywhereData } = useLeadsQuery(
+    organizationId,
+    { pageSize: 30, outcome: 'todos', search },
+    { keepPrevious: true, enabled: isSearching },
+  )
+  const otherFunnelMatches = isSearching
+    ? (everywhereData?.items ?? []).filter((lead) => lead.funnelId !== activeFunnelId)
+    : []
+
+  function openFromOtherFunnel(lead: Lead) {
+    setPendingLead({ openLeadId: lead.id, funnelId: lead.funnelId, search })
+  }
   const updateLead = useUpdateLead(organizationId)
   const { data: settingsData } = useOrganizationSettingsQuery(organizationId)
   const leadTags = settingsData?.organization.leadTags ?? []
@@ -797,7 +823,9 @@ export function KanbanPage({ systemFunnel }: { systemFunnel?: SystemFunnelTab } 
   // Segunda metade do "abrir lead vindo de fora" (ver pendingLead acima):
   // espera o funil certo carregar e o card entrar no board, então abre.
   useEffect(() => {
-    if (!pendingLead || !data) return
+    if (!pendingLead || !data || isPlaceholderData) return
+    // Busca ainda no intervalo de digitação: a lista é a de antes.
+    if (search !== searchQuery.trim()) return
     const funnelReady =
       !pendingLead.funnelId ||
       activeFunnelId === pendingLead.funnelId ||
@@ -819,7 +847,17 @@ export function KanbanPage({ systemFunnel }: { systemFunnel?: SystemFunnelTab } 
     if (!card) return // o board ainda não sincronizou com `data`
     setSelectedCard(card)
     setPendingLead(null)
-  }, [pendingLead, data, board, activeFunnelId, funnels, toast])
+  }, [
+    pendingLead,
+    data,
+    isPlaceholderData,
+    search,
+    searchQuery,
+    board,
+    activeFunnelId,
+    funnels,
+    toast,
+  ])
 
   // Sincroniza o board local a partir dos dados reais sempre que a query
   // resolve (inclusive após criar/mover um lead, via invalidateQueries).
@@ -1248,7 +1286,50 @@ export function KanbanPage({ systemFunnel }: { systemFunnel?: SystemFunnelTab } 
             description="Ele aparece sozinho quando a primeira venda é marcada como Ganho no Kanban."
           />
         )}
-        {!isLoading && !missingSystemFunnel && totalLeads === 0 && systemFunnel && (
+        {otherFunnelMatches.length > 0 && (
+          <div className={styles.otherFunnels}>
+            <span className={styles.otherFunnelsLabel}>Em outros funis:</span>
+            {otherFunnelMatches.map((lead) => {
+              const funnel = funnels.find((f) => f.id === lead.funnelId)
+              const stage = funnel?.stages.find((st) => st.id === lead.stageId)
+              const outcome = lead.wonAt ? 'Ganho' : lead.lostAt ? 'Perdido' : null
+              return (
+                <button
+                  key={lead.id}
+                  type="button"
+                  className={styles.otherFunnelChip}
+                  onClick={() => openFromOtherFunnel(lead)}
+                >
+                  <strong>{lead.name}</strong>
+                  <span>
+                    {funnel?.name ?? 'Funil'}
+                    {stage ? ` › ${stage.name}` : ''}
+                  </span>
+                  {outcome && (
+                    <span
+                      className={
+                        outcome === 'Ganho' ? styles.otherFunnelWon : styles.otherFunnelLost
+                      }
+                    >
+                      {outcome}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        )}
+        {!isLoading && !missingSystemFunnel && totalLeads === 0 && isSearching && (
+          <EmptyState
+            title="Nenhum lead encontrado neste funil"
+            description={
+              otherFunnelMatches.length > 0
+                ? 'Mas a busca achou em outros funis — veja acima.'
+                : 'Confira o nome ou o telefone digitado.'
+            }
+          />
+        )}
+        {!isLoading && !missingSystemFunnel && totalLeads === 0 && !isSearching && systemFunnel && (
           <EmptyState
             title={`Nenhum cliente no ${SYSTEM_TAB_TITLE[systemFunnel]} agora`}
             description={
@@ -1258,21 +1339,25 @@ export function KanbanPage({ systemFunnel }: { systemFunnel?: SystemFunnelTab } 
             }
           />
         )}
-        {!isLoading && !missingSystemFunnel && totalLeads === 0 && !systemFunnel && (
-          <EmptyState
-            title="Nenhum lead no funil ainda"
-            description="Cadastre o primeiro lead para começar a acompanhar o funil de vendas."
-            action={
-              <button
-                type="button"
-                className={styles.newLeadBtn}
-                onClick={() => setIsCreateOpen(true)}
-              >
-                <PlusIcon /> Novo Lead
-              </button>
-            }
-          />
-        )}
+        {!isLoading &&
+          !missingSystemFunnel &&
+          totalLeads === 0 &&
+          !isSearching &&
+          !systemFunnel && (
+            <EmptyState
+              title="Nenhum lead no funil ainda"
+              description="Cadastre o primeiro lead para começar a acompanhar o funil de vendas."
+              action={
+                <button
+                  type="button"
+                  className={styles.newLeadBtn}
+                  onClick={() => setIsCreateOpen(true)}
+                >
+                  <PlusIcon /> Novo Lead
+                </button>
+              }
+            />
+          )}
 
         {/* ── Lista ────────────────────────────────────────────────────── */}
         {!isLoading && totalLeads > 0 && viewMode === 'list' && (

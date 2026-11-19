@@ -42,12 +42,12 @@ export function useLeadsQuery(
   params: ListLeadsParams = {},
   /** Mantém a lista anterior na tela enquanto a nova carrega (busca, troca
    * de filtro) — só no mesmo funil; trocar de funil mostra o carregamento. */
-  options: { keepPrevious?: boolean } = {},
+  options: { keepPrevious?: boolean; enabled?: boolean } = {},
 ) {
   return useQuery({
     queryKey: leadsQueryKey(organizationId, params),
     queryFn: () => listLeads(organizationId as string, params),
-    enabled: Boolean(organizationId),
+    enabled: Boolean(organizationId) && (options.enabled ?? true),
     placeholderData: (previous: LeadListPage | undefined, previousQuery) => {
       if (!options.keepPrevious || !previousQuery) return undefined
       const [, previousOrg, previousParams] = previousQuery.queryKey
