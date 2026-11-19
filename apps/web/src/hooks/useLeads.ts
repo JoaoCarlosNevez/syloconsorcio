@@ -1,7 +1,7 @@
 // useLeads — server state do módulo de Leads via TanStack Query (ADR-04).
 // Nunca guardar leads em useState — o board do Kanban sincroniza a partir daqui.
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   type AdhesionDocumentKind,
   type CreateLeadPayload,
@@ -37,11 +37,24 @@ function leadsQueryKey(organizationId: string | null, params: ListLeadsParams) {
   return ['leads', organizationId, params] as const
 }
 
-export function useLeadsQuery(organizationId: string | null, params: ListLeadsParams = {}) {
-  return useQuery<LeadListPage>({
+export function useLeadsQuery(
+  organizationId: string | null,
+  params: ListLeadsParams = {},
+  /** Mantém a lista anterior na tela enquanto a nova carrega (busca, troca
+   * de filtro) — só no mesmo funil; trocar de funil mostra o carregamento. */
+  options: { keepPrevious?: boolean } = {},
+) {
+  return useQuery({
     queryKey: leadsQueryKey(organizationId, params),
     queryFn: () => listLeads(organizationId as string, params),
     enabled: Boolean(organizationId),
+    placeholderData: (previous: LeadListPage | undefined, previousQuery) => {
+      if (!options.keepPrevious || !previousQuery) return undefined
+      const [, previousOrg, previousParams] = previousQuery.queryKey
+      return previousOrg === organizationId && previousParams.funnelId === params.funnelId
+        ? keepPreviousData(previous)
+        : undefined
+    },
   })
 }
 
