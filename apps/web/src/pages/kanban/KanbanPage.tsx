@@ -33,6 +33,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
 import type { CardData, ColumnMeta } from '../../data/kanban-mock'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { useFunnelsQuery } from '../../hooks/useFunnels'
 import { useLeadsQuery, useUpdateLead } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
@@ -737,13 +738,23 @@ export function KanbanPage({ systemFunnel }: { systemFunnel?: SystemFunnelTab } 
     canFilterByAssignee && assigneeOptions.some((o) => o.userId === assigneeFilter)
       ? assigneeFilter
       : null
-  const { data, isLoading: isLoadingLeads } = useLeadsQuery(organizationId, {
-    pageSize: 100,
-    funnelId: activeFunnelId ?? undefined,
-    outcome: outcomeFilter,
-    tags: selectedTags,
-    assignedTo: activeAssignee ?? undefined,
-  })
+  // Buscando, os filtros (resultado, tags, vendedor) saem de cena: acha o
+  // cliente no funil mesmo se já foi ganho ou perdido.
+  const search = useDebouncedValue(searchQuery.trim())
+  const isSearching = search.length > 0
+  const { data, isLoading: isLoadingLeads } = useLeadsQuery(
+    organizationId,
+    isSearching
+      ? { pageSize: 100, funnelId: activeFunnelId ?? undefined, outcome: 'todos', search }
+      : {
+          pageSize: 100,
+          funnelId: activeFunnelId ?? undefined,
+          outcome: outcomeFilter,
+          tags: selectedTags,
+          assignedTo: activeAssignee ?? undefined,
+        },
+    { keepPrevious: true },
+  )
   const updateLead = useUpdateLead(organizationId)
   const { data: settingsData } = useOrganizationSettingsQuery(organizationId)
   const leadTags = settingsData?.organization.leadTags ?? []

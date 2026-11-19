@@ -148,7 +148,15 @@ export class DrizzleLeadRepository implements ILeadRepository {
     }
     if (filter.search) {
       const pattern = `%${filter.search}%`
-      const searchCondition = or(ilike(leads.name, pattern), ilike(leads.phone, pattern))
+      // Telefone compara só os dígitos: "11987654321" acha "(11) 98765-4321".
+      const digits = filter.search.replace(/\D/g, '')
+      const searchCondition = or(
+        ilike(leads.name, pattern),
+        ilike(leads.phone, pattern),
+        digits
+          ? sql`regexp_replace(${leads.phone}, '[^0-9]', '', 'g') like ${`%${digits}%`}`
+          : undefined,
+      )
       if (searchCondition) conditions.push(searchCondition)
     }
     const where = and(...conditions)
