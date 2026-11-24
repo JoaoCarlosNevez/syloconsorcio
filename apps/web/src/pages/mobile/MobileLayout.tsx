@@ -28,6 +28,7 @@ import {
   ColumnsIcon,
   HomeIcon,
   NetworkIcon,
+  UserIcon,
   UsersIcon,
 } from './icons'
 
@@ -36,6 +37,7 @@ function tabIcon(key: MobileTabKey, profile: MobileProfile): ReactNode {
   if (key === 'tarefas') return <CheckSquareIcon />
   if (key === 'chat') return <ChatIcon />
   if (key === 'avisos') return <BellIcon />
+  if (key === 'perfil') return <UserIcon />
   if (profile === 'master') return <NetworkIcon />
   if (profile === 'gestao') return <ChartIcon />
   return <HomeIcon />

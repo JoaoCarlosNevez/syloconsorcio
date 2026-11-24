@@ -90,6 +90,9 @@ const MobileNotificationsPage = lazy(() =>
 const MobileOfferPage = lazy(() =>
   import('../pages/mobile/MobileOfferPage').then((m) => ({ default: m.MobileOfferPage })),
 )
+const MobileProfilePage = lazy(() =>
+  import('../pages/mobile/MobileProfilePage').then((m) => ({ default: m.MobileProfilePage })),
+)
 const ConfigPage = lazy(() =>
   import('../pages/config/ConfigPage').then((m) => ({ default: m.ConfigPage })),
 )
@@ -143,6 +146,7 @@ export function AppRouter() {
           <Route path="chat/:conversationId" element={<MobileConversationPage />} />
           <Route path="avisos" element={<MobileNotificationsPage />} />
           <Route path="oferta/:offerId" element={<MobileOfferPage />} />
+          <Route path="perfil" element={<MobileProfilePage />} />
         </Route>
 
         {/* Raiz → home */}

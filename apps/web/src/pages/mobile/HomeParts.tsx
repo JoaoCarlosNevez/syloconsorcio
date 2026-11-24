@@ -46,9 +46,9 @@ export function HomeHeader({ now, subtitle }: { now: number; subtitle?: string }
         </h1>
       </div>
       <Link
-        to="/m/avisos"
+        to="/m/perfil"
         className={styles.avatar}
-        aria-label={membership?.organizationName ?? 'Perfil'}
+        aria-label={`Perfil${membership ? ` · ${membership.organizationName}` : ''}`}
       >
         <span className={styles.avatarInner}>
           {user?.avatarUrl ? <img src={user.avatarUrl} alt="" /> : initials(user?.name ?? '?')}

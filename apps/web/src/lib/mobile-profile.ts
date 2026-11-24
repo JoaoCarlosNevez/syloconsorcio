@@ -6,6 +6,8 @@
 //   gestao   Dono/Supervisor (reports.read): Painel, Leads, Tarefas, Chat, Avisos
 //   adm      Administrativo (backoffice): ADM/Pós-venda, Funis, Tarefas, Chat, Avisos
 //   vendedor o resto: Hoje, Leads, Tarefas, Chat, Avisos
+//
+// Todos terminam com a aba Perfil (meta, dados, foto, senha e sair).
 
 import type { MembershipSummary } from '../hooks/useOrganization'
 
@@ -28,7 +30,7 @@ export function canAssignLeads(membership: Pick<MembershipSummary, 'permissions'
   return membership?.permissions.includes('lead.assign') ?? false
 }
 
-export type MobileTabKey = 'inicio' | 'leads' | 'tarefas' | 'chat' | 'avisos'
+export type MobileTabKey = 'inicio' | 'leads' | 'tarefas' | 'chat' | 'avisos' | 'perfil'
 
 export interface MobileTab {
   key: MobileTabKey
@@ -64,8 +66,16 @@ const TABS: Record<MobileProfile, MobileTab[]> = {
   ],
 }
 
+const PROFILE_TAB: MobileTab = { key: 'perfil', to: '/m/perfil', label: 'Perfil' }
+
 export function mobileTabs(profile: MobileProfile): MobileTab[] {
-  return TABS[profile]
+  return [...TABS[profile], PROFILE_TAB]
+}
+
+/** Mostra a meta de vendas no perfil: o Administrativo não vende e a Master
+ * acompanha a rede, não uma meta própria. */
+export function showsSalesGoal(profile: MobileProfile): boolean {
+  return profile === 'vendedor' || profile === 'gestao'
 }
 
 /** Dias inteiros desde `iso` (0 = hoje). */
