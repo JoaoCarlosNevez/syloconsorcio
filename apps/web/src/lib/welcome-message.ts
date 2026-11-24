@@ -1,18 +1,26 @@
 // Mensagem padrão de boas-vindas com o acesso de um usuário recém-criado —
-// pra quem criou copiar e mandar (WhatsApp, e-mail). O link de login vem do
-// endereço em que o app está aberto: ainda não há domínio fixo, então
-// acompanha o ambiente (localhost, preview, produção) sem configuração.
+// pra quem criou copiar e mandar (WhatsApp, e-mail). O link de login aponta
+// sempre pro app de produção, mesmo quando o acesso é criado pelo dev, por um
+// preview ou pelo localhost — quem recebe a mensagem deve entrar no app real.
+// VITE_APP_URL sobrescreve o endereço, se um dia o domínio mudar.
+
+const DEFAULT_APP_URL = 'https://app.sylocrm.com.br'
+
+function appUrl(): string {
+  const fromEnv = import.meta.env.VITE_APP_URL?.trim()
+  return (fromEnv || DEFAULT_APP_URL).replace(/\/+$/, '')
+}
 
 export interface WelcomeMessageInput {
   name: string | null
   email: string
   password: string
   organizationName: string | null
-  /** Padrão: o endereço atual do navegador. */
+  /** Padrão: o app de produção (VITE_APP_URL ou app.sylocrm.com.br). */
   origin?: string
 }
 
-export function loginUrl(origin: string = window.location.origin): string {
+export function loginUrl(origin: string = appUrl()): string {
   return `${origin}/login`
 }
 

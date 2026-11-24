@@ -35,8 +35,8 @@ describe('buildWelcomeMessage', () => {
 })
 
 describe('loginUrl', () => {
-  it('defaults to the browser origin', () => {
-    expect(loginUrl()).toBe(`${window.location.origin}/login`)
+  it('defaults to the production app, not the browser origin', () => {
+    expect(loginUrl()).toBe('https://app.sylocrm.com.br/login')
   })
 })
 
