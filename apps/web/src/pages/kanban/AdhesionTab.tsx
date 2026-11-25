@@ -37,6 +37,8 @@ import {
   isFilled,
   isQuotaFilled,
   leadChanges,
+  withQuotaAdded,
+  withQuotaRemoved,
 } from '../../lib/adhesion-checklist'
 import { adhesionEmailContent, buildAdhesionEmail } from '../../lib/adhesion-email'
 import { type Administrator, findAdministrator } from '../../lib/administrators-api'
@@ -237,28 +239,14 @@ export function AdhesionTab({
   function addQuota() {
     setForm((prev) => {
       if (!prev || prev.quotas.length >= MAX_QUOTAS) return prev
-      // A nova cota já vem com o que costuma se repetir (administradora,
-      // tipo, forma de pagamento e vencimento).
-      const base = prev.quotas[prev.quotas.length - 1] ?? emptyQuota()
-      const next: QuotaForm = {
-        ...emptyQuota(),
-        administrator: base.administrator,
-        assetType: base.assetType,
-        paymentMethod: base.paymentMethod,
-        installmentDueDay: base.installmentDueDay,
-      }
       setActiveQuota(prev.quotas.length)
-      return { ...prev, quotas: [...prev.quotas, next] }
+      return withQuotaAdded(prev)
     })
     setDirty(true)
   }
 
   function removeQuota(index: number) {
-    setForm((prev) =>
-      prev && prev.quotas.length > 1
-        ? { ...prev, quotas: prev.quotas.filter((_, i) => i !== index) }
-        : prev,
-    )
+    setForm((prev) => (prev ? withQuotaRemoved(prev, index) : prev))
     setActiveQuota((current) => Math.max(0, current >= index ? current - 1 : current))
     setDirty(true)
   }

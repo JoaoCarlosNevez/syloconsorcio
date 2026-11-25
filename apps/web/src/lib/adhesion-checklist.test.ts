@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { CardData } from '../data/kanban-mock'
 import {
   type AdhesionForm,
+  MAX_QUOTAS,
   type QuotaForm,
   adhesionFields,
   adhesionProgress,
@@ -11,6 +12,8 @@ import {
   formatZipCode,
   leadChanges,
   needsSpouse,
+  withQuotaAdded,
+  withQuotaRemoved,
 } from './adhesion-checklist'
 
 const CARD = {
@@ -224,5 +227,35 @@ describe('adhesionText', () => {
     expect(text).toContain('Grupo: 5678')
     expect(text).toContain('Representação: Sylo')
     expect(text).toContain('Vendedor: Ana')
+  })
+})
+
+describe('withQuotaAdded / withQuotaRemoved', () => {
+  it('adds a quota that repeats the administrator, type, payment and due day', () => {
+    const form = filledForm({ quotas: [filledQuota({ installmentDueDay: '10', groupCode: 'G1' })] })
+    const next = withQuotaAdded(form)
+    expect(next.quotas).toHaveLength(2)
+    expect(next.quotas[1]).toEqual({
+      ...emptyQuota(),
+      administrator: 'Porto Seguro',
+      assetType: 'Imóvel',
+      paymentMethod: 'Boleto',
+      installmentDueDay: '10',
+    })
+  })
+
+  it('stops at the quota limit', () => {
+    const form = filledForm({ quotas: Array.from({ length: MAX_QUOTAS }, () => filledQuota()) })
+    expect(withQuotaAdded(form)).toBe(form)
+  })
+
+  it('removes a quota but always keeps one', () => {
+    const form = filledForm({
+      quotas: [filledQuota({ groupCode: 'A' }), filledQuota({ groupCode: 'B' })],
+    })
+    expect(withQuotaRemoved(form, 0).quotas.map((q) => q.groupCode)).toEqual(['B'])
+    const single = filledForm()
+    expect(withQuotaRemoved(single, 0)).toBe(single)
+    expect(withQuotaRemoved(form, 5)).toBe(form)
   })
 })

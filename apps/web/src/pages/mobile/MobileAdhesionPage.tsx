@@ -1,6 +1,7 @@
 // Checklist de adesão no celular: o vendedor tira foto dos documentos (ou
 // escolhe o arquivo) e vai preenchendo a ficha item por item — cada item é
-// salvo assim que confirma. Mesmo checklist do web (aba Adesão do lead).
+// salvo assim que confirma. Mesmo checklist do web (aba Adesão do lead),
+// inclusive com várias cotas na mesma venda.
 
 import { Skeleton } from '@sylocrm/ui'
 import { type FormEvent, useRef, useState } from 'react'
@@ -14,6 +15,7 @@ import {
   type AdhesionFieldKey,
   type AdhesionForm,
   type AdhesionSection,
+  MAX_QUOTAS,
   PAYMENT_METHOD_OPTIONS,
   QUOTA_ITEMS,
   type QuotaForm,
@@ -22,13 +24,15 @@ import {
   isFilled,
   isQuotaFilled,
   needsSpouse,
+  withQuotaAdded,
+  withQuotaRemoved,
 } from '../../lib/adhesion-checklist'
 import { formatMoneyInput, formatPhoneBR } from '../../lib/lead-adapters'
 import type { AdhesionDocumentKind } from '../../lib/leads-api'
 import { lookupZipCode } from '../../lib/zip-code'
 import styles from './Mobile.module.css'
 import { BackBar, Sheet, useToast } from './MobileUi'
-import { CameraIcon, ClipboardIcon, FileIcon, TickIcon } from './icons'
+import { CameraIcon, ClipboardIcon, FileIcon, PlusIcon, TickIcon } from './icons'
 
 const FILE_ACCEPT = 'application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif'
 const MAX_BYTES = 10 * 1024 * 1024
@@ -73,6 +77,7 @@ type Target =
   | { kind: 'field'; key: AdhesionFieldKey; label: string }
   | { kind: 'quota'; index: number; key: keyof QuotaForm; label: string }
   | { kind: 'doc'; docKind: AdhesionDocumentKind }
+  | { kind: 'removeQuota'; index: number }
 
 /** Máscara de cada campo, igual ao web. */
 function formatValue(key: string, raw: string): string {
@@ -148,6 +153,16 @@ export function MobileAdhesionPage() {
   const percent = progress.total ? Math.round((progress.done / progress.total) * 100) : 0
   const several = form.quotas.length > 1
 
+  async function saveQuotas(next: AdhesionForm, message: string) {
+    try {
+      await a.save(next)
+      setTarget(null)
+      toast.show(message)
+    } catch (error) {
+      toast.show(error instanceof Error ? error.message : 'Não deu pra salvar. Tente de novo.')
+    }
+  }
+
   function openField(next: Target) {
     setConfirmRemove(false)
     if (next.kind === 'field') setDraft(form?.[next.key] ?? '')
@@ -157,7 +172,7 @@ export function MobileAdhesionPage() {
 
   /** Aplica o valor no formulário (+ endereço pelo CEP) e salva. */
   async function commit(value: string) {
-    if (!form || !target || target.kind === 'doc') return
+    if (!form || !target || target.kind === 'doc' || target.kind === 'removeQuota') return
     let next: AdhesionForm
     if (target.kind === 'field') {
       next = { ...form, [target.key]: value }
@@ -255,7 +270,8 @@ export function MobileAdhesionPage() {
   }
 
   // ── Folha de edição ──
-  const editingKey = target && target.kind !== 'doc' ? target.key : null
+  const editingKey =
+    target && (target.kind === 'field' || target.kind === 'quota') ? target.key : null
   const options: readonly string[] | null =
     editingKey === 'maritalStatus'
       ? MARITAL_STATUS_OPTIONS
@@ -343,9 +359,20 @@ export function MobileAdhesionPage() {
 
       {form.quotas.map((quota, index) => (
         <section key={`quota-${index + 1}`}>
-          <h2 className={styles.sectionTitle}>
-            {several ? `Cota ${index + 1} de ${form.quotas.length}` : 'Dados do plano'}
-          </h2>
+          <div className={styles.sectionHead}>
+            <h2 className={styles.sectionTitle}>
+              {several ? `Cota ${index + 1} de ${form.quotas.length}` : 'Dados do plano'}
+            </h2>
+            {several && (
+              <button
+                type="button"
+                className={`${styles.link} ${styles.linkDanger}`}
+                onClick={() => setTarget({ kind: 'removeQuota', index })}
+              >
+                Remover cota
+              </button>
+            )}
+          </div>
           <div className={`${styles.card} ${styles.list}`}>
             {QUOTA_ITEMS.map((item) => {
               const done = isQuotaFilled(quota, item.key)
@@ -374,6 +401,26 @@ export function MobileAdhesionPage() {
         </section>
       ))}
 
+      {form.quotas.length < MAX_QUOTAS && (
+        <button
+          type="button"
+          className={`${styles.btn} ${styles.btnLine}`}
+          disabled={a.isSaving}
+          onClick={() =>
+            saveQuotas(withQuotaAdded(form), `Cota ${form.quotas.length + 1} adicionada`)
+          }
+        >
+          <PlusIcon />
+          Adicionar outra cota
+        </button>
+      )}
+      {!several && (
+        <p className={styles.note}>
+          Venda com mais de um grupo pra fechar o valor? Adicione uma cota pra cada. Ao marcar
+          Ganho, cada cota vira um card no ADM.
+        </p>
+      )}
+
       {SECTIONS.map((section) => (
         <section key={section.key}>
           <h2 className={styles.sectionTitle}>{section.title}</h2>
@@ -391,11 +438,32 @@ export function MobileAdhesionPage() {
         <ClipboardIcon />
         Copiar ficha pra administradora
       </button>
-      {several || (
-        <p className={styles.note}>Mais de uma cota na mesma venda? Adicione pelo computador.</p>
+
+      {target?.kind === 'removeQuota' && (
+        <Sheet onClose={() => setTarget(null)}>
+          <h3>Remover a cota {target.index + 1}?</h3>
+          <p className={styles.note}>Os dados do plano desta cota são apagados da ficha.</p>
+          <div className={styles.two}>
+            <button
+              type="button"
+              className={`${styles.btn} ${styles.btnLine}`}
+              onClick={() => setTarget(null)}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className={`${styles.btn} ${styles.btnDanger}`}
+              disabled={a.isSaving}
+              onClick={() => saveQuotas(withQuotaRemoved(form, target.index), 'Cota removida')}
+            >
+              {a.isSaving ? 'Removendo…' : 'Remover'}
+            </button>
+          </div>
+        </Sheet>
       )}
 
-      {target && target.kind !== 'doc' && (
+      {target && (target.kind === 'field' || target.kind === 'quota') && (
         <Sheet onClose={() => setTarget(null)}>
           <h3>{target.label}</h3>
           {target.kind === 'field' && target.key === 'sellerUserId' ? (

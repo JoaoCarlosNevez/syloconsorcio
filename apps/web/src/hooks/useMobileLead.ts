@@ -27,7 +27,7 @@ import { useTeamMembersQuery } from './useTeam'
 export type CallResult = 'atendeu' | 'nao_atendeu'
 
 export function useMobileLead(leadId: string) {
-  const { organizationId } = useActiveOrganization()
+  const { organizationId, membership } = useActiveOrganization()
   const lead = useLeadQuery(organizationId, leadId)
   const funnels = useFunnelsQuery(organizationId)
   const history = useLeadHistoryQuery(organizationId, leadId)
@@ -38,7 +38,7 @@ export function useMobileLead(leadId: string) {
   const createComment = useCreateLeadComment(organizationId, leadId)
   const shareProposal = useShareLeadProposal(organizationId, leadId)
   const { canAssign } = useMobileProfile()
-  const team = useTeamMembersQuery(canAssign ? organizationId : null)
+  const team = useTeamMembersQuery(organizationId)
   const setChecklistItem = useSetLeadChecklistItem(organizationId, leadId)
   const answerPayment = useAnswerInstallmentPayment(organizationId, leadId)
 
@@ -54,6 +54,14 @@ export function useMobileLead(leadId: string) {
   const assignees = (team.data?.members ?? []).filter((m) => m.status === 'ACTIVE')
   const assigneeName = (userId: string | null) =>
     userId ? (assignees.find((m) => m.userId === userId)?.name ?? null) : null
+  /** Nome de qualquer membro (inclusive inativo) — quem marcou o checklist. */
+  const memberName = (userId: string | null) => {
+    const member = (team.data?.members ?? []).find((m) => m.userId === userId)
+    return member ? (member.name ?? member.email) : null
+  }
+  /** Funil ADM: o Vendedor só acompanha — quem move, marca e edita é o
+   * Administrativo (a API também barra). Igual ao web. */
+  const isFollowOnly = funnel?.kind === 'BACKOFFICE' && membership?.role === 'SELLER'
 
   const logDone = useCallback(
     (type: 'Ligação' | 'Visita', title: string, notes?: string) =>
@@ -141,6 +149,8 @@ export function useMobileLead(leadId: string) {
     canAssign,
     assignees,
     assigneeName,
+    memberName,
+    isFollowOnly,
     assignTo,
     history,
     proposals,

@@ -5,7 +5,7 @@
 // já filtrada. O Kanban de arrastar fica no computador.
 
 import { Skeleton } from '@sylocrm/ui'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useFunnelsQuery } from '../../hooks/useFunnels'
 import { useLeadsQuery } from '../../hooks/useLeads'
@@ -16,6 +16,7 @@ import type { FunnelKind } from '../../lib/funnels-api'
 import { formatMoney } from '../../lib/mobile'
 import { daysSince } from '../../lib/mobile-profile'
 import styles from './Mobile.module.css'
+import { useDebounced } from './MobileUi'
 import { PlusIcon, SearchIcon } from './icons'
 
 type FunnelParam = 'comercial' | 'adm' | 'pos'
@@ -30,15 +31,6 @@ const FUNNEL_LABEL: Record<FunnelParam, string> = {
   comercial: 'Comercial',
   adm: 'ADM',
   pos: 'Pós-venda',
-}
-
-function useDebounced(value: string, delayMs = 300): string {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delayMs)
-    return () => clearTimeout(id)
-  }, [value, delayMs])
-  return debounced
 }
 
 function isFunnelParam(value: string | null): value is FunnelParam {

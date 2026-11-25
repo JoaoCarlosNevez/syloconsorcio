@@ -1,14 +1,19 @@
 // Tarefas do vendedor no celular, por dia: atrasadas, hoje, amanhã, depois e
 // sem prazo — e a fila dos setores dele (tarefas que alguém mandou pro setor e
-// ninguém pegou ainda).
-// Criar tarefa pra outra pessoa e o calendário ficam no computador.
+// ninguém pegou ainda). O botão + cria uma tarefa (pra si ou, com
+// task.assign, pra outra pessoa ou a fila de um setor). O calendário fica no
+// computador.
 
 import { Skeleton } from '@sylocrm/ui'
+import { useState } from 'react'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { useTasksQuery } from '../../hooks/useTasks'
 import { type TaskGroup, groupTasks } from '../../lib/mobile'
 import styles from './Mobile.module.css'
+import { MobileTaskSheet } from './MobileTaskSheet'
+import { useToast } from './MobileUi'
 import { TaskRow } from './TaskRow'
+import { PlusIcon } from './icons'
 
 const GROUPS: { key: TaskGroup; label: string }[] = [
   { key: 'atrasadas', label: 'Atrasadas' },
@@ -27,6 +32,8 @@ export function MobileTasksPage() {
   const now = new Date()
   const groups = groupTasks(tasks.data?.items ?? [], now)
   const empty = (tasks.data?.items.length ?? 0) === 0
+  const [creating, setCreating] = useState(false)
+  const toast = useToast()
 
   return (
     <main className={styles.content}>
@@ -67,9 +74,25 @@ export function MobileTasksPage() {
           ))}
         </>
       )}
-      <p className={styles.note}>
-        Criar tarefa pra outra pessoa e ver o calendário continuam no computador.
-      </p>
+      <p className={styles.note}>O calendário de tarefas continua no computador.</p>
+      <button
+        type="button"
+        className={styles.fab}
+        aria-label="Nova tarefa"
+        onClick={() => setCreating(true)}
+      >
+        <PlusIcon />
+      </button>
+      {creating && (
+        <MobileTaskSheet
+          onClose={() => setCreating(false)}
+          onCreated={() => {
+            setCreating(false)
+            toast.show('Tarefa criada')
+          }}
+        />
+      )}
+      {toast.node}
     </main>
   )
 }

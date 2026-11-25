@@ -235,6 +235,27 @@ export function emptyQuota(): QuotaForm {
   }
 }
 
+/** Mais uma cota na venda, já com o que costuma se repetir (administradora,
+ * tipo, forma de pagamento e vencimento). Sem mudança no limite de cotas. */
+export function withQuotaAdded(form: AdhesionForm): AdhesionForm {
+  if (form.quotas.length >= MAX_QUOTAS) return form
+  const base = form.quotas[form.quotas.length - 1] ?? emptyQuota()
+  const next: QuotaForm = {
+    ...emptyQuota(),
+    administrator: base.administrator,
+    assetType: base.assetType,
+    paymentMethod: base.paymentMethod,
+    installmentDueDay: base.installmentDueDay,
+  }
+  return { ...form, quotas: [...form.quotas, next] }
+}
+
+/** Tira a cota `index` — a venda sempre fica com pelo menos uma. */
+export function withQuotaRemoved(form: AdhesionForm, index: number): AdhesionForm {
+  if (form.quotas.length <= 1 || index < 0 || index >= form.quotas.length) return form
+  return { ...form, quotas: form.quotas.filter((_, i) => i !== index) }
+}
+
 function quotaToForm(quota: AdhesionQuotaFields): QuotaForm {
   return {
     administrator: quota.administrator ?? '',

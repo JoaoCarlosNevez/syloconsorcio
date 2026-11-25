@@ -1,8 +1,9 @@
 // Ficha do lead no celular: ligar/WhatsApp, etapa do funil, registrar
 // ligação e visita, reenviar a proposta, histórico com comentário e
-// ganho/perdido. Nos funis ADM e Pós-venda, o checklist (e a parcela
-// pagou/não pagou) no lugar de ganho/perdido; pra Dono, Supervisor e ADM, a
-// troca de responsável. O checklist de adesão (documentos com foto e a
+// ganho/perdido, editar os dados do lead (contato, crédito, cotas e ficha de
+// qualificação) e criar tarefa. Nos funis ADM e Pós-venda, o checklist (e a
+// parcela pagou/não pagou) no lugar de ganho/perdido; pra Dono, Supervisor e
+// ADM, a troca de responsável. O checklist de adesão (documentos com foto e a
 // ficha) abre numa tela própria (MobileAdhesionPage).
 
 import { Skeleton } from '@sylocrm/ui'
@@ -14,8 +15,11 @@ import { type CallResult, useMobileLead } from '../../hooks/useMobileLead'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import type { LeadProposal } from '../../lib/leads-api'
 import { LOST_REASONS, formatMoney, telLink, whatsappLink } from '../../lib/mobile'
+import { formatPercent } from '../../lib/mobile-profile'
 import { describeProposalViews } from '../../lib/proposal-share'
 import styles from './Mobile.module.css'
+import { MobileLeadEditSheet } from './MobileLeadEditSheet'
+import { MobileTaskSheet } from './MobileTaskSheet'
 import { BackBar, Sheet, useToast } from './MobileUi'
 import { TaskRow } from './TaskRow'
 import {
@@ -42,6 +46,8 @@ type SheetState =
   | { kind: 'share'; proposal: LeadProposal; url: string }
   | { kind: 'won' }
   | { kind: 'assign' }
+  | { kind: 'edit' }
+  | { kind: 'task' }
 
 function formatWhen(iso: string): string {
   return new Date(iso).toLocaleString('pt-BR', {
@@ -111,6 +117,16 @@ export function MobileLeadPage() {
   const stage = m.stages[m.stageIndex]
   const proposals = m.proposals.data?.proposals ?? []
   const firstName = lead.name.split(' ')[0] ?? lead.name
+  const checklistDone = checklist?.items.filter((item) => item.checked).length ?? 0
+  const checklistTotal = checklist?.items.length ?? 0
+  const clientFacts = [
+    { label: 'E-mail', value: lead.email },
+    { label: 'Cotas', value: String(lead.quotaCount) },
+    { label: 'Profissão', value: lead.profession },
+    { label: 'Renda', value: lead.incomeCents != null ? formatMoney(lead.incomeCents) : null },
+    { label: 'Estado civil', value: lead.maritalStatus },
+    { label: 'CPF', value: lead.cpf },
+  ]
 
   async function run(action: () => Promise<unknown>, success: string) {
     try {
@@ -164,7 +180,18 @@ export function MobileLeadPage() {
         <p className={styles.eyebrow}>
           {lead.segment} · origem {lead.source}
         </p>
-        <h1 className={styles.title}>{lead.name}</h1>
+        <div className={styles.sectionHead}>
+          <h1 className={styles.title}>{lead.name}</h1>
+          {!m.isFollowOnly && (
+            <button
+              type="button"
+              className={styles.link}
+              onClick={() => setSheet({ kind: 'edit' })}
+            >
+              Editar
+            </button>
+          )}
+        </div>
         <div className={styles.phoneNumber}>{lead.phone}</div>
         <div className={styles.meta}>
           <span className={styles.pill}>{formatMoney(lead.valueCents)}</span>
@@ -192,6 +219,18 @@ export function MobileLeadPage() {
           WhatsApp
         </a>
       </div>
+
+      <section>
+        <h2 className={styles.sectionTitle}>Dados do cliente</h2>
+        <dl className={`${styles.card} ${styles.facts}`}>
+          {clientFacts.map((fact) => (
+            <div key={fact.label}>
+              <dt>{fact.label}</dt>
+              <dd>{fact.value || '—'}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
 
       {m.canAssign && (
         <section className={styles.card}>
@@ -232,7 +271,7 @@ export function MobileLeadPage() {
             </div>
             <div className={styles.stepperLabel}>
               <b>{lead.lostAt ? 'Perdido' : (stage?.name ?? '—')}</b>
-              {!closed && (
+              {!closed && !m.isFollowOnly && (
                 <button
                   type="button"
                   className={styles.link}
@@ -328,7 +367,29 @@ export function MobileLeadPage() {
 
       {m.isSystemFunnel && (
         <section>
-          <h2 className={styles.sectionTitle}>Checklist</h2>
+          <h2 className={styles.sectionTitle}>
+            Checklist {checklist?.funnelKind === 'POST_SALE' ? 'do Pós-venda' : 'do ADM'}
+            {checklistTotal > 0 && (
+              <small>
+                {checklistDone} de {checklistTotal} ·{' '}
+                {formatPercent(Math.round((checklistDone / checklistTotal) * 100))}
+              </small>
+            )}
+          </h2>
+          {checklistTotal > 0 && (
+            <div className={styles.goalTrack}>
+              <div
+                className={styles.goalFill}
+                style={{ width: `${Math.round((checklistDone / checklistTotal) * 100)}%` }}
+              />
+            </div>
+          )}
+          <p className={styles.note}>
+            {checklist?.funnelKind === 'POST_SALE'
+              ? 'Marcar "1ª parcela paga" leva o card pra "Em dia"; "Contemplado" leva pra Contemplado.'
+              : 'O Ganho (Efetivado) só é liberado com todos os itens marcados.'}
+            {m.isFollowOnly && ' Você acompanha — quem marca é o Administrativo.'}
+          </p>
           {checklist?.pendingPayment && (
             <div className={`${styles.card} ${styles.pushCard}`}>
               <b>{checklist.pendingPayment.title}</b>
@@ -367,7 +428,7 @@ export function MobileLeadPage() {
                   key={item.key}
                   type="button"
                   className={styles.checkItem}
-                  disabled={m.isTogglingChecklist}
+                  disabled={m.isTogglingChecklist || m.isFollowOnly}
                   onClick={() =>
                     run(
                       () => m.toggleChecklistItem({ itemKey: item.key, checked: !item.checked }),
@@ -378,7 +439,17 @@ export function MobileLeadPage() {
                   <span className={`${styles.check} ${item.checked ? styles.checkOn : ''}`}>
                     {item.checked ? <TickIcon /> : null}
                   </span>
-                  <span className={styles.grow}>{item.label}</span>
+                  <span className={styles.grow}>
+                    {item.label}
+                    {item.checked && item.checkedAt && (
+                      <span className={styles.checkWho}>
+                        Marcado em {new Date(item.checkedAt).toLocaleDateString('pt-BR')}
+                        {m.memberName(item.checkedByUserId)
+                          ? ` por ${m.memberName(item.checkedByUserId)}`
+                          : ''}
+                      </span>
+                    )}
+                  </span>
                 </button>
               ))
             )}
@@ -421,16 +492,23 @@ export function MobileLeadPage() {
         </section>
       )}
 
-      {(m.openTasks.data?.items.length ?? 0) > 0 && (
-        <section>
+      <section>
+        <div className={styles.sectionHead}>
           <h2 className={styles.sectionTitle}>Próximas tarefas</h2>
+          <button type="button" className={styles.link} onClick={() => setSheet({ kind: 'task' })}>
+            + Nova tarefa
+          </button>
+        </div>
+        {(m.openTasks.data?.items.length ?? 0) > 0 ? (
           <div className={`${styles.card} ${styles.list}`}>
             {m.openTasks.data?.items.map((task) => (
               <TaskRow key={task.id} task={task} now={new Date()} />
             ))}
           </div>
-        </section>
-      )}
+        ) : (
+          <p className={styles.note}>Nenhuma tarefa aberta pra {firstName}.</p>
+        )}
+      </section>
 
       <section>
         <h2 className={styles.sectionTitle}>Histórico</h2>
@@ -647,6 +725,28 @@ export function MobileLeadPage() {
             </a>
           </div>
         </Sheet>
+      )}
+
+      {sheet?.kind === 'edit' && (
+        <MobileLeadEditSheet
+          lead={lead}
+          onClose={() => setSheet(null)}
+          onSaved={() => {
+            setSheet(null)
+            toast.show('Lead atualizado')
+          }}
+        />
+      )}
+
+      {sheet?.kind === 'task' && (
+        <MobileTaskSheet
+          lead={{ id: lead.id, name: lead.name }}
+          onClose={() => setSheet(null)}
+          onCreated={() => {
+            setSheet(null)
+            toast.show('Tarefa criada')
+          }}
+        />
       )}
 
       {toast.node}

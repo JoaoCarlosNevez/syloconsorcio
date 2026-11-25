@@ -71,3 +71,13 @@ export function useNow(intervalMs = 1000): number {
   }, [intervalMs])
   return now
 }
+
+/** Valor que só muda depois de `delayMs` sem digitação — pra buscas. */
+export function useDebounced(value: string, delayMs = 300): string {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delayMs)
+    return () => clearTimeout(id)
+  }, [value, delayMs])
+  return debounced
+}
