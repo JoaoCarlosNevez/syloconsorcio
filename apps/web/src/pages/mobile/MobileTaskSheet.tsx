@@ -1,22 +1,26 @@
-// Nova tarefa pelo celular: título, tipo, lead (fixo quando vem da ficha do
-// lead, ou buscado), responsável (só com task.assign — pessoa ou fila do
-// setor), prazo e observação. Regras em lib/mobile-task.ts.
+// Nova tarefa (ou edição de uma tarefa) pelo celular: título, tipo, lead
+// (fixo quando vem da ficha do lead, ou buscado), responsável (só com
+// task.assign — pessoa ou fila do setor), prazo e observação. Regras em
+// lib/mobile-task.ts.
 
 import { type FormEvent, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
-import { useLeadsQuery } from '../../hooks/useLeads'
+import { useLeadQuery, useLeadsQuery } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
-import { useCreateTask } from '../../hooks/useTasks'
+import { useCreateTask, useUpdateTask } from '../../hooks/useTasks'
 import { useTeamMembersQuery } from '../../hooks/useTeam'
 import { tomorrowAtTen } from '../../lib/mobile'
 import {
   type MobileTaskForm,
+  mobileTaskChanges,
   mobileTaskPayload,
   sectorAssignee,
+  taskToForm,
   toDatetimeLocalValue,
 } from '../../lib/mobile-task'
 import { SECTORS, SECTOR_LABEL } from '../../lib/sectors'
-import type { TaskType } from '../../lib/tasks-api'
+import type { Task, TaskType } from '../../lib/tasks-api'
 import { TASK_TYPES } from '../tarefas/tarefas.types'
 import styles from './Mobile.module.css'
 import { Sheet, useDebounced } from './MobileUi'
@@ -28,12 +32,16 @@ interface LeadRef {
 
 export function MobileTaskSheet({
   lead,
+  task,
   onClose,
   onCreated,
 }: {
   /** Aberta da ficha do lead: a tarefa já fica ligada a ele. */
   lead?: LeadRef
+  /** Editando uma tarefa que já existe. */
+  task?: Task
   onClose: () => void
+  /** Depois de criar ou salvar. */
   onCreated: () => void
 }) {
   const { organizationId, membership } = useActiveOrganization()
@@ -42,17 +50,32 @@ export function MobileTaskSheet({
   const team = useTeamMembersQuery(canAssign ? organizationId : null)
   const members = (team.data?.members ?? []).filter((m) => m.status === 'ACTIVE')
   const createTask = useCreateTask(organizationId)
+  const updateTask = useUpdateTask(organizationId)
+  const saving = createTask.isPending || updateTask.isPending
 
-  const [form, setForm] = useState<MobileTaskForm>(() => ({
-    title: lead ? `Ligar para ${lead.name}` : '',
-    type: 'Ligação',
-    leadId: lead?.id ?? null,
-    assignee: currentUser?.id ?? '',
-    noDueAt: false,
-    dueAt: toDatetimeLocalValue(tomorrowAtTen(new Date())),
-    notes: '',
-  }))
+  const [form, setForm] = useState<MobileTaskForm>(() =>
+    task
+      ? taskToForm(task)
+      : {
+          title: lead ? `Ligar para ${lead.name}` : '',
+          type: 'Ligação',
+          leadId: lead?.id ?? null,
+          assignee: currentUser?.id ?? '',
+          noDueAt: false,
+          dueAt: toDatetimeLocalValue(tomorrowAtTen(new Date())),
+          notes: '',
+        },
+  )
+  // Editando: o nome do lead da tarefa vem da API.
+  const taskLead = useLeadQuery(task?.leadId && !lead ? organizationId : null, task?.leadId ?? '')
   const [pickedLead, setPickedLead] = useState<LeadRef | null>(lead ?? null)
+  const [leadCleared, setLeadCleared] = useState(false)
+  const shownLead: LeadRef | null =
+    pickedLead ??
+    (!leadCleared && task?.leadId
+      ? { id: task.leadId, name: taskLead.data?.name ?? 'Carregando…' }
+      : null)
+  const queuedSector = form.assignee.startsWith('sector:') ? form.assignee : null
   const [error, setError] = useState<string | null>(null)
 
   function set<K extends keyof MobileTaskForm>(key: K, value: MobileTaskForm[K]) {
@@ -61,6 +84,7 @@ export function MobileTaskSheet({
 
   function pickLead(next: LeadRef | null) {
     setPickedLead(next)
+    if (!next) setLeadCleared(true)
     set('leadId', next?.id ?? null)
   }
 
@@ -69,19 +93,36 @@ export function MobileTaskSheet({
     setError(null)
     // O responsável padrão é quem cria — o usuário pode carregar depois de abrir.
     const assignee = form.assignee || currentUser?.id || ''
-    const result = mobileTaskPayload({ ...form, assignee }, canAssign)
-    if (!result.ok) return setError(result.error)
     try {
-      await createTask.mutateAsync(result.payload)
+      if (task) {
+        const result = mobileTaskChanges({ ...form, assignee }, canAssign, task)
+        if (!result.ok) return setError(result.error)
+        await updateTask.mutateAsync({ id: task.id, payload: result.payload })
+      } else {
+        const result = mobileTaskPayload({ ...form, assignee }, canAssign)
+        if (!result.ok) return setError(result.error)
+        await createTask.mutateAsync(result.payload)
+      }
       onCreated()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Não deu pra criar a tarefa.')
+      setError(
+        err instanceof Error
+          ? err.message
+          : task
+            ? 'Não deu pra salvar a tarefa.'
+            : 'Não deu pra criar a tarefa.',
+      )
     }
   }
 
   return (
     <Sheet onClose={onClose}>
-      <h3>Nova tarefa</h3>
+      <h3>{task ? 'Editar tarefa' : 'Nova tarefa'}</h3>
+      {task?.leadId && (
+        <Link to={`/m/leads/${task.leadId}`} className={styles.link} onClick={onClose}>
+          Abrir ficha do lead
+        </Link>
+      )}
       <form className={styles.form} onSubmit={onSubmit}>
         <label className={styles.field}>
           Título
@@ -116,7 +157,7 @@ export function MobileTaskSheet({
             <input className={styles.input} value={lead.name} disabled />
           </label>
         ) : (
-          <LeadPicker organizationId={organizationId} picked={pickedLead} onPick={pickLead} />
+          <LeadPicker organizationId={organizationId} picked={shownLead} onPick={pickLead} />
         )}
 
         {canAssign && (
@@ -134,13 +175,20 @@ export function MobileTaskSheet({
                   </option>
                 ))}
               </optgroup>
-              <optgroup label="Setor (quem pegar primeiro)">
-                {SECTORS.map((sector) => (
-                  <option key={sector} value={sectorAssignee(sector)}>
-                    Fila {SECTOR_LABEL[sector]}
-                  </option>
-                ))}
-              </optgroup>
+              {/* Editando, a fila do setor não se escolhe de novo (igual ao web). */}
+              {(!task || queuedSector) && (
+                <optgroup label="Setor (quem pegar primeiro)">
+                  {SECTORS.map((sector) => (
+                    <option
+                      key={sector}
+                      value={sectorAssignee(sector)}
+                      disabled={Boolean(task) && queuedSector !== sectorAssignee(sector)}
+                    >
+                      Fila {SECTOR_LABEL[sector]}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </label>
         )}
@@ -176,12 +224,8 @@ export function MobileTaskSheet({
         </label>
 
         {error && <p className={styles.error}>{error}</p>}
-        <button
-          type="submit"
-          className={`${styles.btn} ${styles.btnPrimary}`}
-          disabled={createTask.isPending}
-        >
-          {createTask.isPending ? 'Criando…' : 'Criar tarefa'}
+        <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={saving}>
+          {saving ? 'Salvando…' : task ? 'Salvar tarefa' : 'Criar tarefa'}
         </button>
       </form>
     </Sheet>

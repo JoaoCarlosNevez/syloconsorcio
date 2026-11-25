@@ -6,6 +6,7 @@ import { useToast } from '@sylocrm/ui'
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
+import { Spinner } from '../../components/spinner/Spinner'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { useLeadsQuery } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
@@ -13,6 +14,7 @@ import {
   useClaimTask,
   useCreateTask,
   useDeleteTask,
+  useTasksChangingStatus,
   useTasksQuery,
   useUpdateTask,
 } from '../../hooks/useTasks'
@@ -214,6 +216,7 @@ function ListView({
   onToggleComplete,
   onClaim,
   claimingId,
+  changingIds,
 }: {
   tasks: Task[]
   leadNameById: Map<string, string>
@@ -222,6 +225,8 @@ function ListView({
   /** Pegar uma tarefa da fila do setor. */
   onClaim: (task: Task) => void
   claimingId: string | null
+  /** Concluir/reabrir ainda salvando — o check trava e gira. */
+  changingIds: Set<string>
 }) {
   return (
     <div className={styles.viewContent}>
@@ -241,6 +246,7 @@ function ListView({
         )}
         {tasks.map((task, idx) => {
           const done = task.status === 'concluida'
+          const changing = changingIds.has(task.id)
           const badge = TYPE_BADGES[task.type]
           const leadLabel = task.leadId ? (leadNameById.get(task.leadId) ?? 'Lead') : 'Sem lead'
           return (
@@ -260,13 +266,18 @@ function ListView({
               <div className={`${styles.listCell} ${styles.lColActivity}`}>
                 {/* biome-ignore lint/a11y/useKeyWithClickEvents: mouse-only shortcut — completing via TaskModal's "Concluir" button stays keyboard-accessible */}
                 <span
-                  title={done ? 'Reabrir tarefa' : 'Concluir tarefa'}
+                  title={changing ? 'Salvando…' : done ? 'Reabrir tarefa' : 'Concluir tarefa'}
+                  aria-busy={changing}
                   onClick={(e) => {
                     e.stopPropagation()
-                    onToggleComplete(task)
+                    if (!changing) onToggleComplete(task)
                   }}
                 >
-                  {done ? (
+                  {changing ? (
+                    <span className={styles.checkboxBusy}>
+                      <Spinner size={12} label="Salvando" />
+                    </span>
+                  ) : done ? (
                     <span className={styles.checkboxChecked}>
                       <CheckSmIcon />
                     </span>
@@ -780,6 +791,7 @@ export function TarefasPage() {
 
   const createTask = useCreateTask(organizationId)
   const updateTask = useUpdateTask(organizationId)
+  const changingTaskIds = useTasksChangingStatus(organizationId)
   const deleteTask = useDeleteTask(organizationId)
   const claimTask = useClaimTask(organizationId)
 
@@ -800,6 +812,7 @@ export function TarefasPage() {
   }
 
   function handleToggleComplete(task: Task) {
+    if (changingTaskIds.has(task.id)) return
     updateTask.mutate(
       { id: task.id, payload: { status: task.status === 'concluida' ? 'pendente' : 'concluida' } },
       {
@@ -815,6 +828,7 @@ export function TarefasPage() {
   }
 
   function handleConcluir(task: Task) {
+    if (changingTaskIds.has(task.id)) return
     updateTask.mutate(
       { id: task.id, payload: { status: 'concluida' } },
       { onSuccess: () => setSelectedTask(null) },
@@ -982,6 +996,7 @@ export function TarefasPage() {
             onToggleComplete={handleToggleComplete}
             onClaim={handleClaim}
             claimingId={claimTask.isPending ? (claimTask.variables ?? null) : null}
+            changingIds={changingTaskIds}
           />
         )}
         {!isLoading && view === 'calendario' && (

@@ -898,6 +898,10 @@
 }
 
 .taskCheckbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
   width: 16px;
   height: 16px;
   border-radius: 4px;

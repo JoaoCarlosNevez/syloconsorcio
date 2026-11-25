@@ -2,6 +2,9 @@
 // da TarefasPage (ou do card de Tarefas do LeadModal).
 
 import { useEffect, useState } from 'react'
+import { Spinner } from '../../components/spinner/Spinner'
+import { useActiveOrganization } from '../../hooks/useOrganization'
+import { useTasksChangingStatus } from '../../hooks/useTasks'
 import { resolveAgent } from '../../lib/lead-adapters'
 import { SECTOR_LABEL } from '../../lib/sectors'
 import type { Task } from '../../lib/tasks-api'
@@ -225,6 +228,8 @@ export function TaskModal({
       ? `Fila ${SECTOR_LABEL[task.assignedSector]} (ninguém pegou ainda)`
       : null
   const responsible = resolveAgent(task.assignedUserId, members)
+  const { organizationId } = useActiveOrganization()
+  const completing = useTasksChangingStatus(organizationId).has(task.id)
 
   const [editingNotes, setEditingNotes] = useState(false)
   const [notesDraft, setNotesDraft] = useState(task.notes ?? '')
@@ -294,9 +299,15 @@ export function TaskModal({
                 </button>
               )}
               {task.status !== 'concluida' && (
-                <button type="button" className={styles.btnConcluir} onClick={onConcluir}>
-                  <CheckIcon />
-                  Concluir
+                <button
+                  type="button"
+                  className={styles.btnConcluir}
+                  onClick={onConcluir}
+                  disabled={completing}
+                  aria-busy={completing}
+                >
+                  {completing ? <Spinner size={12} /> : <CheckIcon />}
+                  {completing ? 'Concluindo…' : 'Concluir'}
                 </button>
               )}
               <button type="button" className={styles.btnSecondary} onClick={onEdit}>

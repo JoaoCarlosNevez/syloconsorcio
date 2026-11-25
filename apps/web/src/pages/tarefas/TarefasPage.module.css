@@ -374,6 +374,16 @@
   background: var(--color-bg-card);
 }
 
+.checkboxBusy {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+}
+
 .checkboxChecked {
   width: 16px;
   height: 16px;

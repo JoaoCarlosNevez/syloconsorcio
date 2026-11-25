@@ -4,6 +4,7 @@
 import { Dropdown, Modal, Skeleton, useToast } from '@sylocrm/ui'
 import { useEffect, useRef, useState } from 'react'
 import { SendAboutClientModal } from '../../components/chat/SendAboutClientModal'
+import { Spinner } from '../../components/spinner/Spinner'
 import type { CardData } from '../../data/kanban-mock'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
 import {
@@ -18,7 +19,13 @@ import {
 } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { useOrganizationSettingsQuery } from '../../hooks/useOrganizationSettings'
-import { useCreateTask, useDeleteTask, useTasksQuery, useUpdateTask } from '../../hooks/useTasks'
+import {
+  useCreateTask,
+  useDeleteTask,
+  useTasksChangingStatus,
+  useTasksQuery,
+  useUpdateTask,
+} from '../../hooks/useTasks'
 import { useTeamMembersQuery } from '../../hooks/useTeam'
 import type { Funnel } from '../../lib/funnels-api'
 import {
@@ -1014,6 +1021,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
   const hasLeadTasks = openLeadTasks.length > 0 || doneLeadTasks.length > 0
   const createTask = useCreateTask(organizationId)
   const updateTaskMutation = useUpdateTask(organizationId)
+  const changingTaskIds = useTasksChangingStatus(organizationId)
   const deleteTaskMutation = useDeleteTask(organizationId)
   const [taskDetail, setTaskDetail] = useState<Task | null>(null)
   const [showDoneTasks, setShowDoneTasks] = useState(false)
@@ -1518,13 +1526,24 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
             className={
               done ? `${styles.taskCheckbox} ${styles.taskCheckboxChecked}` : styles.taskCheckbox
             }
-            title={task.status === 'concluida' ? 'Reabrir tarefa' : 'Concluir tarefa'}
+            title={
+              changingTaskIds.has(task.id)
+                ? 'Salvando…'
+                : task.status === 'concluida'
+                  ? 'Reabrir tarefa'
+                  : 'Concluir tarefa'
+            }
+            aria-busy={changingTaskIds.has(task.id)}
             onClick={(e) => {
               e.stopPropagation()
               handleToggleTaskComplete(task)
             }}
           >
-            {done && <CheckIcon />}
+            {changingTaskIds.has(task.id) ? (
+              <Spinner size={10} label="Salvando" />
+            ) : (
+              done && <CheckIcon />
+            )}
           </span>
           <div className={styles.taskContent}>
             <span
@@ -1566,6 +1585,8 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
   }
 
   function handleToggleTaskComplete(task: Task) {
+    // Clicar de novo enquanto salva não manda outra vez (nem desfaz).
+    if (changingTaskIds.has(task.id)) return
     const reopening = task.status === 'concluida'
     updateTaskMutation.mutate(
       { id: task.id, payload: { status: reopening ? 'pendente' : 'concluida' } },
@@ -3116,6 +3137,7 @@ export function LeadModal({ card, funnel, funnels, onClose, isLoading = false }:
           members={members}
           onClose={() => setTaskDetail(null)}
           onConcluir={() => {
+            if (changingTaskIds.has(taskDetail.id)) return
             updateTaskMutation.mutate(
               { id: taskDetail.id, payload: { status: 'concluida' } },
               { onSuccess: () => setTaskDetail(null) },
