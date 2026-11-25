@@ -1,0 +1,129 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  /* Acima do modal "Editar perfil" e das folhas do celular. */
+  z-index: var(--z-drawer);
+  background: rgba(15, 23, 42, 0.6);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.dialog {
+  position: static;
+  margin: 0;
+  border: 0;
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  border-radius: var(--radius-2xl);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 100%;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.3);
+}
+
+.title {
+  margin: 0;
+  font-size: 17px;
+  align-self: flex-start;
+}
+
+.hint {
+  margin: -8px 0 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  align-self: flex-start;
+}
+
+.frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: var(--color-bg-subtle);
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+
+.frame:active {
+  cursor: grabbing;
+}
+
+.image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: none;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+/* Prévia do círculo em que a foto aparece no app; o arquivo sai quadrado. */
+.mask {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 999px rgba(15, 23, 42, 0.45);
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  pointer-events: none;
+}
+
+.zoom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.zoom input {
+  flex: 1;
+  accent-color: var(--color-accent-gradient-to);
+}
+
+.error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-error-text);
+  align-self: flex-start;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+
+.primary,
+.secondary {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 11px 16px;
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+}
+
+.primary {
+  border: 0;
+  background: var(--color-accent-gradient);
+  color: var(--color-accent-contrast, #3b2500);
+}
+
+.secondary {
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+}
+
+.primary:disabled,
+.secondary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

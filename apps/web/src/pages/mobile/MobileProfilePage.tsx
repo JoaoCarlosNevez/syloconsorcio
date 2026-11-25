@@ -3,6 +3,7 @@
 
 import { Skeleton } from '@sylocrm/ui'
 import { type ChangeEvent, type FormEvent, useRef, useState } from 'react'
+import { AvatarCropDialog, avatarSourceError } from '../../components/avatar-crop/AvatarCropDialog'
 import { useAuth } from '../../hooks/useAuth'
 import {
   useCurrentUser,
@@ -13,7 +14,6 @@ import {
 import { useMobileProfile } from '../../hooks/useMobileProfile'
 import { forgetActiveOrganization, useActiveOrganization } from '../../hooks/useOrganization'
 import { useSalesGoalsSummaryQuery, useUpdateMyPersonalGoal } from '../../hooks/useTeam'
-import { validateIconFile } from '../../lib/icon-validation'
 import { showsSalesGoal } from '../../lib/mobile-profile'
 import {
   businessDaysRemaining,
@@ -141,7 +141,7 @@ export function MobileProfilePage() {
             </span>
             <div className={styles.grow}>
               <span className={styles.rowTitle}>Foto de perfil</span>
-              <div className={styles.rowSub}>JPG, PNG ou WEBP até 2 MB</div>
+              <div className={styles.rowSub}>Escolha e recorte em quadrado</div>
             </div>
           </button>
           <button type="button" className={styles.row} onClick={() => setSheet('senha')}>
@@ -474,20 +474,35 @@ function PhotoSheet({
   const removeAvatar = useRemoveMyAvatar()
   const inputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
+  const [toCrop, setToCrop] = useState<File | null>(null)
 
   async function onFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file) return
     setError(null)
-    const invalid = await validateIconFile(file, { requireSquare: false })
+    const invalid = avatarSourceError(file)
     if (invalid) return setError(invalid)
-    try {
-      await uploadAvatar.mutateAsync(file)
-      onDone('Foto atualizada!')
-    } catch (err) {
-      setError(errorMessage(err, 'Não deu pra enviar a foto.'))
-    }
+    // Abre o recorte: a foto sobe sempre quadrada (ver AvatarCropDialog).
+    setToCrop(file)
+  }
+
+  async function onCropped(cropped: File) {
+    // Erro aqui fica na tela do recorte, pra tentar de novo sem escolher a foto outra vez.
+    await uploadAvatar.mutateAsync(cropped)
+    setToCrop(null)
+    onDone('Foto atualizada!')
+  }
+
+  if (toCrop) {
+    return (
+      <AvatarCropDialog
+        file={toCrop}
+        onCancel={() => setToCrop(null)}
+        onConfirm={onCropped}
+        isSaving={uploadAvatar.isPending}
+      />
+    )
   }
 
   async function onRemove() {
@@ -503,7 +518,7 @@ function PhotoSheet({
   return (
     <Sheet onClose={onClose}>
       <h3>Foto de perfil</h3>
-      <p className={styles.note}>JPG, PNG ou WEBP, até 2 MB.</p>
+      <p className={styles.note}>JPG, PNG ou WEBP. Depois você ajusta o recorte quadrado.</p>
       <input
         ref={inputRef}
         type="file"
