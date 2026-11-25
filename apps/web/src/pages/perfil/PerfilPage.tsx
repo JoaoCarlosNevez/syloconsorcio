@@ -3,6 +3,7 @@
 import { OrganizationAvatar, Skeleton, TIER_COLORS, TIER_LABELS } from '@sylocrm/ui'
 import { type ChangeEvent, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { AvatarCropDialog, avatarSourceError } from '../../components/avatar-crop/AvatarCropDialog'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { NotificationBell } from '../../components/notifications/NotificationBell'
 import { useAuth } from '../../hooks/useAuth'
@@ -23,7 +24,6 @@ import { useSalesGoalsSummaryQuery, useUpdateMyPersonalGoal } from '../../hooks/
 import { type Badge, toBadge } from '../../lib/achievement-badges'
 import type { MyStreak } from '../../lib/dashboard-api'
 import { engagementCards } from '../../lib/engagement-cards'
-import { validateIconFile } from '../../lib/icon-validation'
 import { formatGoalInput, goalInputToCents } from '../../lib/sales-goals'
 import { supabase } from '../../lib/supabase'
 import { teamLine } from '../../lib/team-line'
@@ -369,6 +369,7 @@ function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
     goalDraft ?? (savedGoalCents !== null ? formatGoalInput(String(savedGoalCents / 100)) : '')
   const [formError, setFormError] = useState('')
   const [avatarError, setAvatarError] = useState('')
+  const [avatarToCrop, setAvatarToCrop] = useState<File | null>(null)
 
   const [changingPassword, setChangingPassword] = useState(false)
   const [newPassword, setNewPassword] = useState('')
@@ -406,18 +407,20 @@ function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
     if (!file) return
 
     setAvatarError('')
-    const validationError = await validateIconFile(file, { requireSquare: false })
-    if (validationError) {
-      setAvatarError(validationError)
+    const sourceError = avatarSourceError(file)
+    if (sourceError) {
+      setAvatarError(sourceError)
       return
     }
+    // Abre o recorte: a foto sobe sempre quadrada (ver AvatarCropDialog).
+    setAvatarToCrop(file)
+  }
 
-    try {
-      await uploadAvatar.mutateAsync(file)
-      onSaved('Foto de perfil atualizada!')
-    } catch (error) {
-      setAvatarError(error instanceof Error ? error.message : 'Não foi possível enviar a foto.')
-    }
+  async function handleAvatarCropped(cropped: File) {
+    // Erro aqui fica na tela do recorte, pra tentar de novo sem escolher a foto outra vez.
+    await uploadAvatar.mutateAsync(cropped)
+    setAvatarToCrop(null)
+    onSaved('Foto de perfil atualizada!')
   }
 
   async function handleRemoveAvatar() {
@@ -475,7 +478,9 @@ function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
               />
               <div className={styles.editPhotoInfo}>
                 <span className={styles.editPhotoTitle}>Foto de perfil</span>
-                <span className={styles.editHint}>JPG, PNG ou WEBP. Tamanho máximo 2 MB.</span>
+                <span className={styles.editHint}>
+                  JPG, PNG ou WEBP. Você ajusta o recorte quadrado antes de salvar.
+                </span>
               </div>
               <div className={styles.editPhotoActions}>
                 <input
@@ -718,6 +723,15 @@ function EditProfileModal({ onClose, onSaved }: EditProfileModalProps) {
             )}
           </section>
         </div>
+
+        {avatarToCrop && (
+          <AvatarCropDialog
+            file={avatarToCrop}
+            onCancel={() => setAvatarToCrop(null)}
+            onConfirm={handleAvatarCropped}
+            isSaving={uploadAvatar.isPending}
+          />
+        )}
 
         <div className={styles.editFooter}>
           <span className={styles.editFooterHint}>
