@@ -25,6 +25,7 @@ import { TaskRow } from './TaskRow'
 import {
   CameraIcon,
   ChatIcon,
+  CheckSquareIcon,
   PhoneIcon,
   ShareIcon,
   TickIcon,
@@ -285,9 +286,9 @@ export function MobileLeadPage() {
         </section>
       )}
 
-      {!closed && (
-        <section>
-          <h2 className={styles.sectionTitle}>Registrar</h2>
+      <section>
+        <h2 className={styles.sectionTitle}>Registrar</h2>
+        {!closed && (
           <div className={styles.two}>
             <button
               type="button"
@@ -310,8 +311,16 @@ export function MobileLeadPage() {
               </button>
             )}
           </div>
-        </section>
-      )}
+        )}
+        <button
+          type="button"
+          className={`${styles.btn} ${styles.btnLine} ${styles.fullWidth} ${closed ? '' : styles.stackGap}`}
+          onClick={() => setSheet({ kind: 'task' })}
+        >
+          <CheckSquareIcon />
+          Nova tarefa pra {firstName}
+        </button>
+      </section>
 
       <section>
         <h2 className={styles.sectionTitle}>Equipe</h2>
