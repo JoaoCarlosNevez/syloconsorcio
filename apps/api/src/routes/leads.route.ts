@@ -144,9 +144,25 @@ const saveAdhesionSchema = z.object({
   quotas: z.array(adhesionQuotaSchema).max(MAX_ADHESION_QUOTAS),
 })
 
+/** Telefone brasileiro: DDD + número (10 ou 11 dígitos), aceitando o 55 do
+ * país na frente — sem isso, dava pra salvar um "número" de qualquer tamanho. */
+const MIN_PHONE_DIGITS = 10
+const MAX_PHONE_DIGITS = 13
+const phoneSchema = z
+  .string()
+  .trim()
+  .max(25, 'Telefone inválido.')
+  .refine(
+    (value) => {
+      const digits = value.replace(/\D/g, '').length
+      return digits >= MIN_PHONE_DIGITS && digits <= MAX_PHONE_DIGITS
+    },
+    { message: 'Telefone inválido: informe DDD + número (10 ou 11 dígitos).' },
+  )
+
 const createLeadSchema = z.object({
   name: z.string().min(1),
-  phone: z.string().min(1),
+  phone: phoneSchema,
   email: z.string().email().nullable().optional(),
   segment: z.string().min(1),
   valueCents: z.number().int().nonnegative(),
@@ -163,7 +179,7 @@ const createLeadSchema = z.object({
 
 const updateLeadSchema = z.object({
   name: z.string().min(1).optional(),
-  phone: z.string().min(1).optional(),
+  phone: phoneSchema.optional(),
   email: z.string().email().nullable().optional(),
   segment: z.string().min(1).optional(),
   valueCents: z.number().int().nonnegative().optional(),

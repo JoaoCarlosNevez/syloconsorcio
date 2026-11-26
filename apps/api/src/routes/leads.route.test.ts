@@ -562,6 +562,35 @@ describe('POST /leads', () => {
     expect(response.statusCode).toBe(400)
   })
 
+  it('returns 400 when the phone has too many or too few digits', async () => {
+    const leadRepository = buildLeadRepository()
+    const app = buildTestApp({ leadRepository })
+
+    for (const phone of ['(11) 99999-99999999999', '9999-0000', '1'.repeat(40)]) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/leads',
+        headers: AUTH_HEADERS,
+        payload: { ...validPayload, phone },
+      })
+      expect(response.statusCode).toBe(400)
+    }
+    expect(leadRepository.create).not.toHaveBeenCalled()
+  })
+
+  it('accepts a phone with the +55 country code', async () => {
+    const app = buildTestApp({ leadRepository: buildLeadRepository() })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/leads',
+      headers: AUTH_HEADERS,
+      payload: { ...validPayload, phone: '+55 (11) 90000-0000' },
+    })
+
+    expect(response.statusCode).toBe(201)
+  })
+
   it('returns 400 when a lead with the same phone already exists in the organization', async () => {
     const leadRepository = buildLeadRepository({
       findByPhone: vi.fn().mockResolvedValue(SAMPLE_LEAD),
@@ -864,6 +893,21 @@ describe('PATCH /leads/:id', () => {
     })
 
     expect(response.statusCode).toBe(200)
+  })
+
+  it('returns 400 when changing the phone to a number that is too long', async () => {
+    const leadRepository = buildLeadRepository()
+    const app = buildTestApp({ leadRepository })
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/leads/lead-01',
+      headers: AUTH_HEADERS,
+      payload: { phone: '(11) 9999999999999999' },
+    })
+
+    expect(response.statusCode).toBe(400)
+    expect(leadRepository.update).not.toHaveBeenCalled()
   })
 
   it('returns 400 when changing the phone to one already used by another lead', async () => {

@@ -56,8 +56,13 @@ const webhookLeadSchema = z.object({
   phone: z
     .string()
     .trim()
+    .max(30)
     .refine((value) => value.replace(/\D/g, '').length >= 8, {
       message: 'Telefone precisa ter pelo menos 8 dígitos.',
+    })
+    // E.164: no máximo 15 dígitos, com o código do país.
+    .refine((value) => value.replace(/\D/g, '').length <= 15, {
+      message: 'Telefone pode ter no máximo 15 dígitos.',
     }),
   email: z.string().trim().email().nullable().optional(),
   segment: z.string().trim().max(100).nullable().optional(),

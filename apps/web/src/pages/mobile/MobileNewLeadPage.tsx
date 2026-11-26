@@ -7,6 +7,7 @@ import { useFunnelsQuery } from '../../hooks/useFunnels'
 import { useCreateLead } from '../../hooks/useLeads'
 import { useActiveOrganization } from '../../hooks/useOrganization'
 import { useOrganizationSettingsQuery } from '../../hooks/useOrganizationSettings'
+import { formatPhoneBR } from '../../lib/lead-adapters'
 import { parseMoneyToCents } from '../../lib/mobile'
 import styles from './Mobile.module.css'
 import { BackBar } from './MobileUi'
@@ -80,7 +81,7 @@ export function MobileNewLeadPage() {
           <input
             className={styles.input}
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => setPhone(formatPhoneBR(e.target.value))}
             inputMode="tel"
             placeholder="(11) 99999-9999"
             required
